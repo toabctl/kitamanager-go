@@ -2,11 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/eenemeene/kitamanager-go/internal/config"
 	"github.com/eenemeene/kitamanager-go/internal/database"
 	"github.com/eenemeene/kitamanager-go/internal/handlers"
 	"github.com/eenemeene/kitamanager-go/internal/middleware"
+	"github.com/eenemeene/kitamanager-go/internal/rbac"
 	"github.com/eenemeene/kitamanager-go/internal/routes"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
@@ -46,6 +48,21 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Initialize RBAC enforcer
+	enforcer, err := rbac.NewEnforcer(db, cfg.RBACModelPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize RBAC enforcer: %v", err)
+	}
+
+	// Seed default policies if requested
+	if os.Getenv("SEED_RBAC_POLICIES") == "true" {
+		log.Println("Seeding RBAC policies...")
+		if err := enforcer.SeedDefaultPolicies(); err != nil {
+			log.Fatalf("Failed to seed RBAC policies: %v", err)
+		}
+		log.Println("RBAC policies seeded successfully")
+	}
+
 	userStore := store.NewUserStore(db)
 	groupStore := store.NewGroupStore(db)
 	orgStore := store.NewOrganizationStore(db)
@@ -60,13 +77,14 @@ func main() {
 	childHandler := handlers.NewChildHandler(childStore)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
+	authzMiddleware := middleware.NewAuthorizationMiddleware(enforcer)
 
 	r := gin.Default()
 
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, employeeHandler, childHandler, authMiddleware)
+	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, employeeHandler, childHandler, authMiddleware, authzMiddleware)
 
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 	log.Printf("Swagger UI available at http://localhost:%s/swagger/index.html", cfg.ServerPort)

@@ -67,3 +67,36 @@ swag init -g cmd/api/main.go
 ```
 
 This will create/update files in the `docs/` directory.
+
+## RBAC (Role-Based Access Control)
+
+The application uses Casbin for RBAC with organization-level multi-tenancy. See `docs/RBAC.md` for full documentation.
+
+### Roles
+
+- `superadmin` - Full system access across all organizations
+- `admin` - Full access within assigned organization(s)
+- `manager` - Operational access (employees, children, contracts)
+
+### Organization-Scoped Routes
+
+Resources that belong to an organization use the URL pattern:
+```
+/api/v1/organizations/{orgId}/employees
+/api/v1/organizations/{orgId}/children
+```
+
+### Authorization Middleware
+
+Use the authorization middleware to protect routes:
+
+```go
+// Require specific permission
+authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead)
+
+// Require superadmin
+authzMiddleware.RequireSuperAdmin()
+
+// Require any role in the organization
+authzMiddleware.RequireOrgAccess()
+```

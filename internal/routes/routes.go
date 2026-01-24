@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/eenemeene/kitamanager-go/internal/handlers"
 	"github.com/eenemeene/kitamanager-go/internal/middleware"
+	"github.com/eenemeene/kitamanager-go/internal/rbac"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,25 +16,35 @@ func Setup(
 	employeeHandler *handlers.EmployeeHandler,
 	childHandler *handlers.ChildHandler,
 	authMiddleware *middleware.AuthMiddleware,
+	authzMiddleware *middleware.AuthorizationMiddleware,
 ) {
 	api := r.Group("/api/v1")
 	{
+		// Public endpoints
 		api.POST("/login", authHandler.Login)
 
+		// Protected endpoints (require authentication)
 		protected := api.Group("")
 		protected.Use(authMiddleware.RequireAuth())
 		{
-			// Organizations
+			// ============================================================
+			// Organization management (superadmin only for create/delete)
+			// ============================================================
 			orgs := protected.Group("/organizations")
 			{
+				// Superadmin only
+				orgs.POST("", authzMiddleware.RequireSuperAdmin(), orgHandler.Create)
+				orgs.DELETE("/:id", authzMiddleware.RequireSuperAdmin(), orgHandler.Delete)
+
+				// Any authenticated user can list (they'll see based on their access)
 				orgs.GET("", orgHandler.List)
 				orgs.GET("/:id", orgHandler.Get)
-				orgs.POST("", orgHandler.Create)
-				orgs.PUT("/:id", orgHandler.Update)
-				orgs.DELETE("/:id", orgHandler.Delete)
+				orgs.PUT("/:id", orgHandler.Update) // TODO: Add org-level permission check
 			}
 
-			// Users
+			// ============================================================
+			// User management (global, not org-scoped)
+			// ============================================================
 			users := protected.Group("/users")
 			{
 				users.GET("", userHandler.List)
@@ -47,7 +58,9 @@ func Setup(
 				users.DELETE("/:id/organizations/:oid", userHandler.RemoveFromOrganization)
 			}
 
-			// Groups
+			// ============================================================
+			// Group management (global, not org-scoped)
+			// ============================================================
 			groups := protected.Group("/groups")
 			{
 				groups.GET("", groupHandler.List)
@@ -59,32 +72,109 @@ func Setup(
 				groups.DELETE("/:id/organizations/:oid", groupHandler.RemoveFromOrganization)
 			}
 
-			// Employees
-			employees := protected.Group("/employees")
+			// ============================================================
+			// Organization-scoped resources
+			// All routes under /organizations/:orgId/... require org access
+			// ============================================================
+			orgScoped := protected.Group("/organizations/:orgId")
 			{
-				employees.GET("", employeeHandler.List)
-				employees.GET("/:id", employeeHandler.Get)
-				employees.POST("", employeeHandler.Create)
-				employees.PUT("/:id", employeeHandler.Update)
-				employees.DELETE("/:id", employeeHandler.Delete)
-				employees.GET("/:id/contracts", employeeHandler.ListContracts)
-				employees.GET("/:id/contracts/current", employeeHandler.GetCurrentContract)
-				employees.POST("/:id/contracts", employeeHandler.CreateContract)
-				employees.DELETE("/:id/contracts/:contractId", employeeHandler.DeleteContract)
+				// Employees
+				employees := orgScoped.Group("/employees")
+				{
+					employees.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+						employeeHandler.List)
+					employees.GET("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+						employeeHandler.Get)
+					employees.POST("",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionCreate),
+						employeeHandler.Create)
+					employees.PUT("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionUpdate),
+						employeeHandler.Update)
+					employees.DELETE("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionDelete),
+						employeeHandler.Delete)
+
+					// Employee contracts
+					employees.GET("/:id/contracts",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionRead),
+						employeeHandler.ListContracts)
+					employees.GET("/:id/contracts/current",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionRead),
+						employeeHandler.GetCurrentContract)
+					employees.POST("/:id/contracts",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionCreate),
+						employeeHandler.CreateContract)
+					employees.DELETE("/:id/contracts/:contractId",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionDelete),
+						employeeHandler.DeleteContract)
+				}
+
+				// Children
+				children := orgScoped.Group("/children")
+				{
+					children.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						childHandler.List)
+					children.GET("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						childHandler.Get)
+					children.POST("",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionCreate),
+						childHandler.Create)
+					children.PUT("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionUpdate),
+						childHandler.Update)
+					children.DELETE("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionDelete),
+						childHandler.Delete)
+
+					// Child contracts
+					children.GET("/:id/contracts",
+						authzMiddleware.RequirePermission(rbac.ResourceChildContracts, rbac.ActionRead),
+						childHandler.ListContracts)
+					children.GET("/:id/contracts/current",
+						authzMiddleware.RequirePermission(rbac.ResourceChildContracts, rbac.ActionRead),
+						childHandler.GetCurrentContract)
+					children.POST("/:id/contracts",
+						authzMiddleware.RequirePermission(rbac.ResourceChildContracts, rbac.ActionCreate),
+						childHandler.CreateContract)
+					children.DELETE("/:id/contracts/:contractId",
+						authzMiddleware.RequirePermission(rbac.ResourceChildContracts, rbac.ActionDelete),
+						childHandler.DeleteContract)
+				}
 			}
 
-			// Children
-			children := protected.Group("/children")
+			// ============================================================
+			// Legacy routes (without org scoping) - kept for backwards compatibility
+			// These should eventually be migrated to org-scoped routes
+			// ============================================================
+			legacyEmployees := protected.Group("/employees")
 			{
-				children.GET("", childHandler.List)
-				children.GET("/:id", childHandler.Get)
-				children.POST("", childHandler.Create)
-				children.PUT("/:id", childHandler.Update)
-				children.DELETE("/:id", childHandler.Delete)
-				children.GET("/:id/contracts", childHandler.ListContracts)
-				children.GET("/:id/contracts/current", childHandler.GetCurrentContract)
-				children.POST("/:id/contracts", childHandler.CreateContract)
-				children.DELETE("/:id/contracts/:contractId", childHandler.DeleteContract)
+				legacyEmployees.GET("", employeeHandler.List)
+				legacyEmployees.GET("/:id", employeeHandler.Get)
+				legacyEmployees.POST("", employeeHandler.Create)
+				legacyEmployees.PUT("/:id", employeeHandler.Update)
+				legacyEmployees.DELETE("/:id", employeeHandler.Delete)
+				legacyEmployees.GET("/:id/contracts", employeeHandler.ListContracts)
+				legacyEmployees.GET("/:id/contracts/current", employeeHandler.GetCurrentContract)
+				legacyEmployees.POST("/:id/contracts", employeeHandler.CreateContract)
+				legacyEmployees.DELETE("/:id/contracts/:contractId", employeeHandler.DeleteContract)
+			}
+
+			legacyChildren := protected.Group("/children")
+			{
+				legacyChildren.GET("", childHandler.List)
+				legacyChildren.GET("/:id", childHandler.Get)
+				legacyChildren.POST("", childHandler.Create)
+				legacyChildren.PUT("/:id", childHandler.Update)
+				legacyChildren.DELETE("/:id", childHandler.Delete)
+				legacyChildren.GET("/:id/contracts", childHandler.ListContracts)
+				legacyChildren.GET("/:id/contracts/current", childHandler.GetCurrentContract)
+				legacyChildren.POST("/:id/contracts", childHandler.CreateContract)
+				legacyChildren.DELETE("/:id/contracts/:contractId", childHandler.DeleteContract)
 			}
 		}
 	}
