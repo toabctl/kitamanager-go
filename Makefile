@@ -1,4 +1,4 @@
-.PHONY: build run test test-unit test-integration test-contract test-fuzz test-coverage lint clean docs schema-docs swagger-docs docker-up docker-down docker-rebuild
+.PHONY: build run test test-unit test-integration test-contract test-fuzz test-coverage lint clean docs schema-docs swagger-docs docker-up docker-down docker-rebuild install-hooks uninstall-hooks pre-commit
 
 # Build the application
 build:
@@ -68,3 +68,17 @@ docker-rebuild:
 # Run all CI checks locally
 ci: lint test-unit build
 	@echo "All CI checks passed!"
+
+# Install pre-commit hooks
+install-hooks:
+	pre-commit install
+	@echo "Pre-commit hooks installed."
+
+# Uninstall pre-commit hooks
+uninstall-hooks:
+	pre-commit uninstall
+	@echo "Pre-commit hooks uninstalled."
+
+# Run pre-commit on all files
+pre-commit:
+	pre-commit run --all-files

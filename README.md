@@ -101,10 +101,3 @@ make run
 
 - [RBAC System](docs/RBAC.md) - Role-based access control
 - [Database Schema](docs/schema/README.md) - Auto-generated ER diagram
-
-## Development Guidelines
-
-See [CLAUDE.md](CLAUDE.md) for development guidelines including:
-- API handler documentation requirements
-- RBAC middleware usage
-- Database schema change procedures
