@@ -100,3 +100,21 @@ authzMiddleware.RequireSuperAdmin()
 // Require any role in the organization
 authzMiddleware.RequireOrgAccess()
 ```
+
+## Database Schema Changes
+
+When making changes to the database schema (models), you MUST:
+
+1. **Handle migrations** - Create proper database migrations for any schema changes. Never rely solely on GORM AutoMigrate for production changes.
+
+2. **Update the schema diagram** - Regenerate the database diagram in `docs/` using:
+   ```bash
+   tbls doc --force postgres://user:pass@localhost:5432/kitamanager docs/schema
+   ```
+   Or configure `.tbls.yml` for consistent settings.
+
+### Schema Diagram Tool
+
+The project uses [tbls](https://github.com/k1LoW/tbls) to auto-generate database documentation including ER diagrams.
+
+Install: `go install github.com/k1LoW/tbls@latest`

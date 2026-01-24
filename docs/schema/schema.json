@@ -1,0 +1,985 @@
+{
+  "name": "kitamanager",
+  "tables": [
+    {
+      "name": "public.organizations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('organizations_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "organizations_pkey",
+          "def": "CREATE UNIQUE INDEX organizations_pkey ON public.organizations USING btree (id)",
+          "table": "public.organizations",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "organizations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.organizations",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.groups",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('groups_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "groups_pkey",
+          "def": "CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id)",
+          "table": "public.groups",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "groups_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.groups",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.group_organizations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "group_organizations_pkey",
+          "def": "CREATE UNIQUE INDEX group_organizations_pkey ON public.group_organizations USING btree (group_id, organization_id)",
+          "table": "public.group_organizations",
+          "columns": [
+            "group_id",
+            "organization_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_group_organizations_organization",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.group_organizations",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_group_organizations_group",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
+          "table": "public.group_organizations",
+          "referenced_table": "groups",
+          "columns": [
+            "group_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "group_organizations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (group_id, organization_id)",
+          "table": "public.group_organizations",
+          "referenced_table": "",
+          "columns": [
+            "group_id",
+            "organization_id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.users",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('users_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "password",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "users_pkey",
+          "def": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)",
+          "table": "public.users",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_users_email",
+          "def": "CREATE UNIQUE INDEX idx_users_email ON public.users USING btree (email)",
+          "table": "public.users",
+          "columns": [
+            "email"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.user_organizations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_organizations_pkey",
+          "def": "CREATE UNIQUE INDEX user_organizations_pkey ON public.user_organizations USING btree (user_id, organization_id)",
+          "table": "public.user_organizations",
+          "columns": [
+            "user_id",
+            "organization_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_user_organizations_organization",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.user_organizations",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_organizations_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id)",
+          "table": "public.user_organizations",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "user_organizations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (user_id, organization_id)",
+          "table": "public.user_organizations",
+          "referenced_table": "",
+          "columns": [
+            "user_id",
+            "organization_id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.user_groups",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_groups_pkey",
+          "def": "CREATE UNIQUE INDEX user_groups_pkey ON public.user_groups USING btree (group_id, user_id)",
+          "table": "public.user_groups",
+          "columns": [
+            "group_id",
+            "user_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_user_groups_group",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
+          "table": "public.user_groups",
+          "referenced_table": "groups",
+          "columns": [
+            "group_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_groups_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id)",
+          "table": "public.user_groups",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "user_groups_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (group_id, user_id)",
+          "table": "public.user_groups",
+          "referenced_table": "",
+          "columns": [
+            "group_id",
+            "user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.employees",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('employees_id_seq'::regclass)"
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "first_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "last_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "birthdate",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "employees_pkey",
+          "def": "CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id)",
+          "table": "public.employees",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_employees_organization_id",
+          "def": "CREATE INDEX idx_employees_organization_id ON public.employees USING btree (organization_id)",
+          "table": "public.employees",
+          "columns": [
+            "organization_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_employees_organization",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.employees",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "employees_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.employee_contracts",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('employee_contracts_id_seq'::regclass)"
+        },
+        {
+          "name": "employee_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "from_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "to_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "position",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "weekly_hours",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "salary",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "employee_contracts_pkey",
+          "def": "CREATE UNIQUE INDEX employee_contracts_pkey ON public.employee_contracts USING btree (id)",
+          "table": "public.employee_contracts",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_employee_contracts_employee_id",
+          "def": "CREATE INDEX idx_employee_contracts_employee_id ON public.employee_contracts USING btree (employee_id)",
+          "table": "public.employee_contracts",
+          "columns": [
+            "employee_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_employees_contracts",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (employee_id) REFERENCES employees(id)",
+          "table": "public.employee_contracts",
+          "referenced_table": "employees",
+          "columns": [
+            "employee_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "employee_contracts_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.employee_contracts",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.children",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('children_id_seq'::regclass)"
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "first_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "last_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "birthdate",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "children_pkey",
+          "def": "CREATE UNIQUE INDEX children_pkey ON public.children USING btree (id)",
+          "table": "public.children",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_children_organization_id",
+          "def": "CREATE INDEX idx_children_organization_id ON public.children USING btree (organization_id)",
+          "table": "public.children",
+          "columns": [
+            "organization_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_children_organization",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.children",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "children_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.child_contracts",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('child_contracts_id_seq'::regclass)"
+        },
+        {
+          "name": "child_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "from_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "to_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "care_hours_per_week",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "group_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "meals_included",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "special_needs",
+          "type": "varchar(1000)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "child_contracts_pkey",
+          "def": "CREATE UNIQUE INDEX child_contracts_pkey ON public.child_contracts USING btree (id)",
+          "table": "public.child_contracts",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_child_contracts_child_id",
+          "def": "CREATE INDEX idx_child_contracts_child_id ON public.child_contracts USING btree (child_id)",
+          "table": "public.child_contracts",
+          "columns": [
+            "child_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_children_contracts",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (child_id) REFERENCES children(id)",
+          "table": "public.child_contracts",
+          "referenced_table": "children",
+          "columns": [
+            "child_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "child_contracts_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.child_contracts",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.casbin_rule",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('casbin_rule_id_seq'::regclass)"
+        },
+        {
+          "name": "ptype",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v0",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v1",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v2",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v3",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v4",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "v5",
+          "type": "varchar(100)",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "casbin_rule_pkey",
+          "def": "CREATE UNIQUE INDEX casbin_rule_pkey ON public.casbin_rule USING btree (id)",
+          "table": "public.casbin_rule",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_casbin_rule",
+          "def": "CREATE UNIQUE INDEX idx_casbin_rule ON public.casbin_rule USING btree (ptype, v0, v1, v2, v3, v4, v5)",
+          "table": "public.casbin_rule",
+          "columns": [
+            "ptype",
+            "v0",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v5"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "casbin_rule_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.casbin_rule",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "table": "public.group_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.organizations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "table": "public.group_organizations",
+      "columns": [
+        "group_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.groups",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (group_id) REFERENCES groups(id)"
+    },
+    {
+      "table": "public.user_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.organizations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "table": "public.user_organizations",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table": "public.user_groups",
+      "columns": [
+        "group_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.groups",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (group_id) REFERENCES groups(id)"
+    },
+    {
+      "table": "public.user_groups",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table": "public.employees",
+      "columns": [
+        "organization_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.organizations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "table": "public.employee_contracts",
+      "columns": [
+        "employee_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.employees",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (employee_id) REFERENCES employees(id)"
+    },
+    {
+      "table": "public.children",
+      "columns": [
+        "organization_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.organizations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "table": "public.child_contracts",
+      "columns": [
+        "child_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.children",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (child_id) REFERENCES children(id)"
+    }
+  ],
+  "driver": {
+    "name": "postgres",
+    "database_version": "PostgreSQL 16.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "meta": {
+      "current_schema": "public",
+      "search_paths": [
+        "kitamanager",
+        "public"
+      ],
+      "dict": {
+        "Functions": "Stored procedures and functions"
+      }
+    }
+  }
+}

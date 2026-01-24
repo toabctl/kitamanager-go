@@ -1,0 +1,13 @@
+# tbls configuration
+# https://github.com/k1LoW/tbls
+
+dsn: postgres://kitamanager:kitamanager@localhost:5432/kitamanager?sslmode=disable
+
+docPath: docs/schema
+
+er:
+  format: mermaid
+  distance: 2
+
+format:
+  adjust: true
