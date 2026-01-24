@@ -8,11 +8,12 @@ on:
 
 env:
   GO_VERSION: '1.24'
+  NODE_VERSION: '22'
   MIN_COVERAGE: 60
 
 jobs:
-  lint:
-    name: Lint
+  api-lint:
+    name: API Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,13 +22,38 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      - name: Lint API
+        run: make api-lint
 
-  test:
-    name: Unit Tests
+  web-lint:
+    name: Web Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: make web-install
+
+      - name: Lint web
+        run: make web-lint
+
+      - name: Lint web styles
+        run: make web-lint-style
+
+      - name: Check web formatting
+        run: make web-format-check
+
+      - name: Type-check web
+        run: make web-type-check
+
+  api-test:
+    name: API Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +62,8 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Run API tests
+        run: make api-test-coverage
 
       - name: Check coverage threshold
         run: |
@@ -54,8 +80,26 @@ jobs:
           files: ./coverage.out
           fail_ci_if_error: false
 
-  integration:
-    name: Integration Tests
+  web-test:
+    name: Web Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: make web-install
+
+      - name: Run web tests
+        run: make web-test-coverage
+
+  api-integration:
+    name: API Integration Tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -86,10 +130,10 @@ jobs:
           TEST_DB_USER: kitamanager
           TEST_DB_PASSWORD: kitamanager
           TEST_DB_NAME: kitamanager_test
-        run: go test -v -race -tags=integration ./internal/integration/...
+        run: make api-test-integration
 
-  fuzz:
-    name: Fuzz Tests
+  api-fuzz:
+    name: API Fuzz Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,11 +143,10 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run fuzz tests
-        run: |
-          go test -fuzz=Fuzz -fuzztime=30s ./internal/models/...
+        run: make api-test-fuzz
 
-  build:
-    name: Build
+  api-build:
+    name: API Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -112,13 +155,31 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Build
-        run: go build -v ./...
+      - name: Build API
+        run: make api-build
 
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
           git diff --exit-code go.mod go.sum
+
+  web-build:
+    name: Web Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: make web-install
+
+      - name: Build web
+        run: make web-build
 
   security:
     name: Security
@@ -201,4 +262,4 @@ jobs:
           TEST_DB_USER: kitamanager
           TEST_DB_PASSWORD: kitamanager
           TEST_DB_NAME: kitamanager_test
-        run: go test -v -tags=contract ./internal/contract/...
+        run: make api-test-contract

@@ -7,6 +7,7 @@ on:
 
 env:
   GO_VERSION: '1.24'
+  NODE_VERSION: '22'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -27,8 +28,23 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run tests
-        run: go test -v ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: make web-install
+
+      - name: Run web tests
+        run: make web-test
+
+      - name: Run API tests
+        run: make api-test-unit
+
+      - name: Build web
+        run: make web-build
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
