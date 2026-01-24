@@ -53,7 +53,15 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims["user_id"])
+		// JWT numbers are parsed as float64, convert to uint
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id in token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", uint(userIDFloat))
 		c.Set("userEmail", claims["email"])
 		c.Next()
 	}
