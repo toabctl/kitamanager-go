@@ -1,0 +1,339 @@
+package handlers
+
+import (
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/eenemeene/kitamanager-go/internal/models"
+	"github.com/eenemeene/kitamanager-go/internal/store"
+)
+
+func TestChildHandler_List(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	db.Create(&models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child1", LastName: "Last", Birthdate: time.Now()},
+	})
+	db.Create(&models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Birthdate: time.Now()},
+	})
+
+	r := setupTestRouter()
+	r.GET("/children", handler.List)
+
+	w := performRequest(r, "GET", "/children", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var children []models.Child
+	parseResponse(t, w, &children)
+
+	if len(children) != 2 {
+		t.Errorf("expected 2 children, got %d", len(children))
+	}
+}
+
+func TestChildHandler_Get(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Create(&models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	})
+
+	r := setupTestRouter()
+	r.GET("/children/:id", handler.Get)
+
+	w := performRequest(r, "GET", "/children/1", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var result models.Child
+	parseResponse(t, w, &result)
+
+	if result.FirstName != "Test" {
+		t.Errorf("expected first name 'Test', got '%s'", result.FirstName)
+	}
+}
+
+func TestChildHandler_Create(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.POST("/children", handler.Create)
+
+	body := models.ChildCreate{
+		OrganizationID: org.ID,
+		FirstName:      "New",
+		LastName:       "Child",
+		Birthdate:      time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
+	}
+
+	w := performRequest(r, "POST", "/children", body)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status %d, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var result models.Child
+	parseResponse(t, w, &result)
+
+	if result.FirstName != "New" {
+		t.Errorf("expected first name 'New', got '%s'", result.FirstName)
+	}
+}
+
+func TestChildHandler_Update(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Create(&models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Child", Birthdate: time.Now()},
+	})
+
+	r := setupTestRouter()
+	r.PUT("/children/:id", handler.Update)
+
+	newName := "Updated"
+	body := models.ChildUpdate{
+		FirstName: &newName,
+	}
+
+	w := performRequest(r, "PUT", "/children/1", body)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var result models.Child
+	parseResponse(t, w, &result)
+
+	if result.FirstName != "Updated" {
+		t.Errorf("expected first name 'Updated', got '%s'", result.FirstName)
+	}
+}
+
+func TestChildHandler_Delete(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Create(&models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "ToDelete", LastName: "Child", Birthdate: time.Now()},
+	})
+
+	r := setupTestRouter()
+	r.DELETE("/children/:id", handler.Delete)
+
+	w := performRequest(r, "DELETE", "/children/1", nil)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+	}
+}
+
+func TestChildHandler_ListContracts(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	db.Create(&models.ChildContract{
+		ChildID:          child.ID,
+		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+		CareHoursPerWeek: 35,
+	})
+
+	r := setupTestRouter()
+	r.GET("/children/:id/contracts", handler.ListContracts)
+
+	w := performRequest(r, "GET", "/children/1/contracts", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var contracts []models.ChildContract
+	parseResponse(t, w, &contracts)
+
+	if len(contracts) != 1 {
+		t.Errorf("expected 1 contract, got %d", len(contracts))
+	}
+}
+
+func TestChildHandler_GetCurrentContract(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	db.Create(&models.ChildContract{
+		ChildID:          child.ID,
+		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+		CareHoursPerWeek: 35,
+		MealsIncluded:    true,
+	})
+
+	r := setupTestRouter()
+	r.GET("/children/:id/contracts/current", handler.GetCurrentContract)
+
+	w := performRequest(r, "GET", "/children/1/contracts/current", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var contract models.ChildContract
+	parseResponse(t, w, &contract)
+
+	if contract.CareHoursPerWeek != 35 {
+		t.Errorf("expected care hours 35, got %f", contract.CareHoursPerWeek)
+	}
+}
+
+func TestChildHandler_GetCurrentContract_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.GET("/children/:id/contracts/current", handler.GetCurrentContract)
+
+	w := performRequest(r, "GET", "/children/1/contracts/current", nil)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
+	}
+}
+
+func TestChildHandler_CreateContract(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.POST("/children/:id/contracts", handler.CreateContract)
+
+	body := models.ChildContractCreate{
+		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		To:               nil,
+		CareHoursPerWeek: 40,
+		MealsIncluded:    true,
+	}
+
+	w := performRequest(r, "POST", "/children/1/contracts", body)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status %d, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var contract models.ChildContract
+	parseResponse(t, w, &contract)
+
+	if contract.CareHoursPerWeek != 40 {
+		t.Errorf("expected care hours 40, got %f", contract.CareHoursPerWeek)
+	}
+}
+
+func TestChildHandler_CreateContract_Overlap(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	// Create existing contract
+	db.Create(&models.ChildContract{
+		ChildID:          child.ID,
+		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+		CareHoursPerWeek: 35,
+	})
+
+	r := setupTestRouter()
+	r.POST("/children/:id/contracts", handler.CreateContract)
+
+	// Try to create overlapping contract
+	body := models.ChildContractCreate{
+		From:             time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		To:               nil,
+		CareHoursPerWeek: 40,
+	}
+
+	w := performRequest(r, "POST", "/children/1/contracts", body)
+
+	if w.Code != http.StatusConflict {
+		t.Errorf("expected status %d, got %d: %s", http.StatusConflict, w.Code, w.Body.String())
+	}
+}
+
+func TestChildHandler_DeleteContract(t *testing.T) {
+	db := setupTestDB(t)
+	childStore := store.NewChildStore(db)
+	handler := NewChildHandler(childStore)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	contract := &models.ChildContract{
+		ChildID:          child.ID,
+		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+		CareHoursPerWeek: 35,
+	}
+	db.Create(contract)
+
+	r := setupTestRouter()
+	r.DELETE("/children/:id/contracts/:contractId", handler.DeleteContract)
+
+	w := performRequest(r, "DELETE", "/children/1/contracts/1", nil)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+	}
+}

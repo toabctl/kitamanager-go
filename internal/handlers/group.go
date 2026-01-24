@@ -5,16 +5,16 @@ import (
 	"strconv"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/repository"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
 type GroupHandler struct {
-	repo *repository.GroupRepository
+	store *store.GroupStore
 }
 
-func NewGroupHandler(repo *repository.GroupRepository) *GroupHandler {
-	return &GroupHandler{repo: repo}
+func NewGroupHandler(store *store.GroupStore) *GroupHandler {
+	return &GroupHandler{store: store}
 }
 
 // List godoc
@@ -29,7 +29,7 @@ func NewGroupHandler(repo *repository.GroupRepository) *GroupHandler {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/groups [get]
 func (h *GroupHandler) List(c *gin.Context) {
-	groups, err := h.repo.FindAll()
+	groups, err := h.store.FindAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch groups"})
 		return
@@ -57,7 +57,7 @@ func (h *GroupHandler) Get(c *gin.Context) {
 		return
 	}
 
-	group, err := h.repo.FindByID(uint(id))
+	group, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
 		return
@@ -101,7 +101,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		CreatedBy: createdBy,
 	}
 
-	if err := h.repo.Create(group); err != nil {
+	if err := h.store.Create(group); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create group"})
 		return
 	}
@@ -137,7 +137,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		return
 	}
 
-	group, err := h.repo.FindByID(uint(id))
+	group, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
 		return
@@ -156,7 +156,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		group.Active = *req.Active
 	}
 
-	if err := h.repo.Update(group); err != nil {
+	if err := h.store.Update(group); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update group"})
 		return
 	}
@@ -184,7 +184,7 @@ func (h *GroupHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(uint(id)); err != nil {
+	if err := h.store.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete group"})
 		return
 	}
@@ -224,7 +224,7 @@ func (h *GroupHandler) AddToOrganization(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.AddToOrganization(uint(groupID), req.OrganizationID); err != nil {
+	if err := h.store.AddToOrganization(uint(groupID), req.OrganizationID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add group to organization"})
 		return
 	}
@@ -259,7 +259,7 @@ func (h *GroupHandler) RemoveFromOrganization(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.RemoveFromOrganization(uint(groupID), uint(orgID)); err != nil {
+	if err := h.store.RemoveFromOrganization(uint(groupID), uint(orgID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove group from organization"})
 		return
 	}

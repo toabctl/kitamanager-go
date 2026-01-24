@@ -4,20 +4,20 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/eenemeene/kitamanager-go/internal/repository"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
-	userRepo  *repository.UserRepository
+	userStore *store.UserStore
 	jwtSecret string
 }
 
-func NewAuthHandler(userRepo *repository.UserRepository, jwtSecret string) *AuthHandler {
+func NewAuthHandler(userStore *store.UserStore, jwtSecret string) *AuthHandler {
 	return &AuthHandler{
-		userRepo:  userRepo,
+		userStore: userStore,
 		jwtSecret: jwtSecret,
 	}
 }
@@ -62,7 +62,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userRepo.FindByEmail(req.Email)
+	user, err := h.userStore.FindByEmail(req.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return

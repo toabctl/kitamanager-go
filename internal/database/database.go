@@ -28,6 +28,10 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		&models.Organization{},
 		&models.User{},
 		&models.Group{},
+		&models.Employee{},
+		&models.EmployeeContract{},
+		&models.Child{},
+		&models.ChildContract{},
 	); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}

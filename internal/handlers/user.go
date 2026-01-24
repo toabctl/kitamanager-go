@@ -5,17 +5,17 @@ import (
 	"strconv"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/repository"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	repo *repository.UserRepository
+	store *store.UserStore
 }
 
-func NewUserHandler(repo *repository.UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(store *store.UserStore) *UserHandler {
+	return &UserHandler{store: store}
 }
 
 // List godoc
@@ -30,7 +30,7 @@ func NewUserHandler(repo *repository.UserRepository) *UserHandler {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users [get]
 func (h *UserHandler) List(c *gin.Context) {
-	users, err := h.repo.FindAll()
+	users, err := h.store.FindAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch users"})
 		return
@@ -64,7 +64,7 @@ func (h *UserHandler) Get(c *gin.Context) {
 		return
 	}
 
-	user, err := h.repo.FindByID(uint(id))
+	user, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -110,7 +110,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 		CreatedBy: createdBy,
 	}
 
-	if err := h.repo.Create(user); err != nil {
+	if err := h.store.Create(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
@@ -140,7 +140,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	user, err := h.repo.FindByID(uint(id))
+	user, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -162,7 +162,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		user.Active = *req.Active
 	}
 
-	if err := h.repo.Update(user); err != nil {
+	if err := h.store.Update(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
 		return
 	}
@@ -190,7 +190,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(uint(id)); err != nil {
+	if err := h.store.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
 		return
 	}
@@ -230,7 +230,7 @@ func (h *UserHandler) AddToGroup(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.AddToGroup(uint(userID), req.GroupID); err != nil {
+	if err := h.store.AddToGroup(uint(userID), req.GroupID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add user to group"})
 		return
 	}
@@ -265,7 +265,7 @@ func (h *UserHandler) RemoveFromGroup(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.RemoveFromGroup(uint(userID), uint(groupID)); err != nil {
+	if err := h.store.RemoveFromGroup(uint(userID), uint(groupID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove user from group"})
 		return
 	}
@@ -305,7 +305,7 @@ func (h *UserHandler) AddToOrganization(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.AddToOrganization(uint(userID), req.OrganizationID); err != nil {
+	if err := h.store.AddToOrganization(uint(userID), req.OrganizationID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add user to organization"})
 		return
 	}
@@ -340,7 +340,7 @@ func (h *UserHandler) RemoveFromOrganization(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.RemoveFromOrganization(uint(userID), uint(orgID)); err != nil {
+	if err := h.store.RemoveFromOrganization(uint(userID), uint(orgID)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove user from organization"})
 		return
 	}

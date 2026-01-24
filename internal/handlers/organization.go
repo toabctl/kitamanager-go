@@ -5,16 +5,16 @@ import (
 	"strconv"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/repository"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
 type OrganizationHandler struct {
-	repo *repository.OrganizationRepository
+	store *store.OrganizationStore
 }
 
-func NewOrganizationHandler(repo *repository.OrganizationRepository) *OrganizationHandler {
-	return &OrganizationHandler{repo: repo}
+func NewOrganizationHandler(store *store.OrganizationStore) *OrganizationHandler {
+	return &OrganizationHandler{store: store}
 }
 
 // List godoc
@@ -29,7 +29,7 @@ func NewOrganizationHandler(repo *repository.OrganizationRepository) *Organizati
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations [get]
 func (h *OrganizationHandler) List(c *gin.Context) {
-	organizations, err := h.repo.FindAll()
+	organizations, err := h.store.FindAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch organizations"})
 		return
@@ -57,7 +57,7 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	organization, err := h.repo.FindByID(uint(id))
+	organization, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "organization not found"})
 		return
@@ -101,7 +101,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		CreatedBy: createdBy,
 	}
 
-	if err := h.repo.Create(organization); err != nil {
+	if err := h.store.Create(organization); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create organization"})
 		return
 	}
@@ -137,7 +137,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		return
 	}
 
-	organization, err := h.repo.FindByID(uint(id))
+	organization, err := h.store.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "organization not found"})
 		return
@@ -156,7 +156,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		organization.Active = *req.Active
 	}
 
-	if err := h.repo.Update(organization); err != nil {
+	if err := h.store.Update(organization); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update organization"})
 		return
 	}
@@ -184,7 +184,7 @@ func (h *OrganizationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(uint(id)); err != nil {
+	if err := h.store.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete organization"})
 		return
 	}

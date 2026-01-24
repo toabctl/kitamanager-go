@@ -7,8 +7,8 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/database"
 	"github.com/eenemeene/kitamanager-go/internal/handlers"
 	"github.com/eenemeene/kitamanager-go/internal/middleware"
-	"github.com/eenemeene/kitamanager-go/internal/repository"
 	"github.com/eenemeene/kitamanager-go/internal/routes"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -46,14 +46,18 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	userRepo := repository.NewUserRepository(db)
-	groupRepo := repository.NewGroupRepository(db)
-	orgRepo := repository.NewOrganizationRepository(db)
+	userStore := store.NewUserStore(db)
+	groupStore := store.NewGroupStore(db)
+	orgStore := store.NewOrganizationStore(db)
+	employeeStore := store.NewEmployeeStore(db)
+	childStore := store.NewChildStore(db)
 
-	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret)
-	userHandler := handlers.NewUserHandler(userRepo)
-	groupHandler := handlers.NewGroupHandler(groupRepo)
-	orgHandler := handlers.NewOrganizationHandler(orgRepo)
+	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret)
+	userHandler := handlers.NewUserHandler(userStore)
+	groupHandler := handlers.NewGroupHandler(groupStore)
+	orgHandler := handlers.NewOrganizationHandler(orgStore)
+	employeeHandler := handlers.NewEmployeeHandler(employeeStore)
+	childHandler := handlers.NewChildHandler(childStore)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 
@@ -62,7 +66,7 @@ func main() {
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, authMiddleware)
+	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, employeeHandler, childHandler, authMiddleware)
 
 	log.Printf("Starting server on port %s", cfg.ServerPort)
 	log.Printf("Swagger UI available at http://localhost:%s/swagger/index.html", cfg.ServerPort)

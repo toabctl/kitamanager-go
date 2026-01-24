@@ -12,6 +12,8 @@ func Setup(
 	userHandler *handlers.UserHandler,
 	groupHandler *handlers.GroupHandler,
 	orgHandler *handlers.OrganizationHandler,
+	employeeHandler *handlers.EmployeeHandler,
+	childHandler *handlers.ChildHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	api := r.Group("/api/v1")
@@ -55,6 +57,34 @@ func Setup(
 				groups.DELETE("/:id", groupHandler.Delete)
 				groups.POST("/:id/organizations", groupHandler.AddToOrganization)
 				groups.DELETE("/:id/organizations/:oid", groupHandler.RemoveFromOrganization)
+			}
+
+			// Employees
+			employees := protected.Group("/employees")
+			{
+				employees.GET("", employeeHandler.List)
+				employees.GET("/:id", employeeHandler.Get)
+				employees.POST("", employeeHandler.Create)
+				employees.PUT("/:id", employeeHandler.Update)
+				employees.DELETE("/:id", employeeHandler.Delete)
+				employees.GET("/:id/contracts", employeeHandler.ListContracts)
+				employees.GET("/:id/contracts/current", employeeHandler.GetCurrentContract)
+				employees.POST("/:id/contracts", employeeHandler.CreateContract)
+				employees.DELETE("/:id/contracts/:contractId", employeeHandler.DeleteContract)
+			}
+
+			// Children
+			children := protected.Group("/children")
+			{
+				children.GET("", childHandler.List)
+				children.GET("/:id", childHandler.Get)
+				children.POST("", childHandler.Create)
+				children.PUT("/:id", childHandler.Update)
+				children.DELETE("/:id", childHandler.Delete)
+				children.GET("/:id/contracts", childHandler.ListContracts)
+				children.GET("/:id/contracts/current", childHandler.GetCurrentContract)
+				children.POST("/:id/contracts", childHandler.CreateContract)
+				children.DELETE("/:id/contracts/:contractId", childHandler.DeleteContract)
 			}
 		}
 	}
