@@ -17,9 +17,13 @@
 
 ## Constraints
 
-| Name       | Type        | Definition       |
-| ---------- | ----------- | ---------------- |
-| users_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| Name                    | Type        | Definition        |
+| ----------------------- | ----------- | ----------------- |
+| users_email_not_null    | n           | NOT NULL email    |
+| users_id_not_null       | n           | NOT NULL id       |
+| users_name_not_null     | n           | NOT NULL name     |
+| users_password_not_null | n           | NOT NULL password |
+| users_pkey              | PRIMARY KEY | PRIMARY KEY (id)  |
 
 ## Indexes
 

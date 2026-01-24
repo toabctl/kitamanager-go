@@ -18,10 +18,13 @@
 
 ## Constraints
 
-| Name                  | Type        | Definition                                     |
-| --------------------- | ----------- | ---------------------------------------------- |
-| fk_children_contracts | FOREIGN KEY | FOREIGN KEY (child_id) REFERENCES children(id) |
-| child_contracts_pkey  | PRIMARY KEY | PRIMARY KEY (id)                               |
+| Name                               | Type        | Definition                                     |
+| ---------------------------------- | ----------- | ---------------------------------------------- |
+| child_contracts_child_id_not_null  | n           | NOT NULL child_id                              |
+| child_contracts_from_date_not_null | n           | NOT NULL from_date                             |
+| child_contracts_id_not_null        | n           | NOT NULL id                                    |
+| fk_children_contracts              | FOREIGN KEY | FOREIGN KEY (child_id) REFERENCES children(id) |
+| child_contracts_pkey               | PRIMARY KEY | PRIMARY KEY (id)                               |
 
 ## Indexes
 

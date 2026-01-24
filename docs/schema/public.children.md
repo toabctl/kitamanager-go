@@ -16,10 +16,15 @@
 
 ## Constraints
 
-| Name                     | Type        | Definition                                                 |
-| ------------------------ | ----------- | ---------------------------------------------------------- |
-| fk_children_organization | FOREIGN KEY | FOREIGN KEY (organization_id) REFERENCES organizations(id) |
-| children_pkey            | PRIMARY KEY | PRIMARY KEY (id)                                           |
+| Name                              | Type        | Definition                                                 |
+| --------------------------------- | ----------- | ---------------------------------------------------------- |
+| children_birthdate_not_null       | n           | NOT NULL birthdate                                         |
+| children_first_name_not_null      | n           | NOT NULL first_name                                        |
+| children_id_not_null              | n           | NOT NULL id                                                |
+| children_last_name_not_null       | n           | NOT NULL last_name                                         |
+| children_organization_id_not_null | n           | NOT NULL organization_id                                   |
+| fk_children_organization          | FOREIGN KEY | FOREIGN KEY (organization_id) REFERENCES organizations(id) |
+| children_pkey                     | PRIMARY KEY | PRIMARY KEY (id)                                           |
 
 ## Indexes
 
@@ -35,8 +40,8 @@ erDiagram
 
 "public.child_contracts" }o--|| "public.children" : "FOREIGN KEY (child_id) REFERENCES children(id)"
 "public.children" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-"public.group_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.user_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+"public.group_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.employees" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 
 "public.children" {
@@ -67,12 +72,12 @@ erDiagram
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
 }
-"public.group_organizations" {
-  bigint group_id FK
-  bigint organization_id FK
-}
 "public.user_organizations" {
   bigint user_id FK
+  bigint organization_id FK
+}
+"public.group_organizations" {
+  bigint group_id FK
   bigint organization_id FK
 }
 "public.employees" {

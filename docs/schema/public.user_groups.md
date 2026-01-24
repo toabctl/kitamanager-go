@@ -11,11 +11,13 @@
 
 ## Constraints
 
-| Name                 | Type        | Definition                                   |
-| -------------------- | ----------- | -------------------------------------------- |
-| fk_user_groups_group | FOREIGN KEY | FOREIGN KEY (group_id) REFERENCES groups(id) |
-| fk_user_groups_user  | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id)   |
-| user_groups_pkey     | PRIMARY KEY | PRIMARY KEY (group_id, user_id)              |
+| Name                          | Type        | Definition                                   |
+| ----------------------------- | ----------- | -------------------------------------------- |
+| user_groups_group_id_not_null | n           | NOT NULL group_id                            |
+| user_groups_user_id_not_null  | n           | NOT NULL user_id                             |
+| fk_user_groups_user           | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id)   |
+| fk_user_groups_group          | FOREIGN KEY | FOREIGN KEY (group_id) REFERENCES groups(id) |
+| user_groups_pkey              | PRIMARY KEY | PRIMARY KEY (group_id, user_id)              |
 
 ## Indexes
 

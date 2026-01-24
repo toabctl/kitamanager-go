@@ -15,9 +15,11 @@
 
 ## Constraints
 
-| Name        | Type        | Definition       |
-| ----------- | ----------- | ---------------- |
-| groups_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| Name                 | Type        | Definition       |
+| -------------------- | ----------- | ---------------- |
+| groups_id_not_null   | n           | NOT NULL id      |
+| groups_name_not_null | n           | NOT NULL name    |
+| groups_pkey          | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes
 

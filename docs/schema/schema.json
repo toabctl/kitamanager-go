@@ -50,6 +50,26 @@
       ],
       "constraints": [
         {
+          "name": "organizations_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.organizations",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "organizations_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.organizations",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
           "name": "organizations_pkey",
           "type": "PRIMARY KEY",
           "def": "PRIMARY KEY (id)",
@@ -57,132 +77,6 @@
           "referenced_table": "",
           "columns": [
             "id"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "public.groups",
-      "type": "BASE TABLE",
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "nullable": false,
-          "default": "nextval('groups_id_seq'::regclass)"
-        },
-        {
-          "name": "name",
-          "type": "varchar(255)",
-          "nullable": false
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "nullable": true,
-          "default": "true"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": true
-        },
-        {
-          "name": "created_by",
-          "type": "varchar(255)",
-          "nullable": true
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "nullable": true
-        }
-      ],
-      "indexes": [
-        {
-          "name": "groups_pkey",
-          "def": "CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id)",
-          "table": "public.groups",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "constraints": [
-        {
-          "name": "groups_pkey",
-          "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (id)",
-          "table": "public.groups",
-          "referenced_table": "",
-          "columns": [
-            "id"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "public.group_organizations",
-      "type": "BASE TABLE",
-      "columns": [
-        {
-          "name": "group_id",
-          "type": "bigint",
-          "nullable": false
-        },
-        {
-          "name": "organization_id",
-          "type": "bigint",
-          "nullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "group_organizations_pkey",
-          "def": "CREATE UNIQUE INDEX group_organizations_pkey ON public.group_organizations USING btree (group_id, organization_id)",
-          "table": "public.group_organizations",
-          "columns": [
-            "group_id",
-            "organization_id"
-          ]
-        }
-      ],
-      "constraints": [
-        {
-          "name": "fk_group_organizations_organization",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
-          "table": "public.group_organizations",
-          "referenced_table": "organizations",
-          "columns": [
-            "organization_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "fk_group_organizations_group",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
-          "table": "public.group_organizations",
-          "referenced_table": "groups",
-          "columns": [
-            "group_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "group_organizations_pkey",
-          "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (group_id, organization_id)",
-          "table": "public.group_organizations",
-          "referenced_table": "",
-          "columns": [
-            "group_id",
-            "organization_id"
           ]
         }
       ]
@@ -254,6 +148,46 @@
       ],
       "constraints": [
         {
+          "name": "users_email_not_null",
+          "type": "n",
+          "def": "NOT NULL email",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "email"
+          ]
+        },
+        {
+          "name": "users_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "users_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "users_password_not_null",
+          "type": "n",
+          "def": "NOT NULL password",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "password"
+          ]
+        },
+        {
           "name": "users_pkey",
           "type": "PRIMARY KEY",
           "def": "PRIMARY KEY (id)",
@@ -292,6 +226,26 @@
         }
       ],
       "constraints": [
+        {
+          "name": "user_organizations_organization_id_not_null",
+          "type": "n",
+          "def": "NOT NULL organization_id",
+          "table": "public.user_organizations",
+          "referenced_table": "",
+          "columns": [
+            "organization_id"
+          ]
+        },
+        {
+          "name": "user_organizations_user_id_not_null",
+          "type": "n",
+          "def": "NOT NULL user_id",
+          "table": "public.user_organizations",
+          "referenced_table": "",
+          "columns": [
+            "user_id"
+          ]
+        },
         {
           "name": "fk_user_organizations_organization",
           "type": "FOREIGN KEY",
@@ -332,6 +286,172 @@
       ]
     },
     {
+      "name": "public.groups",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('groups_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "nullable": true,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "groups_pkey",
+          "def": "CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id)",
+          "table": "public.groups",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "groups_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.groups",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "groups_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.groups",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "groups_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.groups",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.group_organizations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "group_organizations_pkey",
+          "def": "CREATE UNIQUE INDEX group_organizations_pkey ON public.group_organizations USING btree (group_id, organization_id)",
+          "table": "public.group_organizations",
+          "columns": [
+            "group_id",
+            "organization_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "group_organizations_group_id_not_null",
+          "type": "n",
+          "def": "NOT NULL group_id",
+          "table": "public.group_organizations",
+          "referenced_table": "",
+          "columns": [
+            "group_id"
+          ]
+        },
+        {
+          "name": "group_organizations_organization_id_not_null",
+          "type": "n",
+          "def": "NOT NULL organization_id",
+          "table": "public.group_organizations",
+          "referenced_table": "",
+          "columns": [
+            "organization_id"
+          ]
+        },
+        {
+          "name": "fk_group_organizations_organization",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.group_organizations",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_group_organizations_group",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
+          "table": "public.group_organizations",
+          "referenced_table": "groups",
+          "columns": [
+            "group_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "group_organizations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (group_id, organization_id)",
+          "table": "public.group_organizations",
+          "referenced_table": "",
+          "columns": [
+            "group_id",
+            "organization_id"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.user_groups",
       "type": "BASE TABLE",
       "columns": [
@@ -359,16 +479,23 @@
       ],
       "constraints": [
         {
-          "name": "fk_user_groups_group",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
+          "name": "user_groups_group_id_not_null",
+          "type": "n",
+          "def": "NOT NULL group_id",
           "table": "public.user_groups",
-          "referenced_table": "groups",
+          "referenced_table": "",
           "columns": [
             "group_id"
-          ],
-          "referenced_columns": [
-            "id"
+          ]
+        },
+        {
+          "name": "user_groups_user_id_not_null",
+          "type": "n",
+          "def": "NOT NULL user_id",
+          "table": "public.user_groups",
+          "referenced_table": "",
+          "columns": [
+            "user_id"
           ]
         },
         {
@@ -379,6 +506,19 @@
           "referenced_table": "users",
           "columns": [
             "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_groups_group",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
+          "table": "public.user_groups",
+          "referenced_table": "groups",
+          "columns": [
+            "group_id"
           ],
           "referenced_columns": [
             "id"
@@ -457,6 +597,56 @@
         }
       ],
       "constraints": [
+        {
+          "name": "employees_birthdate_not_null",
+          "type": "n",
+          "def": "NOT NULL birthdate",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "birthdate"
+          ]
+        },
+        {
+          "name": "employees_first_name_not_null",
+          "type": "n",
+          "def": "NOT NULL first_name",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "first_name"
+          ]
+        },
+        {
+          "name": "employees_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "employees_last_name_not_null",
+          "type": "n",
+          "def": "NOT NULL last_name",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "last_name"
+          ]
+        },
+        {
+          "name": "employees_organization_id_not_null",
+          "type": "n",
+          "def": "NOT NULL organization_id",
+          "table": "public.employees",
+          "referenced_table": "",
+          "columns": [
+            "organization_id"
+          ]
+        },
         {
           "name": "fk_employees_organization",
           "type": "FOREIGN KEY",
@@ -548,6 +738,36 @@
       ],
       "constraints": [
         {
+          "name": "employee_contracts_employee_id_not_null",
+          "type": "n",
+          "def": "NOT NULL employee_id",
+          "table": "public.employee_contracts",
+          "referenced_table": "",
+          "columns": [
+            "employee_id"
+          ]
+        },
+        {
+          "name": "employee_contracts_from_date_not_null",
+          "type": "n",
+          "def": "NOT NULL from_date",
+          "table": "public.employee_contracts",
+          "referenced_table": "",
+          "columns": [
+            "from_date"
+          ]
+        },
+        {
+          "name": "employee_contracts_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.employee_contracts",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
           "name": "fk_employees_contracts",
           "type": "FOREIGN KEY",
           "def": "FOREIGN KEY (employee_id) REFERENCES employees(id)",
@@ -632,6 +852,56 @@
         }
       ],
       "constraints": [
+        {
+          "name": "children_birthdate_not_null",
+          "type": "n",
+          "def": "NOT NULL birthdate",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "birthdate"
+          ]
+        },
+        {
+          "name": "children_first_name_not_null",
+          "type": "n",
+          "def": "NOT NULL first_name",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "first_name"
+          ]
+        },
+        {
+          "name": "children_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "children_last_name_not_null",
+          "type": "n",
+          "def": "NOT NULL last_name",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "last_name"
+          ]
+        },
+        {
+          "name": "children_organization_id_not_null",
+          "type": "n",
+          "def": "NOT NULL organization_id",
+          "table": "public.children",
+          "referenced_table": "",
+          "columns": [
+            "organization_id"
+          ]
+        },
         {
           "name": "fk_children_organization",
           "type": "FOREIGN KEY",
@@ -727,6 +997,36 @@
         }
       ],
       "constraints": [
+        {
+          "name": "child_contracts_child_id_not_null",
+          "type": "n",
+          "def": "NOT NULL child_id",
+          "table": "public.child_contracts",
+          "referenced_table": "",
+          "columns": [
+            "child_id"
+          ]
+        },
+        {
+          "name": "child_contracts_from_date_not_null",
+          "type": "n",
+          "def": "NOT NULL from_date",
+          "table": "public.child_contracts",
+          "referenced_table": "",
+          "columns": [
+            "from_date"
+          ]
+        },
+        {
+          "name": "child_contracts_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.child_contracts",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
         {
           "name": "fk_children_contracts",
           "type": "FOREIGN KEY",
@@ -824,6 +1124,16 @@
       ],
       "constraints": [
         {
+          "name": "casbin_rule_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.casbin_rule",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
           "name": "casbin_rule_pkey",
           "type": "PRIMARY KEY",
           "def": "PRIMARY KEY (id)",
@@ -838,32 +1148,6 @@
   ],
   "relations": [
     {
-      "table": "public.group_organizations",
-      "columns": [
-        "organization_id"
-      ],
-      "cardinality": "zero_or_more",
-      "parent_table": "public.organizations",
-      "parent_columns": [
-        "id"
-      ],
-      "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-    },
-    {
-      "table": "public.group_organizations",
-      "columns": [
-        "group_id"
-      ],
-      "cardinality": "zero_or_more",
-      "parent_table": "public.groups",
-      "parent_columns": [
-        "id"
-      ],
-      "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (group_id) REFERENCES groups(id)"
-    },
-    {
       "table": "public.user_organizations",
       "columns": [
         "organization_id"
@@ -890,7 +1174,20 @@
       "def": "FOREIGN KEY (user_id) REFERENCES users(id)"
     },
     {
-      "table": "public.user_groups",
+      "table": "public.group_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.organizations",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "table": "public.group_organizations",
       "columns": [
         "group_id"
       ],
@@ -914,6 +1211,19 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table": "public.user_groups",
+      "columns": [
+        "group_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.groups",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (group_id) REFERENCES groups(id)"
     },
     {
       "table": "public.employees",
@@ -970,7 +1280,7 @@
   ],
   "driver": {
     "name": "postgres",
-    "database_version": "PostgreSQL 16.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "database_version": "PostgreSQL 18.1 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
     "meta": {
       "current_schema": "public",
       "search_paths": [

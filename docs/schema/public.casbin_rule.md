@@ -17,9 +17,10 @@
 
 ## Constraints
 
-| Name             | Type        | Definition       |
-| ---------------- | ----------- | ---------------- |
-| casbin_rule_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| Name                    | Type        | Definition       |
+| ----------------------- | ----------- | ---------------- |
+| casbin_rule_id_not_null | n           | NOT NULL id      |
+| casbin_rule_pkey        | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes
 

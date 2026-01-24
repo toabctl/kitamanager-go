@@ -17,10 +17,13 @@
 
 ## Constraints
 
-| Name                    | Type        | Definition                                         |
-| ----------------------- | ----------- | -------------------------------------------------- |
-| fk_employees_contracts  | FOREIGN KEY | FOREIGN KEY (employee_id) REFERENCES employees(id) |
-| employee_contracts_pkey | PRIMARY KEY | PRIMARY KEY (id)                                   |
+| Name                                    | Type        | Definition                                         |
+| --------------------------------------- | ----------- | -------------------------------------------------- |
+| employee_contracts_employee_id_not_null | n           | NOT NULL employee_id                               |
+| employee_contracts_from_date_not_null   | n           | NOT NULL from_date                                 |
+| employee_contracts_id_not_null          | n           | NOT NULL id                                        |
+| fk_employees_contracts                  | FOREIGN KEY | FOREIGN KEY (employee_id) REFERENCES employees(id) |
+| employee_contracts_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                   |
 
 ## Indexes
 

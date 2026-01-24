@@ -5,10 +5,10 @@
 | Name                                                        | Columns | Comment | Type       |
 | ----------------------------------------------------------- | ------- | ------- | ---------- |
 | [public.organizations](public.organizations.md)             | 6       |         | BASE TABLE |
-| [public.groups](public.groups.md)                           | 6       |         | BASE TABLE |
-| [public.group_organizations](public.group_organizations.md) | 2       |         | BASE TABLE |
 | [public.users](public.users.md)                             | 8       |         | BASE TABLE |
 | [public.user_organizations](public.user_organizations.md)   | 2       |         | BASE TABLE |
+| [public.groups](public.groups.md)                           | 6       |         | BASE TABLE |
+| [public.group_organizations](public.group_organizations.md) | 2       |         | BASE TABLE |
 | [public.user_groups](public.user_groups.md)                 | 2       |         | BASE TABLE |
 | [public.employees](public.employees.md)                     | 7       |         | BASE TABLE |
 | [public.employee_contracts](public.employee_contracts.md)   | 8       |         | BASE TABLE |
@@ -21,12 +21,12 @@
 ```mermaid
 erDiagram
 
-"public.group_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-"public.group_organizations" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
 "public.user_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.user_organizations" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
-"public.user_groups" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
+"public.group_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+"public.group_organizations" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
 "public.user_groups" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
+"public.user_groups" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
 "public.employees" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.employee_contracts" }o--|| "public.employees" : "FOREIGN KEY (employee_id) REFERENCES employees(id)"
 "public.children" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
@@ -40,18 +40,6 @@ erDiagram
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
 }
-"public.groups" {
-  bigint id
-  varchar_255_ name
-  boolean active
-  timestamp_with_time_zone created_at
-  varchar_255_ created_by
-  timestamp_with_time_zone updated_at
-}
-"public.group_organizations" {
-  bigint group_id FK
-  bigint organization_id FK
-}
 "public.users" {
   bigint id
   varchar_255_ name
@@ -64,6 +52,18 @@ erDiagram
 }
 "public.user_organizations" {
   bigint user_id FK
+  bigint organization_id FK
+}
+"public.groups" {
+  bigint id
+  varchar_255_ name
+  boolean active
+  timestamp_with_time_zone created_at
+  varchar_255_ created_by
+  timestamp_with_time_zone updated_at
+}
+"public.group_organizations" {
+  bigint group_id FK
   bigint organization_id FK
 }
 "public.user_groups" {

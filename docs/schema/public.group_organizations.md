@@ -11,11 +11,13 @@
 
 ## Constraints
 
-| Name                                | Type        | Definition                                                 |
-| ----------------------------------- | ----------- | ---------------------------------------------------------- |
-| fk_group_organizations_organization | FOREIGN KEY | FOREIGN KEY (organization_id) REFERENCES organizations(id) |
-| fk_group_organizations_group        | FOREIGN KEY | FOREIGN KEY (group_id) REFERENCES groups(id)               |
-| group_organizations_pkey            | PRIMARY KEY | PRIMARY KEY (group_id, organization_id)                    |
+| Name                                         | Type        | Definition                                                 |
+| -------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| group_organizations_group_id_not_null        | n           | NOT NULL group_id                                          |
+| group_organizations_organization_id_not_null | n           | NOT NULL organization_id                                   |
+| fk_group_organizations_organization          | FOREIGN KEY | FOREIGN KEY (organization_id) REFERENCES organizations(id) |
+| fk_group_organizations_group                 | FOREIGN KEY | FOREIGN KEY (group_id) REFERENCES groups(id)               |
+| group_organizations_pkey                     | PRIMARY KEY | PRIMARY KEY (group_id, organization_id)                    |
 
 ## Indexes
 
