@@ -1,4 +1,4 @@
-.PHONY: build lint test clean ci \
+.PHONY: build lint test clean ci dev \
 	api-build api-run api-lint api-test-all api-test-unit api-test-integration api-test-contract api-test-fuzz api-test-coverage \
 	web-install web-dev web-build web-lint web-lint-style web-format web-format-check web-type-check web-test web-test-coverage web-check-all \
 	docs schema-docs swagger-docs docker-up docker-down docker-rebuild install-hooks uninstall-hooks pre-commit
@@ -23,6 +23,37 @@ clean:
 # Run all CI checks locally
 ci: lint test build
 	@echo "All CI checks passed!"
+
+# Start full development environment (database + API + web with hot reload)
+# Prerequisites: Docker for database, Go and Node.js installed
+# Web UI will be available at http://localhost:5173 with hot reload
+# API will be available at http://localhost:8080
+dev:
+	@echo "Starting development environment..."
+	@echo "1. Starting database..."
+	@docker compose up -d db
+	@echo "2. Waiting for database to be ready..."
+	@sleep 3
+	@echo "3. Starting API server in background..."
+	@DATABASE_URL="postgres://kitamanager:kitamanager@localhost:5432/kitamanager?sslmode=disable" \
+		SEED_ADMIN_EMAIL=admin@example.com \
+		SEED_ADMIN_PASSWORD=admin \
+		SEED_ADMIN_NAME=admin \
+		SEED_RBAC_POLICIES=true \
+		CORS_ALLOW_ORIGINS=http://localhost:5173,http://localhost:8080 \
+		CORS_ALLOW_CREDENTIALS=true \
+		./bin/kitamanager-api > /tmp/kitamanager-api.log 2>&1 & echo $$! > /tmp/kitamanager-api.pid
+	@sleep 2
+	@echo "4. Starting web dev server (Ctrl+C to stop all)..."
+	@echo ""
+	@echo "================================================"
+	@echo "  Web UI: http://localhost:5173 (hot reload)"
+	@echo "  API:    http://localhost:8080"
+	@echo "  Login:  admin@example.com / admin"
+	@echo "================================================"
+	@echo ""
+	@trap 'kill $$(cat /tmp/kitamanager-api.pid) 2>/dev/null; docker compose stop db' EXIT; \
+		cd web && npm run dev
 
 # =============================================================================
 # API targets
@@ -55,9 +86,10 @@ api-test-integration:
 api-test-contract:
 	go test -v -tags=contract ./internal/contract/...
 
-# Run API fuzz tests
+# Run API fuzz tests (each fuzz test must be run separately)
 api-test-fuzz:
-	go test -fuzz=Fuzz -fuzztime=30s ./internal/models/...
+	go test -fuzz=FuzzPeriodOverlaps -fuzztime=30s ./internal/models/...
+	go test -fuzz=FuzzPeriodIsActiveOn -fuzztime=30s ./internal/models/...
 
 # Run API tests with coverage report
 api-test-coverage:
