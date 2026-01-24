@@ -1,4 +1,4 @@
-.PHONY: build run test test-unit test-integration test-contract test-fuzz test-coverage lint clean schema-docs docker-up docker-down docker-rebuild
+.PHONY: build run test test-unit test-integration test-contract test-fuzz test-coverage lint clean docs schema-docs swagger-docs docker-up docker-down docker-rebuild
 
 # Build the application
 build:
@@ -42,9 +42,16 @@ test-coverage:
 clean:
 	rm -rf bin/ coverage.out coverage.html
 
+# Generate OpenAPI/Swagger documentation
+swagger-docs:
+	swag init -g cmd/api/main.go -o docs
+
 # Update database schema documentation (requires running database)
 schema-docs:
 	tbls doc --force
+
+# Generate all documentation
+docs: swagger-docs schema-docs
 
 # Start docker containers
 docker-up:

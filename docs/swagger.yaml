@@ -94,6 +94,227 @@ definitions:
         example: Acme Corp Updated
         type: string
     type: object
+  models.Child:
+    properties:
+      birthdate:
+        example: "1990-05-15"
+        type: string
+      contracts:
+        items:
+          $ref: '#/definitions/models.ChildContract'
+        type: array
+      created_at:
+        type: string
+      first_name:
+        example: Max
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_name:
+        example: Mustermann
+        type: string
+      organization:
+        $ref: '#/definitions/models.Organization'
+      organization_id:
+        example: 1
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.ChildContract:
+    properties:
+      care_hours_per_week:
+        description: Contract properties
+        example: 35
+        type: number
+      child_id:
+        example: 1
+        type: integer
+      created_at:
+        type: string
+      from:
+        type: string
+      group_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      meals_included:
+        example: true
+        type: boolean
+      special_needs:
+        example: ""
+        type: string
+      to:
+        type: string
+    type: object
+  models.ChildContractCreate:
+    properties:
+      care_hours_per_week:
+        example: 35
+        type: number
+      from:
+        example: "2025-01-01"
+        type: string
+      group_id:
+        example: 1
+        type: integer
+      meals_included:
+        example: true
+        type: boolean
+      special_needs:
+        example: ""
+        type: string
+      to:
+        example: "2025-12-31"
+        type: string
+    required:
+    - care_hours_per_week
+    - from
+    type: object
+  models.ChildCreate:
+    properties:
+      birthdate:
+        example: "2020-03-10"
+        type: string
+      first_name:
+        example: Emma
+        type: string
+      last_name:
+        example: Schmidt
+        type: string
+      organization_id:
+        example: 1
+        type: integer
+    required:
+    - birthdate
+    - first_name
+    - last_name
+    - organization_id
+    type: object
+  models.ChildUpdate:
+    properties:
+      birthdate:
+        example: "2020-03-10"
+        type: string
+      first_name:
+        example: Emma
+        type: string
+      last_name:
+        example: Schmidt
+        type: string
+    type: object
+  models.Employee:
+    properties:
+      birthdate:
+        example: "1990-05-15"
+        type: string
+      contracts:
+        items:
+          $ref: '#/definitions/models.EmployeeContract'
+        type: array
+      created_at:
+        type: string
+      first_name:
+        example: Max
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_name:
+        example: Mustermann
+        type: string
+      organization:
+        $ref: '#/definitions/models.Organization'
+      organization_id:
+        example: 1
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.EmployeeContract:
+    properties:
+      created_at:
+        type: string
+      employee_id:
+        example: 1
+        type: integer
+      from:
+        type: string
+      id:
+        example: 1
+        type: integer
+      position:
+        description: Contract properties
+        example: Erzieher
+        type: string
+      salary:
+        description: cents per month
+        example: 350000
+        type: integer
+      to:
+        type: string
+      weekly_hours:
+        example: 40
+        type: number
+    type: object
+  models.EmployeeContractCreate:
+    properties:
+      from:
+        example: "2025-01-01"
+        type: string
+      position:
+        example: Erzieher
+        type: string
+      salary:
+        example: 350000
+        type: integer
+      to:
+        example: "2025-12-31"
+        type: string
+      weekly_hours:
+        example: 40
+        type: number
+    required:
+    - from
+    - position
+    - salary
+    - weekly_hours
+    type: object
+  models.EmployeeCreate:
+    properties:
+      birthdate:
+        example: "1990-05-15"
+        type: string
+      first_name:
+        example: Max
+        type: string
+      last_name:
+        example: Mustermann
+        type: string
+      organization_id:
+        example: 1
+        type: integer
+    required:
+    - birthdate
+    - first_name
+    - last_name
+    - organization_id
+    type: object
+  models.EmployeeUpdate:
+    properties:
+      birthdate:
+        example: "1990-05-15"
+        type: string
+      first_name:
+        example: Max
+        type: string
+      last_name:
+        example: Mustermann
+        type: string
+    type: object
   models.Group:
     properties:
       active:
@@ -268,6 +489,660 @@ info:
   title: KitaManager API
   version: "1.0"
 paths:
+  /api/v1/children:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all children
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Child'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all children
+      tags:
+      - children
+    post:
+      consumes:
+      - application/json
+      description: Create a new child
+      parameters:
+      - description: Child data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChildCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Child'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new child
+      tags:
+      - children
+  /api/v1/children/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a child by ID
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a child
+      tags:
+      - children
+    get:
+      consumes:
+      - application/json
+      description: Get a single child by their ID
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Child'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get child by ID
+      tags:
+      - children
+    put:
+      consumes:
+      - application/json
+      description: Update an existing child by ID
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Child data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChildUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Child'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a child
+      tags:
+      - children
+  /api/v1/children/{id}/contracts:
+    get:
+      consumes:
+      - application/json
+      description: Get all contracts for a child
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ChildContract'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List child contracts
+      tags:
+      - children
+    post:
+      consumes:
+      - application/json
+      description: Create a new contract for a child
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contract data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChildContractCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ChildContract'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Contract overlaps with existing
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create child contract
+      tags:
+      - children
+  /api/v1/children/{id}/contracts/{contractId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a contract by ID
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contract ID
+        in: path
+        name: contractId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete child contract
+      tags:
+      - children
+  /api/v1/children/{id}/contracts/current:
+    get:
+      consumes:
+      - application/json
+      description: Get the currently active contract for a child
+      parameters:
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChildContract'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current child contract
+      tags:
+      - children
+  /api/v1/employees:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all employees
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Create a new employee
+      parameters:
+      - description: Employee data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EmployeeCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new employee
+      tags:
+      - employees
+  /api/v1/employees/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an employee by ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an employee
+      tags:
+      - employees
+    get:
+      consumes:
+      - application/json
+      description: Get a single employee by their ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Update an existing employee by ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EmployeeUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an employee
+      tags:
+      - employees
+  /api/v1/employees/{id}/contracts:
+    get:
+      consumes:
+      - application/json
+      description: Get all contracts for an employee
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.EmployeeContract'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List employee contracts
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Create a new contract for an employee
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contract data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EmployeeContractCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.EmployeeContract'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Contract overlaps with existing
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create employee contract
+      tags:
+      - employees
+  /api/v1/employees/{id}/contracts/{contractId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a contract by ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contract ID
+        in: path
+        name: contractId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete employee contract
+      tags:
+      - employees
+  /api/v1/employees/{id}/contracts/current:
+    get:
+      consumes:
+      - application/json
+      description: Get the currently active contract for an employee
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EmployeeContract'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current employee contract
+      tags:
+      - employees
   /api/v1/groups:
     get:
       consumes:
