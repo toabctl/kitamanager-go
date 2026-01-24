@@ -72,11 +72,13 @@ ci: lint test-unit build
 # Install pre-commit hooks
 install-hooks:
 	pre-commit install
+	pre-commit install --hook-type commit-msg
 	@echo "Pre-commit hooks installed."
 
 # Uninstall pre-commit hooks
 uninstall-hooks:
 	pre-commit uninstall
+	pre-commit uninstall --hook-type commit-msg
 	@echo "Pre-commit hooks uninstalled."
 
 # Run pre-commit on all files
