@@ -8,6 +8,7 @@ on:
 
 env:
   GO_VERSION: '1.24'
+  MIN_COVERAGE: 60
 
 jobs:
   lint:
@@ -26,7 +27,7 @@ jobs:
           version: latest
 
   test:
-    name: Test
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +39,68 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < ${{ env.MIN_COVERAGE }}" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below minimum threshold of ${{ env.MIN_COVERAGE }}%"
+            exit 1
+          fi
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out
           fail_ci_if_error: false
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: kitamanager
+          POSTGRES_PASSWORD: kitamanager
+          POSTGRES_DB: kitamanager_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run integration tests
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: kitamanager
+          TEST_DB_PASSWORD: kitamanager
+          TEST_DB_NAME: kitamanager_test
+        run: go test -v -race -tags=integration ./internal/integration/...
+
+  fuzz:
+    name: Fuzz Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run fuzz tests
+        run: |
+          go test -fuzz=Fuzz -fuzztime=30s ./internal/models/...
 
   build:
     name: Build
@@ -83,7 +141,7 @@ jobs:
           args: ./...
 
   docker:
-    name: Docker Build
+    name: Docker Build & Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +154,51 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: kitamanager-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: kitamanager-api:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  api-contract:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: kitamanager
+          POSTGRES_PASSWORD: kitamanager
+          POSTGRES_DB: kitamanager_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run API contract tests
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: kitamanager
+          TEST_DB_PASSWORD: kitamanager
+          TEST_DB_NAME: kitamanager_test
+        run: go test -v -tags=contract ./internal/contract/...
