@@ -1,0 +1,36 @@
+package database
+
+import (
+	"fmt"
+
+	"github.com/eenemeene/kitamanager-go/internal/config"
+	"github.com/eenemeene/kitamanager-go/internal/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+func Connect(cfg *config.Config) (*gorm.DB, error) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBName,
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	if err := db.AutoMigrate(
+		&models.Organization{},
+		&models.User{},
+		&models.Group{},
+	); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return db, nil
+}
