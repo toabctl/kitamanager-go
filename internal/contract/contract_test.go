@@ -325,9 +325,23 @@ func TestContract_GroupsList(t *testing.T) {
 func TestContract_GroupCreate(t *testing.T) {
 	cleanupBetweenTests()
 
-	resp := performRequest(t, "POST", "/api/v1/groups", map[string]interface{}{
-		"name":   "Test Group",
+	// Create organization first
+	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
+		"name":   "Group Test Org",
 		"active": true,
+	})
+	if orgResp.Code != http.StatusCreated {
+		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
+	}
+	var org models.Organization
+	if err := json.Unmarshal(orgResp.Body.Bytes(), &org); err != nil {
+		t.Fatalf("failed to parse organization response: %v", err)
+	}
+
+	resp := performRequest(t, "POST", "/api/v1/groups", map[string]interface{}{
+		"name":            "Test Group",
+		"organization_id": org.ID,
+		"active":          true,
 	})
 
 	if resp.Code != http.StatusCreated {

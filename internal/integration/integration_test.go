@@ -340,10 +340,22 @@ func TestChildWithContracts(t *testing.T) {
 func TestGroupOperations(t *testing.T) {
 	cleanupBetweenTests()
 
+	// Create organization first
+	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
+		"name":   "Group Test Org",
+		"active": true,
+	})
+	if orgResp.Code != http.StatusCreated {
+		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
+	}
+	var org models.Organization
+	parseResponse(t, orgResp, &org)
+
 	// Create group
 	groupResp := performRequest("POST", "/api/v1/groups", map[string]interface{}{
-		"name":   "Test Group",
-		"active": true,
+		"name":            "Test Group",
+		"organization_id": org.ID,
+		"active":          true,
 	})
 	if groupResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", groupResp.Code, groupResp.Body.String())

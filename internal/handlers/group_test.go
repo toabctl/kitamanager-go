@@ -200,3 +200,122 @@ func TestGroupHandler_Create_BadRequest_MissingOrganization(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
 	}
 }
+
+func TestGroupHandler_Get_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	r := setupTestRouter()
+	r.GET("/groups/:id", handler.Get)
+
+	w := performRequest(r, "GET", "/groups/invalid", nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestGroupHandler_Update_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	r := setupTestRouter()
+	r.PUT("/groups/:id", handler.Update)
+
+	body := UpdateGroupRequest{
+		Name: "Updated Name",
+	}
+
+	w := performRequest(r, "PUT", "/groups/invalid", body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestGroupHandler_Update_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	r := setupTestRouter()
+	r.PUT("/groups/:id", handler.Update)
+
+	body := UpdateGroupRequest{
+		Name: "Updated Name",
+	}
+
+	w := performRequest(r, "PUT", "/groups/999", body)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
+	}
+}
+
+func TestGroupHandler_Update_ActiveFlag(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	createTestGroup(t, db, "Test Group")
+
+	r := setupTestRouter()
+	r.PUT("/groups/:id", handler.Update)
+
+	active := false
+	body := UpdateGroupRequest{
+		Active: &active,
+	}
+
+	w := performRequest(r, "PUT", "/groups/1", body)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var result models.Group
+	parseResponse(t, w, &result)
+
+	if result.Active != false {
+		t.Errorf("expected active false, got %v", result.Active)
+	}
+}
+
+func TestGroupHandler_Delete_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	r := setupTestRouter()
+	r.DELETE("/groups/:id", handler.Delete)
+
+	w := performRequest(r, "DELETE", "/groups/invalid", nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestGroupHandler_List_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	groupStore := store.NewGroupStore(db)
+	handler := NewGroupHandler(groupStore)
+
+	r := setupTestRouter()
+	r.GET("/groups", handler.List)
+
+	w := performRequest(r, "GET", "/groups", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var groups []models.GroupResponse
+	parseResponse(t, w, &groups)
+
+	if len(groups) != 0 {
+		t.Errorf("expected 0 groups, got %d", len(groups))
+	}
+}
