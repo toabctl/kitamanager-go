@@ -40,13 +40,17 @@ func TestGroupStore_FindAll(t *testing.T) {
 	createTestGroup(t, db, "Group 1")
 	createTestGroup(t, db, "Group 2")
 
-	groups, err := store.FindAll()
+	groups, total, err := store.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(groups) != 2 {
 		t.Errorf("expected 2 groups, got %d", len(groups))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 

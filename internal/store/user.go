@@ -16,12 +16,19 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	return &UserStore{db: db}
 }
 
-func (s *UserStore) FindAll() ([]models.User, error) {
+func (s *UserStore) FindAll(limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
-	if err := s.db.Preload("Groups").Find(&users).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := s.db.Model(&models.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return users, nil
+
+	if err := s.db.Preload("Groups").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
 func (s *UserStore) FindByID(id uint) (*models.User, error) {

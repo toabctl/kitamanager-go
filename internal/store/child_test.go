@@ -43,13 +43,17 @@ func TestChildStore_FindAll(t *testing.T) {
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Birthdate: time.Now()},
 	})
 
-	children, err := store.FindAll()
+	children, total, err := store.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(children) != 2 {
 		t.Errorf("expected 2 children, got %d", len(children))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 
@@ -95,13 +99,17 @@ func TestChildStore_FindByOrganization(t *testing.T) {
 		Person: models.Person{OrganizationID: org2.ID, FirstName: "Child3", LastName: "Last", Birthdate: time.Now()},
 	})
 
-	children, err := store.FindByOrganization(org1.ID)
+	children, total, err := store.FindByOrganization(org1.ID, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(children) != 2 {
 		t.Errorf("expected 2 children for org1, got %d", len(children))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 
@@ -292,7 +300,7 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 	db.Create(existing)
 
 	// Try to create overlapping contract
-	err := store.Contracts.ValidateNoOverlap(
+	err := store.Contracts().ValidateNoOverlap(
 		child.ID,
 		time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		datePtr(time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)),
@@ -304,7 +312,7 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 	}
 
 	// Non-overlapping contract should succeed
-	err = store.Contracts.ValidateNoOverlap(
+	err = store.Contracts().ValidateNoOverlap(
 		child.ID,
 		time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		nil,

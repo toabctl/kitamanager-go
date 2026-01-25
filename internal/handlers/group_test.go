@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
 func TestGroupHandler_List(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	createTestGroup(t, db, "Group 1")
 	createTestGroup(t, db, "Group 2")
@@ -25,18 +24,18 @@ func TestGroupHandler_List(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var groups []models.Group
-	parseResponse(t, w, &groups)
+	var response models.PaginatedResponse[models.Group]
+	parseResponse(t, w, &response)
 
-	if len(groups) != 2 {
-		t.Errorf("expected 2 groups, got %d", len(groups))
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 groups, got %d", len(response.Data))
 	}
 }
 
 func TestGroupHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	group := createTestGroup(t, db, "Test Group")
 
@@ -59,8 +58,8 @@ func TestGroupHandler_Get(t *testing.T) {
 
 func TestGroupHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.GET("/groups/:id", handler.Get)
@@ -74,8 +73,8 @@ func TestGroupHandler_Get_NotFound(t *testing.T) {
 
 func TestGroupHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	// Create an organization first
 	org := createTestOrganization(t, db, "Test Org")
@@ -111,8 +110,8 @@ func TestGroupHandler_Create(t *testing.T) {
 
 func TestGroupHandler_Create_BadRequest(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.POST("/groups", handler.Create)
@@ -131,8 +130,8 @@ func TestGroupHandler_Create_BadRequest(t *testing.T) {
 
 func TestGroupHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	createTestGroup(t, db, "Original Name")
 
@@ -159,8 +158,8 @@ func TestGroupHandler_Update(t *testing.T) {
 
 func TestGroupHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	createTestGroup(t, db, "To Delete")
 
@@ -174,7 +173,8 @@ func TestGroupHandler_Delete(t *testing.T) {
 	}
 
 	// Verify group was deleted
-	groups, _ := groupStore.FindAll()
+	var groups []models.Group
+	db.Find(&groups)
 	if len(groups) != 0 {
 		t.Error("expected group to be deleted")
 	}
@@ -182,8 +182,8 @@ func TestGroupHandler_Delete(t *testing.T) {
 
 func TestGroupHandler_Create_BadRequest_MissingOrganization(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.POST("/groups", handler.Create)
@@ -203,8 +203,8 @@ func TestGroupHandler_Create_BadRequest_MissingOrganization(t *testing.T) {
 
 func TestGroupHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.GET("/groups/:id", handler.Get)
@@ -218,8 +218,8 @@ func TestGroupHandler_Get_InvalidID(t *testing.T) {
 
 func TestGroupHandler_Update_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.PUT("/groups/:id", handler.Update)
@@ -237,8 +237,8 @@ func TestGroupHandler_Update_InvalidID(t *testing.T) {
 
 func TestGroupHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.PUT("/groups/:id", handler.Update)
@@ -256,8 +256,8 @@ func TestGroupHandler_Update_NotFound(t *testing.T) {
 
 func TestGroupHandler_Update_ActiveFlag(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	createTestGroup(t, db, "Test Group")
 
@@ -285,8 +285,8 @@ func TestGroupHandler_Update_ActiveFlag(t *testing.T) {
 
 func TestGroupHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.DELETE("/groups/:id", handler.Delete)
@@ -300,8 +300,8 @@ func TestGroupHandler_Delete_InvalidID(t *testing.T) {
 
 func TestGroupHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
-	groupStore := store.NewGroupStore(db)
-	handler := NewGroupHandler(groupStore)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService)
 
 	r := setupTestRouter()
 	r.GET("/groups", handler.List)
@@ -312,10 +312,10 @@ func TestGroupHandler_List_Empty(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var groups []models.GroupResponse
-	parseResponse(t, w, &groups)
+	var response models.PaginatedResponse[models.GroupResponse]
+	parseResponse(t, w, &response)
 
-	if len(groups) != 0 {
-		t.Errorf("expected 0 groups, got %d", len(groups))
+	if len(response.Data) != 0 {
+		t.Errorf("expected 0 groups, got %d", len(response.Data))
 	}
 }

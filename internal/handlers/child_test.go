@@ -6,13 +6,12 @@ import (
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
 func TestChildHandler_List(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -32,18 +31,18 @@ func TestChildHandler_List(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var children []models.Child
-	parseResponse(t, w, &children)
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
 
-	if len(children) != 2 {
-		t.Errorf("expected 2 children, got %d", len(children))
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 children, got %d", len(response.Data))
 	}
 }
 
 func TestChildHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -69,8 +68,8 @@ func TestChildHandler_Get(t *testing.T) {
 
 func TestChildHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -100,8 +99,8 @@ func TestChildHandler_Create(t *testing.T) {
 
 func TestChildHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -132,8 +131,8 @@ func TestChildHandler_Update(t *testing.T) {
 
 func TestChildHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -152,8 +151,8 @@ func TestChildHandler_Delete(t *testing.T) {
 
 func TestChildHandler_ListContracts(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -186,8 +185,8 @@ func TestChildHandler_ListContracts(t *testing.T) {
 
 func TestChildHandler_GetCurrentContract(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -221,8 +220,8 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 
 func TestChildHandler_GetCurrentContract_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -242,8 +241,8 @@ func TestChildHandler_GetCurrentContract_NotFound(t *testing.T) {
 
 func TestChildHandler_CreateContract(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -277,8 +276,8 @@ func TestChildHandler_CreateContract(t *testing.T) {
 
 func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -312,8 +311,8 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 
 func TestChildHandler_DeleteContract(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -342,8 +341,8 @@ func TestChildHandler_DeleteContract(t *testing.T) {
 
 func TestChildHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children/:id", handler.Get)
@@ -357,8 +356,8 @@ func TestChildHandler_Get_NotFound(t *testing.T) {
 
 func TestChildHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children/:id", handler.Get)
@@ -372,8 +371,8 @@ func TestChildHandler_Get_InvalidID(t *testing.T) {
 
 func TestChildHandler_Get_ZeroID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children/:id", handler.Get)
@@ -387,8 +386,8 @@ func TestChildHandler_Get_ZeroID(t *testing.T) {
 
 func TestChildHandler_Create_MissingRequiredFields(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.POST("/children", handler.Create)
@@ -404,8 +403,8 @@ func TestChildHandler_Create_MissingRequiredFields(t *testing.T) {
 
 func TestChildHandler_Create_EmptyFirstName(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -428,8 +427,8 @@ func TestChildHandler_Create_EmptyFirstName(t *testing.T) {
 
 func TestChildHandler_Create_EmptyLastName(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -452,8 +451,8 @@ func TestChildHandler_Create_EmptyLastName(t *testing.T) {
 
 func TestChildHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.PUT("/children/:id", handler.Update)
@@ -472,8 +471,8 @@ func TestChildHandler_Update_NotFound(t *testing.T) {
 
 func TestChildHandler_Update_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.PUT("/children/:id", handler.Update)
@@ -492,8 +491,8 @@ func TestChildHandler_Update_InvalidID(t *testing.T) {
 
 func TestChildHandler_Delete_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.DELETE("/children/:id", handler.Delete)
@@ -507,8 +506,8 @@ func TestChildHandler_Delete_NotFound(t *testing.T) {
 
 func TestChildHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.DELETE("/children/:id", handler.Delete)
@@ -522,8 +521,8 @@ func TestChildHandler_Delete_InvalidID(t *testing.T) {
 
 func TestChildHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children", handler.List)
@@ -534,18 +533,18 @@ func TestChildHandler_List_Empty(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var children []models.Child
-	parseResponse(t, w, &children)
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
 
-	if len(children) != 0 {
-		t.Errorf("expected empty list, got %d children", len(children))
+	if len(response.Data) != 0 {
+		t.Errorf("expected empty list, got %d children", len(response.Data))
 	}
 }
 
 func TestChildHandler_ListContracts_ChildNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children/:id/contracts", handler.ListContracts)
@@ -559,8 +558,8 @@ func TestChildHandler_ListContracts_ChildNotFound(t *testing.T) {
 
 func TestChildHandler_ListContracts_Empty(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -586,8 +585,8 @@ func TestChildHandler_ListContracts_Empty(t *testing.T) {
 
 func TestChildHandler_CreateContract_ChildNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.POST("/children/:id/contracts", handler.CreateContract)
@@ -606,8 +605,8 @@ func TestChildHandler_CreateContract_ChildNotFound(t *testing.T) {
 
 func TestChildHandler_CreateContract_InvalidChildID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.POST("/children/:id/contracts", handler.CreateContract)
@@ -626,8 +625,8 @@ func TestChildHandler_CreateContract_InvalidChildID(t *testing.T) {
 
 func TestChildHandler_CreateContract_ZeroCareHours(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -652,8 +651,8 @@ func TestChildHandler_CreateContract_ZeroCareHours(t *testing.T) {
 
 func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
@@ -689,8 +688,8 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 func TestChildHandler_DeleteContract_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -709,8 +708,8 @@ func TestChildHandler_DeleteContract_NotFound(t *testing.T) {
 
 func TestChildHandler_DeleteContract_InvalidContractID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
@@ -729,8 +728,8 @@ func TestChildHandler_DeleteContract_InvalidContractID(t *testing.T) {
 
 func TestChildHandler_GetCurrentContract_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	childStore := store.NewChildStore(db)
-	handler := NewChildHandler(childStore)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
 
 	r := setupTestRouter()
 	r.GET("/children/:id/contracts/current", handler.GetCurrentContract)

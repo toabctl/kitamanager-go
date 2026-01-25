@@ -2,46 +2,54 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 type GroupHandler struct {
-	store *store.GroupStore
+	service *service.GroupService
 }
 
-func NewGroupHandler(store *store.GroupStore) *GroupHandler {
-	return &GroupHandler{store: store}
+func NewGroupHandler(service *service.GroupService) *GroupHandler {
+	return &GroupHandler{service: service}
 }
 
 // List godoc
 // @Summary List all groups
-// @Description Get a list of all groups
+// @Description Get a paginated list of all groups
 // @Tags groups
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} models.GroupResponse
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.GroupResponse]
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/groups [get]
 func (h *GroupHandler) List(c *gin.Context) {
-	groups, err := h.store.FindAll()
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+		return
+	}
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	groups, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch groups"})
+		respondError(c, err)
 		return
 	}
 
-	responses := make([]models.GroupResponse, len(groups))
-	for i, group := range groups {
-		responses[i] = group.ToResponse()
-	}
-
-	c.JSON(http.StatusOK, responses)
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(groups, params.Page, params.Limit, total))
 }
 
 // Get godoc
@@ -58,19 +66,19 @@ func (h *GroupHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/groups/{id} [get]
 func (h *GroupHandler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	group, err := h.store.FindByID(uint(id))
+	group, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, group.ToResponse())
+	c.JSON(http.StatusOK, group)
 }
 
 // CreateGroupRequest represents the request body for creating a group
@@ -96,26 +104,24 @@ type CreateGroupRequest struct {
 func (h *GroupHandler) Create(c *gin.Context) {
 	var req CreateGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
 	userEmail, _ := c.Get("userEmail")
 	createdBy, _ := userEmail.(string)
 
-	group := &models.Group{
+	group, err := h.service.Create(c.Request.Context(), &service.GroupCreateRequest{
 		Name:           req.Name,
 		OrganizationID: req.OrganizationID,
 		Active:         req.Active,
-		CreatedBy:      createdBy,
-	}
-
-	if err := h.store.Create(group); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create group"})
+	}, createdBy)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, group.ToResponse())
+	c.JSON(http.StatusCreated, group)
 }
 
 // UpdateGroupRequest represents the request body for updating a group
@@ -140,37 +146,28 @@ type UpdateGroupRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/groups/{id} [put]
 func (h *GroupHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	group, err := h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req UpdateGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	if req.Name != "" {
-		group.Name = req.Name
-	}
-	if req.Active != nil {
-		group.Active = *req.Active
-	}
-
-	if err := h.store.Update(group); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update group"})
+	group, err := h.service.Update(c.Request.Context(), id, &service.GroupUpdateRequest{
+		Name:   req.Name,
+		Active: req.Active,
+	})
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, group.ToResponse())
+	c.JSON(http.StatusOK, group)
 }
 
 // Delete godoc
@@ -187,14 +184,14 @@ func (h *GroupHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/groups/{id} [delete]
 func (h *GroupHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete group"})
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 

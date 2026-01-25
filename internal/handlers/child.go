@@ -1,42 +1,55 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 type ChildHandler struct {
-	store *store.ChildStore
+	service *service.ChildService
 }
 
-func NewChildHandler(store *store.ChildStore) *ChildHandler {
-	return &ChildHandler{store: store}
+func NewChildHandler(service *service.ChildService) *ChildHandler {
+	return &ChildHandler{service: service}
 }
 
 // List godoc
 // @Summary List all children
-// @Description Get a list of all children
+// @Description Get a paginated list of all children
 // @Tags children
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} models.Child
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.Child]
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children [get]
 func (h *ChildHandler) List(c *gin.Context) {
-	children, err := h.store.FindAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch children"})
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
 		return
 	}
-	c.JSON(http.StatusOK, children)
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	children, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(children, params.Page, params.Limit, total))
 }
 
 // Get godoc
@@ -53,15 +66,15 @@ func (h *ChildHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/children/{id} [get]
 func (h *ChildHandler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	child, err := h.store.FindByID(uint(id))
+	child, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "child not found"})
+		respondError(c, err)
 		return
 	}
 
@@ -84,21 +97,13 @@ func (h *ChildHandler) Get(c *gin.Context) {
 func (h *ChildHandler) Create(c *gin.Context) {
 	var req models.ChildCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	child := &models.Child{
-		Person: models.Person{
-			OrganizationID: req.OrganizationID,
-			FirstName:      req.FirstName,
-			LastName:       req.LastName,
-			Birthdate:      req.Birthdate,
-		},
-	}
-
-	if err := h.store.Create(child); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create child"})
+	child, err := h.service.Create(c.Request.Context(), &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -121,36 +126,21 @@ func (h *ChildHandler) Create(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children/{id} [put]
 func (h *ChildHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	child, err := h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "child not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req models.ChildUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	if req.FirstName != nil {
-		child.FirstName = *req.FirstName
-	}
-	if req.LastName != nil {
-		child.LastName = *req.LastName
-	}
-	if req.Birthdate != nil {
-		child.Birthdate = *req.Birthdate
-	}
-
-	if err := h.store.Update(child); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update child"})
+	child, err := h.service.Update(c.Request.Context(), id, &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -171,14 +161,14 @@ func (h *ChildHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children/{id} [delete]
 func (h *ChildHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete child"})
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -200,22 +190,15 @@ func (h *ChildHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children/{id}/contracts [get]
 func (h *ChildHandler) ListContracts(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	// Verify child exists
-	_, err = h.store.FindByID(uint(id))
+	contracts, err := h.service.ListContracts(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "child not found"})
-		return
-	}
-
-	contracts, err := h.store.Contracts.GetHistory(uint(id))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch contracts"})
+		respondError(c, err)
 		return
 	}
 
@@ -236,19 +219,15 @@ func (h *ChildHandler) ListContracts(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/children/{id}/contracts/current [get]
 func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	contract, err := h.store.Contracts.GetCurrentContract(uint(id))
+	contract, err := h.service.GetCurrentContract(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch contract"})
-		return
-	}
-	if contract == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no active contract"})
+		respondError(c, err)
 		return
 	}
 
@@ -272,49 +251,21 @@ func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children/{id}/contracts [post]
 func (h *ChildHandler) CreateContract(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	// Verify child exists
-	_, err = h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "child not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req models.ChildContractCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	// Validate no overlap
-	if err := h.store.Contracts.ValidateNoOverlap(uint(id), req.From, req.To, nil); err != nil {
-		if errors.Is(err, store.ErrContractOverlap) {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate contract"})
-		return
-	}
-
-	contract := &models.ChildContract{
-		ChildID: uint(id),
-		Period: models.Period{
-			From: req.From,
-			To:   req.To,
-		},
-		CareHoursPerWeek: req.CareHoursPerWeek,
-		GroupID:          req.GroupID,
-		MealsIncluded:    req.MealsIncluded,
-		SpecialNeeds:     req.SpecialNeeds,
-	}
-
-	if err := h.store.CreateContract(contract); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create contract"})
+	contract, err := h.service.CreateContract(c.Request.Context(), id, &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -336,14 +287,14 @@ func (h *ChildHandler) CreateContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/children/{id}/contracts/{contractId} [delete]
 func (h *ChildHandler) DeleteContract(c *gin.Context) {
-	contractID, err := strconv.ParseUint(c.Param("contractId"), 10, 32)
+	contractID, err := parseID(c, "contractId")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid contract id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.DeleteContract(uint(contractID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete contract"})
+	if err := h.service.DeleteContract(c.Request.Context(), contractID); err != nil {
+		respondError(c, err)
 		return
 	}
 

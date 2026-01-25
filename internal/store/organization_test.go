@@ -34,13 +34,17 @@ func TestOrganizationStore_FindAll(t *testing.T) {
 	createTestOrganization(t, db, "Org 1")
 	createTestOrganization(t, db, "Org 2")
 
-	orgs, err := store.FindAll()
+	orgs, total, err := store.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(orgs) != 2 {
 		t.Errorf("expected 2 organizations, got %d", len(orgs))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 

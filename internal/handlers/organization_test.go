@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
 func TestOrganizationHandler_List(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	createTestOrganization(t, db, "Org 1")
 	createTestOrganization(t, db, "Org 2")
@@ -25,18 +24,18 @@ func TestOrganizationHandler_List(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var orgs []models.Organization
-	parseResponse(t, w, &orgs)
+	var response models.PaginatedResponse[models.Organization]
+	parseResponse(t, w, &response)
 
-	if len(orgs) != 2 {
-		t.Errorf("expected 2 organizations, got %d", len(orgs))
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 organizations, got %d", len(response.Data))
 	}
 }
 
 func TestOrganizationHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -59,8 +58,8 @@ func TestOrganizationHandler_Get(t *testing.T) {
 
 func TestOrganizationHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.GET("/organizations/:id", handler.Get)
@@ -74,8 +73,8 @@ func TestOrganizationHandler_Get_NotFound(t *testing.T) {
 
 func TestOrganizationHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.GET("/organizations/:id", handler.Get)
@@ -89,8 +88,8 @@ func TestOrganizationHandler_Get_InvalidID(t *testing.T) {
 
 func TestOrganizationHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.POST("/organizations", handler.Create)
@@ -119,8 +118,8 @@ func TestOrganizationHandler_Create(t *testing.T) {
 
 func TestOrganizationHandler_Create_BadRequest(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.POST("/organizations", handler.Create)
@@ -139,8 +138,8 @@ func TestOrganizationHandler_Create_BadRequest(t *testing.T) {
 
 func TestOrganizationHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	createTestOrganization(t, db, "Original Name")
 
@@ -167,8 +166,8 @@ func TestOrganizationHandler_Update(t *testing.T) {
 
 func TestOrganizationHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	createTestOrganization(t, db, "To Delete")
 
@@ -182,7 +181,8 @@ func TestOrganizationHandler_Delete(t *testing.T) {
 	}
 
 	// Verify organization was deleted
-	orgs, _ := orgStore.FindAll()
+	var orgs []models.Organization
+	db.Find(&orgs)
 	if len(orgs) != 0 {
 		t.Error("expected organization to be deleted")
 	}
@@ -192,8 +192,8 @@ func TestOrganizationHandler_Delete(t *testing.T) {
 
 func TestOrganizationHandler_Get_ZeroID(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.GET("/organizations/:id", handler.Get)
@@ -207,8 +207,8 @@ func TestOrganizationHandler_Get_ZeroID(t *testing.T) {
 
 func TestOrganizationHandler_Get_NegativeID(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.GET("/organizations/:id", handler.Get)
@@ -222,8 +222,8 @@ func TestOrganizationHandler_Get_NegativeID(t *testing.T) {
 
 func TestOrganizationHandler_Create_EmptyName(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.POST("/organizations", handler.Create)
@@ -242,8 +242,8 @@ func TestOrganizationHandler_Create_EmptyName(t *testing.T) {
 
 func TestOrganizationHandler_Create_WhitespaceOnlyName(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.POST("/organizations", handler.Create)
@@ -266,8 +266,8 @@ func TestOrganizationHandler_Create_WhitespaceOnlyName(t *testing.T) {
 
 func TestOrganizationHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.PUT("/organizations/:id", handler.Update)
@@ -285,8 +285,8 @@ func TestOrganizationHandler_Update_NotFound(t *testing.T) {
 
 func TestOrganizationHandler_Update_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.PUT("/organizations/:id", handler.Update)
@@ -304,8 +304,8 @@ func TestOrganizationHandler_Update_InvalidID(t *testing.T) {
 
 func TestOrganizationHandler_Update_EmptyBody(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	createTestOrganization(t, db, "Original Name")
 
@@ -331,8 +331,8 @@ func TestOrganizationHandler_Update_EmptyBody(t *testing.T) {
 
 func TestOrganizationHandler_Delete_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.DELETE("/organizations/:id", handler.Delete)
@@ -349,8 +349,8 @@ func TestOrganizationHandler_Delete_NotFound(t *testing.T) {
 
 func TestOrganizationHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.DELETE("/organizations/:id", handler.Delete)
@@ -364,8 +364,8 @@ func TestOrganizationHandler_Delete_InvalidID(t *testing.T) {
 
 func TestOrganizationHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	r := setupTestRouter()
 	r.GET("/organizations", handler.List)
@@ -376,18 +376,18 @@ func TestOrganizationHandler_List_Empty(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var orgs []models.Organization
-	parseResponse(t, w, &orgs)
+	var response models.PaginatedResponse[models.Organization]
+	parseResponse(t, w, &response)
 
-	if len(orgs) != 0 {
-		t.Errorf("expected empty list, got %d organizations", len(orgs))
+	if len(response.Data) != 0 {
+		t.Errorf("expected empty list, got %d organizations", len(response.Data))
 	}
 }
 
 func TestOrganizationHandler_Update_ActiveStatus(t *testing.T) {
 	db := setupTestDB(t)
-	orgStore := store.NewOrganizationStore(db)
-	handler := NewOrganizationHandler(orgStore)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
 
 	createTestOrganization(t, db, "Test Org")
 

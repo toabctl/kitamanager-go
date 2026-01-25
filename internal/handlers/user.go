@@ -2,48 +2,54 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 type UserHandler struct {
-	store      *store.UserStore
-	groupStore *store.GroupStore
+	service *service.UserService
 }
 
-func NewUserHandler(store *store.UserStore, groupStore *store.GroupStore) *UserHandler {
-	return &UserHandler{store: store, groupStore: groupStore}
+func NewUserHandler(service *service.UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
 // List godoc
 // @Summary List all users
-// @Description Get a list of all users
+// @Description Get a paginated list of all users
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} models.UserResponse
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.UserResponse]
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users [get]
 func (h *UserHandler) List(c *gin.Context) {
-	users, err := h.store.FindAll()
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+		return
+	}
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	users, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch users"})
+		respondError(c, err)
 		return
 	}
 
-	responses := make([]models.UserResponse, len(users))
-	for i, user := range users {
-		responses[i] = user.ToResponse()
-	}
-
-	c.JSON(http.StatusOK, responses)
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(users, params.Page, params.Limit, total))
 }
 
 // Get godoc
@@ -60,19 +66,19 @@ func (h *UserHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/users/{id} [get]
 func (h *UserHandler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	user, err := h.store.FindByID(uint(id))
+	user, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, user.ToResponse())
+	c.JSON(http.StatusOK, user)
 }
 
 // Create godoc
@@ -91,33 +97,20 @@ func (h *UserHandler) Get(c *gin.Context) {
 func (h *UserHandler) Create(c *gin.Context) {
 	var req models.UserCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
 	userEmail, _ := c.Get("userEmail")
 	createdBy, _ := userEmail.(string)
 
-	user := &models.User{
-		Name:      req.Name,
-		Email:     req.Email,
-		Password:  string(hashedPassword),
-		Active:    req.Active,
-		CreatedBy: createdBy,
-	}
-
-	if err := h.store.Create(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+	user, err := h.service.Create(c.Request.Context(), &req, createdBy)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, user.ToResponse())
+	c.JSON(http.StatusCreated, user)
 }
 
 // Update godoc
@@ -136,40 +129,25 @@ func (h *UserHandler) Create(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id} [put]
 func (h *UserHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	user, err := h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req models.UserUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	if req.Name != "" {
-		user.Name = req.Name
-	}
-	if req.Email != "" {
-		user.Email = req.Email
-	}
-	if req.Active != nil {
-		user.Active = *req.Active
-	}
-
-	if err := h.store.Update(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+	user, err := h.service.Update(c.Request.Context(), id, &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, user.ToResponse())
+	c.JSON(http.StatusOK, user)
 }
 
 // Delete godoc
@@ -186,14 +164,14 @@ func (h *UserHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -222,48 +200,20 @@ type AddToGroupRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id}/groups [post]
 func (h *UserHandler) AddToGroup(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	userID, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		respondError(c, err)
 		return
 	}
 
 	var req AddToGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	// Get the user with their organizations
-	user, err := h.store.FindByID(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
-
-	// Get the group to check its organization
-	group, err := h.groupStore.FindByID(req.GroupID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
-		return
-	}
-
-	// Validate user is a member of the group's organization
-	userInOrg := false
-	for _, org := range user.Organizations {
-		if org.ID == group.OrganizationID {
-			userInOrg = true
-			break
-		}
-	}
-
-	if !userInOrg {
-		c.JSON(http.StatusForbidden, gin.H{"error": "user must be a member of the group's organization"})
-		return
-	}
-
-	if err := h.store.AddToGroup(uint(userID), req.GroupID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add user to group"})
+	if err := h.service.AddToGroup(c.Request.Context(), userID, req.GroupID); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -285,20 +235,20 @@ func (h *UserHandler) AddToGroup(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id}/groups/{gid} [delete]
 func (h *UserHandler) RemoveFromGroup(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	userID, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		respondError(c, err)
 		return
 	}
 
-	groupID, err := strconv.ParseUint(c.Param("gid"), 10, 32)
+	groupID, err := parseID(c, "gid")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid group id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.RemoveFromGroup(uint(userID), uint(groupID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove user from group"})
+	if err := h.service.RemoveFromGroup(c.Request.Context(), userID, groupID); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -326,27 +276,20 @@ type AddToOrganizationRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id}/organizations [post]
 func (h *UserHandler) AddToOrganization(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	userID, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		respondError(c, err)
 		return
 	}
 
 	var req AddToOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	// Verify user exists
-	_, err = h.store.FindByID(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
-
-	if err := h.store.AddToOrganization(uint(userID), req.OrganizationID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add user to organization"})
+	if err := h.service.AddToOrganization(c.Request.Context(), userID, req.OrganizationID); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -369,27 +312,20 @@ func (h *UserHandler) AddToOrganization(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users/{id}/organizations/{oid} [delete]
 func (h *UserHandler) RemoveFromOrganization(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	userID, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		respondError(c, err)
 		return
 	}
 
-	orgID, err := strconv.ParseUint(c.Param("oid"), 10, 32)
+	orgID, err := parseID(c, "oid")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid organization id"})
+		respondError(c, err)
 		return
 	}
 
-	// Verify user exists
-	_, err = h.store.FindByID(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
-
-	if err := h.store.RemoveFromOrganization(uint(userID), uint(orgID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove user from organization"})
+	if err := h.service.RemoveFromOrganization(c.Request.Context(), userID, orgID); err != nil {
+		respondError(c, err)
 		return
 	}
 

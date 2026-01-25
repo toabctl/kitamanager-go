@@ -23,6 +23,7 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/rbac"
 	"github.com/eenemeene/kitamanager-go/internal/routes"
 	"github.com/eenemeene/kitamanager-go/internal/seed"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/eenemeene/kitamanager-go/internal/web"
 )
@@ -96,13 +97,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize services
+	userService := service.NewUserService(userStore, groupStore)
+	orgService := service.NewOrganizationService(orgStore)
+	groupService := service.NewGroupService(groupStore)
+	employeeService := service.NewEmployeeService(employeeStore)
+	childService := service.NewChildService(childStore)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret)
-	userHandler := handlers.NewUserHandler(userStore, groupStore)
-	groupHandler := handlers.NewGroupHandler(groupStore)
-	orgHandler := handlers.NewOrganizationHandler(orgStore)
-	employeeHandler := handlers.NewEmployeeHandler(employeeStore)
-	childHandler := handlers.NewChildHandler(childStore)
+	userHandler := handlers.NewUserHandler(userService)
+	groupHandler := handlers.NewGroupHandler(groupService)
+	orgHandler := handlers.NewOrganizationHandler(orgService)
+	employeeHandler := handlers.NewEmployeeHandler(employeeService)
+	childHandler := handlers.NewChildHandler(childService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware

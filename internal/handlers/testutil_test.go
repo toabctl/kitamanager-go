@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
+	"github.com/eenemeene/kitamanager-go/internal/service"
+	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
 func init() {
@@ -141,4 +143,35 @@ func createTestGroupWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint) 
 		t.Fatalf("failed to create test group: %v", err)
 	}
 	return group
+}
+
+// createUserService creates a user service for testing.
+func createUserService(db *gorm.DB) *service.UserService {
+	userStore := store.NewUserStore(db)
+	groupStore := store.NewGroupStore(db)
+	return service.NewUserService(userStore, groupStore)
+}
+
+// createGroupService creates a group service for testing.
+func createGroupService(db *gorm.DB) *service.GroupService {
+	groupStore := store.NewGroupStore(db)
+	return service.NewGroupService(groupStore)
+}
+
+// createOrganizationService creates an organization service for testing.
+func createOrganizationService(db *gorm.DB) *service.OrganizationService {
+	orgStore := store.NewOrganizationStore(db)
+	return service.NewOrganizationService(orgStore)
+}
+
+// createEmployeeService creates an employee service for testing.
+func createEmployeeService(db *gorm.DB) *service.EmployeeService {
+	employeeStore := store.NewEmployeeStore(db)
+	return service.NewEmployeeService(employeeStore)
+}
+
+// createChildService creates a child service for testing.
+func createChildService(db *gorm.DB) *service.ChildService {
+	childStore := store.NewChildStore(db)
+	return service.NewChildService(childStore)
 }

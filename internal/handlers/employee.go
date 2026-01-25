@@ -1,42 +1,55 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 type EmployeeHandler struct {
-	store *store.EmployeeStore
+	service *service.EmployeeService
 }
 
-func NewEmployeeHandler(store *store.EmployeeStore) *EmployeeHandler {
-	return &EmployeeHandler{store: store}
+func NewEmployeeHandler(service *service.EmployeeService) *EmployeeHandler {
+	return &EmployeeHandler{service: service}
 }
 
 // List godoc
 // @Summary List all employees
-// @Description Get a list of all employees
+// @Description Get a paginated list of all employees
 // @Tags employees
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} models.Employee
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.Employee]
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees [get]
 func (h *EmployeeHandler) List(c *gin.Context) {
-	employees, err := h.store.FindAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch employees"})
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
 		return
 	}
-	c.JSON(http.StatusOK, employees)
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	employees, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(employees, params.Page, params.Limit, total))
 }
 
 // Get godoc
@@ -53,15 +66,15 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/employees/{id} [get]
 func (h *EmployeeHandler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	employee, err := h.store.FindByID(uint(id))
+	employee, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+		respondError(c, err)
 		return
 	}
 
@@ -84,21 +97,13 @@ func (h *EmployeeHandler) Get(c *gin.Context) {
 func (h *EmployeeHandler) Create(c *gin.Context) {
 	var req models.EmployeeCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	employee := &models.Employee{
-		Person: models.Person{
-			OrganizationID: req.OrganizationID,
-			FirstName:      req.FirstName,
-			LastName:       req.LastName,
-			Birthdate:      req.Birthdate,
-		},
-	}
-
-	if err := h.store.Create(employee); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create employee"})
+	employee, err := h.service.Create(c.Request.Context(), &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -121,36 +126,21 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees/{id} [put]
 func (h *EmployeeHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	employee, err := h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req models.EmployeeUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	if req.FirstName != nil {
-		employee.FirstName = *req.FirstName
-	}
-	if req.LastName != nil {
-		employee.LastName = *req.LastName
-	}
-	if req.Birthdate != nil {
-		employee.Birthdate = *req.Birthdate
-	}
-
-	if err := h.store.Update(employee); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update employee"})
+	employee, err := h.service.Update(c.Request.Context(), id, &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -171,14 +161,14 @@ func (h *EmployeeHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees/{id} [delete]
 func (h *EmployeeHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete employee"})
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -200,22 +190,15 @@ func (h *EmployeeHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees/{id}/contracts [get]
 func (h *EmployeeHandler) ListContracts(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	// Verify employee exists
-	_, err = h.store.FindByID(uint(id))
+	contracts, err := h.service.ListContracts(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
-		return
-	}
-
-	contracts, err := h.store.Contracts.GetHistory(uint(id))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch contracts"})
+		respondError(c, err)
 		return
 	}
 
@@ -236,19 +219,15 @@ func (h *EmployeeHandler) ListContracts(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/employees/{id}/contracts/current [get]
 func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	contract, err := h.store.Contracts.GetCurrentContract(uint(id))
+	contract, err := h.service.GetCurrentContract(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch contract"})
-		return
-	}
-	if contract == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no active contract"})
+		respondError(c, err)
 		return
 	}
 
@@ -272,48 +251,21 @@ func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees/{id}/contracts [post]
 func (h *EmployeeHandler) CreateContract(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	// Verify employee exists
-	_, err = h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req models.EmployeeContractCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	// Validate no overlap
-	if err := h.store.Contracts.ValidateNoOverlap(uint(id), req.From, req.To, nil); err != nil {
-		if errors.Is(err, store.ErrContractOverlap) {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate contract"})
-		return
-	}
-
-	contract := &models.EmployeeContract{
-		EmployeeID: uint(id),
-		Period: models.Period{
-			From: req.From,
-			To:   req.To,
-		},
-		Position:    req.Position,
-		WeeklyHours: req.WeeklyHours,
-		Salary:      req.Salary,
-	}
-
-	if err := h.store.CreateContract(contract); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create contract"})
+	contract, err := h.service.CreateContract(c.Request.Context(), id, &req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -335,14 +287,14 @@ func (h *EmployeeHandler) CreateContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/employees/{id}/contracts/{contractId} [delete]
 func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
-	contractID, err := strconv.ParseUint(c.Param("contractId"), 10, 32)
+	contractID, err := parseID(c, "contractId")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid contract id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.DeleteContract(uint(contractID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete contract"})
+	if err := h.service.DeleteContract(c.Request.Context(), contractID); err != nil {
+		respondError(c, err)
 		return
 	}
 

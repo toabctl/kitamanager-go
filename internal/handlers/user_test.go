@@ -6,14 +6,12 @@ import (
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
 func TestUserHandler_List(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "User 1", "user1@example.com", "password")
 	createTestUser(t, db, "User 2", "user2@example.com", "password")
@@ -27,19 +25,18 @@ func TestUserHandler_List(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var users []models.UserResponse
-	parseResponse(t, w, &users)
+	var response models.PaginatedResponse[models.UserResponse]
+	parseResponse(t, w, &response)
 
-	if len(users) != 2 {
-		t.Errorf("expected 2 users, got %d", len(users))
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 users, got %d", len(response.Data))
 	}
 }
 
 func TestUserHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
@@ -62,9 +59,8 @@ func TestUserHandler_Get(t *testing.T) {
 
 func TestUserHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.GET("/users/:id", handler.Get)
@@ -78,9 +74,8 @@ func TestUserHandler_Get_NotFound(t *testing.T) {
 
 func TestUserHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users", handler.Create)
@@ -111,9 +106,8 @@ func TestUserHandler_Create(t *testing.T) {
 
 func TestUserHandler_Create_BadRequest(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users", handler.Create)
@@ -132,9 +126,8 @@ func TestUserHandler_Create_BadRequest(t *testing.T) {
 
 func TestUserHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Original Name", "test@example.com", "password")
 
@@ -161,9 +154,8 @@ func TestUserHandler_Update(t *testing.T) {
 
 func TestUserHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "To Delete", "delete@example.com", "password")
 
@@ -177,7 +169,8 @@ func TestUserHandler_Delete(t *testing.T) {
 	}
 
 	// Verify user was deleted
-	users, _ := userStore.FindAll()
+	var users []models.User
+	db.Find(&users)
 	if len(users) != 0 {
 		t.Error("expected user to be deleted")
 	}
@@ -185,9 +178,8 @@ func TestUserHandler_Delete(t *testing.T) {
 
 func TestUserHandler_AddToGroup(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	// Create org, group, and user
 	org := createTestOrganization(t, db, "Test Org")
@@ -195,7 +187,9 @@ func TestUserHandler_AddToGroup(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	// User must be in the organization before being added to a group
-	_ = userStore.AddToOrganization(user.ID, org.ID)
+	if err := db.Model(user).Association("Organizations").Append(org); err != nil {
+		t.Fatalf("failed to add user to organization: %v", err)
+	}
 
 	r := setupTestRouter()
 	r.POST("/users/:id/groups", handler.AddToGroup)
@@ -211,7 +205,8 @@ func TestUserHandler_AddToGroup(t *testing.T) {
 	}
 
 	// Verify user was added to group
-	foundUser, _ := userStore.FindByID(user.ID)
+	var foundUser models.User
+	db.Preload("Groups").First(&foundUser, user.ID)
 	if len(foundUser.Groups) != 1 {
 		t.Errorf("expected 1 group, got %d", len(foundUser.Groups))
 	}
@@ -219,9 +214,8 @@ func TestUserHandler_AddToGroup(t *testing.T) {
 
 func TestUserHandler_AddToGroup_NotInOrganization(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	// Create group with its own org, and user without org membership
 	group := createTestGroup(t, db, "Test Group")
@@ -244,9 +238,8 @@ func TestUserHandler_AddToGroup_NotInOrganization(t *testing.T) {
 
 func TestUserHandler_RemoveFromGroup(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	// Create org, group, and user
 	org := createTestOrganization(t, db, "Test Org")
@@ -254,8 +247,12 @@ func TestUserHandler_RemoveFromGroup(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	// Add user to org and group
-	_ = userStore.AddToOrganization(user.ID, org.ID)
-	_ = userStore.AddToGroup(user.ID, group.ID)
+	if err := db.Model(user).Association("Organizations").Append(org); err != nil {
+		t.Fatalf("failed to add user to organization: %v", err)
+	}
+	if err := db.Model(user).Association("Groups").Append(group); err != nil {
+		t.Fatalf("failed to add user to group: %v", err)
+	}
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id/groups/:gid", handler.RemoveFromGroup)
@@ -267,7 +264,8 @@ func TestUserHandler_RemoveFromGroup(t *testing.T) {
 	}
 
 	// Verify user was removed from group
-	foundUser, _ := userStore.FindByID(user.ID)
+	var foundUser models.User
+	db.Preload("Groups").First(&foundUser, user.ID)
 	if len(foundUser.Groups) != 0 {
 		t.Errorf("expected 0 groups, got %d", len(foundUser.Groups))
 	}
@@ -275,9 +273,8 @@ func TestUserHandler_RemoveFromGroup(t *testing.T) {
 
 func TestUserHandler_AddToOrganization(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 	org := createTestOrganization(t, db, "Test Org")
@@ -296,21 +293,23 @@ func TestUserHandler_AddToOrganization(t *testing.T) {
 	}
 
 	// Verify user was added to organization
-	user, _ := userStore.FindByID(1)
-	if len(user.Organizations) != 1 {
-		t.Errorf("expected 1 organization, got %d", len(user.Organizations))
+	var foundUser models.User
+	db.Preload("Organizations").First(&foundUser, 1)
+	if len(foundUser.Organizations) != 1 {
+		t.Errorf("expected 1 organization, got %d", len(foundUser.Organizations))
 	}
 }
 
 func TestUserHandler_RemoveFromOrganization(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
-	createTestUser(t, db, "Test User", "test@example.com", "password")
+	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 	org := createTestOrganization(t, db, "Test Org")
-	_ = userStore.AddToOrganization(1, org.ID)
+	if err := db.Model(user).Association("Organizations").Append(org); err != nil {
+		t.Fatalf("failed to add user to organization: %v", err)
+	}
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id/organizations/:oid", handler.RemoveFromOrganization)
@@ -322,9 +321,10 @@ func TestUserHandler_RemoveFromOrganization(t *testing.T) {
 	}
 
 	// Verify user was removed from organization
-	user, _ := userStore.FindByID(1)
-	if len(user.Organizations) != 0 {
-		t.Errorf("expected 0 organizations, got %d", len(user.Organizations))
+	var removedUser models.User
+	db.Preload("Organizations").First(&removedUser, 1)
+	if len(removedUser.Organizations) != 0 {
+		t.Errorf("expected 0 organizations, got %d", len(removedUser.Organizations))
 	}
 }
 
@@ -332,9 +332,8 @@ func TestUserHandler_RemoveFromOrganization(t *testing.T) {
 
 func TestUserHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.GET("/users/:id", handler.Get)
@@ -348,9 +347,8 @@ func TestUserHandler_Get_InvalidID(t *testing.T) {
 
 func TestUserHandler_Get_ZeroID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.GET("/users/:id", handler.Get)
@@ -364,9 +362,8 @@ func TestUserHandler_Get_ZeroID(t *testing.T) {
 
 func TestUserHandler_Create_EmptyEmail(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users", handler.Create)
@@ -387,9 +384,8 @@ func TestUserHandler_Create_EmptyEmail(t *testing.T) {
 
 func TestUserHandler_Create_EmptyPassword(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users", handler.Create)
@@ -410,9 +406,8 @@ func TestUserHandler_Create_EmptyPassword(t *testing.T) {
 
 func TestUserHandler_Create_EmptyName(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users", handler.Create)
@@ -433,9 +428,8 @@ func TestUserHandler_Create_EmptyName(t *testing.T) {
 
 func TestUserHandler_Create_DuplicateEmail(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Existing User", "existing@example.com", "password")
 
@@ -459,9 +453,8 @@ func TestUserHandler_Create_DuplicateEmail(t *testing.T) {
 
 func TestUserHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.PUT("/users/:id", handler.Update)
@@ -479,9 +472,8 @@ func TestUserHandler_Update_NotFound(t *testing.T) {
 
 func TestUserHandler_Update_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.PUT("/users/:id", handler.Update)
@@ -499,9 +491,8 @@ func TestUserHandler_Update_InvalidID(t *testing.T) {
 
 func TestUserHandler_Delete_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id", handler.Delete)
@@ -516,9 +507,8 @@ func TestUserHandler_Delete_NotFound(t *testing.T) {
 
 func TestUserHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id", handler.Delete)
@@ -532,9 +522,8 @@ func TestUserHandler_Delete_InvalidID(t *testing.T) {
 
 func TestUserHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.GET("/users", handler.List)
@@ -545,19 +534,18 @@ func TestUserHandler_List_Empty(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	var users []models.UserResponse
-	parseResponse(t, w, &users)
+	var response models.PaginatedResponse[models.UserResponse]
+	parseResponse(t, w, &response)
 
-	if len(users) != 0 {
-		t.Errorf("expected empty list, got %d users", len(users))
+	if len(response.Data) != 0 {
+		t.Errorf("expected empty list, got %d users", len(response.Data))
 	}
 }
 
 func TestUserHandler_AddToGroup_InvalidUserID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users/:id/groups", handler.AddToGroup)
@@ -575,9 +563,8 @@ func TestUserHandler_AddToGroup_InvalidUserID(t *testing.T) {
 
 func TestUserHandler_AddToGroup_UserNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	group := createTestGroup(t, db, "Test Group")
 
@@ -597,9 +584,8 @@ func TestUserHandler_AddToGroup_UserNotFound(t *testing.T) {
 
 func TestUserHandler_AddToGroup_GroupNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
@@ -619,9 +605,8 @@ func TestUserHandler_AddToGroup_GroupNotFound(t *testing.T) {
 
 func TestUserHandler_RemoveFromGroup_InvalidUserID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id/groups/:gid", handler.RemoveFromGroup)
@@ -635,9 +620,8 @@ func TestUserHandler_RemoveFromGroup_InvalidUserID(t *testing.T) {
 
 func TestUserHandler_RemoveFromGroup_InvalidGroupID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
@@ -653,9 +637,8 @@ func TestUserHandler_RemoveFromGroup_InvalidGroupID(t *testing.T) {
 
 func TestUserHandler_AddToOrganization_InvalidUserID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.POST("/users/:id/organizations", handler.AddToOrganization)
@@ -673,9 +656,8 @@ func TestUserHandler_AddToOrganization_InvalidUserID(t *testing.T) {
 
 func TestUserHandler_AddToOrganization_UserNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -695,9 +677,8 @@ func TestUserHandler_AddToOrganization_UserNotFound(t *testing.T) {
 
 func TestUserHandler_RemoveFromOrganization_InvalidUserID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	r := setupTestRouter()
 	r.DELETE("/users/:id/organizations/:oid", handler.RemoveFromOrganization)
@@ -711,9 +692,8 @@ func TestUserHandler_RemoveFromOrganization_InvalidUserID(t *testing.T) {
 
 func TestUserHandler_RemoveFromOrganization_InvalidOrgID(t *testing.T) {
 	db := setupTestDB(t)
-	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	handler := NewUserHandler(userStore, groupStore)
+	userService := createUserService(db)
+	handler := NewUserHandler(userService)
 
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 

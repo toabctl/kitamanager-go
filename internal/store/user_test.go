@@ -34,13 +34,17 @@ func TestUserStore_FindAll(t *testing.T) {
 	createTestUser(t, db, "User 1", "user1@example.com")
 	createTestUser(t, db, "User 2", "user2@example.com")
 
-	users, err := store.FindAll()
+	users, total, err := store.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(users) != 2 {
 		t.Errorf("expected 2 users, got %d", len(users))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 
@@ -232,7 +236,7 @@ func TestUserStore_FindAll_PreloadsGroups(t *testing.T) {
 	// Add user to group
 	_ = userStore.AddToGroup(user.ID, group.ID)
 
-	users, err := userStore.FindAll()
+	users, _, err := userStore.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

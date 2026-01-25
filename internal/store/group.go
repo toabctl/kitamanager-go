@@ -14,12 +14,19 @@ func NewGroupStore(db *gorm.DB) *GroupStore {
 	return &GroupStore{db: db}
 }
 
-func (s *GroupStore) FindAll() ([]models.Group, error) {
+func (s *GroupStore) FindAll(limit, offset int) ([]models.Group, int64, error) {
 	var groups []models.Group
-	if err := s.db.Preload("Organization").Find(&groups).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := s.db.Model(&models.Group{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return groups, nil
+
+	if err := s.db.Preload("Organization").Limit(limit).Offset(offset).Find(&groups).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return groups, total, nil
 }
 
 func (s *GroupStore) FindByID(id uint) (*models.Group, error) {

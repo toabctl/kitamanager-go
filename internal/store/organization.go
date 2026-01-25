@@ -14,12 +14,19 @@ func NewOrganizationStore(db *gorm.DB) *OrganizationStore {
 	return &OrganizationStore{db: db}
 }
 
-func (s *OrganizationStore) FindAll() ([]models.Organization, error) {
+func (s *OrganizationStore) FindAll(limit, offset int) ([]models.Organization, int64, error) {
 	var organizations []models.Organization
-	if err := s.db.Find(&organizations).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := s.db.Model(&models.Organization{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return organizations, nil
+
+	if err := s.db.Limit(limit).Offset(offset).Find(&organizations).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return organizations, total, nil
 }
 
 func (s *OrganizationStore) FindByID(id uint) (*models.Organization, error) {

@@ -41,7 +41,7 @@ func TestPeriodStore_GetCurrentContract(t *testing.T) {
 	}
 	db.Create(contract)
 
-	current, err := store.Contracts.GetCurrentContract(employee.ID)
+	current, err := store.Contracts().GetCurrentContract(employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -71,7 +71,7 @@ func TestPeriodStore_GetCurrentContract_NoContract(t *testing.T) {
 
 	store := NewEmployeeStore(db)
 
-	current, err := store.Contracts.GetCurrentContract(employee.ID)
+	current, err := store.Contracts().GetCurrentContract(employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -145,7 +145,7 @@ func TestPeriodStore_GetContractOn(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			found, err := store.Contracts.GetContractOn(employee.ID, tt.date)
+			found, err := store.Contracts().GetContractOn(employee.ID, tt.date)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -202,7 +202,7 @@ func TestPeriodStore_GetHistory(t *testing.T) {
 	}
 	db.Create(contract1)
 
-	history, err := store.Contracts.GetHistory(employee.ID)
+	history, err := store.Contracts().GetHistory(employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -237,7 +237,7 @@ func TestPeriodStore_ValidateNoOverlap_NoExisting(t *testing.T) {
 	store := NewEmployeeStore(db)
 
 	// No existing contracts, should always succeed
-	err := store.Contracts.ValidateNoOverlap(
+	err := store.Contracts().ValidateNoOverlap(
 		employee.ID,
 		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		nil,
@@ -345,7 +345,7 @@ func TestPeriodStore_ValidateNoOverlap_Overlapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.Contracts.ValidateNoOverlap(employee.ID, tt.from, tt.to, nil)
+			err := store.Contracts().ValidateNoOverlap(employee.ID, tt.from, tt.to, nil)
 
 			if tt.shouldError && err == nil {
 				t.Error("expected overlap error, got nil")
@@ -388,7 +388,7 @@ func TestPeriodStore_ValidateNoOverlap_ExcludeID(t *testing.T) {
 	store := NewEmployeeStore(db)
 
 	// When updating the same contract, it should be excluded from overlap check
-	err := store.Contracts.ValidateNoOverlap(
+	err := store.Contracts().ValidateNoOverlap(
 		employee.ID,
 		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
@@ -461,7 +461,7 @@ func TestPeriodStore_ValidateNoOverlap_OngoingContracts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.Contracts.ValidateNoOverlap(employee.ID, tt.from, tt.to, nil)
+			err := store.Contracts().ValidateNoOverlap(employee.ID, tt.from, tt.to, nil)
 
 			if tt.shouldError && err == nil {
 				t.Error("expected overlap error, got nil")
@@ -524,7 +524,7 @@ func TestPeriodStore_HasActiveContract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hasActive, err := store.Contracts.HasActiveContract(employee.ID, tt.date)
+			hasActive, err := store.Contracts().HasActiveContract(employee.ID, tt.date)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -564,7 +564,7 @@ func TestPeriodStore_CloseCurrentContract(t *testing.T) {
 	store := NewEmployeeStore(db)
 
 	endDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	err := store.Contracts.CloseCurrentContract(employee.ID, endDate)
+	err := store.Contracts().CloseCurrentContract(employee.ID, endDate)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

@@ -7,31 +7,50 @@ import (
 )
 
 type EmployeeStore struct {
-	db        *gorm.DB
-	Contracts *PeriodStore[models.EmployeeContract]
+	db            *gorm.DB
+	contractStore *PeriodStore[models.EmployeeContract]
 }
 
 func NewEmployeeStore(db *gorm.DB) *EmployeeStore {
 	return &EmployeeStore{
-		db:        db,
-		Contracts: NewPeriodStore[models.EmployeeContract](db, "employee_id"),
+		db:            db,
+		contractStore: NewPeriodStore[models.EmployeeContract](db, "employee_id"),
 	}
 }
 
-func (s *EmployeeStore) FindAll() ([]models.Employee, error) {
+func (s *EmployeeStore) FindAll(limit, offset int) ([]models.Employee, int64, error) {
 	var employees []models.Employee
-	if err := s.db.Find(&employees).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := s.db.Model(&models.Employee{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return employees, nil
+
+	if err := s.db.Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return employees, total, nil
 }
 
-func (s *EmployeeStore) FindByOrganization(orgID uint) ([]models.Employee, error) {
+func (s *EmployeeStore) FindByOrganization(orgID uint, limit, offset int) ([]models.Employee, int64, error) {
 	var employees []models.Employee
-	if err := s.db.Where("organization_id = ?", orgID).Find(&employees).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := s.db.Model(&models.Employee{}).Where("organization_id = ?", orgID).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return employees, nil
+
+	if err := s.db.Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return employees, total, nil
+}
+
+// Contracts returns the contract store for employees
+func (s *EmployeeStore) Contracts() ContractStorer[models.EmployeeContract] {
+	return s.contractStore
 }
 
 func (s *EmployeeStore) FindByID(id uint) (*models.Employee, error) {

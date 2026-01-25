@@ -56,13 +56,17 @@ func TestEmployeeStore_FindAll(t *testing.T) {
 	db.Create(employee1)
 	db.Create(employee2)
 
-	employees, err := store.FindAll()
+	employees, total, err := store.FindAll(100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(employees) != 2 {
 		t.Errorf("expected 2 employees, got %d", len(employees))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 
@@ -108,13 +112,17 @@ func TestEmployeeStore_FindByOrganization(t *testing.T) {
 		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp3", LastName: "Last", Birthdate: time.Now()},
 	})
 
-	employees, err := store.FindByOrganization(org1.ID)
+	employees, total, err := store.FindByOrganization(org1.ID, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(employees) != 2 {
 		t.Errorf("expected 2 employees for org1, got %d", len(employees))
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
 	}
 }
 

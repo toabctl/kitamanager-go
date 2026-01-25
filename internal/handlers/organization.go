@@ -2,40 +2,54 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 type OrganizationHandler struct {
-	store *store.OrganizationStore
+	service *service.OrganizationService
 }
 
-func NewOrganizationHandler(store *store.OrganizationStore) *OrganizationHandler {
-	return &OrganizationHandler{store: store}
+func NewOrganizationHandler(service *service.OrganizationService) *OrganizationHandler {
+	return &OrganizationHandler{service: service}
 }
 
 // List godoc
 // @Summary List all organizations
-// @Description Get a list of all organizations
+// @Description Get a paginated list of all organizations
 // @Tags organizations
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} models.Organization
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.Organization]
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations [get]
 func (h *OrganizationHandler) List(c *gin.Context) {
-	organizations, err := h.store.FindAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch organizations"})
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
 		return
 	}
-	c.JSON(http.StatusOK, organizations)
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	organizations, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(organizations, params.Page, params.Limit, total))
 }
 
 // Get godoc
@@ -52,15 +66,15 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{id} [get]
 func (h *OrganizationHandler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	organization, err := h.store.FindByID(uint(id))
+	organization, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "organization not found"})
+		respondError(c, err)
 		return
 	}
 
@@ -89,21 +103,19 @@ type CreateOrganizationRequest struct {
 func (h *OrganizationHandler) Create(c *gin.Context) {
 	var req CreateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
 	userEmail, _ := c.Get("userEmail")
 	createdBy, _ := userEmail.(string)
 
-	organization := &models.Organization{
-		Name:      req.Name,
-		Active:    req.Active,
-		CreatedBy: createdBy,
-	}
-
-	if err := h.store.Create(organization); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create organization"})
+	organization, err := h.service.Create(c.Request.Context(), &service.OrganizationCreateRequest{
+		Name:   req.Name,
+		Active: req.Active,
+	}, createdBy)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -132,33 +144,24 @@ type UpdateOrganizationRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{id} [put]
 func (h *OrganizationHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
-		return
-	}
-
-	organization, err := h.store.FindByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "organization not found"})
+		respondError(c, err)
 		return
 	}
 
 	var req UpdateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	if req.Name != "" {
-		organization.Name = req.Name
-	}
-	if req.Active != nil {
-		organization.Active = *req.Active
-	}
-
-	if err := h.store.Update(organization); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update organization"})
+	organization, err := h.service.Update(c.Request.Context(), id, &service.OrganizationUpdateRequest{
+		Name:   req.Name,
+		Active: req.Active,
+	})
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -179,14 +182,14 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{id} [delete]
 func (h *OrganizationHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := parseID(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondError(c, err)
 		return
 	}
 
-	if err := h.store.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete organization"})
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		respondError(c, err)
 		return
 	}
 
