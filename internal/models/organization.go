@@ -12,5 +12,5 @@ type Organization struct {
 	CreatedBy string    `gorm:"size:255" json:"created_by" example:"admin@example.com"`
 	UpdatedAt time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 	Users     []User    `gorm:"many2many:user_organizations;" json:"users,omitempty"`
-	Groups    []Group   `gorm:"many2many:group_organizations;" json:"groups,omitempty"`
+	Groups    []Group   `gorm:"foreignKey:OrganizationID;" json:"groups,omitempty"`
 }
