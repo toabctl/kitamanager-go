@@ -20,7 +20,10 @@ import type {
   ChildCreate,
   ChildUpdate,
   ChildContract,
-  ChildContractCreate
+  ChildContractCreate,
+  Role,
+  UserGroupResponse,
+  UserMembershipsResponse
 } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
@@ -124,13 +127,43 @@ class ApiClient {
     await this.client.delete(`/users/${id}`)
   }
 
-  // User-Group assignments
-  async addUserToGroup(userId: number, groupId: number): Promise<void> {
-    await this.client.post(`/users/${userId}/groups`, { group_id: groupId })
+  // User-Group assignments with roles
+  async addUserToGroup(userId: number, groupId: number, role: Role): Promise<UserGroupResponse> {
+    const response = await this.client.post<UserGroupResponse>(`/users/${userId}/groups`, {
+      group_id: groupId,
+      role
+    })
+    return response.data
   }
 
   async removeUserFromGroup(userId: number, groupId: number): Promise<void> {
     await this.client.delete(`/users/${userId}/groups/${groupId}`)
+  }
+
+  async updateUserGroupRole(
+    userId: number,
+    groupId: number,
+    role: Role
+  ): Promise<UserGroupResponse> {
+    const response = await this.client.put<UserGroupResponse>(
+      `/users/${userId}/groups/${groupId}`,
+      {
+        role
+      }
+    )
+    return response.data
+  }
+
+  async getUserMemberships(userId: number): Promise<UserMembershipsResponse> {
+    const response = await this.client.get<UserMembershipsResponse>(`/users/${userId}/memberships`)
+    return response.data
+  }
+
+  async setSuperAdmin(userId: number, isSuperAdmin: boolean): Promise<User> {
+    const response = await this.client.put<User>(`/users/${userId}/superadmin`, {
+      is_superadmin: isSuperAdmin
+    })
+    return response.data
   }
 
   // User-Organization assignments
@@ -142,29 +175,35 @@ class ApiClient {
     await this.client.delete(`/users/${userId}/organizations/${organizationId}`)
   }
 
-  // Groups
-  async getGroups(): Promise<Group[]> {
-    const response = await this.client.get<Group[]>('/groups')
+  // Groups (organization-scoped)
+  async getGroups(orgId: number): Promise<Group[]> {
+    const response = await this.client.get<Group[]>(`/organizations/${orgId}/groups`)
     return response.data
   }
 
-  async getGroup(id: number): Promise<Group> {
-    const response = await this.client.get<Group>(`/groups/${id}`)
+  async getGroup(orgId: number, groupId: number): Promise<Group> {
+    const response = await this.client.get<Group>(`/organizations/${orgId}/groups/${groupId}`)
     return response.data
   }
 
-  async createGroup(data: GroupCreate): Promise<Group> {
-    const response = await this.client.post<Group>('/groups', data)
+  async createGroup(orgId: number, data: GroupCreate): Promise<Group> {
+    const response = await this.client.post<Group>(`/organizations/${orgId}/groups`, data)
     return response.data
   }
 
-  async updateGroup(id: number, data: GroupUpdate): Promise<Group> {
-    const response = await this.client.put<Group>(`/groups/${id}`, data)
+  async updateGroup(orgId: number, groupId: number, data: GroupUpdate): Promise<Group> {
+    const response = await this.client.put<Group>(`/organizations/${orgId}/groups/${groupId}`, data)
     return response.data
   }
 
-  async deleteGroup(id: number): Promise<void> {
-    await this.client.delete(`/groups/${id}`)
+  async deleteGroup(orgId: number, groupId: number): Promise<void> {
+    await this.client.delete(`/organizations/${orgId}/groups/${groupId}`)
+  }
+
+  // Organization users
+  async getOrganizationUsers(orgId: number): Promise<User[]> {
+    const response = await this.client.get<User[]>(`/organizations/${orgId}/users`)
+    return response.data
   }
 
   // Employees (organization-scoped)

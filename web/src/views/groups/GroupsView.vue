@@ -1,51 +1,127 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useCrud } from '@/composables/useCrud'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import { apiClient } from '@/api/client'
-import type { Group, GroupCreate, GroupUpdate, Organization } from '@/api/types'
+import type { Group, GroupCreate, GroupUpdate } from '@/api/types'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import GroupForm from './GroupForm.vue'
 
-const organizations = ref<Map<number, Organization>>(new Map())
+const route = useRoute()
+const toast = useToast()
+const confirm = useConfirm()
 
-const {
-  items: groups,
-  loading,
-  dialogVisible,
-  editingItem,
-  fetchItems,
-  openCreateDialog,
-  openEditDialog,
-  closeDialog,
-  saveItem,
-  confirmDelete
-} = useCrud<Group, GroupCreate, GroupUpdate>({
-  entityName: 'Group',
-  fetchAll: () => apiClient.getGroups(),
-  create: (data) => apiClient.createGroup(data),
-  update: (id, data) => apiClient.updateGroup(id, data),
-  remove: (id) => apiClient.deleteGroup(id)
-})
+const orgId = ref(Number(route.params.orgId))
+const groups = ref<Group[]>([])
+const loading = ref(false)
 
-function getOrganizationName(orgId: number): string {
-  return organizations.value.get(orgId)?.name || 'Unknown'
-}
+const dialogVisible = ref(false)
+const editingGroup = ref<Group | null>(null)
 
-async function loadOrganizations() {
+watch(
+  () => route.params.orgId,
+  (newOrgId) => {
+    orgId.value = Number(newOrgId)
+    fetchGroups()
+  }
+)
+
+async function fetchGroups() {
+  loading.value = true
   try {
-    const orgs = await apiClient.getOrganizations()
-    organizations.value = new Map(orgs.map((o) => [o.id, o]))
+    groups.value = await apiClient.getGroups(orgId.value)
   } catch {
-    // Ignore errors
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load groups',
+      life: 3000
+    })
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(async () => {
-  await loadOrganizations()
-  fetchItems()
+function openCreateDialog() {
+  editingGroup.value = null
+  dialogVisible.value = true
+}
+
+function openEditDialog(group: Group) {
+  editingGroup.value = group
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+  editingGroup.value = null
+}
+
+async function saveGroup(data: GroupCreate | GroupUpdate) {
+  try {
+    if (editingGroup.value) {
+      await apiClient.updateGroup(orgId.value, editingGroup.value.id, data as GroupUpdate)
+      toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Group updated successfully',
+        life: 3000
+      })
+    } else {
+      await apiClient.createGroup(orgId.value, data as GroupCreate)
+      toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Group created successfully',
+        life: 3000
+      })
+    }
+    closeDialog()
+    await fetchGroups()
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to save group',
+      life: 3000
+    })
+  }
+}
+
+function confirmDelete(group: Group) {
+  confirm.require({
+    message: `Are you sure you want to delete "${group.name}"?`,
+    header: 'Confirm Delete',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      try {
+        await apiClient.deleteGroup(orgId.value, group.id)
+        toast.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Group deleted successfully',
+          life: 3000
+        })
+        await fetchGroups()
+      } catch {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete group',
+          life: 3000
+        })
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  fetchGroups()
 })
 </script>
 
@@ -67,11 +143,6 @@ onMounted(async () => {
       >
         <Column field="id" header="ID" sortable style="width: 80px"></Column>
         <Column field="name" header="Name" sortable></Column>
-        <Column field="organization_id" header="Organization" sortable style="width: 200px">
-          <template #body="{ data }">
-            {{ getOrganizationName(data.organization_id) }}
-          </template>
-        </Column>
         <Column field="active" header="Status" sortable style="width: 120px">
           <template #body="{ data }">
             <Tag
@@ -103,9 +174,9 @@ onMounted(async () => {
 
     <GroupForm
       :visible="dialogVisible"
-      :group="editingItem"
+      :group="editingGroup"
       @close="closeDialog"
-      @save="saveItem"
+      @save="saveGroup"
     />
   </div>
 </template>

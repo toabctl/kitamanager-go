@@ -2,7 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { apiClient } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import type { User, UserCreate, UserUpdate, Group } from '@/api/types'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -11,7 +14,10 @@ import Tag from 'primevue/tag'
 import UserForm from './UserForm.vue'
 import UserMembershipsDialog from './UserMembershipsDialog.vue'
 
+const authStore = useAuthStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const confirm = useConfirm()
 
 const {
   items: users,
@@ -63,6 +69,43 @@ function formatLastLogin(lastLogin: string | null | undefined): string {
   return new Date(lastLogin).toLocaleString()
 }
 
+// Toggle superadmin status
+function confirmToggleSuperadmin(user: User) {
+  const action = user.is_superadmin ? 'revoke superadmin from' : 'grant superadmin to'
+  confirm.require({
+    message: `Are you sure you want to ${action} ${user.name}?`,
+    header: 'Confirm Superadmin Change',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: user.is_superadmin ? 'p-button-danger' : 'p-button-success',
+    accept: async () => {
+      try {
+        await apiClient.setSuperAdmin(user.id, !user.is_superadmin)
+        toast.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `Superadmin status updated for ${user.name}`,
+          life: 3000
+        })
+        await fetchItems()
+      } catch {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update superadmin status',
+          life: 3000
+        })
+      }
+    }
+  })
+}
+
+// Check if current user can modify superadmin status
+function canModifySuperadmin(user: User): boolean {
+  // Only superadmins can modify superadmin status
+  // And you can't modify your own superadmin status
+  return authStore.user?.is_superadmin === true && authStore.user?.id !== user.id
+}
+
 onMounted(() => {
   fetchItems()
 })
@@ -85,7 +128,12 @@ onMounted(() => {
         :rows-per-page-options="[10, 25, 50]"
       >
         <Column field="id" header="ID" sortable style="width: 80px"></Column>
-        <Column field="name" header="Name" sortable></Column>
+        <Column field="name" header="Name" sortable>
+          <template #body="{ data }">
+            <span>{{ data.name }}</span>
+            <Tag v-if="data.is_superadmin" value="Superadmin" severity="warn" class="ml-2" />
+          </template>
+        </Column>
         <Column field="email" header="Email" sortable></Column>
         <Column field="active" header="Status" sortable style="width: 120px">
           <template #body="{ data }">
@@ -110,7 +158,7 @@ onMounted(() => {
                 class="mr-1"
               />
               <span v-if="getGroupsToDisplay(data.groups).length === 0" class="text-muted">
-                —
+                -
               </span>
             </div>
           </template>
@@ -125,8 +173,17 @@ onMounted(() => {
             {{ new Date(data.created_at).toLocaleDateString() }}
           </template>
         </Column>
-        <Column header="Actions" style="width: 200px">
+        <Column header="Actions" style="width: 220px">
           <template #body="{ data }">
+            <Button
+              v-if="canModifySuperadmin(data)"
+              :icon="data.is_superadmin ? 'pi pi-star-fill' : 'pi pi-star'"
+              text
+              rounded
+              :severity="data.is_superadmin ? 'warn' : 'secondary'"
+              :title="data.is_superadmin ? 'Revoke Superadmin' : 'Grant Superadmin'"
+              @click="confirmToggleSuperadmin(data)"
+            />
             <Button
               icon="pi pi-users"
               text
@@ -172,5 +229,9 @@ onMounted(() => {
 
 .mr-1 {
   margin-right: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 </style>

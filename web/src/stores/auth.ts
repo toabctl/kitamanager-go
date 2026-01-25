@@ -63,9 +63,16 @@ export const useAuthStore = defineStore('auth', () => {
     // Parse user info from token
     const payload = parseJwt(response.token)
     if (payload) {
-      user.value = {
-        id: payload.user_id,
-        email: payload.email
+      // Fetch full user data to get is_superadmin and other fields
+      try {
+        const userData = await apiClient.getUser(payload.user_id)
+        user.value = userData
+      } catch {
+        // Fallback to basic info from token
+        user.value = {
+          id: payload.user_id,
+          email: payload.email
+        }
       }
     }
   }
@@ -78,13 +85,21 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Initialize user from token on store creation
-  function init() {
+  async function init() {
     if (token.value) {
       const payload = parseJwt(token.value)
       if (payload && payload.exp * 1000 > Date.now()) {
+        // Set basic info immediately
         user.value = {
           id: payload.user_id,
           email: payload.email
+        }
+        // Fetch full user data in background
+        try {
+          const userData = await apiClient.getUser(payload.user_id)
+          user.value = userData
+        } catch {
+          // Keep basic info on error
         }
       } else {
         // Token expired, clear it

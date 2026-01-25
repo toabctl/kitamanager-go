@@ -26,13 +26,18 @@ describe('API Client - Assignment Methods', () => {
 
   describe('User-Group Assignments', () => {
     it('should call POST /users/:id/groups for addUserToGroup', async () => {
-      mockAxiosInstance.post.mockResolvedValue({ data: { message: 'user added to group' } })
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { user_id: 1, group_id: 2, role: 'member', created_at: '', created_by: '' }
+      })
 
       // Dynamic import to get fresh instance with mocks
       const { apiClient } = await import('../api/client')
-      await apiClient.addUserToGroup(1, 2)
+      await apiClient.addUserToGroup(1, 2, 'member')
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/users/1/groups', { group_id: 2 })
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/users/1/groups', {
+        group_id: 2,
+        role: 'member'
+      })
     })
 
     it('should call DELETE /users/:id/groups/:gid for removeUserFromGroup', async () => {

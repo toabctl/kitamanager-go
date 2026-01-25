@@ -1,5 +1,8 @@
 // API Types - matching the Go backend models
 
+// Roles for user-group membership
+export type Role = 'admin' | 'manager' | 'member'
+
 // Auth
 export interface LoginRequest {
   email: string
@@ -46,6 +49,7 @@ export interface User {
   name: string
   email: string
   active: boolean
+  is_superadmin: boolean
   last_login?: string | null
   created_at: string
   created_by: string
@@ -82,7 +86,6 @@ export interface Group {
 
 export interface GroupCreate {
   name: string
-  organization_id: number
   active?: boolean
 }
 
@@ -193,4 +196,44 @@ export interface DashboardStats {
   total_employees: number
   total_children: number
   total_users: number
+}
+
+// User-Group membership with role
+export interface UserGroupResponse {
+  user_id: number
+  group_id: number
+  role: Role
+  created_at: string
+  created_by: string
+  group?: Group
+}
+
+// User membership for memberships endpoint
+export interface UserMembership {
+  user_id: number
+  group_id: number
+  role: Role
+  group: Group
+  effective_org_role: Role
+}
+
+// Response for user memberships
+export interface UserMembershipsResponse {
+  memberships: UserMembership[]
+}
+
+// Request to add user to group
+export interface AddUserToGroupRequest {
+  group_id: number
+  role: Role
+}
+
+// Request to update user's role in a group
+export interface UpdateUserGroupRoleRequest {
+  role: Role
+}
+
+// Request to set superadmin status
+export interface SetSuperAdminRequest {
+  is_superadmin: boolean
 }

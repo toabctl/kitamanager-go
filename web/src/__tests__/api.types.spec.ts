@@ -46,6 +46,7 @@ describe('API Types', () => {
       name: 'John Doe',
       email: 'john@example.com',
       active: true,
+      is_superadmin: false,
       created_at: '2024-01-01T00:00:00Z',
       created_by: 'admin@example.com',
       updated_at: '2024-01-01T00:00:00Z'
@@ -53,6 +54,7 @@ describe('API Types', () => {
 
     expect(user.id).toBe(1)
     expect(user.email).toBe('john@example.com')
+    expect(user.is_superadmin).toBe(false)
   })
 
   it('should allow valid Employee with contracts', () => {
