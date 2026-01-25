@@ -56,6 +56,48 @@ func (h *UserHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, models.NewPaginatedResponse(users, params.Page, params.Limit, total))
 }
 
+// ListByOrganization godoc
+// @Summary List users in an organization
+// @Description Get a paginated list of users who are members of any group in the specified organization
+// @Tags users,organizations
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
+// @Success 200 {object} models.PaginatedResponse[models.UserResponse]
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/users [get]
+func (h *UserHandler) ListByOrganization(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	var params models.PaginationParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+		return
+	}
+	if err := params.Validate(); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+	params.SetDefaults()
+
+	users, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.NewPaginatedResponse(users, params.Page, params.Limit, total))
+}
+
 // Get godoc
 // @Summary Get user by ID
 // @Description Get a single user by their ID

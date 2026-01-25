@@ -45,6 +45,21 @@ func (s *GroupStore) FindByOrganization(orgID uint) ([]models.Group, error) {
 	return groups, nil
 }
 
+func (s *GroupStore) FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Group, int64, error) {
+	var groups []models.Group
+	var total int64
+
+	if err := s.db.Model(&models.Group{}).Where("organization_id = ?", orgID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := s.db.Preload("Organization").Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&groups).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return groups, total, nil
+}
+
 func (s *GroupStore) FindDefaultGroup(orgID uint) (*models.Group, error) {
 	var group models.Group
 	if err := s.db.Where("organization_id = ? AND is_default = ?", orgID, true).First(&group).Error; err != nil {

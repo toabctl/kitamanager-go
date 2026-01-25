@@ -37,6 +37,20 @@ func (s *UserService) List(ctx context.Context, limit, offset int) ([]models.Use
 	return responses, total, nil
 }
 
+// ListByOrganization returns a paginated list of users in a specific organization
+func (s *UserService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.UserResponse, int64, error) {
+	users, total, err := s.store.FindByOrganization(orgID, limit, offset)
+	if err != nil {
+		return nil, 0, apperror.Internal("failed to fetch users")
+	}
+
+	responses := make([]models.UserResponse, len(users))
+	for i, user := range users {
+		responses[i] = user.ToResponse()
+	}
+	return responses, total, nil
+}
+
 // GetByID returns a user by ID
 func (s *UserService) GetByID(ctx context.Context, id uint) (*models.UserResponse, error) {
 	user, err := s.store.FindByID(id)

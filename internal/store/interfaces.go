@@ -26,6 +26,7 @@ type UserGroupStorer interface {
 // UserStorer defines the interface for user storage operations
 type UserStorer interface {
 	FindAll(limit, offset int) ([]models.User, int64, error)
+	FindByOrganization(orgID uint, limit, offset int) ([]models.User, int64, error)
 	FindByID(id uint) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	Create(user *models.User) error
@@ -52,6 +53,7 @@ type GroupStorer interface {
 	FindAll(limit, offset int) ([]models.Group, int64, error)
 	FindByID(id uint) (*models.Group, error)
 	FindByOrganization(orgID uint) ([]models.Group, error)
+	FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Group, int64, error)
 	FindDefaultGroup(orgID uint) (*models.Group, error)
 	Create(group *models.Group) error
 	Update(group *models.Group) error

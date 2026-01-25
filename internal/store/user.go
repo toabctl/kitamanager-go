@@ -31,6 +31,36 @@ func (s *UserStore) FindAll(limit, offset int) ([]models.User, int64, error) {
 	return users, total, nil
 }
 
+func (s *UserStore) FindByOrganization(orgID uint, limit, offset int) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+
+	// Count distinct users in the organization
+	if err := s.db.Model(&models.User{}).
+		Distinct().
+		Joins("JOIN user_groups ON user_groups.user_id = users.id").
+		Joins("JOIN groups ON groups.id = user_groups.group_id").
+		Where("groups.organization_id = ?", orgID).
+		Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get users with their groups (filtered to this org's groups)
+	if err := s.db.
+		Distinct().
+		Joins("JOIN user_groups ON user_groups.user_id = users.id").
+		Joins("JOIN groups ON groups.id = user_groups.group_id").
+		Where("groups.organization_id = ?", orgID).
+		Preload("Groups", "organization_id = ?", orgID).
+		Limit(limit).
+		Offset(offset).
+		Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
 func (s *UserStore) FindByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := s.db.Preload("Groups").Preload("Groups.Organization").First(&user, id).Error; err != nil {

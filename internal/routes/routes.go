@@ -99,34 +99,40 @@ func Setup(
 			}
 
 			// ============================================================
-			// Group management (org-scoped - each group belongs to one org)
-			// Permissions checked against any org the user has a role in
-			// ============================================================
-			groups := protected.Group("/groups")
-			{
-				groups.GET("",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceGroups, rbac.ActionRead),
-					groupHandler.List)
-				groups.GET("/:groupId",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceGroups, rbac.ActionRead),
-					groupHandler.Get)
-				groups.POST("",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceGroups, rbac.ActionCreate),
-					groupHandler.Create)
-				groups.PUT("/:groupId",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceGroups, rbac.ActionUpdate),
-					groupHandler.Update)
-				groups.DELETE("/:groupId",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceGroups, rbac.ActionDelete),
-					groupHandler.Delete)
-			}
-
-			// ============================================================
 			// Organization-scoped resources
 			// All routes under /organizations/:id/... require org access
 			// ============================================================
 			orgScoped := protected.Group("/organizations/:orgId")
 			{
+				// ============================================================
+				// Group management (org-scoped - each group belongs to one org)
+				// ============================================================
+				groups := orgScoped.Group("/groups")
+				{
+					groups.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionRead),
+						groupHandler.List)
+					groups.GET("/:groupId",
+						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionRead),
+						groupHandler.Get)
+					groups.POST("",
+						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionCreate),
+						groupHandler.Create)
+					groups.PUT("/:groupId",
+						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionUpdate),
+						groupHandler.Update)
+					groups.DELETE("/:groupId",
+						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionDelete),
+						groupHandler.Delete)
+				}
+
+				// ============================================================
+				// Users in organization (read-only list)
+				// ============================================================
+				orgScoped.GET("/users",
+					authzMiddleware.RequirePermission(rbac.ResourceUsers, rbac.ActionRead),
+					userHandler.ListByOrganization)
+
 				// Employees
 				employees := orgScoped.Group("/employees")
 				{

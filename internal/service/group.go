@@ -34,10 +34,37 @@ func (s *GroupService) List(ctx context.Context, limit, offset int) ([]models.Gr
 	return responses, total, nil
 }
 
+// ListByOrganization returns a paginated list of groups for a specific organization
+func (s *GroupService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.GroupResponse, int64, error) {
+	groups, total, err := s.store.FindByOrganizationPaginated(orgID, limit, offset)
+	if err != nil {
+		return nil, 0, apperror.Internal("failed to fetch groups")
+	}
+
+	responses := make([]models.GroupResponse, len(groups))
+	for i, group := range groups {
+		responses[i] = group.ToResponse()
+	}
+	return responses, total, nil
+}
+
 // GetByID returns a group by ID
 func (s *GroupService) GetByID(ctx context.Context, id uint) (*models.GroupResponse, error) {
 	group, err := s.store.FindByID(id)
 	if err != nil {
+		return nil, apperror.NotFound("group")
+	}
+	resp := group.ToResponse()
+	return &resp, nil
+}
+
+// GetByIDAndOrg returns a group by ID if it belongs to the specified organization
+func (s *GroupService) GetByIDAndOrg(ctx context.Context, id, orgID uint) (*models.GroupResponse, error) {
+	group, err := s.store.FindByID(id)
+	if err != nil {
+		return nil, apperror.NotFound("group")
+	}
+	if group.OrganizationID != orgID {
 		return nil, apperror.NotFound("group")
 	}
 	resp := group.ToResponse()

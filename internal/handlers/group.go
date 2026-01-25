@@ -19,19 +19,27 @@ func NewGroupHandler(service *service.GroupService) *GroupHandler {
 }
 
 // List godoc
-// @Summary List all groups
-// @Description Get a paginated list of all groups
+// @Summary List groups in an organization
+// @Description Get a paginated list of groups within a specific organization
 // @Tags groups
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param orgId path int true "Organization ID"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.GroupResponse]
+// @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/groups [get]
+// @Router /api/v1/organizations/{orgId}/groups [get]
 func (h *GroupHandler) List(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	var params models.PaginationParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		respondError(c, apperror.BadRequest("invalid pagination parameters"))
@@ -43,7 +51,7 @@ func (h *GroupHandler) List(c *gin.Context) {
 	}
 	params.SetDefaults()
 
-	groups, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	groups, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -54,25 +62,32 @@ func (h *GroupHandler) List(c *gin.Context) {
 
 // Get godoc
 // @Summary Get group by ID
-// @Description Get a single group by its ID
+// @Description Get a single group by its ID within an organization
 // @Tags groups
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param orgId path int true "Organization ID"
 // @Param groupId path int true "Group ID"
 // @Success 200 {object} models.GroupResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
-// @Router /api/v1/groups/{groupId} [get]
+// @Router /api/v1/organizations/{orgId}/groups/{groupId} [get]
 func (h *GroupHandler) Get(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	id, err := parseID(c, "groupId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	group, err := h.service.GetByID(c.Request.Context(), id)
+	group, err := h.service.GetByIDAndOrg(c.Request.Context(), id, orgID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -83,9 +98,8 @@ func (h *GroupHandler) Get(c *gin.Context) {
 
 // CreateGroupRequest represents the request body for creating a group
 type CreateGroupRequest struct {
-	Name           string `json:"name" binding:"required,max=255" example:"Administrators"`
-	OrganizationID uint   `json:"organization_id" binding:"required" example:"1"`
-	Active         bool   `json:"active" example:"true"`
+	Name   string `json:"name" binding:"required,max=255" example:"Administrators"`
+	Active bool   `json:"active" example:"true"`
 }
 
 // Create godoc
@@ -95,13 +109,20 @@ type CreateGroupRequest struct {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param orgId path int true "Organization ID"
 // @Param request body CreateGroupRequest true "Group data"
 // @Success 201 {object} models.GroupResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/groups [post]
+// @Router /api/v1/organizations/{orgId}/groups [post]
 func (h *GroupHandler) Create(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	var req CreateGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
@@ -113,7 +134,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 
 	group, err := h.service.Create(c.Request.Context(), &service.GroupCreateRequest{
 		Name:           req.Name,
-		OrganizationID: req.OrganizationID,
+		OrganizationID: orgID,
 		Active:         req.Active,
 	}, createdBy)
 	if err != nil {
@@ -132,11 +153,12 @@ type UpdateGroupRequest struct {
 
 // Update godoc
 // @Summary Update a group
-// @Description Update an existing group by ID
+// @Description Update an existing group by ID within an organization
 // @Tags groups
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param orgId path int true "Organization ID"
 // @Param groupId path int true "Group ID"
 // @Param request body UpdateGroupRequest true "Group data"
 // @Success 200 {object} models.GroupResponse
@@ -144,9 +166,22 @@ type UpdateGroupRequest struct {
 // @Failure 401 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/groups/{groupId} [put]
+// @Router /api/v1/organizations/{orgId}/groups/{groupId} [put]
 func (h *GroupHandler) Update(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	id, err := parseID(c, "groupId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Verify the group belongs to this organization
+	_, err = h.service.GetByIDAndOrg(c.Request.Context(), id, orgID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -172,19 +207,34 @@ func (h *GroupHandler) Update(c *gin.Context) {
 
 // Delete godoc
 // @Summary Delete a group
-// @Description Delete a group by ID
+// @Description Delete a group by ID within an organization
 // @Tags groups
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param orgId path int true "Organization ID"
 // @Param groupId path int true "Group ID"
 // @Success 204 "No Content"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/groups/{groupId} [delete]
+// @Router /api/v1/organizations/{orgId}/groups/{groupId} [delete]
 func (h *GroupHandler) Delete(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	id, err := parseID(c, "groupId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Verify the group belongs to this organization
+	_, err = h.service.GetByIDAndOrg(c.Request.Context(), id, orgID)
 	if err != nil {
 		respondError(c, err)
 		return

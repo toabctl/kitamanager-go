@@ -79,6 +79,86 @@ func TestUserHandler_List_IncludesGroups(t *testing.T) {
 	}
 }
 
+func TestUserHandler_ListByOrganization(t *testing.T) {
+	db := setupTestDB(t)
+	userService := createUserService(db)
+	userGroupService := createUserGroupService(db)
+	handler := NewUserHandler(userService, userGroupService)
+
+	// Create two orgs with groups
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
+	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
+
+	// Create users and add them to groups
+	user1 := createTestUser(t, db, "User 1", "user1@example.com", "password")
+	user2 := createTestUser(t, db, "User 2", "user2@example.com", "password")
+	user3 := createTestUser(t, db, "User 3", "user3@example.com", "password")
+
+	// user1 and user2 in org1, user3 in org2
+	if err := db.Model(user1).Association("Groups").Append(group1); err != nil {
+		t.Fatalf("failed to add user1 to group1: %v", err)
+	}
+	if err := db.Model(user2).Association("Groups").Append(group1); err != nil {
+		t.Fatalf("failed to add user2 to group1: %v", err)
+	}
+	if err := db.Model(user3).Association("Groups").Append(group2); err != nil {
+		t.Fatalf("failed to add user3 to group2: %v", err)
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/users", handler.ListByOrganization)
+
+	// List users in org1
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/users", org1.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.UserResponse]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 users in org1, got %d", len(response.Data))
+	}
+
+	// List users in org2
+	w = performRequest(r, "GET", fmt.Sprintf("/organizations/%d/users", org2.ID), nil)
+
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 1 {
+		t.Errorf("expected 1 user in org2, got %d", len(response.Data))
+	}
+}
+
+func TestUserHandler_ListByOrganization_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	userService := createUserService(db)
+	userGroupService := createUserGroupService(db)
+	handler := NewUserHandler(userService, userGroupService)
+
+	org := createTestOrganization(t, db, "Empty Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/users", handler.ListByOrganization)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/users", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.UserResponse]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 0 {
+		t.Errorf("expected 0 users, got %d", len(response.Data))
+	}
+}
+
 func TestUserHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
 	userService := createUserService(db)
