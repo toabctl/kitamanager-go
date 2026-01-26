@@ -72,6 +72,10 @@ func TestMain(m *testing.M) {
 
 	// Run migrations
 	if err := testDB.AutoMigrate(
+		&models.Payplan{},
+		&models.PayplanPeriod{},
+		&models.PayplanEntry{},
+		&models.PayplanProperty{},
 		&models.Organization{},
 		&models.User{},
 		&models.Group{},
@@ -149,16 +153,19 @@ func setupRouter() *gin.Engine {
 }
 
 func cleanupDatabase() {
+	// Clean up in reverse order of dependencies
 	testDB.Exec("DELETE FROM child_contracts")
 	testDB.Exec("DELETE FROM employee_contracts")
 	testDB.Exec("DELETE FROM children")
 	testDB.Exec("DELETE FROM employees")
 	testDB.Exec("DELETE FROM user_groups")
-	testDB.Exec("DELETE FROM user_organizations")
-	testDB.Exec("DELETE FROM group_organizations")
 	testDB.Exec("DELETE FROM groups")
 	testDB.Exec("DELETE FROM users")
 	testDB.Exec("DELETE FROM organizations")
+	testDB.Exec("DELETE FROM payplan_properties")
+	testDB.Exec("DELETE FROM payplan_entries")
+	testDB.Exec("DELETE FROM payplan_periods")
+	testDB.Exec("DELETE FROM payplans")
 }
 
 func cleanupBetweenTests() {

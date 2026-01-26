@@ -319,8 +319,17 @@ jobs:
           SEED_ADMIN_NAME=admin \
           SEED_RBAC_POLICIES=true \
           ./bin/kitamanager-api &
-          sleep 5
-          curl -f http://localhost:8080/api/v1/health || exit 1
+          # Wait for API to be ready with retry loop
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/30)"
+            sleep 1
+          done
+          echo "API failed to start"
+          exit 1
 
       - name: Run E2E tests
         run: cd web && npm run test:e2e
