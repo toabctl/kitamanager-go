@@ -121,21 +121,28 @@ func setupRouter() *gin.Engine {
 	userHandler := handlers.NewUserHandler(userService, userGroupService)
 	groupHandler := handlers.NewGroupHandler(groupService)
 
+	// Routes - matching the actual API structure
 	api := r.Group("/api/v1")
 	{
+		// Organizations
 		api.GET("/organizations", orgHandler.List)
 		api.POST("/organizations", orgHandler.Create)
-		api.GET("/organizations/:id", orgHandler.Get)
-		api.PUT("/organizations/:id", orgHandler.Update)
-		api.DELETE("/organizations/:id", orgHandler.Delete)
+		api.GET("/organizations/:orgId", orgHandler.Get)
+		api.PUT("/organizations/:orgId", orgHandler.Update)
+		api.DELETE("/organizations/:orgId", orgHandler.Delete)
 
+		// Global user routes
 		api.GET("/users", userHandler.List)
 		api.POST("/users", userHandler.Create)
-		api.GET("/users/:id", userHandler.Get)
+		api.GET("/users/:uid", userHandler.Get)
 
-		api.GET("/groups", groupHandler.List)
-		api.POST("/groups", groupHandler.Create)
-		api.GET("/groups/:id", groupHandler.Get)
+		// Org-scoped groups
+		orgScoped := api.Group("/organizations/:orgId")
+		{
+			orgScoped.GET("/groups", groupHandler.List)
+			orgScoped.POST("/groups", groupHandler.Create)
+			orgScoped.GET("/groups/:groupId", groupHandler.Get)
+		}
 	}
 
 	return r
@@ -326,7 +333,20 @@ func TestContract_UserCreate(t *testing.T) {
 func TestContract_GroupsList(t *testing.T) {
 	cleanupBetweenTests()
 
-	resp := performRequest(t, "GET", "/api/v1/groups", nil)
+	// Create organization first (groups are org-scoped)
+	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
+		"name":   "Groups List Test Org",
+		"active": true,
+	})
+	if orgResp.Code != http.StatusCreated {
+		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
+	}
+	var org models.Organization
+	if err := json.Unmarshal(orgResp.Body.Bytes(), &org); err != nil {
+		t.Fatalf("failed to parse organization response: %v", err)
+	}
+
+	resp := performRequest(t, "GET", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), nil)
 
 	if resp.Code != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.Code)
@@ -349,10 +369,9 @@ func TestContract_GroupCreate(t *testing.T) {
 		t.Fatalf("failed to parse organization response: %v", err)
 	}
 
-	resp := performRequest(t, "POST", "/api/v1/groups", map[string]interface{}{
-		"name":            "Test Group",
-		"organization_id": org.ID,
-		"active":          true,
+	resp := performRequest(t, "POST", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), map[string]interface{}{
+		"name":   "Test Group",
+		"active": true,
 	})
 
 	if resp.Code != http.StatusCreated {

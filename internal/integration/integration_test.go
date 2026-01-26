@@ -109,30 +109,39 @@ func setupRouter() *gin.Engine {
 	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 	childHandler := handlers.NewChildHandler(childService)
 
-	// Routes
+	// Routes - matching the actual API structure
 	api := r.Group("/api/v1")
 	{
+		// Organizations
 		api.GET("/organizations", orgHandler.List)
 		api.POST("/organizations", orgHandler.Create)
-		api.GET("/organizations/:id", orgHandler.Get)
-		api.PUT("/organizations/:id", orgHandler.Update)
-		api.DELETE("/organizations/:id", orgHandler.Delete)
+		api.GET("/organizations/:orgId", orgHandler.Get)
+		api.PUT("/organizations/:orgId", orgHandler.Update)
+		api.DELETE("/organizations/:orgId", orgHandler.Delete)
 
+		// Global user routes
 		api.GET("/users", userHandler.List)
 		api.POST("/users", userHandler.Create)
-		api.GET("/users/:id", userHandler.Get)
+		api.GET("/users/:uid", userHandler.Get)
 
-		api.GET("/groups", groupHandler.List)
-		api.POST("/groups", groupHandler.Create)
-		api.GET("/groups/:id", groupHandler.Get)
+		// Org-scoped routes
+		orgScoped := api.Group("/organizations/:orgId")
+		{
+			// Groups
+			orgScoped.GET("/groups", groupHandler.List)
+			orgScoped.POST("/groups", groupHandler.Create)
+			orgScoped.GET("/groups/:groupId", groupHandler.Get)
 
-		api.GET("/employees", employeeHandler.List)
-		api.POST("/employees", employeeHandler.Create)
-		api.GET("/employees/:id", employeeHandler.Get)
+			// Employees
+			orgScoped.GET("/employees", employeeHandler.List)
+			orgScoped.POST("/employees", employeeHandler.Create)
+			orgScoped.GET("/employees/:id", employeeHandler.Get)
 
-		api.GET("/children", childHandler.List)
-		api.POST("/children", childHandler.Create)
-		api.GET("/children/:id", childHandler.Get)
+			// Children
+			orgScoped.GET("/children", childHandler.List)
+			orgScoped.POST("/children", childHandler.Create)
+			orgScoped.GET("/children/:id", childHandler.Get)
+		}
 	}
 
 	return r
@@ -296,12 +305,11 @@ func TestEmployeeWithContracts(t *testing.T) {
 	var org models.Organization
 	parseResponse(t, orgResp, &org)
 
-	// Create employee
-	empResp := performRequest("POST", "/api/v1/employees", map[string]interface{}{
-		"organization_id": org.ID,
-		"first_name":      "John",
-		"last_name":       "Doe",
-		"birthdate":       "1990-01-15T00:00:00Z",
+	// Create employee (using org-scoped route)
+	empResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/employees", org.ID), map[string]interface{}{
+		"first_name": "John",
+		"last_name":  "Doe",
+		"birthdate":  "1990-01-15T00:00:00Z",
 	})
 	if empResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", empResp.Code, empResp.Body.String())
@@ -330,12 +338,11 @@ func TestChildWithContracts(t *testing.T) {
 	var org models.Organization
 	parseResponse(t, orgResp, &org)
 
-	// Create child
-	childResp := performRequest("POST", "/api/v1/children", map[string]interface{}{
-		"organization_id": org.ID,
-		"first_name":      "Emma",
-		"last_name":       "Smith",
-		"birthdate":       "2020-06-15T00:00:00Z",
+	// Create child (using org-scoped route)
+	childResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/children", org.ID), map[string]interface{}{
+		"first_name": "Emma",
+		"last_name":  "Smith",
+		"birthdate":  "2020-06-15T00:00:00Z",
 	})
 	if childResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", childResp.Code, childResp.Body.String())
@@ -362,11 +369,10 @@ func TestGroupOperations(t *testing.T) {
 	var org models.Organization
 	parseResponse(t, orgResp, &org)
 
-	// Create group
-	groupResp := performRequest("POST", "/api/v1/groups", map[string]interface{}{
-		"name":            "Test Group",
-		"organization_id": org.ID,
-		"active":          true,
+	// Create group (using org-scoped route)
+	groupResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), map[string]interface{}{
+		"name":   "Test Group",
+		"active": true,
 	})
 	if groupResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", groupResp.Code, groupResp.Body.String())
@@ -378,8 +384,8 @@ func TestGroupOperations(t *testing.T) {
 		t.Errorf("expected name 'Test Group', got '%s'", group.Name)
 	}
 
-	// List groups
-	listResp := performRequest("GET", "/api/v1/groups", nil)
+	// List groups (org-scoped)
+	listResp := performRequest("GET", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), nil)
 	if listResp.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", listResp.Code)
 	}
