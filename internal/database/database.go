@@ -33,6 +33,7 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		&models.Organization{},
 		&models.User{},
 		&models.Group{},
+		&models.UserGroup{},
 		&models.Employee{},
 		&models.EmployeeContract{},
 		&models.Child{},

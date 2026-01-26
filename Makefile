@@ -1,7 +1,7 @@
 .PHONY: build lint test clean ci dev \
 	api-build api-run api-lint api-test-all api-test-unit api-test-integration api-test-contract api-test-fuzz api-test-coverage \
-	web-install web-dev web-build web-lint web-lint-style web-format web-format-check web-type-check web-test web-test-coverage web-check-all \
-	docs schema-docs swagger-docs docker-up docker-down docker-rebuild install-hooks uninstall-hooks pre-commit
+	web-install web-dev web-build web-lint web-lint-style web-format web-format-check web-type-check web-test web-test-coverage web-test-e2e web-test-e2e-fresh web-test-e2e-demo web-check-all \
+	docs schema-docs swagger-docs docker-up docker-down docker-rebuild docker-reset install-hooks uninstall-hooks pre-commit
 
 # =============================================================================
 # Combined targets (web + api)
@@ -32,8 +32,12 @@ dev:
 	@echo "Starting development environment..."
 	@echo "1. Starting database..."
 	@docker compose up -d db
-	@echo "2. Waiting for database to be ready..."
-	@sleep 3
+	@echo "2. Waiting for database to be healthy..."
+	@until docker compose exec -T db pg_isready -U kitamanager > /dev/null 2>&1; do \
+		echo "   Waiting for PostgreSQL..."; \
+		sleep 1; \
+	done
+	@echo "   Database is ready!"
 	@echo "3. Starting API server in background..."
 	@DATABASE_URL="postgres://kitamanager:kitamanager@localhost:5432/kitamanager?sslmode=disable" \
 		SEED_ADMIN_EMAIL=admin@example.com \
@@ -43,13 +47,17 @@ dev:
 		CORS_ALLOW_ORIGINS="http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:8080" \
 		CORS_ALLOW_CREDENTIALS=true \
 		./bin/kitamanager-api > /tmp/kitamanager-api.log 2>&1 & echo $$! > /tmp/kitamanager-api.pid
-	@sleep 2
+	@echo "   Waiting for API to be healthy..."
+	@until curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "   API is ready!"
 	@echo "4. Starting web dev server (Ctrl+C to stop all)..."
 	@echo ""
 	@echo "================================================"
 	@echo "  Web UI: http://localhost:5173 (hot reload)"
 	@echo "  API:    http://localhost:8080"
-	@echo "  Login:  admin@example.com / admin"
+	@echo "  Login:  admin@example.com / adminadmin"
 	@echo "================================================"
 	@echo ""
 	@trap 'kill $$(cat /tmp/kitamanager-api.pid) 2>/dev/null; docker compose stop db' EXIT; \
@@ -145,6 +153,15 @@ web-test-coverage:
 web-test-e2e:
 	cd web && npm run test:e2e
 
+# Run web E2E tests with a fresh database (resets all data first)
+web-test-e2e-fresh:
+	@echo "Stopping any running API server..."
+	@-kill $$(cat /tmp/kitamanager-api.pid 2>/dev/null) 2>/dev/null || true
+	@rm -f /tmp/kitamanager-api.pid
+	docker compose down -v
+	@echo "Database reset. Starting E2E tests with fresh database..."
+	cd web && npm run test:e2e
+
 # Run web E2E tests with browser visible
 web-test-e2e-headed:
 	cd web && npm run test:e2e:headed
@@ -192,6 +209,11 @@ docker-down:
 # Rebuild and restart docker containers
 docker-rebuild:
 	docker compose up -d --build
+
+# Reset database (removes all data)
+docker-reset:
+	docker compose down -v
+	@echo "Database volume removed. Run 'make dev' to start fresh."
 
 # =============================================================================
 # Git hooks targets
