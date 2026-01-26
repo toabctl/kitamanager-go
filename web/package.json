@@ -27,6 +27,7 @@
     "@vee-validate/zod": "^4.14.0",
     "axios": "^1.7.0",
     "pinia": "^2.3.0",
+    "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.2.0",
     "vee-validate": "^4.14.0",

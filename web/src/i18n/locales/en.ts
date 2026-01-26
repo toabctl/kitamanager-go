@@ -24,7 +24,8 @@ export default {
     error: 'Error',
     success: 'Success',
     warning: 'Warning',
-    info: 'Information'
+    info: 'Information',
+    toggleSidebar: 'Toggle sidebar'
   },
   auth: {
     login: 'Login',

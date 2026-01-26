@@ -10,6 +10,7 @@ import router from './router'
 import i18n from './i18n'
 
 import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.css'
 import './assets/main.css'
 
 const app = createApp(App)

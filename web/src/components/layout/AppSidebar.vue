@@ -6,6 +6,10 @@ import { useUiStore } from '@/stores/ui'
 import type { Organization } from '@/api/types'
 import Dropdown from 'primevue/dropdown'
 
+const emit = defineEmits<{
+  navigate: []
+}>()
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -100,6 +104,7 @@ onMounted(() => {
         :to="item.to"
         class="nav-item"
         :class="{ 'router-link-active': isActive(item) }"
+        @click="emit('navigate')"
       >
         <i class="pi" :class="item.icon"></i>
         <span>{{ item.label }}</span>

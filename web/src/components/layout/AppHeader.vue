@@ -57,6 +57,17 @@ function toggleMenu(event: Event) {
 
 <template>
   <header class="app-header">
+    <Button
+      icon="pi pi-bars"
+      text
+      rounded
+      class="sidebar-toggle md:hidden"
+      @click="uiStore.toggleSidebar"
+      :aria-label="t('common.toggleSidebar')"
+    />
+
+    <div class="flex-grow-1"></div>
+
     <Select
       v-model="currentLocale"
       :options="languageOptions"

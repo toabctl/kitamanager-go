@@ -24,7 +24,8 @@ export default {
     error: 'Fehler',
     success: 'Erfolg',
     warning: 'Warnung',
-    info: 'Information'
+    info: 'Information',
+    toggleSidebar: 'Seitenleiste umschalten'
   },
   auth: {
     login: 'Anmelden',

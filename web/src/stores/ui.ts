@@ -4,7 +4,8 @@ import { apiClient } from '@/api/client'
 import type { Organization } from '@/api/types'
 
 export const useUiStore = defineStore('ui', () => {
-  const sidebarCollapsed = ref(false)
+  // Start with sidebar collapsed on mobile
+  const sidebarCollapsed = ref(window.innerWidth < 768)
   const darkMode = ref(localStorage.getItem('darkMode') === 'true')
   const selectedOrganizationId = ref<number | null>(
     localStorage.getItem('selectedOrgId') ? Number(localStorage.getItem('selectedOrgId')) : null
