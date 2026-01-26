@@ -27,9 +27,11 @@ const router = createRouter({
           component: () => import('@/views/organizations/OrganizationsView.vue')
         },
         {
-          path: 'users',
+          path: 'organizations/:orgId/users',
           name: 'users',
-          component: () => import('@/views/users/UsersView.vue')
+          component: () => import('@/views/users/UsersView.vue'),
+          props: true,
+          meta: { orgScoped: true }
         },
         {
           path: 'organizations/:orgId/groups',

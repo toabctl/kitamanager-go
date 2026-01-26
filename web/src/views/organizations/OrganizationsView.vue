@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { useToast } from 'primevue/usetoast'
+import { useUiStore } from '@/stores/ui'
 import { apiClient } from '@/api/client'
 import type { Organization, OrganizationCreate, OrganizationUpdate, Payplan } from '@/api/types'
 import DataTable from 'primevue/datatable'
@@ -13,6 +14,7 @@ import Dropdown from 'primevue/dropdown'
 import OrganizationForm from './OrganizationForm.vue'
 
 const toast = useToast()
+const uiStore = useUiStore()
 
 const {
   items: organizations,
@@ -23,7 +25,7 @@ const {
   openCreateDialog,
   openEditDialog,
   closeDialog,
-  saveItem,
+  saveItem: crudSaveItem,
   confirmDelete
 } = useCrud<Organization, OrganizationCreate, OrganizationUpdate>({
   entityName: 'Organization',
@@ -32,6 +34,13 @@ const {
   update: (id, data) => apiClient.updateOrganization(id, data),
   remove: (id) => apiClient.deleteOrganization(id)
 })
+
+// Wrap saveItem to also refresh the sidebar's org list
+async function saveItem(data: OrganizationCreate | OrganizationUpdate) {
+  await crudSaveItem(data)
+  // Refresh sidebar organization dropdown
+  await uiStore.fetchOrganizations()
+}
 
 // Payplan assignment
 const payplans = ref<Payplan[]>([])

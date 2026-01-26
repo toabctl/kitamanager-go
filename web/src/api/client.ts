@@ -91,7 +91,8 @@ class ApiClient {
 
   // Organizations
   async getOrganizations(): Promise<Organization[]> {
-    const response = await this.client.get<{ data: Organization[] }>('/organizations')
+    // Request maximum limit to get all orgs for sidebar dropdown
+    const response = await this.client.get<{ data: Organization[] }>('/organizations?limit=100')
     return response.data.data
   }
 

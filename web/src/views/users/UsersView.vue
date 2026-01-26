@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { apiClient } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
-import { useUiStore } from '@/stores/ui'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import type { User, UserCreate, UserUpdate, Group } from '@/api/types'
@@ -14,8 +13,13 @@ import Tag from 'primevue/tag'
 import UserForm from './UserForm.vue'
 import UserMembershipsDialog from './UserMembershipsDialog.vue'
 
+const props = defineProps<{
+  orgId: string
+}>()
+
+const orgIdNum = computed(() => parseInt(props.orgId, 10))
+
 const authStore = useAuthStore()
-const uiStore = useUiStore()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -32,7 +36,7 @@ const {
   confirmDelete
 } = useCrud<User, UserCreate, UserUpdate>({
   entityName: 'User',
-  fetchAll: () => apiClient.getUsers(),
+  fetchAll: () => apiClient.getOrganizationUsers(orgIdNum.value),
   create: (data) => apiClient.createUser(data),
   update: (id, data) => apiClient.updateUser(id, data),
   remove: (id) => apiClient.deleteUser(id)
@@ -51,18 +55,16 @@ function closeMembershipsDialog() {
   selectedUserForMemberships.value = null
 }
 
-// Get groups to display - if org selected, filter to that org; otherwise show all
+// Get groups to display - filter to current org
 function getGroupsToDisplay(userGroups: Group[] | undefined): Group[] {
   if (!userGroups) return []
-  if (!uiStore.selectedOrganizationId) return userGroups
-  return userGroups.filter((group) => group.organization_id === uiStore.selectedOrganizationId)
+  return userGroups.filter((group) => group.organization_id === orgIdNum.value)
 }
 
-// Get organization name for a group (used when showing all groups without filter)
-function getOrgNameForGroup(group: Group): string {
-  const org = uiStore.organizations.find((o) => o.id === group.organization_id)
-  return org ? org.name : ''
-}
+// Watch for org changes and refetch
+watch(orgIdNum, () => {
+  fetchItems()
+})
 
 function formatLastLogin(lastLogin: string | null | undefined): string {
   if (!lastLogin) return 'Never'
@@ -149,11 +151,7 @@ onMounted(() => {
               <Tag
                 v-for="group in getGroupsToDisplay(data.groups)"
                 :key="group.id"
-                :value="
-                  uiStore.selectedOrganizationId
-                    ? group.name
-                    : `${group.name} (${getOrgNameForGroup(group)})`
-                "
+                :value="group.name"
                 severity="info"
                 class="mr-1"
               />
