@@ -23,7 +23,19 @@ import type {
   ChildContractCreate,
   Role,
   UserGroupResponse,
-  UserMembershipsResponse
+  UserMembershipsResponse,
+  Payplan,
+  PayplanCreate,
+  PayplanUpdate,
+  PayplanPeriod,
+  PayplanPeriodCreate,
+  PayplanPeriodUpdate,
+  PayplanEntry,
+  PayplanEntryCreate,
+  PayplanEntryUpdate,
+  PayplanProperty,
+  PayplanPropertyCreate,
+  PayplanPropertyUpdate
 } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
@@ -316,6 +328,131 @@ class ApiClient {
 
   async deleteChildContract(orgId: number, childId: number, contractId: number): Promise<void> {
     await this.client.delete(`/organizations/${orgId}/children/${childId}/contracts/${contractId}`)
+  }
+
+  // Payplans
+  async getPayplans(): Promise<Payplan[]> {
+    const response = await this.client.get<{ data: Payplan[] }>('/payplans')
+    return response.data.data
+  }
+
+  async getPayplan(id: number): Promise<Payplan> {
+    const response = await this.client.get<Payplan>(`/payplans/${id}`)
+    return response.data
+  }
+
+  async createPayplan(data: PayplanCreate): Promise<Payplan> {
+    const response = await this.client.post<Payplan>('/payplans', data)
+    return response.data
+  }
+
+  async updatePayplan(id: number, data: PayplanUpdate): Promise<Payplan> {
+    const response = await this.client.put<Payplan>(`/payplans/${id}`, data)
+    return response.data
+  }
+
+  async deletePayplan(id: number): Promise<void> {
+    await this.client.delete(`/payplans/${id}`)
+  }
+
+  // Payplan Periods
+  async createPayplanPeriod(payplanId: number, data: PayplanPeriodCreate): Promise<PayplanPeriod> {
+    const response = await this.client.post<PayplanPeriod>(`/payplans/${payplanId}/periods`, data)
+    return response.data
+  }
+
+  async updatePayplanPeriod(
+    payplanId: number,
+    periodId: number,
+    data: PayplanPeriodUpdate
+  ): Promise<PayplanPeriod> {
+    const response = await this.client.put<PayplanPeriod>(
+      `/payplans/${payplanId}/periods/${periodId}`,
+      data
+    )
+    return response.data
+  }
+
+  async deletePayplanPeriod(payplanId: number, periodId: number): Promise<void> {
+    await this.client.delete(`/payplans/${payplanId}/periods/${periodId}`)
+  }
+
+  // Payplan Entries
+  async createPayplanEntry(
+    payplanId: number,
+    periodId: number,
+    data: PayplanEntryCreate
+  ): Promise<PayplanEntry> {
+    const response = await this.client.post<PayplanEntry>(
+      `/payplans/${payplanId}/periods/${periodId}/entries`,
+      data
+    )
+    return response.data
+  }
+
+  async updatePayplanEntry(
+    payplanId: number,
+    periodId: number,
+    entryId: number,
+    data: PayplanEntryUpdate
+  ): Promise<PayplanEntry> {
+    const response = await this.client.put<PayplanEntry>(
+      `/payplans/${payplanId}/periods/${periodId}/entries/${entryId}`,
+      data
+    )
+    return response.data
+  }
+
+  async deletePayplanEntry(payplanId: number, periodId: number, entryId: number): Promise<void> {
+    await this.client.delete(`/payplans/${payplanId}/periods/${periodId}/entries/${entryId}`)
+  }
+
+  // Payplan Properties
+  async createPayplanProperty(
+    payplanId: number,
+    periodId: number,
+    entryId: number,
+    data: PayplanPropertyCreate
+  ): Promise<PayplanProperty> {
+    const response = await this.client.post<PayplanProperty>(
+      `/payplans/${payplanId}/periods/${periodId}/entries/${entryId}/properties`,
+      data
+    )
+    return response.data
+  }
+
+  async updatePayplanProperty(
+    payplanId: number,
+    periodId: number,
+    entryId: number,
+    propId: number,
+    data: PayplanPropertyUpdate
+  ): Promise<PayplanProperty> {
+    const response = await this.client.put<PayplanProperty>(
+      `/payplans/${payplanId}/periods/${periodId}/entries/${entryId}/properties/${propId}`,
+      data
+    )
+    return response.data
+  }
+
+  async deletePayplanProperty(
+    payplanId: number,
+    periodId: number,
+    entryId: number,
+    propId: number
+  ): Promise<void> {
+    await this.client.delete(
+      `/payplans/${payplanId}/periods/${periodId}/entries/${entryId}/properties/${propId}`
+    )
+  }
+
+  // Organization Payplan Assignment
+  async assignPayplanToOrganization(orgId: number, payplanId: number): Promise<void> {
+    await this.client.put(`/organizations/${orgId}/payplan`, { payplan_id: payplanId })
+  }
+
+  async removePayplanFromOrganization(orgId: number): Promise<void> {
+    await this.client.delete(`/organizations/${orgId}/payplan`)
   }
 }
 

@@ -43,6 +43,7 @@ export default {
     children: 'Children',
     users: 'Users',
     groups: 'Groups',
+    payplans: 'Payplans',
     settings: 'Settings'
   },
   dashboard: {

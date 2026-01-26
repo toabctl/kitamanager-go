@@ -36,6 +36,7 @@ const navItems = computed(() => [
   { to: '/', icon: 'pi-home', label: t('nav.dashboard'), exact: true },
   { to: '/organizations', icon: 'pi-building', label: t('nav.organizations') },
   { to: '/users', icon: 'pi-users', label: t('nav.users') },
+  { to: '/payplans', icon: 'pi-money-bill', label: t('nav.payplans') },
   ...(selectedOrg.value
     ? [
         {

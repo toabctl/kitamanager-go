@@ -21,11 +21,99 @@ export interface MessageResponse {
   message: string
 }
 
+// Payplan
+export interface Payplan {
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
+  periods?: PayplanPeriod[]
+}
+
+export interface PayplanPeriod {
+  id: number
+  payplan_id: number
+  from: string
+  to?: string | null
+  comment?: string
+  created_at: string
+  entries?: PayplanEntry[]
+}
+
+export interface PayplanEntry {
+  id: number
+  period_id: number
+  min_age: number
+  max_age: number
+  created_at: string
+  properties?: PayplanProperty[]
+}
+
+export interface PayplanProperty {
+  id: number
+  entry_id: number
+  name: string
+  payment: number
+  requirement: number
+  comment?: string
+  created_at: string
+}
+
+export interface PayplanCreate {
+  name: string
+}
+
+export interface PayplanUpdate {
+  name?: string
+}
+
+export interface PayplanPeriodCreate {
+  from: string
+  to?: string | null
+  comment?: string
+}
+
+export interface PayplanPeriodUpdate {
+  from?: string
+  to?: string | null
+  comment?: string
+}
+
+export interface PayplanEntryCreate {
+  min_age: number
+  max_age: number
+}
+
+export interface PayplanEntryUpdate {
+  min_age?: number
+  max_age?: number
+}
+
+export interface PayplanPropertyCreate {
+  name: string
+  payment: number
+  requirement: number
+  comment?: string
+}
+
+export interface PayplanPropertyUpdate {
+  name?: string
+  payment?: number
+  requirement?: number
+  comment?: string
+}
+
+export interface AssignPayplanRequest {
+  payplan_id: number
+}
+
 // Organization
 export interface Organization {
   id: number
   name: string
   active: boolean
+  payplan_id?: number | null
+  payplan?: Payplan
   created_at: string
   created_by: string
   updated_at: string
@@ -157,6 +245,7 @@ export interface ChildContract {
   group_id?: number | null
   meals_included: boolean
   special_needs: string
+  attributes?: string[]
   created_at: string
 }
 
@@ -180,6 +269,7 @@ export interface ChildContractCreate {
   group_id?: number | null
   meals_included?: boolean
   special_needs?: string
+  attributes?: string[]
 }
 
 // Pagination response wrapper

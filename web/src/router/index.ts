@@ -51,6 +51,17 @@ const router = createRouter({
           component: () => import('@/views/children/ChildrenView.vue'),
           props: true,
           meta: { orgScoped: true }
+        },
+        {
+          path: 'payplans',
+          name: 'payplans',
+          component: () => import('@/views/payplans/PayplansView.vue')
+        },
+        {
+          path: 'payplans/:id',
+          name: 'payplan-detail',
+          component: () => import('@/views/payplans/PayplanDetailView.vue'),
+          props: true
         }
       ]
     },

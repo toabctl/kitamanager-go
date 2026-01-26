@@ -100,6 +100,40 @@ type ContractStorer[T models.HasPeriod] interface {
 	CloseCurrentContract(personID uint, endDate time.Time) error
 }
 
+// PayplanStorer defines the interface for payplan storage operations
+type PayplanStorer interface {
+	// Payplan CRUD
+	FindAll(limit, offset int) ([]models.Payplan, int64, error)
+	FindByID(id uint) (*models.Payplan, error)
+	FindByIDWithDetails(id uint) (*models.Payplan, error)
+	Create(payplan *models.Payplan) error
+	Update(payplan *models.Payplan) error
+	Delete(id uint) error
+
+	// Period CRUD
+	FindPeriodByID(id uint) (*models.PayplanPeriod, error)
+	FindPeriodsByPayplanID(payplanID uint) ([]models.PayplanPeriod, error)
+	CreatePeriod(period *models.PayplanPeriod) error
+	UpdatePeriod(period *models.PayplanPeriod) error
+	DeletePeriod(id uint) error
+
+	// Entry CRUD
+	FindEntryByID(id uint) (*models.PayplanEntry, error)
+	CreateEntry(entry *models.PayplanEntry) error
+	UpdateEntry(entry *models.PayplanEntry) error
+	DeleteEntry(id uint) error
+
+	// Property CRUD
+	FindPropertyByID(id uint) (*models.PayplanProperty, error)
+	CreateProperty(property *models.PayplanProperty) error
+	UpdateProperty(property *models.PayplanProperty) error
+	DeleteProperty(id uint) error
+
+	// Organization payplan assignment
+	AssignPayplanToOrg(orgID, payplanID uint) error
+	RemovePayplanFromOrg(orgID uint) error
+}
+
 // Compile-time interface compliance checks
 var (
 	_ UserStorer         = (*UserStore)(nil)
@@ -108,4 +142,5 @@ var (
 	_ EmployeeStorer     = (*EmployeeStore)(nil)
 	_ ChildStorer        = (*ChildStore)(nil)
 	_ UserGroupStorer    = (*UserGroupStore)(nil)
+	_ PayplanStorer      = (*PayplanStore)(nil)
 )

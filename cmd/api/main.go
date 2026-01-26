@@ -91,6 +91,7 @@ func main() {
 	employeeStore := store.NewEmployeeStore(db)
 	childStore := store.NewChildStore(db)
 	userGroupStore := store.NewUserGroupStore(db)
+	payplanStore := store.NewPayplanStore(db)
 
 	// Seed admin user if configured
 	if err := seed.SeedAdmin(cfg, userStore, userGroupStore, enforcer); err != nil {
@@ -108,6 +109,7 @@ func main() {
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
 	childService := service.NewChildService(childStore, groupStore)
+	payplanService := service.NewPayplanService(payplanStore, orgStore)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret)
@@ -116,6 +118,7 @@ func main() {
 	orgHandler := handlers.NewOrganizationHandler(orgService)
 	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 	childHandler := handlers.NewChildHandler(childService)
+	payplanHandler := handlers.NewPayplanHandler(payplanService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware
@@ -146,7 +149,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Setup API routes
-	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, employeeHandler, childHandler, authMiddleware, authzMiddleware)
+	routes.Setup(r, authHandler, userHandler, groupHandler, orgHandler, employeeHandler, childHandler, payplanHandler, authMiddleware, authzMiddleware)
 
 	// Register embedded web UI
 	if err := web.RegisterHandlers(r); err != nil {

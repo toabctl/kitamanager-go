@@ -26,6 +26,10 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(
+		&models.Payplan{},
+		&models.PayplanPeriod{},
+		&models.PayplanEntry{},
+		&models.PayplanProperty{},
 		&models.Organization{},
 		&models.User{},
 		&models.Group{},

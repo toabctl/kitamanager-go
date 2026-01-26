@@ -16,6 +16,7 @@ func Setup(
 	orgHandler *handlers.OrganizationHandler,
 	employeeHandler *handlers.EmployeeHandler,
 	childHandler *handlers.ChildHandler,
+	payplanHandler *handlers.PayplanHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	authzMiddleware *middleware.AuthorizationMiddleware,
 ) {
@@ -39,6 +40,8 @@ func Setup(
 				// Superadmin only
 				orgs.POST("", authzMiddleware.RequireSuperAdmin(), orgHandler.Create)
 				orgs.DELETE("/:orgId", authzMiddleware.RequireSuperAdmin(), orgHandler.Delete)
+				orgs.PUT("/:orgId/payplan", authzMiddleware.RequireSuperAdmin(), payplanHandler.AssignPayplan)
+				orgs.DELETE("/:orgId/payplan", authzMiddleware.RequireSuperAdmin(), payplanHandler.RemovePayplan)
 
 				// List: requires any role (filtered by access in handler/service)
 				orgs.GET("", orgHandler.List)
@@ -52,6 +55,33 @@ func Setup(
 				orgs.PUT("/:orgId",
 					authzMiddleware.RequirePermission(rbac.ResourceOrganizations, rbac.ActionUpdate),
 					orgHandler.Update)
+			}
+
+			// ============================================================
+			// Payplan management (superadmin only)
+			// ============================================================
+			payplans := protected.Group("/payplans")
+			{
+				payplans.GET("", authzMiddleware.RequireSuperAdmin(), payplanHandler.List)
+				payplans.GET("/:id", authzMiddleware.RequireSuperAdmin(), payplanHandler.Get)
+				payplans.POST("", authzMiddleware.RequireSuperAdmin(), payplanHandler.Create)
+				payplans.PUT("/:id", authzMiddleware.RequireSuperAdmin(), payplanHandler.Update)
+				payplans.DELETE("/:id", authzMiddleware.RequireSuperAdmin(), payplanHandler.Delete)
+
+				// Period management
+				payplans.POST("/:id/periods", authzMiddleware.RequireSuperAdmin(), payplanHandler.CreatePeriod)
+				payplans.PUT("/:id/periods/:periodId", authzMiddleware.RequireSuperAdmin(), payplanHandler.UpdatePeriod)
+				payplans.DELETE("/:id/periods/:periodId", authzMiddleware.RequireSuperAdmin(), payplanHandler.DeletePeriod)
+
+				// Entry management
+				payplans.POST("/:id/periods/:periodId/entries", authzMiddleware.RequireSuperAdmin(), payplanHandler.CreateEntry)
+				payplans.PUT("/:id/periods/:periodId/entries/:entryId", authzMiddleware.RequireSuperAdmin(), payplanHandler.UpdateEntry)
+				payplans.DELETE("/:id/periods/:periodId/entries/:entryId", authzMiddleware.RequireSuperAdmin(), payplanHandler.DeleteEntry)
+
+				// Property management
+				payplans.POST("/:id/periods/:periodId/entries/:entryId/properties", authzMiddleware.RequireSuperAdmin(), payplanHandler.CreateProperty)
+				payplans.PUT("/:id/periods/:periodId/entries/:entryId/properties/:propId", authzMiddleware.RequireSuperAdmin(), payplanHandler.UpdateProperty)
+				payplans.DELETE("/:id/periods/:periodId/entries/:entryId/properties/:propId", authzMiddleware.RequireSuperAdmin(), payplanHandler.DeleteProperty)
 			}
 
 			// ============================================================
