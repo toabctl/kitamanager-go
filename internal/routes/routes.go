@@ -23,8 +23,12 @@ func Setup(
 ) {
 	api := r.Group("/api/v1")
 	{
-		// Public endpoints with rate limiting
-		api.POST("/login", loginRateLimiter.RateLimit(), authHandler.Login)
+		// Public endpoints with optional rate limiting
+		if loginRateLimiter != nil {
+			api.POST("/login", loginRateLimiter.RateLimit(), authHandler.Login)
+		} else {
+			api.POST("/login", authHandler.Login)
+		}
 
 		// Protected endpoints (require authentication)
 		protected := api.Group("")

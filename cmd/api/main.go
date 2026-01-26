@@ -124,7 +124,7 @@ func main() {
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	authzMiddleware := middleware.NewAuthorizationMiddleware(permissionService)
-	loginRateLimiter := middleware.LoginRateLimiter()
+	loginRateLimiter := middleware.LoginRateLimiter(cfg.LoginRateLimitPerMinute)
 
 	// Create Gin router
 	r := gin.New()

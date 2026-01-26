@@ -211,7 +211,7 @@ func TestRateLimitMiddleware_DifferentIPs(t *testing.T) {
 }
 
 func TestLoginRateLimiter(t *testing.T) {
-	rl := LoginRateLimiter()
+	rl := LoginRateLimiter(5)
 
 	// Should allow 5 requests
 	for i := 0; i < 5; i++ {
@@ -223,6 +223,13 @@ func TestLoginRateLimiter(t *testing.T) {
 	// 6th should be blocked
 	if rl.Allow("192.168.1.1") {
 		t.Error("6th request should be blocked by login limiter")
+	}
+}
+
+func TestLoginRateLimiter_Disabled(t *testing.T) {
+	rl := LoginRateLimiter(0)
+	if rl != nil {
+		t.Error("LoginRateLimiter(0) should return nil")
 	}
 }
 

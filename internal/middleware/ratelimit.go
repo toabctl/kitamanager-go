@@ -130,7 +130,10 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 }
 
 // LoginRateLimiter creates a rate limiter specifically for login endpoints
-// Defaults to 5 attempts per minute per IP
-func LoginRateLimiter() *RateLimiter {
-	return NewRateLimiter(5, time.Minute)
+// If limit is 0, returns nil (disabled)
+func LoginRateLimiter(limit int) *RateLimiter {
+	if limit <= 0 {
+		return nil
+	}
+	return NewRateLimiter(limit, time.Minute)
 }

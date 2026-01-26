@@ -54,6 +54,9 @@ type Config struct {
 
 	// Environment
 	Environment string // "development", "staging", "production"
+
+	// Rate Limiting
+	LoginRateLimitPerMinute int // 0 = disabled, default = 5
 }
 
 // IsProduction returns true if running in production mode
@@ -183,6 +186,9 @@ func Load() (*Config, error) {
 
 		// Environment
 		Environment: getEnv("ENVIRONMENT", "development"),
+
+		// Rate Limiting
+		LoginRateLimitPerMinute: getEnvInt("LOGIN_RATE_LIMIT_PER_MINUTE", 5),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -195,6 +201,15 @@ func Load() (*Config, error) {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if i, err := strconv.Atoi(value); err == nil {
+			return i
+		}
 	}
 	return defaultValue
 }
