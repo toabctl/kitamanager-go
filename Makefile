@@ -18,7 +18,7 @@ test: web-test api-test-unit
 
 # Clean build artifacts
 clean:
-	rm -rf bin/ coverage.out coverage.html web/dist
+	rm -rf bin/ coverage.out coverage.html internal/web/dist
 
 # Run all CI checks locally
 ci: lint test build
