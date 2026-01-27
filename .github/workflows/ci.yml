@@ -315,7 +315,7 @@ jobs:
         run: |
           DATABASE_URL="postgres://kitamanager:kitamanager@localhost:5432/kitamanager?sslmode=disable" \
           SEED_ADMIN_EMAIL=admin@example.com \
-          SEED_ADMIN_PASSWORD=adminadmin \
+          SEED_ADMIN_PASSWORD=supersecret \
           SEED_ADMIN_NAME=admin \
           SEED_RBAC_POLICIES=true \
           LOGIN_RATE_LIMIT_PER_MINUTE=0 \

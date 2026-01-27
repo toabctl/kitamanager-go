@@ -18,7 +18,7 @@ test.describe('Authentication', () => {
 
     // Fill in credentials
     await page.getByPlaceholder('Email').fill('admin@example.com')
-    await page.getByPlaceholder('Password').fill('adminadmin')
+    await page.getByPlaceholder('Password').fill('supersecret')
 
     // Submit form
     await page.getByRole('button', { name: 'Sign In' }).click()
@@ -45,7 +45,7 @@ test.describe('Authentication', () => {
     // Login first
     await page.goto('/login')
     await page.getByPlaceholder('Email').fill('admin@example.com')
-    await page.getByPlaceholder('Password').fill('adminadmin')
+    await page.getByPlaceholder('Password').fill('supersecret')
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     // Wait for dashboard

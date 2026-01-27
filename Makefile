@@ -41,7 +41,7 @@ dev:
 	@echo "3. Starting API server in background..."
 	@DATABASE_URL="postgres://kitamanager:kitamanager@localhost:5432/kitamanager?sslmode=disable" \
 		SEED_ADMIN_EMAIL=admin@example.com \
-		SEED_ADMIN_PASSWORD=adminadmin \
+		SEED_ADMIN_PASSWORD=supersecret \
 		SEED_ADMIN_NAME=admin \
 		SEED_RBAC_POLICIES=true \
 		GOVERNMENT_FUNDING_SEED_PATH=configs/government-fundings/berlin.yaml \
@@ -59,7 +59,7 @@ dev:
 	@echo "================================================"
 	@echo "  Web UI: http://localhost:5173 (hot reload)"
 	@echo "  API:    http://localhost:8080"
-	@echo "  Login:  admin@example.com / adminadmin"
+	@echo "  Login:  admin@example.com / supersecret"
 	@echo "================================================"
 	@echo ""
 	@trap 'kill $$(cat /tmp/kitamanager-api.pid) 2>/dev/null; docker compose stop db' EXIT; \

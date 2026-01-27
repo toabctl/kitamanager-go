@@ -7,7 +7,7 @@ import { expect, Page } from 'playwright/test'
 
 // Superadmin credentials (seeded in dev environment)
 export const SUPERADMIN_EMAIL = 'admin@example.com'
-export const SUPERADMIN_PASSWORD = 'adminadmin'
+export const SUPERADMIN_PASSWORD = 'supersecret'
 
 /**
  * Login to the application

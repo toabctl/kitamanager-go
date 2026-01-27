@@ -5,7 +5,7 @@ test.describe('Navigation', () => {
     // Login before each test
     await page.goto('/login')
     await page.getByPlaceholder('Email').fill('admin@example.com')
-    await page.getByPlaceholder('Password').fill('adminadmin')
+    await page.getByPlaceholder('Password').fill('supersecret')
     await page.getByRole('button', { name: 'Sign In' }).click()
     await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 })
   })
