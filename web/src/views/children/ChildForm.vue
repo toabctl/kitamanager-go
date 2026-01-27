@@ -72,7 +72,7 @@ function handleSave() {
     emit('save', {
       first_name: form.value.first_name,
       last_name: form.value.last_name,
-      birthdate: form.value.birthdate!.toISOString().split('T')[0]
+      birthdate: form.value.birthdate!.toISOString()
     })
   }
 }

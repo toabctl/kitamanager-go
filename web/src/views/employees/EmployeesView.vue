@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { apiClient } from '@/api/client'
+import { apiClient, getErrorMessage } from '@/api/client'
 import type {
   Employee,
   EmployeeCreateRequest,
@@ -42,12 +42,12 @@ async function fetchEmployees() {
   loading.value = true
   try {
     employees.value = await apiClient.getEmployees(orgId.value)
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load employees',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to load employees'),
+      life: 5000
     })
   } finally {
     loading.value = false
@@ -97,12 +97,12 @@ async function saveEmployee(data: EmployeeCreateRequest | EmployeeUpdateRequest)
     }
     closeDialog()
     await fetchEmployees()
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to save employee',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to save employee'),
+      life: 5000
     })
   }
 }
@@ -123,12 +123,12 @@ function confirmDelete(employee: Employee) {
           life: 3000
         })
         await fetchEmployees()
-      } catch {
+      } catch (error) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to delete employee',
-          life: 3000
+          detail: getErrorMessage(error, 'Failed to delete employee'),
+          life: 5000
         })
       }
     }
@@ -158,12 +158,12 @@ async function saveContract(data: EmployeeContractCreateRequest) {
     })
     closeContractDialog()
     await fetchEmployees()
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to create contract',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to create contract'),
+      life: 5000
     })
   }
 }

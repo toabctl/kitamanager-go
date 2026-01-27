@@ -484,3 +484,14 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
+
+// Helper to extract error message from API errors
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as { response?: { data?: { message?: string } } }
+    if (axiosError.response?.data?.message) {
+      return axiosError.response.data.message
+    }
+  }
+  return fallback
+}

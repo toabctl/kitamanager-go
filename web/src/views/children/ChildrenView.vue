@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { apiClient } from '@/api/client'
+import { apiClient, getErrorMessage } from '@/api/client'
 import type {
   Child,
   ChildCreateRequest,
@@ -47,12 +47,12 @@ async function fetchChildren() {
   loading.value = true
   try {
     children.value = await apiClient.getChildren(orgId.value)
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load children',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to load children'),
+      life: 5000
     })
   } finally {
     loading.value = false
@@ -95,12 +95,12 @@ async function saveChild(data: ChildCreateRequest | ChildUpdateRequest) {
     }
     closeDialog()
     await fetchChildren()
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to save child',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to save child'),
+      life: 5000
     })
   }
 }
@@ -121,12 +121,12 @@ function confirmDelete(child: Child) {
           life: 3000
         })
         await fetchChildren()
-      } catch {
+      } catch (error) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to delete child',
-          life: 3000
+          detail: getErrorMessage(error, 'Failed to delete child'),
+          life: 5000
         })
       }
     }
@@ -166,12 +166,12 @@ async function saveContract(data: ChildContractCreateRequest) {
     })
     closeContractDialog()
     await fetchChildren()
-  } catch {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to create contract',
-      life: 3000
+      detail: getErrorMessage(error, 'Failed to create contract'),
+      life: 5000
     })
   }
 }

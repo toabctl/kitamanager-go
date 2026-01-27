@@ -14,7 +14,8 @@ export interface LoginResponse {
 }
 
 export interface ErrorResponse {
-  error: string
+  code: string
+  message: string
 }
 
 export interface MessageResponse {

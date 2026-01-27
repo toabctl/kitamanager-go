@@ -79,8 +79,8 @@ function validate(): boolean {
 function handleSave() {
   if (validate()) {
     emit('save', {
-      from: form.value.from!.toISOString().split('T')[0],
-      to: form.value.to ? form.value.to.toISOString().split('T')[0] : null,
+      from: form.value.from!.toISOString(),
+      to: form.value.to ? form.value.to.toISOString() : null,
       position: form.value.position,
       weekly_hours: form.value.weekly_hours,
       salary: Math.round(form.value.salary * 100) // Convert to cents
