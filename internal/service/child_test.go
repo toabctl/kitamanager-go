@@ -340,18 +340,14 @@ func TestChildService_CreateContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := createTestChild(t, db, "John", "Doe", org.ID)
-	group := createTestGroupWithOrg(t, db, "Test Group", org.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 
 	req := &models.ChildContractCreateRequest{
-		From:             from,
-		To:               &to,
-		CareHoursPerWeek: 40,
-		GroupID:          &group.ID,
-		MealsIncluded:    true,
-		SpecialNeeds:     "None",
+		From:       from,
+		To:         &to,
+		Attributes: []string{"ganztags", "ndh"},
 	}
 
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, req)
@@ -365,8 +361,8 @@ func TestChildService_CreateContract(t *testing.T) {
 	if contract.ChildID != child.ID {
 		t.Errorf("ChildID = %d, want %d", contract.ChildID, child.ID)
 	}
-	if contract.CareHoursPerWeek != 40 {
-		t.Errorf("CareHoursPerWeek = %v, want 40", contract.CareHoursPerWeek)
+	if len(contract.Attributes) != 2 {
+		t.Errorf("Attributes = %v, want 2 elements", contract.Attributes)
 	}
 }
 
@@ -379,8 +375,7 @@ func TestChildService_CreateContract_ChildNotFound(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	req := &models.ChildContractCreateRequest{
-		From:             from,
-		CareHoursPerWeek: 40,
+		From: from,
 	}
 
 	_, err := svc.CreateContract(ctx, 999, org.ID, req)
@@ -405,8 +400,7 @@ func TestChildService_CreateContract_WrongOrg(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	req := &models.ChildContractCreateRequest{
-		From:             from,
-		CareHoursPerWeek: 40,
+		From: from,
 	}
 
 	// Try to create contract via wrong organization
@@ -417,33 +411,6 @@ func TestChildService_CreateContract_WrongOrg(t *testing.T) {
 
 	if !errors.Is(err, apperror.ErrNotFound) {
 		t.Errorf("expected ErrNotFound (not forbidden - security), got %v", err)
-	}
-}
-
-func TestChildService_CreateContract_GroupDifferentOrg(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createChildService(db)
-	ctx := context.Background()
-
-	org1 := createTestOrganization(t, db, "Org 1")
-	org2 := createTestOrganization(t, db, "Org 2")
-	child := createTestChild(t, db, "John", "Doe", org1.ID)
-	group := createTestGroupWithOrg(t, db, "Test Group", org2.ID) // Different org!
-
-	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{
-		From:             from,
-		CareHoursPerWeek: 40,
-		GroupID:          &group.ID,
-	}
-
-	_, err := svc.CreateContract(ctx, child.ID, org1.ID, req)
-	if err == nil {
-		t.Fatal("expected error for group in different org, got nil")
-	}
-
-	if !errors.Is(err, apperror.ErrBadRequest) {
-		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
 
@@ -459,9 +426,8 @@ func TestChildService_CreateContract_InvalidPeriod(t *testing.T) {
 	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC) // Before from
 
 	req := &models.ChildContractCreateRequest{
-		From:             from,
-		To:               &to,
-		CareHoursPerWeek: 40,
+		From: from,
+		To:   &to,
 	}
 
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, req)
@@ -486,9 +452,9 @@ func TestChildService_CreateContract_OverlappingContract(t *testing.T) {
 	from1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	req1 := &models.ChildContractCreateRequest{
-		From:             from1,
-		To:               &to1,
-		CareHoursPerWeek: 40,
+		From:       from1,
+		To:         &to1,
+		Attributes: []string{"ganztags"},
 	}
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, req1)
 	if err != nil {
@@ -499,9 +465,9 @@ func TestChildService_CreateContract_OverlappingContract(t *testing.T) {
 	from2 := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC) // Overlaps with first
 	to2 := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 	req2 := &models.ChildContractCreateRequest{
-		From:             from2,
-		To:               &to2,
-		CareHoursPerWeek: 30,
+		From:       from2,
+		To:         &to2,
+		Attributes: []string{"teilzeit"},
 	}
 
 	_, err = svc.CreateContract(ctx, child.ID, org.ID, req2)
@@ -525,9 +491,8 @@ func TestChildService_CreateContract_OngoingContract(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	// No 'to' date means ongoing contract
 	req := &models.ChildContractCreateRequest{
-		From:             from,
-		To:               nil,
-		CareHoursPerWeek: 40,
+		From: from,
+		To:   nil,
 	}
 
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, req)
@@ -537,32 +502,6 @@ func TestChildService_CreateContract_OngoingContract(t *testing.T) {
 
 	if contract.To != nil {
 		t.Errorf("To = %v, want nil (ongoing)", contract.To)
-	}
-}
-
-func TestChildService_CreateContract_HTMLSanitization(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createChildService(db)
-	ctx := context.Background()
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := createTestChild(t, db, "John", "Doe", org.ID)
-
-	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{
-		From:             from,
-		CareHoursPerWeek: 40,
-		SpecialNeeds:     "<script>alert('xss')</script>Allergy to peanuts",
-	}
-
-	contract, err := svc.CreateContract(ctx, child.ID, org.ID, req)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	// Script tags should be removed
-	if contract.SpecialNeeds == "<script>alert('xss')</script>Allergy to peanuts" {
-		t.Error("expected HTML to be sanitized")
 	}
 }
 
@@ -577,11 +516,11 @@ func TestChildService_ListContracts(t *testing.T) {
 	// Create two contracts
 	from1 := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2022, 12, 31, 0, 0, 0, 0, time.UTC)
-	req1 := &models.ChildContractCreateRequest{From: from1, To: &to1, CareHoursPerWeek: 30}
+	req1 := &models.ChildContractCreateRequest{From: from1, To: &to1, Attributes: []string{"teilzeit"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, req1)
 
 	from2 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req2 := &models.ChildContractCreateRequest{From: from2, CareHoursPerWeek: 40}
+	req2 := &models.ChildContractCreateRequest{From: from2, Attributes: []string{"ganztags"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, req2)
 
 	contracts, err := svc.ListContracts(ctx, child.ID, org.ID)
@@ -623,7 +562,7 @@ func TestChildService_ListContracts_WrongOrg(t *testing.T) {
 
 	// Create a contract for child in org1
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, CareHoursPerWeek: 40}
+	req := &models.ChildContractCreateRequest{From: from, Attributes: []string{"ganztags"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to list contracts from wrong organization
@@ -704,7 +643,7 @@ func TestChildService_DeleteContract_WrongOrg(t *testing.T) {
 
 	// Create a contract
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, CareHoursPerWeek: 40}
+	req := &models.ChildContractCreateRequest{From: from, Attributes: []string{"ganztags"}}
 	contract, _ := svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to delete contract from wrong organization
@@ -736,7 +675,7 @@ func TestChildService_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	// Create an ongoing contract
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, CareHoursPerWeek: 40}
+	req := &models.ChildContractCreateRequest{From: from, Attributes: []string{"ganztags"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to get current contract from wrong organization

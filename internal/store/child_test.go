@@ -187,8 +187,7 @@ func TestChildStore_CreateContract(t *testing.T) {
 			From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			To:   nil,
 		},
-		CareHoursPerWeek: 35,
-		MealsIncluded:    true,
+		Attributes: []string{"ganztags"},
 	}
 
 	err := store.CreateContract(contract)
@@ -221,7 +220,6 @@ func TestChildStore_DeleteContract(t *testing.T) {
 		Period: models.Period{
 			From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		},
-		CareHoursPerWeek: 35,
 	}
 	db.Create(contract)
 
@@ -256,7 +254,6 @@ func TestChildStore_DeleteAlsoDeletesContracts(t *testing.T) {
 		Period: models.Period{
 			From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		},
-		CareHoursPerWeek: 35,
 	}
 	db.Create(contract)
 	contractID := contract.ID
@@ -295,7 +292,6 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 			From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 		},
-		CareHoursPerWeek: 35,
 	}
 	db.Create(existing)
 

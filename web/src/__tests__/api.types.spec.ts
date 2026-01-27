@@ -66,7 +66,8 @@ describe('API Types', () => {
       position: 'Erzieher',
       weekly_hours: 40,
       salary: 350000,
-      created_at: '2024-01-01T00:00:00Z'
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
     }
 
     const employee: Employee = {
@@ -93,7 +94,8 @@ describe('API Types', () => {
       position: 'Erzieher',
       weekly_hours: 40,
       salary: 350000,
-      created_at: '2024-01-01T00:00:00Z'
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
     }
 
     expect(contract.to).toBeNull()
@@ -105,11 +107,9 @@ describe('API Types', () => {
       child_id: 1,
       from: '2024-01-01',
       to: null,
-      care_hours_per_week: 35,
-      group_id: 1,
-      meals_included: true,
-      special_needs: '',
-      created_at: '2024-01-01T00:00:00Z'
+      attributes: ['ganztags', 'ndh'],
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z'
     }
 
     const child: Child = {
@@ -124,6 +124,6 @@ describe('API Types', () => {
     }
 
     expect(child.contracts).toHaveLength(1)
-    expect(child.contracts![0].meals_included).toBe(true)
+    expect(child.contracts![0].attributes).toContain('ganztags')
   })
 })

@@ -19,14 +19,12 @@ type ChildContract struct {
 	ChildID uint `gorm:"not null;index" json:"child_id" example:"1"`
 	Period
 
-	// Contract properties
-	CareHoursPerWeek float64        `json:"care_hours_per_week" example:"35"`
-	GroupID          *uint          `json:"group_id" example:"1"`
-	MealsIncluded    bool           `json:"meals_included" example:"true"`
-	SpecialNeeds     string         `gorm:"size:1000" json:"special_needs" example:""`
-	Attributes       pq.StringArray `gorm:"type:text[]" json:"attributes" swaggertype:"array,string" example:"ganztag,ndh"`
+	// Contract properties - care type and extras are stored in Attributes
+	// e.g., ["ganztags", "integration_a", "ndh"]
+	Attributes pq.StringArray `gorm:"type:text[]" json:"attributes" swaggertype:"array,string" example:"ganztags,ndh"`
 
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetPersonID returns the child ID for the HasPeriod interface.
@@ -36,13 +34,9 @@ func (c ChildContract) GetPersonID() uint {
 
 // ChildContractCreateRequest represents the request body for creating a child contract.
 type ChildContractCreateRequest struct {
-	From             time.Time  `json:"from" binding:"required" example:"2025-01-01"`
-	To               *time.Time `json:"to" example:"2025-12-31"`
-	CareHoursPerWeek float64    `json:"care_hours_per_week" binding:"required,gte=0,lte=168" example:"35"`
-	GroupID          *uint      `json:"group_id" example:"1"`
-	MealsIncluded    bool       `json:"meals_included" example:"true"`
-	SpecialNeeds     string     `json:"special_needs" binding:"max=1000" example:""`
-	Attributes       []string   `json:"attributes" example:"ganztag,ndh"`
+	From       time.Time  `json:"from" binding:"required" example:"2025-01-01"`
+	To         *time.Time `json:"to" example:"2025-12-31"`
+	Attributes []string   `json:"attributes" example:"ganztags,ndh"`
 }
 
 // ChildCreateRequest represents the request body for creating a child.
@@ -85,29 +79,23 @@ func (c *Child) ToResponse() ChildResponse {
 
 // ChildContractResponse represents the child contract response
 type ChildContractResponse struct {
-	ID               uint       `json:"id" example:"1"`
-	ChildID          uint       `json:"child_id" example:"1"`
-	From             time.Time  `json:"from" example:"2025-01-01"`
-	To               *time.Time `json:"to" example:"2025-12-31"`
-	CareHoursPerWeek float64    `json:"care_hours_per_week" example:"35"`
-	GroupID          *uint      `json:"group_id" example:"1"`
-	MealsIncluded    bool       `json:"meals_included" example:"true"`
-	SpecialNeeds     string     `json:"special_needs" example:""`
-	Attributes       []string   `json:"attributes" example:"ganztag,ndh"`
-	CreatedAt        time.Time  `json:"created_at"`
+	ID         uint       `json:"id" example:"1"`
+	ChildID    uint       `json:"child_id" example:"1"`
+	From       time.Time  `json:"from" example:"2025-01-01"`
+	To         *time.Time `json:"to" example:"2025-12-31"`
+	Attributes []string   `json:"attributes" example:"ganztags,ndh"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 func (c *ChildContract) ToResponse() ChildContractResponse {
 	return ChildContractResponse{
-		ID:               c.ID,
-		ChildID:          c.ChildID,
-		From:             c.From,
-		To:               c.To,
-		CareHoursPerWeek: c.CareHoursPerWeek,
-		GroupID:          c.GroupID,
-		MealsIncluded:    c.MealsIncluded,
-		SpecialNeeds:     c.SpecialNeeds,
-		Attributes:       c.Attributes,
-		CreatedAt:        c.CreatedAt,
+		ID:         c.ID,
+		ChildID:    c.ChildID,
+		From:       c.From,
+		To:         c.To,
+		Attributes: c.Attributes,
+		CreatedAt:  c.CreatedAt,
+		UpdatedAt:  c.UpdatedAt,
 	}
 }

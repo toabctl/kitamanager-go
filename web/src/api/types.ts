@@ -208,6 +208,7 @@ export interface EmployeeContract {
   weekly_hours: number
   salary: number
   created_at: string
+  updated_at: string
 }
 
 export interface EmployeeCreateRequest {
@@ -241,12 +242,9 @@ export interface ChildContract {
   child_id: number
   from: string
   to?: string | null
-  care_hours_per_week: number
-  group_id?: number | null
-  meals_included: boolean
-  special_needs: string
   attributes?: string[]
   created_at: string
+  updated_at: string
 }
 
 export interface ChildCreateRequest {
@@ -265,10 +263,6 @@ export interface ChildUpdateRequest {
 export interface ChildContractCreateRequest {
   from: string
   to?: string | null
-  care_hours_per_week: number
-  group_id?: number | null
-  meals_included?: boolean
-  special_needs?: string
   attributes?: string[]
 }
 

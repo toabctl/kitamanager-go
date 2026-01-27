@@ -21,6 +21,7 @@ type EmployeeContract struct {
 	Salary      int     `json:"salary" example:"350000"` // cents per month
 
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetPersonID returns the employee ID for the HasPeriod interface.
@@ -85,6 +86,7 @@ type EmployeeContractResponse struct {
 	WeeklyHours float64    `json:"weekly_hours" example:"40"`
 	Salary      int        `json:"salary" example:"350000"`
 	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 func (c *EmployeeContract) ToResponse() EmployeeContractResponse {
@@ -97,5 +99,6 @@ func (c *EmployeeContract) ToResponse() EmployeeContractResponse {
 		WeeklyHours: c.WeeklyHours,
 		Salary:      c.Salary,
 		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
 	}
 }

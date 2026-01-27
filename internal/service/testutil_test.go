@@ -195,8 +195,7 @@ func createGroupService(db *gorm.DB) *GroupService {
 
 func createChildService(db *gorm.DB) *ChildService {
 	childStore := store.NewChildStore(db)
-	groupStore := store.NewGroupStore(db)
-	return NewChildService(childStore, groupStore)
+	return NewChildService(childStore)
 }
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {

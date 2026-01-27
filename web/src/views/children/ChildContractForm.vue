@@ -2,10 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import type { Child, ChildContractCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
 import DatePicker from 'primevue/datepicker'
-import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import Chips from 'primevue/chips'
 
@@ -22,16 +19,11 @@ const emit = defineEmits<{
 const form = ref({
   from: null as Date | null,
   to: null as Date | null,
-  care_hours_per_week: 35,
-  group_id: null as number | null,
-  meals_included: true,
-  special_needs: '',
   attributes: [] as string[]
 })
 
 const errors = ref<{
   from?: string
-  care_hours_per_week?: string
 }>({})
 
 const dialogTitle = computed(() =>
@@ -47,10 +39,6 @@ watch(
       form.value = {
         from: new Date(),
         to: null,
-        care_hours_per_week: 35,
-        group_id: null,
-        meals_included: true,
-        special_needs: '',
         attributes: []
       }
       errors.value = {}
@@ -65,10 +53,6 @@ function validate(): boolean {
     errors.value.from = 'Start date is required'
   }
 
-  if (!form.value.care_hours_per_week || form.value.care_hours_per_week <= 0) {
-    errors.value.care_hours_per_week = 'Care hours must be greater than 0'
-  }
-
   return Object.keys(errors.value).length === 0
 }
 
@@ -77,10 +61,6 @@ function handleSave() {
     emit('save', {
       from: form.value.from!.toISOString().split('T')[0],
       to: form.value.to ? form.value.to.toISOString().split('T')[0] : null,
-      care_hours_per_week: form.value.care_hours_per_week,
-      group_id: form.value.group_id,
-      meals_included: form.value.meals_included,
-      special_needs: form.value.special_needs,
       attributes: form.value.attributes
     })
   }
@@ -122,44 +102,15 @@ function handleSave() {
       </div>
 
       <div class="field">
-        <label for="care_hours">Care Hours per Week</label>
-        <InputNumber
-          id="care_hours"
-          v-model="form.care_hours_per_week"
-          :class="{ 'p-invalid': errors.care_hours_per_week }"
-          :min="0"
-          :max="60"
-          suffix=" h"
-        />
-        <small v-if="errors.care_hours_per_week" class="p-error">{{
-          errors.care_hours_per_week
-        }}</small>
-      </div>
-
-      <div class="field">
-        <div class="flex align-items-center gap-2">
-          <Checkbox v-model="form.meals_included" input-id="meals" :binary="true" />
-          <label for="meals">Meals Included</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="special_needs">Special Needs</label>
-        <InputText
-          id="special_needs"
-          v-model="form.special_needs"
-          placeholder="Any special requirements"
-        />
-      </div>
-
-      <div class="field">
-        <label for="attributes">Attributes (for funding calculation)</label>
+        <label for="attributes">Attributes (care type & extras)</label>
         <Chips
           id="attributes"
           v-model="form.attributes"
-          placeholder="e.g. ganztag, ndh, integration"
+          placeholder="e.g. ganztags, ndh, integration_a"
         />
-        <small class="text-secondary">Press Enter to add each attribute</small>
+        <small class="text-secondary">
+          Press Enter to add each attribute (e.g., ganztags, halbtags, teilzeit, ndh, integration_a)
+        </small>
       </div>
     </div>
 
@@ -173,18 +124,6 @@ function handleSave() {
 </template>
 
 <style scoped>
-.flex {
-  display: flex;
-}
-
-.align-items-center {
-  align-items: center;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
 .text-secondary {
   color: var(--text-color-secondary);
 }

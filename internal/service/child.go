@@ -13,13 +13,12 @@ import (
 
 // ChildService handles business logic for child operations
 type ChildService struct {
-	store      store.ChildStorer
-	groupStore store.GroupStorer
+	store store.ChildStorer
 }
 
 // NewChildService creates a new child service
-func NewChildService(store store.ChildStorer, groupStore store.GroupStorer) *ChildService {
-	return &ChildService{store: store, groupStore: groupStore}
+func NewChildService(store store.ChildStorer) *ChildService {
+	return &ChildService{store: store}
 }
 
 // List returns a paginated list of children
@@ -206,13 +205,6 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 	if err := validation.ValidatePeriod(req.From, req.To); err != nil {
 		return nil, apperror.BadRequest(err.Error())
 	}
-	// Validate care hours
-	if err := validation.ValidateWeeklyHours(req.CareHoursPerWeek, "care_hours_per_week"); err != nil {
-		return nil, apperror.BadRequest(err.Error())
-	}
-
-	// Sanitize SpecialNeeds for XSS
-	req.SpecialNeeds = validation.SanitizeHTML(strings.TrimSpace(req.SpecialNeeds))
 
 	// Verify child exists and belongs to org
 	child, err := s.store.FindByID(childID)
@@ -222,17 +214,6 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 	// Security: Validate child belongs to the specified organization
 	if child.OrganizationID != orgID {
 		return nil, apperror.NotFound("child")
-	}
-
-	// Validate GroupID belongs to same organization as child
-	if req.GroupID != nil {
-		group, err := s.groupStore.FindByID(*req.GroupID)
-		if err != nil {
-			return nil, apperror.NotFound("group")
-		}
-		if group.OrganizationID != child.OrganizationID {
-			return nil, apperror.BadRequest("group must belong to the same organization as the child")
-		}
 	}
 
 	// Validate no overlap
@@ -249,11 +230,7 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 			From: req.From,
 			To:   req.To,
 		},
-		CareHoursPerWeek: req.CareHoursPerWeek,
-		GroupID:          req.GroupID,
-		MealsIncluded:    req.MealsIncluded,
-		SpecialNeeds:     req.SpecialNeeds,
-		Attributes:       req.Attributes,
+		Attributes: req.Attributes,
 	}
 
 	if err := s.store.CreateContract(contract); err != nil {

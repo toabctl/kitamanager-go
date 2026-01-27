@@ -104,7 +104,7 @@ func setupRouter() *gin.Engine {
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
-	childService := service.NewChildService(childStore, groupStore)
+	childService := service.NewChildService(childStore)
 
 	// Setup handlers
 	orgHandler := handlers.NewOrganizationHandler(orgService)

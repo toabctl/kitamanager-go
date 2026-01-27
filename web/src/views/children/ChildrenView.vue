@@ -222,18 +222,16 @@ onMounted(() => {
             {{ calculateAge(data.birthdate) }}
           </template>
         </Column>
-        <Column header="Care Hours" style="width: 120px">
+        <Column header="Attributes" style="width: 200px">
           <template #body="{ data }">
-            {{ getCurrentContract(data)?.care_hours_per_week || '-' }} h
-          </template>
-        </Column>
-        <Column header="Meals" style="width: 100px">
-          <template #body="{ data }">
-            <Tag
-              v-if="getCurrentContract(data)"
-              :value="getCurrentContract(data)!.meals_included ? 'Yes' : 'No'"
-              :severity="getCurrentContract(data)!.meals_included ? 'success' : 'secondary'"
-            />
+            <template v-if="getCurrentContract(data)?.attributes?.length">
+              <Tag
+                v-for="attr in getCurrentContract(data)!.attributes"
+                :key="attr"
+                :value="attr"
+                class="mr-1"
+              />
+            </template>
             <span v-else>-</span>
           </template>
         </Column>

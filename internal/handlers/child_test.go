@@ -164,9 +164,8 @@ func TestChildHandler_ListContracts(t *testing.T) {
 	db.Create(child)
 
 	db.Create(&models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		CareHoursPerWeek: 35,
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 	})
 
 	r := setupTestRouter()
@@ -198,10 +197,9 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 	db.Create(child)
 
 	db.Create(&models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
-		CareHoursPerWeek: 35,
-		MealsIncluded:    true,
+		ChildID:    child.ID,
+		Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+		Attributes: []string{"ganztags"},
 	})
 
 	r := setupTestRouter()
@@ -216,8 +214,8 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 	var contract models.ChildContract
 	parseResponse(t, w, &contract)
 
-	if contract.CareHoursPerWeek != 35 {
-		t.Errorf("expected care hours 35, got %f", contract.CareHoursPerWeek)
+	if len(contract.Attributes) != 1 || contract.Attributes[0] != "ganztags" {
+		t.Errorf("expected attributes [ganztags], got %v", contract.Attributes)
 	}
 }
 
@@ -257,10 +255,9 @@ func TestChildHandler_CreateContract(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		To:               nil,
-		CareHoursPerWeek: 40,
-		MealsIncluded:    true,
+		From:       time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		To:         nil,
+		Attributes: []string{"ganztags", "ndh"},
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
@@ -272,8 +269,8 @@ func TestChildHandler_CreateContract(t *testing.T) {
 	var contract models.ChildContract
 	parseResponse(t, w, &contract)
 
-	if contract.CareHoursPerWeek != 40 {
-		t.Errorf("expected care hours 40, got %f", contract.CareHoursPerWeek)
+	if len(contract.Attributes) != 2 {
+		t.Errorf("expected 2 attributes, got %d", len(contract.Attributes))
 	}
 }
 
@@ -290,9 +287,9 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 
 	// Create existing contract
 	db.Create(&models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
-		CareHoursPerWeek: 35,
+		ChildID:    child.ID,
+		Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+		Attributes: []string{"ganztags"},
 	})
 
 	r := setupTestRouter()
@@ -300,9 +297,9 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 
 	// Try to create overlapping contract
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
-		To:               nil,
-		CareHoursPerWeek: 40,
+		From:       time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		To:         nil,
+		Attributes: []string{"teilzeit"},
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
@@ -324,9 +321,8 @@ func TestChildHandler_DeleteContract(t *testing.T) {
 	db.Create(child)
 
 	contract := &models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		CareHoursPerWeek: 35,
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(contract)
 
@@ -616,8 +612,7 @@ func TestChildHandler_CreateContract_ChildNotFound(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
+		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/999/contracts", body)
@@ -638,8 +633,7 @@ func TestChildHandler_CreateContract_InvalidChildID(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
+		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/invalid/contracts", body)
@@ -647,32 +641,6 @@ func TestChildHandler_CreateContract_InvalidChildID(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
 	}
-}
-
-func TestChildHandler_CreateContract_ZeroCareHours(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 0,
-		MealsIncluded:    false,
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	// Document current behavior - zero hours may or may not be valid
-	t.Logf("Create contract with zero care hours returned status %d", w.Code)
 }
 
 func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
@@ -689,9 +657,9 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	// Create contract ending on specific date
 	endDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	db.Create(&models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
-		CareHoursPerWeek: 35,
+		ChildID:    child.ID,
+		Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
+		Attributes: []string{"ganztags"},
 	})
 
 	r := setupTestRouter()
@@ -699,9 +667,8 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 	// Create contract starting the day after
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
-		MealsIncluded:    true,
+		From:       time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		Attributes: []string{"teilzeit"},
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
@@ -856,201 +823,14 @@ func TestChildHandler_CreateContract_FromAfterTo(t *testing.T) {
 
 	toDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
-		To:               &toDate,
-		CareHoursPerWeek: 40,
+		From: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
+		To:   &toDate,
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d for from > to, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestChildHandler_CreateContract_NegativeCareHours(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: -1,
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for negative care hours, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestChildHandler_CreateContract_CareHoursOver168(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 169,
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for care hours > 168, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestChildHandler_CreateContract_SpecialNeedsTooLong(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	// Create a special needs string longer than 1000 characters
-	longSpecialNeeds := ""
-	for i := 0; i < 1001; i++ {
-		longSpecialNeeds += "a"
-	}
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
-		SpecialNeeds:     longSpecialNeeds,
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for special needs too long, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestChildHandler_CreateContract_SpecialNeedsXSS(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
-		SpecialNeeds:     "<script>alert('xss')</script>",
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("expected status %d, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
-		return
-	}
-
-	var contract models.ChildContract
-	parseResponse(t, w, &contract)
-
-	// Verify XSS was sanitized
-	if contract.SpecialNeeds == "<script>alert('xss')</script>" {
-		t.Error("expected special needs to be sanitized for XSS")
-	}
-	if contract.SpecialNeeds != "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;" {
-		t.Errorf("expected sanitized HTML, got: %s", contract.SpecialNeeds)
-	}
-}
-
-func TestChildHandler_CreateContract_GroupNotInOrg(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	// Create two separate organizations
-	org1 := createTestOrganization(t, db, "Org 1")
-	org2 := createTestOrganization(t, db, "Org 2")
-
-	// Create child in org1
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	// Create group in org2
-	group := createTestGroupWithOrg(t, db, "Group in Org2", org2.ID)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
-		GroupID:          &group.ID, // Group from different org
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for group from different org, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestChildHandler_CreateContract_GroupNotFound(t *testing.T) {
-	db := setupTestDB(t)
-	childService := createChildService(db)
-	handler := NewChildHandler(childService)
-
-	org := createTestOrganization(t, db, "Test Org")
-	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
-	}
-	db.Create(child)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
-
-	nonExistentGroupID := uint(999)
-	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
-		GroupID:          &nonExistentGroupID,
-	}
-
-	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
-
-	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d for non-existent group, got %d: %s", http.StatusNotFound, w.Code, w.Body.String())
 	}
 }
 
@@ -1179,8 +959,7 @@ func TestChildHandler_CreateContract_WrongOrg(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From:             time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		CareHoursPerWeek: 40,
+		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	// Try to create contract for org1's child via org2's URL
@@ -1207,9 +986,8 @@ func TestChildHandler_DeleteContract_WrongOrg(t *testing.T) {
 
 	// Create contract for child
 	contract := &models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		CareHoursPerWeek: 35,
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(contract)
 
@@ -1240,9 +1018,8 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	// Create active contract
 	db.Create(&models.ChildContract{
-		ChildID:          child.ID,
-		Period:           models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-		CareHoursPerWeek: 35,
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 	})
 
 	r := setupTestRouter()

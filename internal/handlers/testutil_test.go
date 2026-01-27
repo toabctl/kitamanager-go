@@ -203,6 +203,5 @@ func createEmployeeService(db *gorm.DB) *service.EmployeeService {
 // createChildService creates a child service for testing.
 func createChildService(db *gorm.DB) *service.ChildService {
 	childStore := store.NewChildStore(db)
-	groupStore := store.NewGroupStore(db)
-	return service.NewChildService(childStore, groupStore)
+	return service.NewChildService(childStore)
 }
