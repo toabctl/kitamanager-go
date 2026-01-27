@@ -44,6 +44,7 @@ dev:
 		SEED_ADMIN_PASSWORD=supersecret \
 		SEED_ADMIN_NAME=admin \
 		SEED_RBAC_POLICIES=true \
+		SEED_TEST_DATA=true \
 		GOVERNMENT_FUNDING_SEED_PATH=configs/government-fundings/berlin.yaml \
 		GOVERNMENT_FUNDING_SEED_NAME=Berlin \
 		CORS_ALLOW_ORIGINS="http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:8080" \
