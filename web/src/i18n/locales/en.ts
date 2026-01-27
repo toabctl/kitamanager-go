@@ -139,7 +139,8 @@ export default {
     deleteChild: 'Delete Child',
     confirmDeleteMessage: 'Are you sure you want to delete {name}?',
     birthdate: 'Birthdate',
-    noContractsFound: 'No contracts found for this child.'
+    noContractsFound: 'No contracts found for this child.',
+    funding: 'Funding'
   },
   users: {
     title: 'Users',

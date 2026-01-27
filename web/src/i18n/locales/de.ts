@@ -139,7 +139,8 @@ export default {
     deleteChild: 'Kind löschen',
     confirmDeleteMessage: 'Möchten Sie {name} wirklich löschen?',
     birthdate: 'Geburtsdatum',
-    noContractsFound: 'Keine Verträge für dieses Kind gefunden.'
+    noContractsFound: 'Keine Verträge für dieses Kind gefunden.',
+    funding: 'Finanzierung'
   },
   users: {
     title: 'Benutzer',

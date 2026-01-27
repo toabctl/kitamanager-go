@@ -315,3 +315,18 @@ export interface UpdateUserGroupRoleRequest {
 export interface SetSuperAdminRequest {
   is_superadmin: boolean
 }
+
+// Child funding calculation
+export interface ChildFundingResponse {
+  child_id: number
+  child_name: string
+  age: number
+  funding: number
+  matched_attributes: string[]
+  unmatched_attributes: string[]
+}
+
+export interface ChildrenFundingResponse {
+  date: string
+  children: ChildFundingResponse[]
+}

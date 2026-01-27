@@ -9,7 +9,8 @@ import type {
   Child,
   ChildCreateRequest,
   ChildUpdateRequest,
-  ChildContractCreateRequest
+  ChildContractCreateRequest,
+  ChildFundingResponse
 } from '@/api/types'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -26,6 +27,7 @@ const { t } = useI18n()
 
 const orgId = ref(Number(route.params.orgId))
 const children = ref<Child[]>([])
+const fundingData = ref<ChildFundingResponse[]>([])
 const loading = ref(false)
 
 const dialogVisible = ref(false)
@@ -43,6 +45,15 @@ const selectedChildCurrentContract = computed(() => {
   return getCurrentContract(selectedChild.value) ?? null
 })
 
+// Map of child ID to funding data for quick lookup
+const fundingByChildId = computed(() => {
+  const map = new Map<number, ChildFundingResponse>()
+  for (const f of fundingData.value) {
+    map.set(f.child_id, f)
+  }
+  return map
+})
+
 watch(
   () => route.params.orgId,
   (newOrgId) => {
@@ -54,7 +65,12 @@ watch(
 async function fetchChildren() {
   loading.value = true
   try {
-    children.value = await apiClient.getChildren(orgId.value)
+    const [childrenResult, fundingResult] = await Promise.all([
+      apiClient.getChildren(orgId.value),
+      apiClient.getChildrenFunding(orgId.value).catch(() => ({ date: '', children: [] }))
+    ])
+    children.value = childrenResult
+    fundingData.value = fundingResult.children
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -211,6 +227,14 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
+function formatCurrency(cents: number): string {
+  return (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+}
+
+function getChildFunding(childId: number): number | null {
+  return fundingByChildId.value.get(childId)?.funding ?? null
+}
+
 function getCurrentContract(child: Child) {
   if (!child.contracts || child.contracts.length === 0) return null
   const now = new Date()
@@ -277,6 +301,14 @@ onMounted(() => {
                 class="mr-1"
               />
             </template>
+            <span v-else>-</span>
+          </template>
+        </Column>
+        <Column :header="t('children.funding')" style="width: 120px">
+          <template #body="{ data }">
+            <span v-if="getChildFunding(data.id) !== null">
+              {{ formatCurrency(getChildFunding(data.id)!) }}
+            </span>
             <span v-else>-</span>
           </template>
         </Column>

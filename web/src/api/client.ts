@@ -22,6 +22,7 @@ import type {
   ChildContract,
   ChildContractCreateRequest,
   ChildContractUpdateRequest,
+  ChildrenFundingResponse,
   Role,
   UserGroupResponse,
   UserMembershipsResponse,
@@ -343,6 +344,15 @@ class ApiClient {
 
   async deleteChildContract(orgId: number, childId: number, contractId: number): Promise<void> {
     await this.client.delete(`/organizations/${orgId}/children/${childId}/contracts/${contractId}`)
+  }
+
+  async getChildrenFunding(orgId: number, date?: string): Promise<ChildrenFundingResponse> {
+    const params = date ? { date } : {}
+    const response = await this.client.get<ChildrenFundingResponse>(
+      `/organizations/${orgId}/children/funding`,
+      { params }
+    )
+    return response.data
   }
 
   // GovernmentFundings
