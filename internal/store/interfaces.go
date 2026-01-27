@@ -108,7 +108,8 @@ type GovernmentFundingStorer interface {
 	// GovernmentFunding CRUD
 	FindAll(limit, offset int) ([]models.GovernmentFunding, int64, error)
 	FindByID(id uint) (*models.GovernmentFunding, error)
-	FindByIDWithDetails(id uint) (*models.GovernmentFunding, error)
+	FindByIDWithDetails(id uint, periodsLimit int) (*models.GovernmentFunding, error)
+	CountPeriods(fundingID uint) (int64, error)
 	FindByName(name string) (*models.GovernmentFunding, error)
 	Create(funding *models.GovernmentFunding) error
 	Update(funding *models.GovernmentFunding) error

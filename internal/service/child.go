@@ -364,8 +364,8 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 		return response, nil
 	}
 
-	// Get funding with all details
-	funding, err := s.fundingStore.FindByIDWithDetails(*org.GovernmentFundingID)
+	// Get funding with all details (0 = all periods, needed to find matching period for date)
+	funding, err := s.fundingStore.FindByIDWithDetails(*org.GovernmentFundingID, 0)
 	if err != nil {
 		return nil, apperror.Internal("failed to fetch government funding")
 	}

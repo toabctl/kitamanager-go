@@ -35,6 +35,8 @@ const { t } = useI18n()
 const governmentFundingId = computed(() => Number(route.params.id))
 const governmentFunding = ref<GovernmentFunding | null>(null)
 const loading = ref(false)
+const showAllPeriods = ref(false)
+const loadingAllPeriods = ref(false)
 
 // View mode toggle
 const viewMode = ref<'panels' | 'table'>('panels')
@@ -71,10 +73,12 @@ const propertyForm = ref({
   comment: ''
 })
 
-async function fetchGovernmentFunding() {
+async function fetchGovernmentFunding(periodsLimit?: number) {
   loading.value = true
   try {
-    governmentFunding.value = await apiClient.getGovernmentFunding(governmentFundingId.value)
+    // Default to 1 (latest period only) for performance, 0 = all periods
+    const limit = periodsLimit !== undefined ? periodsLimit : showAllPeriods.value ? 0 : 1
+    governmentFunding.value = await apiClient.getGovernmentFunding(governmentFundingId.value, limit)
   } catch {
     toast.add({
       severity: 'error',
@@ -86,6 +90,13 @@ async function fetchGovernmentFunding() {
   } finally {
     loading.value = false
   }
+}
+
+async function loadAllPeriods() {
+  loadingAllPeriods.value = true
+  showAllPeriods.value = true
+  await fetchGovernmentFunding(0)
+  loadingAllPeriods.value = false
 }
 
 // Period functions
@@ -537,6 +548,24 @@ onMounted(() => {
         </DataTable>
         <p v-else class="text-secondary">{{ t('governmentFundings.noPropertiesDefined') }}</p>
       </Panel>
+      <!-- Show all periods button -->
+      <div
+        v-if="
+          !showAllPeriods &&
+          governmentFunding.total_periods &&
+          governmentFunding.total_periods > (governmentFunding.periods?.length || 0)
+        "
+        class="mt-3 text-center"
+      >
+        <Button
+          :label="
+            t('governmentFundings.showAllPeriods', { count: governmentFunding.total_periods })
+          "
+          :loading="loadingAllPeriods"
+          text
+          @click="loadAllPeriods"
+        />
+      </div>
     </div>
     <div v-else-if="viewMode === 'panels'" class="card">
       <p class="text-secondary">{{ t('governmentFundings.noPeriodsDefined') }}</p>
@@ -671,6 +700,14 @@ onMounted(() => {
 
 .mb-3 {
   margin-bottom: 1rem;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.text-center {
+  text-align: center;
 }
 
 .text-secondary {

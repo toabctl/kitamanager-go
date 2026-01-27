@@ -361,8 +361,11 @@ class ApiClient {
     return response.data.data
   }
 
-  async getGovernmentFunding(id: number): Promise<GovernmentFunding> {
-    const response = await this.client.get<GovernmentFunding>(`/government-fundings/${id}`)
+  async getGovernmentFunding(id: number, periodsLimit?: number): Promise<GovernmentFunding> {
+    const params = periodsLimit !== undefined ? { periods_limit: periodsLimit } : {}
+    const response = await this.client.get<GovernmentFunding>(`/government-fundings/${id}`, {
+      params
+    })
     return response.data
   }
 

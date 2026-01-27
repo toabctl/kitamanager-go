@@ -46,14 +46,29 @@ func (s *GovernmentFundingService) GetByID(ctx context.Context, id uint) (*model
 	return &resp, nil
 }
 
-// GetByIDWithDetails returns a government funding by ID with all nested periods and properties
-// Note: Returns raw model for complex nested structure
-func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint) (*models.GovernmentFunding, error) {
-	funding, err := s.store.FindByIDWithDetails(id)
+// GovernmentFundingWithDetailsResponse wraps the funding with metadata
+type GovernmentFundingWithDetailsResponse struct {
+	*models.GovernmentFunding
+	TotalPeriods int64 `json:"total_periods"`
+}
+
+// GetByIDWithDetails returns a government funding by ID with nested periods and properties
+// periodsLimit controls how many periods are returned (0 = all)
+func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint, periodsLimit int) (*GovernmentFundingWithDetailsResponse, error) {
+	funding, err := s.store.FindByIDWithDetails(id, periodsLimit)
 	if err != nil {
 		return nil, apperror.NotFound("government funding")
 	}
-	return funding, nil
+
+	totalPeriods, err := s.store.CountPeriods(id)
+	if err != nil {
+		return nil, apperror.Internal("failed to count periods")
+	}
+
+	return &GovernmentFundingWithDetailsResponse{
+		GovernmentFunding: funding,
+		TotalPeriods:      totalPeriods,
+	}, nil
 }
 
 // GovernmentFundingCreateRequest represents the request for creating a government funding

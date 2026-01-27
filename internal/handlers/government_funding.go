@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -54,13 +55,14 @@ func (h *GovernmentFundingHandler) List(c *gin.Context) {
 
 // Get godoc
 // @Summary Get government funding by ID
-// @Description Get a single government funding by its ID with all nested periods and properties
+// @Description Get a single government funding by its ID with nested periods and properties
 // @Tags government-fundings
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "GovernmentFunding ID"
-// @Success 200 {object} models.GovernmentFunding
+// @Param periods_limit query int false "Limit number of periods returned (0 = all, default 1 for latest only)"
+// @Success 200 {object} service.GovernmentFundingWithDetailsResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
@@ -72,7 +74,20 @@ func (h *GovernmentFundingHandler) Get(c *gin.Context) {
 		return
 	}
 
-	funding, err := h.service.GetByIDWithDetails(c.Request.Context(), id)
+	// Default to 1 (latest period only) for performance
+	periodsLimit := 1
+	if limitStr := c.Query("periods_limit"); limitStr != "" {
+		if _, err := fmt.Sscanf(limitStr, "%d", &periodsLimit); err != nil {
+			respondError(c, apperror.BadRequest("invalid periods_limit parameter"))
+			return
+		}
+		if periodsLimit < 0 {
+			respondError(c, apperror.BadRequest("periods_limit must be non-negative"))
+			return
+		}
+	}
+
+	funding, err := h.service.GetByIDWithDetails(c.Request.Context(), id, periodsLimit)
 	if err != nil {
 		respondError(c, err)
 		return

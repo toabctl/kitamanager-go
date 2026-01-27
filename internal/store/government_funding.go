@@ -47,11 +47,15 @@ func (s *GovernmentFundingStore) FindByName(name string) (*models.GovernmentFund
 	return &funding, nil
 }
 
-func (s *GovernmentFundingStore) FindByIDWithDetails(id uint) (*models.GovernmentFunding, error) {
+func (s *GovernmentFundingStore) FindByIDWithDetails(id uint, periodsLimit int) (*models.GovernmentFunding, error) {
 	var funding models.GovernmentFunding
 	if err := s.db.
 		Preload("Periods", func(db *gorm.DB) *gorm.DB {
-			return db.Order("from_date DESC")
+			q := db.Order("from_date DESC")
+			if periodsLimit > 0 {
+				q = q.Limit(periodsLimit)
+			}
+			return q
 		}).
 		Preload("Periods.Properties", func(db *gorm.DB) *gorm.DB {
 			return db.Order("name ASC, min_age ASC NULLS LAST")
@@ -60,6 +64,14 @@ func (s *GovernmentFundingStore) FindByIDWithDetails(id uint) (*models.Governmen
 		return nil, err
 	}
 	return &funding, nil
+}
+
+func (s *GovernmentFundingStore) CountPeriods(fundingID uint) (int64, error) {
+	var count int64
+	if err := s.db.Model(&models.GovernmentFundingPeriod{}).Where("government_funding_id = ?", fundingID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (s *GovernmentFundingStore) Create(funding *models.GovernmentFunding) error {

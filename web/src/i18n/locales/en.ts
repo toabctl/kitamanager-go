@@ -303,6 +303,7 @@ export default {
     noDataDefined: 'No data defined. Switch to Panels view to add periods and properties.',
     noPropertiesDefined: 'No properties defined. Click + to add one.',
     noPeriodsDefined: 'No periods defined. Click "Add Period" to get started.',
+    showAllPeriods: 'Show all {count} periods',
     // Units
     years: 'years'
   }

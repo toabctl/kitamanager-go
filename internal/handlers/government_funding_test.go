@@ -401,6 +401,105 @@ func TestGovernmentFundingHandler_Property_AgeRange(t *testing.T) {
 	}
 }
 
+func TestGovernmentFundingHandler_Get_PeriodsLimit(t *testing.T) {
+	db := setupTestDB(t)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	orgStore := store.NewOrganizationStore(db)
+	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	handler := NewGovernmentFundingHandler(svc)
+
+	// Create test funding with multiple periods
+	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	db.Create(funding)
+
+	// Create 3 periods (oldest to newest)
+	for i := 0; i < 3; i++ {
+		from := time.Date(2024, time.Month(i*4+1), 1, 0, 0, 0, 0, time.UTC)
+		to := time.Date(2024, time.Month(i*4+4), 1, 0, 0, 0, 0, time.UTC)
+		period := &models.GovernmentFundingPeriod{
+			GovernmentFundingID: funding.ID,
+			From:                from,
+			To:                  &to,
+		}
+		db.Create(period)
+	}
+
+	r := setupTestRouter()
+	r.GET("/fundings/:id", handler.Get)
+
+	t.Run("default returns only latest period", func(t *testing.T) {
+		w := performRequest(r, "GET", fmt.Sprintf("/fundings/%d", funding.ID), nil)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+		}
+
+		var result service.GovernmentFundingWithDetailsResponse
+		parseResponse(t, w, &result)
+
+		if len(result.Periods) != 1 {
+			t.Errorf("expected 1 period by default, got %d", len(result.Periods))
+		}
+		if result.TotalPeriods != 3 {
+			t.Errorf("expected total_periods=3, got %d", result.TotalPeriods)
+		}
+	})
+
+	t.Run("periods_limit=0 returns all periods", func(t *testing.T) {
+		w := performRequest(r, "GET", fmt.Sprintf("/fundings/%d?periods_limit=0", funding.ID), nil)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+		}
+
+		var result service.GovernmentFundingWithDetailsResponse
+		parseResponse(t, w, &result)
+
+		if len(result.Periods) != 3 {
+			t.Errorf("expected 3 periods with limit=0, got %d", len(result.Periods))
+		}
+		if result.TotalPeriods != 3 {
+			t.Errorf("expected total_periods=3, got %d", result.TotalPeriods)
+		}
+	})
+
+	t.Run("periods_limit=2 returns 2 periods", func(t *testing.T) {
+		w := performRequest(r, "GET", fmt.Sprintf("/fundings/%d?periods_limit=2", funding.ID), nil)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+		}
+
+		var result service.GovernmentFundingWithDetailsResponse
+		parseResponse(t, w, &result)
+
+		if len(result.Periods) != 2 {
+			t.Errorf("expected 2 periods with limit=2, got %d", len(result.Periods))
+		}
+		if result.TotalPeriods != 3 {
+			t.Errorf("expected total_periods=3, got %d", result.TotalPeriods)
+		}
+	})
+
+	t.Run("negative periods_limit returns 400", func(t *testing.T) {
+		w := performRequest(r, "GET", fmt.Sprintf("/fundings/%d?periods_limit=-1", funding.ID), nil)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status %d for negative limit, got %d: %s",
+				http.StatusBadRequest, w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("invalid periods_limit returns 400", func(t *testing.T) {
+		w := performRequest(r, "GET", fmt.Sprintf("/fundings/%d?periods_limit=abc", funding.ID), nil)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status %d for invalid limit, got %d: %s",
+				http.StatusBadRequest, w.Code, w.Body.String())
+		}
+	})
+}
+
 func itoa(i int) string {
 	return fmt.Sprintf("%d", i)
 }

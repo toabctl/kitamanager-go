@@ -29,6 +29,7 @@ export interface GovernmentFunding {
   created_at: string
   updated_at: string
   periods?: GovernmentFundingPeriod[]
+  total_periods?: number
 }
 
 export interface GovernmentFundingPeriod {

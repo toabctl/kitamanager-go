@@ -305,6 +305,7 @@ export default {
     noPropertiesDefined: 'Keine Eigenschaften definiert. Klicken Sie auf +, um eine hinzuzufügen.',
     noPeriodsDefined:
       'Keine Zeiträume definiert. Klicken Sie auf "Zeitraum hinzufügen", um zu beginnen.',
+    showAllPeriods: 'Alle {count} Zeiträume anzeigen',
     // Units
     years: 'Jahre'
   }

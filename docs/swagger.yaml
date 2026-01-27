@@ -879,6 +879,27 @@ definitions:
         maxLength: 255
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_service.GovernmentFundingWithDetailsResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Berlin
+        type: string
+      periods:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod'
+        type: array
+      total_periods:
+        type: integer
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
   internal_handlers.AddToOrganizationRequest:
     properties:
       organization_id:
@@ -1116,13 +1137,18 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a single government funding by its ID with all nested periods
-        and properties
+      description: Get a single government funding by its ID with nested periods and
+        properties
       parameters:
       - description: GovernmentFunding ID
         in: path
         name: id
         required: true
+        type: integer
+      - description: Limit number of periods returned (0 = all, default 1 for latest
+          only)
+        in: query
+        name: periods_limit
         type: integer
       produces:
       - application/json
@@ -1130,7 +1156,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFunding'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_service.GovernmentFundingWithDetailsResponse'
         "400":
           description: Bad Request
           schema:

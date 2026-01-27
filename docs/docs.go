@@ -148,7 +148,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a single government funding by its ID with all nested periods and properties",
+                "description": "Get a single government funding by its ID with nested periods and properties",
                 "consumes": [
                     "application/json"
                 ],
@@ -166,13 +166,19 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number of periods returned (0 = all, default 1 for latest only)",
+                        "name": "periods_limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFunding"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_service.GovernmentFundingWithDetailsResponse"
                         }
                     },
                     "400": {
@@ -5134,6 +5140,36 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "John Doe Updated"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_service.GovernmentFundingWithDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin"
+                },
+                "periods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod"
+                    }
+                },
+                "total_periods": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
