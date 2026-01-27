@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { apiClient } from '@/api/client'
 import type { Child, ChildContract } from '@/api/types'
 import Dialog from 'primevue/dialog'
@@ -8,6 +9,8 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
@@ -25,8 +28,8 @@ const error = ref<string | null>(null)
 
 const dialogTitle = computed(() =>
   props.child
-    ? `Contract History: ${props.child.first_name} ${props.child.last_name}`
-    : 'Contract History'
+    ? `${t('children.contractHistory')}: ${props.child.first_name} ${props.child.last_name}`
+    : t('children.contractHistory')
 )
 
 const sortedContracts = computed(() => {
@@ -55,7 +58,7 @@ async function fetchContracts() {
   try {
     contracts.value = await apiClient.getChildContracts(props.orgId, props.child.id)
   } catch {
-    error.value = 'Failed to load contracts'
+    error.value = t('common.failedToLoad', { resource: t('contracts.title') })
     contracts.value = []
   } finally {
     loading.value = false
@@ -63,7 +66,7 @@ async function fetchContracts() {
 }
 
 function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'ongoing'
+  if (!dateStr) return t('common.ongoing')
   return new Date(dateStr).toLocaleDateString()
 }
 
@@ -93,29 +96,29 @@ function isCurrentContract(contract: ChildContract): boolean {
     </div>
 
     <div v-else-if="sortedContracts.length === 0" class="no-contracts">
-      No contracts found for this child.
+      {{ t('children.noContractsFound') }}
     </div>
 
     <DataTable v-else :value="sortedContracts" striped-rows>
-      <Column header="Status" style="width: 100px">
+      <Column :header="t('common.status')" style="width: 100px">
         <template #body="{ data }">
           <Tag
-            :value="isCurrentContract(data) ? 'Active' : 'Inactive'"
+            :value="isCurrentContract(data) ? t('common.active') : t('common.inactive')"
             :severity="isCurrentContract(data) ? 'success' : 'secondary'"
           />
         </template>
       </Column>
-      <Column header="From" style="width: 120px">
+      <Column :header="t('contracts.from')" style="width: 120px">
         <template #body="{ data }">
           {{ formatDate(data.from) }}
         </template>
       </Column>
-      <Column header="To" style="width: 120px">
+      <Column :header="t('contracts.to')" style="width: 120px">
         <template #body="{ data }">
           {{ formatDate(data.to) }}
         </template>
       </Column>
-      <Column header="Attributes">
+      <Column :header="t('children.attributes')">
         <template #body="{ data }">
           <template v-if="data.attributes?.length">
             <Tag v-for="attr in data.attributes" :key="attr" :value="attr" class="mr-1" />
@@ -127,7 +130,7 @@ function isCurrentContract(contract: ChildContract): boolean {
 
     <template #footer>
       <div class="dialog-footer">
-        <Button label="Close" @click="$emit('close')" />
+        <Button :label="t('common.close')" @click="$emit('close')" />
       </div>
     </template>
   </Dialog>

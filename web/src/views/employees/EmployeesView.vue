@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+import { useI18n } from 'vue-i18n'
 import { apiClient, getErrorMessage } from '@/api/client'
 import type {
   Employee,
@@ -19,6 +20,7 @@ import EmployeeContractForm from './EmployeeContractForm.vue'
 const route = useRoute()
 const toast = useToast()
 const confirm = useConfirm()
+const { t } = useI18n()
 
 const orgId = ref(Number(route.params.orgId))
 const employees = ref<Employee[]>([])
@@ -45,8 +47,8 @@ async function fetchEmployees() {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to load employees'),
+      summary: t('common.error'),
+      detail: getErrorMessage(error, t('common.failedToLoad', { resource: t('employees.title') })),
       life: 5000
     })
   } finally {
@@ -79,8 +81,8 @@ async function saveEmployee(data: EmployeeCreateRequest | EmployeeUpdateRequest)
       )
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Employee updated successfully',
+        summary: t('common.success'),
+        detail: t('employees.updateSuccess'),
         life: 3000
       })
     } else {
@@ -90,8 +92,8 @@ async function saveEmployee(data: EmployeeCreateRequest | EmployeeUpdateRequest)
       )
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Employee created successfully',
+        summary: t('common.success'),
+        detail: t('employees.createSuccess'),
         life: 3000
       })
     }
@@ -100,8 +102,8 @@ async function saveEmployee(data: EmployeeCreateRequest | EmployeeUpdateRequest)
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to save employee'),
+      summary: t('common.error'),
+      detail: getErrorMessage(error, t('common.failedToSave', { resource: t('employees.title') })),
       life: 5000
     })
   }
@@ -109,8 +111,10 @@ async function saveEmployee(data: EmployeeCreateRequest | EmployeeUpdateRequest)
 
 function confirmDelete(employee: Employee) {
   confirm.require({
-    message: `Are you sure you want to delete ${employee.first_name} ${employee.last_name}?`,
-    header: 'Confirm Delete',
+    message: t('employees.confirmDeleteMessage', {
+      name: `${employee.first_name} ${employee.last_name}`
+    }),
+    header: t('common.confirmDelete'),
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: async () => {
@@ -118,16 +122,19 @@ function confirmDelete(employee: Employee) {
         await apiClient.deleteEmployee(orgId.value, employee.id)
         toast.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Employee deleted successfully',
+          summary: t('common.success'),
+          detail: t('employees.deleteSuccess'),
           life: 3000
         })
         await fetchEmployees()
       } catch (error) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: getErrorMessage(error, 'Failed to delete employee'),
+          summary: t('common.error'),
+          detail: getErrorMessage(
+            error,
+            t('common.failedToDelete', { resource: t('employees.title') })
+          ),
           life: 5000
         })
       }
@@ -152,8 +159,8 @@ async function saveContract(data: EmployeeContractCreateRequest) {
     await apiClient.createEmployeeContract(orgId.value, selectedEmployee.value.id, data)
     toast.add({
       severity: 'success',
-      summary: 'Success',
-      detail: 'Contract created successfully',
+      summary: t('common.success'),
+      detail: t('contracts.createSuccess'),
       life: 3000
     })
     closeContractDialog()
@@ -161,8 +168,11 @@ async function saveContract(data: EmployeeContractCreateRequest) {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to create contract'),
+      summary: t('common.error'),
+      detail: getErrorMessage(
+        error,
+        t('common.failedToCreate', { resource: t('contracts.title') })
+      ),
       life: 5000
     })
   }
@@ -194,8 +204,8 @@ onMounted(() => {
 <template>
   <div>
     <div class="page-header">
-      <h1>Employees</h1>
-      <Button label="New Employee" icon="pi pi-plus" @click="openCreateDialog" />
+      <h1>{{ t('employees.title') }}</h1>
+      <Button :label="t('employees.newEmployee')" icon="pi pi-plus" @click="openCreateDialog" />
     </div>
 
     <div class="card">
@@ -208,46 +218,53 @@ onMounted(() => {
         :rows-per-page-options="[10, 25, 50]"
         row-group-mode="subheader"
       >
-        <Column field="id" header="ID" sortable style="width: 80px"></Column>
-        <Column header="Name" sortable>
+        <Column field="id" :header="t('common.id')" sortable style="width: 80px"></Column>
+        <Column :header="t('common.name')" sortable>
           <template #body="{ data }"> {{ data.first_name }} {{ data.last_name }} </template>
         </Column>
-        <Column field="birthdate" header="Birthdate" sortable style="width: 130px">
+        <Column field="birthdate" :header="t('employees.birthdate')" sortable style="width: 130px">
           <template #body="{ data }">
             {{ formatDate(data.birthdate) }}
           </template>
         </Column>
-        <Column header="Current Position" style="width: 180px">
+        <Column :header="t('employees.currentPosition')" style="width: 180px">
           <template #body="{ data }">
             {{ getCurrentContract(data)?.position || '-' }}
           </template>
         </Column>
-        <Column header="Weekly Hours" style="width: 120px">
+        <Column :header="t('employees.weeklyHours')" style="width: 120px">
           <template #body="{ data }">
             {{ getCurrentContract(data)?.weekly_hours || '-' }}
           </template>
         </Column>
-        <Column header="Salary" style="width: 120px">
+        <Column :header="t('employees.salary')" style="width: 120px">
           <template #body="{ data }">
             {{ getCurrentContract(data) ? formatCurrency(getCurrentContract(data)!.salary) : '-' }}
           </template>
         </Column>
-        <Column header="Actions" style="width: 200px">
+        <Column :header="t('common.actions')" style="width: 200px">
           <template #body="{ data }">
             <Button
               icon="pi pi-file"
               text
               rounded
               @click="openContractDialog(data)"
-              title="Add Contract"
+              :title="t('employees.addContract')"
             />
-            <Button icon="pi pi-pencil" text rounded @click="openEditDialog(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              @click="openEditDialog(data)"
+              :title="t('employees.editEmployee')"
+            />
             <Button
               icon="pi pi-trash"
               text
               rounded
               severity="danger"
               @click="confirmDelete(data)"
+              :title="t('employees.deleteEmployee')"
             />
           </template>
         </Column>

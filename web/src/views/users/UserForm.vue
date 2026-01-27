@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { User, UserCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
@@ -27,7 +30,7 @@ const form = ref({
 const errors = ref<{ name?: string; email?: string; password?: string }>({})
 
 const isEditing = computed(() => !!props.user)
-const dialogTitle = computed(() => (isEditing.value ? 'Edit User' : 'New User'))
+const dialogTitle = computed(() => (isEditing.value ? t('users.edit') : t('users.newUser')))
 
 watch(
   () => props.visible,
@@ -57,19 +60,19 @@ function validate(): boolean {
   errors.value = {}
 
   if (!form.value.name.trim()) {
-    errors.value.name = 'Name is required'
+    errors.value.name = t('validation.nameRequired')
   }
 
   if (!form.value.email.trim()) {
-    errors.value.email = 'Email is required'
+    errors.value.email = t('validation.required')
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-    errors.value.email = 'Invalid email format'
+    errors.value.email = t('validation.email')
   }
 
   if (!isEditing.value && !form.value.password) {
-    errors.value.password = 'Password is required'
+    errors.value.password = t('validation.required')
   } else if (form.value.password && form.value.password.length < 6) {
-    errors.value.password = 'Password must be at least 6 characters'
+    errors.value.password = t('validation.minLength', { min: 6 })
   }
 
   return Object.keys(errors.value).length === 0
@@ -103,37 +106,39 @@ function handleSave() {
   >
     <div class="form-grid">
       <div class="field">
-        <label for="name">Name</label>
+        <label for="name">{{ t('common.name') }}</label>
         <InputText
           id="name"
           v-model="form.name"
           :class="{ 'p-invalid': errors.name }"
-          placeholder="Full name"
+          :placeholder="t('common.name')"
         />
         <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
       </div>
 
       <div class="field">
-        <label for="email">Email</label>
+        <label for="email">{{ t('common.email') }}</label>
         <InputText
           id="email"
           v-model="form.email"
           type="email"
           :class="{ 'p-invalid': errors.email }"
-          placeholder="Email address"
+          :placeholder="t('common.email')"
         />
         <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
       </div>
 
       <div class="field">
-        <label for="password">Password {{ isEditing ? '(leave blank to keep)' : '' }}</label>
+        <label for="password"
+          >{{ t('users.password') }} {{ isEditing ? '(leave blank to keep)' : '' }}</label
+        >
         <Password
           id="password"
           v-model="form.password"
           :class="{ 'p-invalid': errors.password }"
           :feedback="false"
           toggle-mask
-          placeholder="Password"
+          :placeholder="t('users.password')"
           :input-style="{ width: '100%' }"
         />
         <small v-if="errors.password" class="p-error">{{ errors.password }}</small>
@@ -142,15 +147,15 @@ function handleSave() {
       <div class="field">
         <div class="flex align-items-center gap-2">
           <Checkbox v-model="form.active" input-id="active" :binary="true" />
-          <label for="active">Active</label>
+          <label for="active">{{ t('common.active') }}</label>
         </div>
       </div>
     </div>
 
     <template #footer>
       <div class="dialog-footer">
-        <Button label="Cancel" text @click="$emit('close')" />
-        <Button label="Save" @click="handleSave" />
+        <Button :label="t('common.cancel')" text @click="$emit('close')" />
+        <Button :label="t('common.save')" @click="handleSave" />
       </div>
     </template>
   </Dialog>

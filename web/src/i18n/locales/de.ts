@@ -25,7 +25,17 @@ export default {
     success: 'Erfolg',
     warning: 'Warnung',
     info: 'Information',
-    toggleSidebar: 'Seitenleiste umschalten'
+    toggleSidebar: 'Seitenleiste umschalten',
+    id: 'ID',
+    close: 'Schließen',
+    confirmDelete: 'Löschen bestätigen',
+    failedToLoad: 'Fehler beim Laden von {resource}',
+    failedToSave: 'Fehler beim Speichern von {resource}',
+    failedToDelete: 'Fehler beim Löschen von {resource}',
+    failedToCreate: 'Fehler beim Erstellen von {resource}',
+    ongoing: 'laufend',
+    viewDetails: 'Details anzeigen',
+    created: 'Erstellt'
   },
   auth: {
     login: 'Anmelden',
@@ -66,7 +76,8 @@ export default {
     deleteSuccess: 'Organisation erfolgreich gelöscht',
     createSuccess: 'Organisation erfolgreich erstellt',
     updateSuccess: 'Organisation erfolgreich aktualisiert',
-    selectOrg: 'Organisation auswählen'
+    selectOrg: 'Organisation auswählen',
+    newOrganization: 'Neue Organisation'
   },
   employees: {
     title: 'Mitarbeiter',
@@ -81,7 +92,24 @@ export default {
     deleteConfirm: 'Möchten Sie diesen Mitarbeiter wirklich löschen?',
     deleteSuccess: 'Mitarbeiter erfolgreich gelöscht',
     createSuccess: 'Mitarbeiter erfolgreich erstellt',
-    updateSuccess: 'Mitarbeiter erfolgreich aktualisiert'
+    updateSuccess: 'Mitarbeiter erfolgreich aktualisiert',
+    newEmployee: 'Neuer Mitarbeiter',
+    age: 'Alter',
+    qualifications: 'Qualifikationen',
+    addContract: 'Vertrag hinzufügen',
+    contractHistory: 'Vertragshistorie',
+    editEmployee: 'Mitarbeiter bearbeiten',
+    deleteEmployee: 'Mitarbeiter löschen',
+    confirmDeleteMessage: 'Möchten Sie {name} wirklich löschen?',
+    currentPosition: 'Aktuelle Position',
+    weeklyHours: 'Wochenstunden',
+    salary: 'Gehalt',
+    birthdate: 'Geburtsdatum',
+    position: 'Position',
+    monthlySalary: 'Monatsgehalt',
+    positionRequired: 'Position ist erforderlich',
+    weeklyHoursRequired: 'Wochenstunden müssen größer als 0 sein',
+    salaryRequired: 'Gehalt muss größer als 0 sein'
   },
   children: {
     title: 'Kinder',
@@ -96,7 +124,17 @@ export default {
     deleteConfirm: 'Möchten Sie diesen Kinderdatensatz wirklich löschen?',
     deleteSuccess: 'Kind erfolgreich gelöscht',
     createSuccess: 'Kind erfolgreich erstellt',
-    updateSuccess: 'Kind erfolgreich aktualisiert'
+    updateSuccess: 'Kind erfolgreich aktualisiert',
+    newChild: 'Neues Kind',
+    age: 'Alter',
+    attributes: 'Attribute',
+    addContract: 'Vertrag hinzufügen',
+    contractHistory: 'Vertragshistorie',
+    editChild: 'Kind bearbeiten',
+    deleteChild: 'Kind löschen',
+    confirmDeleteMessage: 'Möchten Sie {name} wirklich löschen?',
+    birthdate: 'Geburtsdatum',
+    noContractsFound: 'Keine Verträge für dieses Kind gefunden.'
   },
   users: {
     title: 'Benutzer',
@@ -112,7 +150,8 @@ export default {
     deleteConfirm: 'Möchten Sie diesen Benutzer wirklich löschen?',
     deleteSuccess: 'Benutzer erfolgreich gelöscht',
     createSuccess: 'Benutzer erfolgreich erstellt',
-    updateSuccess: 'Benutzer erfolgreich aktualisiert'
+    updateSuccess: 'Benutzer erfolgreich aktualisiert',
+    newUser: 'Neuer Benutzer'
   },
   groups: {
     title: 'Gruppen',
@@ -123,7 +162,8 @@ export default {
     deleteConfirm: 'Möchten Sie diese Gruppe wirklich löschen?',
     deleteSuccess: 'Gruppe erfolgreich gelöscht',
     createSuccess: 'Gruppe erfolgreich erstellt',
-    updateSuccess: 'Gruppe erfolgreich aktualisiert'
+    updateSuccess: 'Gruppe erfolgreich aktualisiert',
+    newGroup: 'Neue Gruppe'
   },
   contracts: {
     title: 'Verträge',
@@ -133,14 +173,36 @@ export default {
     hoursPerWeek: 'Stunden pro Woche',
     deleteConfirm: 'Möchten Sie diesen Vertrag wirklich löschen?',
     deleteSuccess: 'Vertrag erfolgreich gelöscht',
-    createSuccess: 'Vertrag erfolgreich erstellt'
+    createSuccess: 'Vertrag erfolgreich erstellt',
+    newContractFor: 'Neuer Vertrag für {name}',
+    newContract: 'Neuer Vertrag',
+    startDateRequired: 'Startdatum ist erforderlich',
+    endDateOptional: 'Enddatum (optional)',
+    attributesLabel: 'Attribute (Betreuungsart & Extras)',
+    attributesHelp:
+      'Drücken Sie Enter, um ein Attribut hinzuzufügen (z.B. ganztags, halbtags, teilzeit, ndh, integration_a)',
+    noAttributes: 'keine Attribute',
+    previousContractEnded: 'Vorheriger Vertrag beendet und neuer Vertrag erfolgreich erstellt',
+    updateSuccess: 'Vertrag erfolgreich aktualisiert',
+    hasActiveContract: 'Dieses Kind hat einen aktiven Vertrag:',
+    activeSince: 'Aktiv seit {date} ({attrs})',
+    endCurrentContract: 'Aktuellen Vertrag am {date} beenden (Tag vor Beginn des neuen Vertrags)',
+    contractStartPlaceholder: 'Vertragsbeginn',
+    contractEndPlaceholder: 'Vertragsende',
+    from: 'Von',
+    to: 'Bis'
   },
   validation: {
     required: 'Dieses Feld ist erforderlich',
     email: 'Bitte geben Sie eine gültige E-Mail-Adresse ein',
     minLength: 'Muss mindestens {min} Zeichen lang sein',
     maxLength: 'Darf höchstens {max} Zeichen lang sein',
-    passwordMismatch: 'Passwörter stimmen nicht überein'
+    passwordMismatch: 'Passwörter stimmen nicht überein',
+    firstNameRequired: 'Vorname ist erforderlich',
+    lastNameRequired: 'Nachname ist erforderlich',
+    birthdateRequired: 'Geburtsdatum ist erforderlich',
+    nameRequired: 'Name ist erforderlich',
+    selectBirthdate: 'Geburtsdatum auswählen'
   },
   settings: {
     title: 'Einstellungen',
@@ -148,5 +210,20 @@ export default {
     theme: 'Design',
     lightMode: 'Heller Modus',
     darkMode: 'Dunkler Modus'
+  },
+  governmentFundings: {
+    title: 'Staatliche Finanzierungen',
+    create: 'Finanzierung erstellen',
+    edit: 'Finanzierung bearbeiten',
+    newGovernmentFunding: 'Neue staatliche Finanzierung',
+    periods: 'Zeiträume',
+    entries: 'Einträge',
+    amount: 'Betrag',
+    validFrom: 'Gültig ab',
+    validTo: 'Gültig bis',
+    deleteConfirm: 'Möchten Sie diese Finanzierung wirklich löschen?',
+    deleteSuccess: 'Finanzierung erfolgreich gelöscht',
+    createSuccess: 'Finanzierung erfolgreich erstellt',
+    updateSuccess: 'Finanzierung erfolgreich aktualisiert'
   }
 }

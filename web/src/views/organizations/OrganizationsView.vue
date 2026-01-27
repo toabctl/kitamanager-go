@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useCrud } from '@/composables/useCrud'
 import { useToast } from 'primevue/usetoast'
 import { useUiStore } from '@/stores/ui'
+import { useI18n } from 'vue-i18n'
 import { apiClient } from '@/api/client'
 import type {
   Organization,
@@ -20,6 +21,7 @@ import OrganizationForm from './OrganizationForm.vue'
 
 const toast = useToast()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const {
   items: organizations,
@@ -78,16 +80,16 @@ async function saveGovernmentFundingAssignment() {
       )
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Government funding assigned successfully',
+        summary: t('common.success'),
+        detail: t('governmentFundings.updateSuccess'),
         life: 3000
       })
     } else {
       await apiClient.removeGovernmentFundingFromOrganization(selectedOrg.value.id)
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Government funding removed successfully',
+        summary: t('common.success'),
+        detail: t('governmentFundings.deleteSuccess'),
         life: 3000
       })
     }
@@ -96,8 +98,8 @@ async function saveGovernmentFundingAssignment() {
   } catch {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to update government funding assignment',
+      summary: t('common.error'),
+      detail: t('common.failedToSave', { resource: t('governmentFundings.title') }),
       life: 3000
     })
   }
@@ -118,8 +120,12 @@ onMounted(() => {
 <template>
   <div>
     <div class="page-header">
-      <h1>Organizations</h1>
-      <Button label="New Organization" icon="pi pi-plus" @click="openCreateDialog" />
+      <h1>{{ t('organizations.title') }}</h1>
+      <Button
+        :label="t('organizations.newOrganization')"
+        icon="pi pi-plus"
+        @click="openCreateDialog"
+      />
     </div>
 
     <div class="card">
@@ -131,42 +137,42 @@ onMounted(() => {
         :rows="10"
         :rows-per-page-options="[10, 25, 50]"
       >
-        <Column field="id" header="ID" sortable style="width: 80px"></Column>
-        <Column field="name" header="Name" sortable></Column>
-        <Column header="Government Funding" style="width: 150px">
+        <Column field="id" :header="t('common.id')" sortable style="width: 80px"></Column>
+        <Column field="name" :header="t('common.name')" sortable></Column>
+        <Column :header="t('governmentFundings.title')" style="width: 150px">
           <template #body="{ data }">
             <span>{{ getGovernmentFundingName(data) }}</span>
           </template>
         </Column>
-        <Column field="active" header="Status" sortable style="width: 120px">
+        <Column field="active" :header="t('common.status')" sortable style="width: 120px">
           <template #body="{ data }">
             <Tag
-              :value="data.active ? 'Active' : 'Inactive'"
+              :value="data.active ? t('common.active') : t('common.inactive')"
               :severity="data.active ? 'success' : 'danger'"
             />
           </template>
         </Column>
-        <Column field="created_at" header="Created" sortable style="width: 180px">
+        <Column field="created_at" :header="t('common.created')" sortable style="width: 180px">
           <template #body="{ data }">
             {{ new Date(data.created_at).toLocaleDateString() }}
           </template>
         </Column>
-        <Column header="Actions" style="width: 180px">
+        <Column :header="t('common.actions')" style="width: 180px">
           <template #body="{ data }">
             <Button
               icon="pi pi-money-bill"
               text
               rounded
-              title="Assign Government Funding"
-              aria-label="Assign Government Funding"
+              :title="t('governmentFundings.title')"
+              :aria-label="t('governmentFundings.title')"
               @click="openGovernmentFundingDialog(data)"
             />
             <Button
               icon="pi pi-pencil"
               text
               rounded
-              title="Edit"
-              aria-label="Edit"
+              :title="t('common.edit')"
+              :aria-label="t('common.edit')"
               @click="openEditDialog(data)"
             />
             <Button
@@ -174,8 +180,8 @@ onMounted(() => {
               text
               rounded
               severity="danger"
-              title="Delete"
-              aria-label="Delete"
+              :title="t('common.delete')"
+              :aria-label="t('common.delete')"
               @click="confirmDelete(data)"
             />
           </template>
@@ -193,32 +199,32 @@ onMounted(() => {
     <!-- GovernmentFunding Assignment Dialog -->
     <Dialog
       v-model:visible="governmentFundingDialogVisible"
-      header="Assign Government Funding"
+      :header="t('governmentFundings.title')"
       modal
       :style="{ width: '400px' }"
     >
       <div class="form-grid">
         <div class="field">
-          <span class="field-label">Organization</span>
+          <span class="field-label">{{ t('organizations.title') }}</span>
           <p>{{ selectedOrg?.name }}</p>
         </div>
         <div class="field">
-          <label for="government-funding">Government Funding</label>
+          <label for="government-funding">{{ t('governmentFundings.title') }}</label>
           <Dropdown
             id="government-funding"
             v-model="selectedGovernmentFundingId"
             :options="governmentFundings"
             option-label="name"
             option-value="id"
-            placeholder="Select a government funding"
+            :placeholder="t('organizations.selectOrg')"
             :show-clear="true"
             class="w-full"
           />
         </div>
       </div>
       <template #footer>
-        <Button label="Cancel" text @click="governmentFundingDialogVisible = false" />
-        <Button label="Save" @click="saveGovernmentFundingAssignment" />
+        <Button :label="t('common.cancel')" text @click="governmentFundingDialogVisible = false" />
+        <Button :label="t('common.save')" @click="saveGovernmentFundingAssignment" />
       </template>
     </Dialog>
   </div>

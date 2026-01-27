@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCrud } from '@/composables/useCrud'
 import { apiClient } from '@/api/client'
 import type {
@@ -14,6 +15,7 @@ import Button from 'primevue/button'
 import GovernmentFundingForm from './GovernmentFundingForm.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const {
   items: governmentFundings,
@@ -46,8 +48,12 @@ onMounted(() => {
 <template>
   <div>
     <div class="page-header">
-      <h1>Government Fundings</h1>
-      <Button label="New Government Funding" icon="pi pi-plus" @click="openCreateDialog" />
+      <h1>{{ t('governmentFundings.title') }}</h1>
+      <Button
+        :label="t('governmentFundings.newGovernmentFunding')"
+        icon="pi pi-plus"
+        @click="openCreateDialog"
+      />
     </div>
 
     <div class="card">
@@ -59,29 +65,29 @@ onMounted(() => {
         :rows="10"
         :rows-per-page-options="[10, 25, 50]"
       >
-        <Column field="id" header="ID" sortable style="width: 80px"></Column>
-        <Column field="name" header="Name" sortable></Column>
-        <Column field="created_at" header="Created" sortable style="width: 180px">
+        <Column field="id" :header="t('common.id')" sortable style="width: 80px"></Column>
+        <Column field="name" :header="t('common.name')" sortable></Column>
+        <Column field="created_at" :header="t('common.created')" sortable style="width: 180px">
           <template #body="{ data }">
             {{ new Date(data.created_at).toLocaleDateString() }}
           </template>
         </Column>
-        <Column header="Actions" style="width: 200px">
+        <Column :header="t('common.actions')" style="width: 200px">
           <template #body="{ data }">
             <Button
               icon="pi pi-eye"
               text
               rounded
-              title="View Details"
-              aria-label="View Details"
+              :title="t('common.viewDetails')"
+              :aria-label="t('common.viewDetails')"
               @click="openDetails(data)"
             />
             <Button
               icon="pi pi-pencil"
               text
               rounded
-              title="Edit"
-              aria-label="Edit"
+              :title="t('common.edit')"
+              :aria-label="t('common.edit')"
               @click="openEditDialog(data)"
             />
             <Button
@@ -89,8 +95,8 @@ onMounted(() => {
               text
               rounded
               severity="danger"
-              title="Delete"
-              aria-label="Delete"
+              :title="t('common.delete')"
+              :aria-label="t('common.delete')"
               @click="confirmDelete(data)"
             />
           </template>

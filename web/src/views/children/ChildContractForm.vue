@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Child, ChildContract, ChildContractCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import DatePicker from 'primevue/datepicker'
@@ -7,6 +8,8 @@ import Button from 'primevue/button'
 import Chips from 'primevue/chips'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
@@ -33,8 +36,8 @@ const errors = ref<{
 
 const dialogTitle = computed(() =>
   props.child
-    ? `New Contract for ${props.child.first_name} ${props.child.last_name}`
-    : 'New Contract'
+    ? t('contracts.newContractFor', { name: `${props.child.first_name} ${props.child.last_name}` })
+    : t('contracts.newContract')
 )
 
 const hasActiveContract = computed(() => props.currentContract !== null)
@@ -42,8 +45,8 @@ const hasActiveContract = computed(() => props.currentContract !== null)
 const currentContractInfo = computed(() => {
   if (!props.currentContract) return ''
   const from = new Date(props.currentContract.from).toLocaleDateString()
-  const attrs = props.currentContract.attributes?.join(', ') || 'no attributes'
-  return `Active since ${from} (${attrs})`
+  const attrs = props.currentContract.attributes?.join(', ') || t('contracts.noAttributes')
+  return t('contracts.activeSince', { date: from, attrs })
 })
 
 const suggestedEndDate = computed(() => {
@@ -72,7 +75,7 @@ function validate(): boolean {
   errors.value = {}
 
   if (!form.value.from) {
-    errors.value.from = 'Start date is required'
+    errors.value.from = t('contracts.startDateRequired')
   }
 
   return Object.keys(errors.value).length === 0
@@ -107,59 +110,60 @@ function handleSave() {
       <Message v-if="hasActiveContract" severity="warn" :closable="false" class="mb-3">
         <div class="active-contract-info">
           <p class="mb-2">
-            <strong>This child has an active contract:</strong><br />
+            <strong>{{ t('contracts.hasActiveContract') }}</strong
+            ><br />
             {{ currentContractInfo }}
           </p>
           <div class="flex items-center gap-2">
             <Checkbox v-model="endCurrentContract" input-id="endContract" :binary="true" />
             <label for="endContract">
-              End current contract on {{ suggestedEndDate }} (day before new contract starts)
+              {{ t('contracts.endCurrentContract', { date: suggestedEndDate }) }}
             </label>
           </div>
         </div>
       </Message>
 
       <div class="field">
-        <label for="from">Start Date</label>
+        <label for="from">{{ t('contracts.startDate') }}</label>
         <DatePicker
           id="from"
           v-model="form.from"
           date-format="dd.mm.yy"
           :class="{ 'p-invalid': errors.from }"
-          placeholder="Contract start date"
+          :placeholder="t('contracts.contractStartPlaceholder')"
           show-icon
         />
         <small v-if="errors.from" class="p-error">{{ errors.from }}</small>
       </div>
 
       <div class="field">
-        <label for="to">End Date (optional)</label>
+        <label for="to">{{ t('contracts.endDateOptional') }}</label>
         <DatePicker
           id="to"
           v-model="form.to"
           date-format="dd.mm.yy"
-          placeholder="Contract end date"
+          :placeholder="t('contracts.contractEndPlaceholder')"
           show-icon
         />
       </div>
 
       <div class="field">
-        <label for="attributes">Attributes (care type & extras)</label>
+        <label for="attributes">{{ t('contracts.attributesLabel') }}</label>
         <Chips
           id="attributes"
           v-model="form.attributes"
           placeholder="e.g. ganztags, ndh, integration_a"
         />
         <small class="text-secondary">
-          Press Enter to add each attribute (e.g., ganztags, halbtags, teilzeit, ndh, integration_a)
+          {{ t('contracts.attributesHelp') }}
         </small>
       </div>
     </div>
 
     <template #footer>
       <div class="dialog-footer">
-        <Button label="Cancel" text @click="$emit('close')" />
-        <Button label="Save" @click="handleSave" />
+        <Button :label="t('common.cancel')" text @click="$emit('close')" />
+        <Button :label="t('common.save')" @click="handleSave" />
       </div>
     </template>
   </Dialog>

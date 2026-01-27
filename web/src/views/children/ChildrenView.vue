@@ -3,6 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+import { useI18n } from 'vue-i18n'
 import { apiClient, getErrorMessage } from '@/api/client'
 import type {
   Child,
@@ -21,6 +22,7 @@ import ChildContractHistory from './ChildContractHistory.vue'
 const route = useRoute()
 const toast = useToast()
 const confirm = useConfirm()
+const { t } = useI18n()
 
 const orgId = ref(Number(route.params.orgId))
 const children = ref<Child[]>([])
@@ -56,8 +58,8 @@ async function fetchChildren() {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to load children'),
+      summary: t('common.error'),
+      detail: getErrorMessage(error, t('common.failedToLoad', { resource: t('children.title') })),
       life: 5000
     })
   } finally {
@@ -86,16 +88,16 @@ async function saveChild(data: ChildCreateRequest | ChildUpdateRequest) {
       await apiClient.updateChild(orgId.value, editingChild.value.id, data as ChildUpdateRequest)
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Child updated successfully',
+        summary: t('common.success'),
+        detail: t('children.updateSuccess'),
         life: 3000
       })
     } else {
       await apiClient.createChild(orgId.value, data as Omit<ChildCreateRequest, 'organization_id'>)
       toast.add({
         severity: 'success',
-        summary: 'Success',
-        detail: 'Child created successfully',
+        summary: t('common.success'),
+        detail: t('children.createSuccess'),
         life: 3000
       })
     }
@@ -104,8 +106,8 @@ async function saveChild(data: ChildCreateRequest | ChildUpdateRequest) {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to save child'),
+      summary: t('common.error'),
+      detail: getErrorMessage(error, t('common.failedToSave', { resource: t('children.title') })),
       life: 5000
     })
   }
@@ -113,8 +115,8 @@ async function saveChild(data: ChildCreateRequest | ChildUpdateRequest) {
 
 function confirmDelete(child: Child) {
   confirm.require({
-    message: `Are you sure you want to delete ${child.first_name} ${child.last_name}?`,
-    header: 'Confirm Delete',
+    message: t('children.confirmDeleteMessage', { name: `${child.first_name} ${child.last_name}` }),
+    header: t('common.confirmDelete'),
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: async () => {
@@ -122,16 +124,19 @@ function confirmDelete(child: Child) {
         await apiClient.deleteChild(orgId.value, child.id)
         toast.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Child deleted successfully',
+          summary: t('common.success'),
+          detail: t('children.deleteSuccess'),
           life: 3000
         })
         await fetchChildren()
       } catch (error) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: getErrorMessage(error, 'Failed to delete child'),
+          summary: t('common.error'),
+          detail: getErrorMessage(
+            error,
+            t('common.failedToDelete', { resource: t('children.title') })
+          ),
           life: 5000
         })
       }
@@ -181,10 +186,10 @@ async function saveContract(data: ChildContractCreateRequest, endCurrentContract
     await apiClient.createChildContract(orgId.value, selectedChild.value.id, data)
     toast.add({
       severity: 'success',
-      summary: 'Success',
+      summary: t('common.success'),
       detail: endCurrentContract
-        ? 'Previous contract ended and new contract created successfully'
-        : 'Contract created successfully',
+        ? t('contracts.previousContractEnded')
+        : t('contracts.createSuccess'),
       life: 3000
     })
     closeContractDialog()
@@ -192,8 +197,11 @@ async function saveContract(data: ChildContractCreateRequest, endCurrentContract
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: getErrorMessage(error, 'Failed to create contract'),
+      summary: t('common.error'),
+      detail: getErrorMessage(
+        error,
+        t('common.failedToCreate', { resource: t('contracts.title') })
+      ),
       life: 5000
     })
   }
@@ -232,8 +240,8 @@ onMounted(() => {
 <template>
   <div>
     <div class="page-header">
-      <h1>Children</h1>
-      <Button label="New Child" icon="pi pi-plus" @click="openCreateDialog" />
+      <h1>{{ t('children.title') }}</h1>
+      <Button :label="t('children.newChild')" icon="pi pi-plus" @click="openCreateDialog" />
     </div>
 
     <div class="card">
@@ -245,21 +253,21 @@ onMounted(() => {
         :rows="10"
         :rows-per-page-options="[10, 25, 50]"
       >
-        <Column field="id" header="ID" sortable style="width: 80px"></Column>
-        <Column header="Name" sortable>
+        <Column field="id" :header="t('common.id')" sortable style="width: 80px"></Column>
+        <Column :header="t('common.name')" sortable>
           <template #body="{ data }"> {{ data.first_name }} {{ data.last_name }} </template>
         </Column>
-        <Column field="birthdate" header="Birthdate" sortable style="width: 130px">
+        <Column field="birthdate" :header="t('children.birthdate')" sortable style="width: 130px">
           <template #body="{ data }">
             {{ formatDate(data.birthdate) }}
           </template>
         </Column>
-        <Column header="Age" style="width: 80px">
+        <Column :header="t('children.age')" style="width: 80px">
           <template #body="{ data }">
             {{ calculateAge(data.birthdate) }}
           </template>
         </Column>
-        <Column header="Attributes" style="width: 200px">
+        <Column :header="t('children.attributes')" style="width: 200px">
           <template #body="{ data }">
             <template v-if="getCurrentContract(data)?.attributes?.length">
               <Tag
@@ -272,28 +280,28 @@ onMounted(() => {
             <span v-else>-</span>
           </template>
         </Column>
-        <Column header="Actions" style="width: 250px">
+        <Column :header="t('common.actions')" style="width: 250px">
           <template #body="{ data }">
             <Button
               icon="pi pi-history"
               text
               rounded
               @click="openHistoryDialog(data)"
-              title="Contract History"
+              :title="t('children.contractHistory')"
             />
             <Button
               icon="pi pi-file-plus"
               text
               rounded
               @click="openContractDialog(data)"
-              title="Add Contract"
+              :title="t('children.addContract')"
             />
             <Button
               icon="pi pi-pencil"
               text
               rounded
               @click="openEditDialog(data)"
-              title="Edit Child"
+              :title="t('children.editChild')"
             />
             <Button
               icon="pi pi-trash"
@@ -301,7 +309,7 @@ onMounted(() => {
               rounded
               severity="danger"
               @click="confirmDelete(data)"
-              title="Delete Child"
+              :title="t('children.deleteChild')"
             />
           </template>
         </Column>

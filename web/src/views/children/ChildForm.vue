@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Child, ChildCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
@@ -25,7 +28,7 @@ const form = ref({
 const errors = ref<{ first_name?: string; last_name?: string; birthdate?: string }>({})
 
 const isEditing = computed(() => !!props.child)
-const dialogTitle = computed(() => (isEditing.value ? 'Edit Child' : 'New Child'))
+const dialogTitle = computed(() => (isEditing.value ? t('children.edit') : t('children.newChild')))
 
 watch(
   () => props.visible,
@@ -53,15 +56,15 @@ function validate(): boolean {
   errors.value = {}
 
   if (!form.value.first_name.trim()) {
-    errors.value.first_name = 'First name is required'
+    errors.value.first_name = t('validation.firstNameRequired')
   }
 
   if (!form.value.last_name.trim()) {
-    errors.value.last_name = 'Last name is required'
+    errors.value.last_name = t('validation.lastNameRequired')
   }
 
   if (!form.value.birthdate) {
-    errors.value.birthdate = 'Birthdate is required'
+    errors.value.birthdate = t('validation.birthdateRequired')
   }
 
   return Object.keys(errors.value).length === 0
@@ -89,35 +92,35 @@ function handleSave() {
   >
     <div class="form-grid">
       <div class="field">
-        <label for="first_name">First Name</label>
+        <label for="first_name">{{ t('children.firstName') }}</label>
         <InputText
           id="first_name"
           v-model="form.first_name"
           :class="{ 'p-invalid': errors.first_name }"
-          placeholder="First name"
+          :placeholder="t('children.firstName')"
         />
         <small v-if="errors.first_name" class="p-error">{{ errors.first_name }}</small>
       </div>
 
       <div class="field">
-        <label for="last_name">Last Name</label>
+        <label for="last_name">{{ t('children.lastName') }}</label>
         <InputText
           id="last_name"
           v-model="form.last_name"
           :class="{ 'p-invalid': errors.last_name }"
-          placeholder="Last name"
+          :placeholder="t('children.lastName')"
         />
         <small v-if="errors.last_name" class="p-error">{{ errors.last_name }}</small>
       </div>
 
       <div class="field">
-        <label for="birthdate">Birthdate</label>
+        <label for="birthdate">{{ t('children.birthdate') }}</label>
         <DatePicker
           id="birthdate"
           v-model="form.birthdate"
           date-format="dd.mm.yy"
           :class="{ 'p-invalid': errors.birthdate }"
-          placeholder="Select birthdate"
+          :placeholder="t('validation.selectBirthdate')"
           show-icon
         />
         <small v-if="errors.birthdate" class="p-error">{{ errors.birthdate }}</small>
@@ -126,8 +129,8 @@ function handleSave() {
 
     <template #footer>
       <div class="dialog-footer">
-        <Button label="Cancel" text @click="$emit('close')" />
-        <Button label="Save" @click="handleSave" />
+        <Button :label="t('common.cancel')" text @click="$emit('close')" />
+        <Button :label="t('common.save')" @click="handleSave" />
       </div>
     </template>
   </Dialog>

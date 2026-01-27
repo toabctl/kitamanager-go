@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Employee, EmployeeContractCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
@@ -34,8 +37,10 @@ const errors = ref<{
 
 const dialogTitle = computed(() =>
   props.employee
-    ? `New Contract for ${props.employee.first_name} ${props.employee.last_name}`
-    : 'New Contract'
+    ? t('contracts.newContractFor', {
+        name: `${props.employee.first_name} ${props.employee.last_name}`
+      })
+    : t('contracts.newContract')
 )
 
 watch(
@@ -58,19 +63,19 @@ function validate(): boolean {
   errors.value = {}
 
   if (!form.value.from) {
-    errors.value.from = 'Start date is required'
+    errors.value.from = t('contracts.startDateRequired')
   }
 
   if (!form.value.position.trim()) {
-    errors.value.position = 'Position is required'
+    errors.value.position = t('employees.positionRequired')
   }
 
   if (!form.value.weekly_hours || form.value.weekly_hours <= 0) {
-    errors.value.weekly_hours = 'Weekly hours must be greater than 0'
+    errors.value.weekly_hours = t('employees.weeklyHoursRequired')
   }
 
   if (!form.value.salary || form.value.salary <= 0) {
-    errors.value.salary = 'Salary must be greater than 0'
+    errors.value.salary = t('employees.salaryRequired')
   }
 
   return Object.keys(errors.value).length === 0
@@ -100,31 +105,31 @@ function handleSave() {
   >
     <div class="form-grid">
       <div class="field">
-        <label for="from">Start Date</label>
+        <label for="from">{{ t('contracts.startDate') }}</label>
         <DatePicker
           id="from"
           v-model="form.from"
           date-format="dd.mm.yy"
           :class="{ 'p-invalid': errors.from }"
-          placeholder="Contract start date"
+          :placeholder="t('contracts.contractStartPlaceholder')"
           show-icon
         />
         <small v-if="errors.from" class="p-error">{{ errors.from }}</small>
       </div>
 
       <div class="field">
-        <label for="to">End Date (optional)</label>
+        <label for="to">{{ t('contracts.endDateOptional') }}</label>
         <DatePicker
           id="to"
           v-model="form.to"
           date-format="dd.mm.yy"
-          placeholder="Contract end date"
+          :placeholder="t('contracts.contractEndPlaceholder')"
           show-icon
         />
       </div>
 
       <div class="field">
-        <label for="position">Position</label>
+        <label for="position">{{ t('employees.position') }}</label>
         <InputText
           id="position"
           v-model="form.position"
@@ -135,7 +140,7 @@ function handleSave() {
       </div>
 
       <div class="field">
-        <label for="weekly_hours">Weekly Hours</label>
+        <label for="weekly_hours">{{ t('employees.weeklyHours') }}</label>
         <InputNumber
           id="weekly_hours"
           v-model="form.weekly_hours"
@@ -148,7 +153,7 @@ function handleSave() {
       </div>
 
       <div class="field">
-        <label for="salary">Monthly Salary</label>
+        <label for="salary">{{ t('employees.monthlySalary') }}</label>
         <InputNumber
           id="salary"
           v-model="form.salary"
@@ -163,8 +168,8 @@ function handleSave() {
 
     <template #footer>
       <div class="dialog-footer">
-        <Button label="Cancel" text @click="$emit('close')" />
-        <Button label="Save" @click="handleSave" />
+        <Button :label="t('common.cancel')" text @click="$emit('close')" />
+        <Button :label="t('common.save')" @click="handleSave" />
       </div>
     </template>
   </Dialog>

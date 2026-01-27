@@ -25,7 +25,17 @@ export default {
     success: 'Success',
     warning: 'Warning',
     info: 'Information',
-    toggleSidebar: 'Toggle sidebar'
+    toggleSidebar: 'Toggle sidebar',
+    id: 'ID',
+    close: 'Close',
+    confirmDelete: 'Confirm Delete',
+    failedToLoad: 'Failed to load {resource}',
+    failedToSave: 'Failed to save {resource}',
+    failedToDelete: 'Failed to delete {resource}',
+    failedToCreate: 'Failed to create {resource}',
+    ongoing: 'ongoing',
+    viewDetails: 'View Details',
+    created: 'Created'
   },
   auth: {
     login: 'Login',
@@ -66,7 +76,8 @@ export default {
     deleteSuccess: 'Organization deleted successfully',
     createSuccess: 'Organization created successfully',
     updateSuccess: 'Organization updated successfully',
-    selectOrg: 'Select Organization'
+    selectOrg: 'Select Organization',
+    newOrganization: 'New Organization'
   },
   employees: {
     title: 'Employees',
@@ -81,7 +92,24 @@ export default {
     deleteConfirm: 'Are you sure you want to delete this employee?',
     deleteSuccess: 'Employee deleted successfully',
     createSuccess: 'Employee created successfully',
-    updateSuccess: 'Employee updated successfully'
+    updateSuccess: 'Employee updated successfully',
+    newEmployee: 'New Employee',
+    age: 'Age',
+    qualifications: 'Qualifications',
+    addContract: 'Add Contract',
+    contractHistory: 'Contract History',
+    editEmployee: 'Edit Employee',
+    deleteEmployee: 'Delete Employee',
+    confirmDeleteMessage: 'Are you sure you want to delete {name}?',
+    currentPosition: 'Current Position',
+    weeklyHours: 'Weekly Hours',
+    salary: 'Salary',
+    birthdate: 'Birthdate',
+    position: 'Position',
+    monthlySalary: 'Monthly Salary',
+    positionRequired: 'Position is required',
+    weeklyHoursRequired: 'Weekly hours must be greater than 0',
+    salaryRequired: 'Salary must be greater than 0'
   },
   children: {
     title: 'Children',
@@ -96,7 +124,17 @@ export default {
     deleteConfirm: 'Are you sure you want to delete this child record?',
     deleteSuccess: 'Child deleted successfully',
     createSuccess: 'Child created successfully',
-    updateSuccess: 'Child updated successfully'
+    updateSuccess: 'Child updated successfully',
+    newChild: 'New Child',
+    age: 'Age',
+    attributes: 'Attributes',
+    addContract: 'Add Contract',
+    contractHistory: 'Contract History',
+    editChild: 'Edit Child',
+    deleteChild: 'Delete Child',
+    confirmDeleteMessage: 'Are you sure you want to delete {name}?',
+    birthdate: 'Birthdate',
+    noContractsFound: 'No contracts found for this child.'
   },
   users: {
     title: 'Users',
@@ -112,7 +150,8 @@ export default {
     deleteConfirm: 'Are you sure you want to delete this user?',
     deleteSuccess: 'User deleted successfully',
     createSuccess: 'User created successfully',
-    updateSuccess: 'User updated successfully'
+    updateSuccess: 'User updated successfully',
+    newUser: 'New User'
   },
   groups: {
     title: 'Groups',
@@ -123,7 +162,8 @@ export default {
     deleteConfirm: 'Are you sure you want to delete this group?',
     deleteSuccess: 'Group deleted successfully',
     createSuccess: 'Group created successfully',
-    updateSuccess: 'Group updated successfully'
+    updateSuccess: 'Group updated successfully',
+    newGroup: 'New Group'
   },
   contracts: {
     title: 'Contracts',
@@ -133,14 +173,36 @@ export default {
     hoursPerWeek: 'Hours per Week',
     deleteConfirm: 'Are you sure you want to delete this contract?',
     deleteSuccess: 'Contract deleted successfully',
-    createSuccess: 'Contract created successfully'
+    createSuccess: 'Contract created successfully',
+    newContractFor: 'New Contract for {name}',
+    newContract: 'New Contract',
+    startDateRequired: 'Start date is required',
+    endDateOptional: 'End Date (optional)',
+    attributesLabel: 'Attributes (care type & extras)',
+    attributesHelp:
+      'Press Enter to add each attribute (e.g., ganztags, halbtags, teilzeit, ndh, integration_a)',
+    noAttributes: 'no attributes',
+    previousContractEnded: 'Previous contract ended and new contract created successfully',
+    updateSuccess: 'Contract updated successfully',
+    hasActiveContract: 'This child has an active contract:',
+    activeSince: 'Active since {date} ({attrs})',
+    endCurrentContract: 'End current contract on {date} (day before new contract starts)',
+    contractStartPlaceholder: 'Contract start date',
+    contractEndPlaceholder: 'Contract end date',
+    from: 'From',
+    to: 'To'
   },
   validation: {
     required: 'This field is required',
     email: 'Please enter a valid email address',
     minLength: 'Must be at least {min} characters',
     maxLength: 'Must be at most {max} characters',
-    passwordMismatch: 'Passwords do not match'
+    passwordMismatch: 'Passwords do not match',
+    firstNameRequired: 'First name is required',
+    lastNameRequired: 'Last name is required',
+    birthdateRequired: 'Birthdate is required',
+    nameRequired: 'Name is required',
+    selectBirthdate: 'Select birthdate'
   },
   settings: {
     title: 'Settings',
@@ -148,5 +210,20 @@ export default {
     theme: 'Theme',
     lightMode: 'Light Mode',
     darkMode: 'Dark Mode'
+  },
+  governmentFundings: {
+    title: 'Government Fundings',
+    create: 'Create Funding',
+    edit: 'Edit Funding',
+    newGovernmentFunding: 'New Government Funding',
+    periods: 'Periods',
+    entries: 'Entries',
+    amount: 'Amount',
+    validFrom: 'Valid From',
+    validTo: 'Valid To',
+    deleteConfirm: 'Are you sure you want to delete this funding?',
+    deleteSuccess: 'Funding deleted successfully',
+    createSuccess: 'Funding created successfully',
+    updateSuccess: 'Funding updated successfully'
   }
 }
