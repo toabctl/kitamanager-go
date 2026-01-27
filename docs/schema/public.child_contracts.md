@@ -14,7 +14,9 @@
 | group_id            | bigint                   |                                             | true     |          |                                       |         |
 | meals_included      | boolean                  |                                             | true     |          |                                       |         |
 | special_needs       | varchar(1000)            |                                             | true     |          |                                       |         |
+| attributes          | text[]                   |                                             | true     |          |                                       |         |
 | created_at          | timestamp with time zone |                                             | true     |          |                                       |         |
+| updated_at          | timestamp with time zone |                                             | true     |          |                                       |         |
 
 ## Constraints
 
@@ -50,7 +52,9 @@ erDiagram
   bigint group_id
   boolean meals_included
   varchar_1000_ special_needs
+  text__ attributes
   timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 "public.children" {
   bigint id
@@ -65,9 +69,12 @@ erDiagram
   bigint id
   varchar_255_ name
   boolean active
+  bigint payplan_id FK
   timestamp_with_time_zone created_at
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
+  bigint funding_id
+  bigint government_funding_id FK
 }
 ```
 

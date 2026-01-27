@@ -74,7 +74,6 @@ func TestMain(m *testing.M) {
 	if err := testDB.AutoMigrate(
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
-		&models.GovernmentFundingEntry{},
 		&models.GovernmentFundingProperty{},
 		&models.Organization{},
 		&models.User{},
@@ -163,7 +162,6 @@ func cleanupDatabase() {
 	testDB.Exec("DELETE FROM users")
 	testDB.Exec("DELETE FROM organizations")
 	testDB.Exec("DELETE FROM government_funding_properties")
-	testDB.Exec("DELETE FROM government_funding_entries")
 	testDB.Exec("DELETE FROM government_funding_periods")
 	testDB.Exec("DELETE FROM government_fundings")
 }

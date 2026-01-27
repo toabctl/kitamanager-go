@@ -8,13 +8,10 @@ import { apiClient } from '@/api/client'
 import type {
   GovernmentFunding,
   GovernmentFundingPeriod,
-  GovernmentFundingEntry,
   GovernmentFundingProperty,
   GovernmentFundingPeriodCreateRequest,
-  GovernmentFundingEntryCreateRequest,
   GovernmentFundingPropertyCreateRequest,
   GovernmentFundingPeriodUpdateRequest,
-  GovernmentFundingEntryUpdateRequest,
   GovernmentFundingPropertyUpdateRequest
 } from '@/api/types'
 import { flattenGovernmentFundingToRows } from '@/utils/government-funding'
@@ -51,15 +48,12 @@ const flattenedRows = computed(() => flattenGovernmentFundingToRows(governmentFu
 
 // Dialog states
 const periodDialog = ref(false)
-const entryDialog = ref(false)
 const propertyDialog = ref(false)
 
 // Current editing contexts
 const editingPeriod = ref<GovernmentFundingPeriod | null>(null)
-const editingEntry = ref<GovernmentFundingEntry | null>(null)
 const editingProperty = ref<GovernmentFundingProperty | null>(null)
 const currentPeriodId = ref<number | null>(null)
-const currentEntryId = ref<number | null>(null)
 
 // Form data
 const periodForm = ref({
@@ -68,15 +62,12 @@ const periodForm = ref({
   comment: ''
 })
 
-const entryForm = ref({
-  min_age: 0,
-  max_age: 1
-})
-
 const propertyForm = ref({
   name: '',
   payment: 0,
   requirement: 0,
+  min_age: null as number | null,
+  max_age: null as number | null,
   comment: ''
 })
 
@@ -199,124 +190,30 @@ function confirmDeletePeriod(period: GovernmentFundingPeriod) {
   })
 }
 
-// Entry functions
-function openAddEntry(periodId: number) {
-  currentPeriodId.value = periodId
-  editingEntry.value = null
-  entryForm.value = { min_age: 0, max_age: 1 }
-  entryDialog.value = true
-}
-
-function openEditEntry(periodId: number, entry: GovernmentFundingEntry) {
-  currentPeriodId.value = periodId
-  editingEntry.value = entry
-  entryForm.value = { min_age: entry.min_age, max_age: entry.max_age }
-  entryDialog.value = true
-}
-
-async function saveEntry() {
-  if (entryForm.value.min_age >= entryForm.value.max_age) {
-    toast.add({
-      severity: 'error',
-      summary: t('common.error'),
-      detail: t('validation.maxAgeMustBeGreater'),
-      life: 3000
-    })
-    return
-  }
-
-  try {
-    if (editingEntry.value && currentPeriodId.value) {
-      const data: GovernmentFundingEntryUpdateRequest = {
-        min_age: entryForm.value.min_age,
-        max_age: entryForm.value.max_age
-      }
-      await apiClient.updateGovernmentFundingEntry(
-        governmentFundingId.value,
-        currentPeriodId.value,
-        editingEntry.value.id,
-        data
-      )
-      toast.add({
-        severity: 'success',
-        summary: t('common.success'),
-        detail: t('governmentFundings.entryUpdated'),
-        life: 3000
-      })
-    } else if (currentPeriodId.value) {
-      const data: GovernmentFundingEntryCreateRequest = {
-        min_age: entryForm.value.min_age,
-        max_age: entryForm.value.max_age
-      }
-      await apiClient.createGovernmentFundingEntry(
-        governmentFundingId.value,
-        currentPeriodId.value,
-        data
-      )
-      toast.add({
-        severity: 'success',
-        summary: t('common.success'),
-        detail: t('governmentFundings.entryCreated'),
-        life: 3000
-      })
-    }
-    entryDialog.value = false
-    await fetchGovernmentFunding()
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('common.error'),
-      detail: t('governmentFundings.failedToSaveEntry'),
-      life: 3000
-    })
-  }
-}
-
-function confirmDeleteEntry(periodId: number, entry: GovernmentFundingEntry) {
-  confirm.require({
-    message: t('governmentFundings.deleteEntryConfirm'),
-    header: t('common.confirmDelete'),
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: async () => {
-      try {
-        await apiClient.deleteGovernmentFundingEntry(governmentFundingId.value, periodId, entry.id)
-        toast.add({
-          severity: 'success',
-          summary: t('common.success'),
-          detail: t('governmentFundings.entryDeleted'),
-          life: 3000
-        })
-        await fetchGovernmentFunding()
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: t('common.error'),
-          detail: t('governmentFundings.failedToDeleteEntry'),
-          life: 3000
-        })
-      }
-    }
-  })
-}
-
 // Property functions
-function openAddProperty(periodId: number, entryId: number) {
+function openAddProperty(periodId: number) {
   currentPeriodId.value = periodId
-  currentEntryId.value = entryId
   editingProperty.value = null
-  propertyForm.value = { name: '', payment: 0, requirement: 0, comment: '' }
+  propertyForm.value = {
+    name: '',
+    payment: 0,
+    requirement: 0,
+    min_age: null,
+    max_age: null,
+    comment: ''
+  }
   propertyDialog.value = true
 }
 
-function openEditProperty(periodId: number, entryId: number, property: GovernmentFundingProperty) {
+function openEditProperty(periodId: number, property: GovernmentFundingProperty) {
   currentPeriodId.value = periodId
-  currentEntryId.value = entryId
   editingProperty.value = property
   propertyForm.value = {
     name: property.name,
     payment: property.payment,
     requirement: property.requirement,
+    min_age: property.min_age ?? null,
+    max_age: property.max_age ?? null,
     comment: property.comment || ''
   }
   propertyDialog.value = true
@@ -333,18 +230,32 @@ async function saveProperty() {
     return
   }
 
+  // Validate age range if both are provided
+  if (propertyForm.value.min_age !== null && propertyForm.value.max_age !== null) {
+    if (propertyForm.value.min_age >= propertyForm.value.max_age) {
+      toast.add({
+        severity: 'error',
+        summary: t('common.error'),
+        detail: t('validation.maxAgeMustBeGreater'),
+        life: 3000
+      })
+      return
+    }
+  }
+
   try {
-    if (editingProperty.value && currentPeriodId.value && currentEntryId.value) {
+    if (editingProperty.value && currentPeriodId.value) {
       const data: GovernmentFundingPropertyUpdateRequest = {
         name: propertyForm.value.name,
         payment: propertyForm.value.payment,
         requirement: propertyForm.value.requirement,
+        min_age: propertyForm.value.min_age,
+        max_age: propertyForm.value.max_age,
         comment: propertyForm.value.comment || undefined
       }
       await apiClient.updateGovernmentFundingProperty(
         governmentFundingId.value,
         currentPeriodId.value,
-        currentEntryId.value,
         editingProperty.value.id,
         data
       )
@@ -354,17 +265,18 @@ async function saveProperty() {
         detail: t('governmentFundings.propertyUpdated'),
         life: 3000
       })
-    } else if (currentPeriodId.value && currentEntryId.value) {
+    } else if (currentPeriodId.value) {
       const data: GovernmentFundingPropertyCreateRequest = {
         name: propertyForm.value.name,
         payment: propertyForm.value.payment,
         requirement: propertyForm.value.requirement,
+        min_age: propertyForm.value.min_age,
+        max_age: propertyForm.value.max_age,
         comment: propertyForm.value.comment || undefined
       }
       await apiClient.createGovernmentFundingProperty(
         governmentFundingId.value,
         currentPeriodId.value,
-        currentEntryId.value,
         data
       )
       toast.add({
@@ -386,11 +298,7 @@ async function saveProperty() {
   }
 }
 
-function confirmDeleteProperty(
-  periodId: number,
-  entryId: number,
-  property: GovernmentFundingProperty
-) {
+function confirmDeleteProperty(periodId: number, property: GovernmentFundingProperty) {
   confirm.require({
     message: t('governmentFundings.deletePropertyConfirm'),
     header: t('common.confirmDelete'),
@@ -401,7 +309,6 @@ function confirmDeleteProperty(
         await apiClient.deleteGovernmentFundingProperty(
           governmentFundingId.value,
           periodId,
-          entryId,
           property.id
         )
         toast.add({
@@ -433,6 +340,20 @@ function formatDate(dateStr: string): string {
     month: 'short',
     year: 'numeric'
   })
+}
+
+function formatAgeRange(
+  minAge: number | null | undefined,
+  maxAge: number | null | undefined
+): string {
+  if (minAge != null && maxAge != null) {
+    return `${minAge} - ${maxAge}`
+  } else if (minAge != null) {
+    return `${minAge}+`
+  } else if (maxAge != null) {
+    return `< ${maxAge}`
+  }
+  return '-'
 }
 
 onMounted(() => {
@@ -478,7 +399,7 @@ onMounted(() => {
       >
         <Column :header="t('governmentFundings.period')" style="min-width: 180px">
           <template #body="{ data }">
-            <template v-if="data.isFirstEntryInPeriod">
+            <template v-if="data.isFirstPropertyInPeriod">
               <div class="period-cell">
                 <strong>{{ formatDate(data.periodFrom) }}</strong>
                 <span> - </span>
@@ -492,16 +413,6 @@ onMounted(() => {
             </template>
           </template>
         </Column>
-        <Column :header="t('governmentFundings.ageRange')" style="width: 120px">
-          <template #body="{ data }">
-            <template v-if="data.isFirstPropertyInEntry && data.entryId">
-              {{ data.ageRange }} {{ t('governmentFundings.years') }}
-            </template>
-            <template v-else-if="!data.entryId">
-              <span class="text-secondary">-</span>
-            </template>
-          </template>
-        </Column>
         <Column
           field="propertyName"
           :header="t('governmentFundings.property')"
@@ -509,6 +420,14 @@ onMounted(() => {
         >
           <template #body="{ data }">
             <span :class="{ 'text-secondary': !data.propertyId }">{{ data.propertyName }}</span>
+          </template>
+        </Column>
+        <Column :header="t('governmentFundings.ageRange')" style="width: 100px">
+          <template #body="{ data }">
+            <span v-if="data.ageRange !== '-'">
+              {{ data.ageRange }} {{ t('governmentFundings.years') }}
+            </span>
+            <span v-else class="text-secondary">-</span>
           </template>
         </Column>
         <Column :header="t('governmentFundings.payment')" style="width: 120px; text-align: right">
@@ -550,8 +469,8 @@ onMounted(() => {
           <Button
             icon="pi pi-plus"
             text
-            :title="t('governmentFundings.addEntry')"
-            @click.stop="openAddEntry(period.id)"
+            :title="t('governmentFundings.addProperty')"
+            @click.stop="openAddProperty(period.id)"
           />
           <Button
             icon="pi pi-pencil"
@@ -570,78 +489,53 @@ onMounted(() => {
 
         <p v-if="period.comment" class="text-secondary mb-3">{{ period.comment }}</p>
 
-        <div v-if="period.entries && period.entries.length > 0">
-          <Panel
-            v-for="entry in period.entries"
-            :key="entry.id"
-            :header="`${t('children.age')} ${entry.min_age} - ${entry.max_age} ${t('governmentFundings.years')}`"
-            toggleable
-            class="mb-2"
-          >
-            <template #icons>
-              <Button
-                icon="pi pi-plus"
-                text
-                :title="t('governmentFundings.addProperty')"
-                @click.stop="openAddProperty(period.id, entry.id)"
-              />
+        <DataTable
+          v-if="period.properties && period.properties.length > 0"
+          :value="period.properties"
+          size="small"
+          striped-rows
+        >
+          <Column field="name" :header="t('common.name')"></Column>
+          <Column :header="t('governmentFundings.ageRange')">
+            <template #body="{ data }">
+              <span v-if="data.min_age != null || data.max_age != null">
+                {{ formatAgeRange(data.min_age, data.max_age) }} {{ t('governmentFundings.years') }}
+              </span>
+              <span v-else class="text-secondary">-</span>
+            </template>
+          </Column>
+          <Column field="payment" :header="t('governmentFundings.payment')">
+            <template #body="{ data }">
+              {{ formatCurrency(data.payment) }}
+            </template>
+          </Column>
+          <Column field="requirement" :header="t('governmentFundings.requirementFte')">
+            <template #body="{ data }">
+              {{ data.requirement.toFixed(3) }}
+            </template>
+          </Column>
+          <Column field="comment" :header="t('common.comment')"></Column>
+          <Column :header="t('common.actions')" style="width: 100px">
+            <template #body="{ data: prop }">
               <Button
                 icon="pi pi-pencil"
                 text
-                :title="t('governmentFundings.editEntry')"
-                @click.stop="openEditEntry(period.id, entry)"
+                rounded
+                size="small"
+                @click="openEditProperty(period.id, prop)"
               />
               <Button
                 icon="pi pi-trash"
                 text
+                rounded
+                size="small"
                 severity="danger"
-                :title="t('governmentFundings.deleteEntry')"
-                @click.stop="confirmDeleteEntry(period.id, entry)"
+                @click="confirmDeleteProperty(period.id, prop)"
               />
             </template>
-
-            <DataTable
-              v-if="entry.properties && entry.properties.length > 0"
-              :value="entry.properties"
-              size="small"
-              striped-rows
-            >
-              <Column field="name" :header="t('common.name')"></Column>
-              <Column field="payment" :header="t('governmentFundings.payment')">
-                <template #body="{ data }">
-                  {{ formatCurrency(data.payment) }}
-                </template>
-              </Column>
-              <Column field="requirement" :header="t('governmentFundings.requirementFte')">
-                <template #body="{ data }">
-                  {{ data.requirement.toFixed(3) }}
-                </template>
-              </Column>
-              <Column field="comment" :header="t('common.comment')"></Column>
-              <Column :header="t('common.actions')" style="width: 100px">
-                <template #body="{ data: prop }">
-                  <Button
-                    icon="pi pi-pencil"
-                    text
-                    rounded
-                    size="small"
-                    @click="openEditProperty(period.id, entry.id, prop)"
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    text
-                    rounded
-                    size="small"
-                    severity="danger"
-                    @click="confirmDeleteProperty(period.id, entry.id, prop)"
-                  />
-                </template>
-              </Column>
-            </DataTable>
-            <p v-else class="text-secondary">{{ t('governmentFundings.noPropertiesDefined') }}</p>
-          </Panel>
-        </div>
-        <p v-else class="text-secondary">{{ t('governmentFundings.noEntriesDefined') }}</p>
+          </Column>
+        </DataTable>
+        <p v-else class="text-secondary">{{ t('governmentFundings.noPropertiesDefined') }}</p>
       </Panel>
     </div>
     <div v-else-if="viewMode === 'panels'" class="card">
@@ -683,29 +577,6 @@ onMounted(() => {
       </template>
     </Dialog>
 
-    <!-- Entry Dialog -->
-    <Dialog
-      v-model:visible="entryDialog"
-      :header="editingEntry ? t('governmentFundings.editEntry') : t('governmentFundings.addEntry')"
-      modal
-      :style="{ width: '400px' }"
-    >
-      <div class="form-grid">
-        <div class="field">
-          <label for="entry-min-age">{{ t('governmentFundings.minAge') }}</label>
-          <InputNumber id="entry-min-age" v-model="entryForm.min_age" :min="0" :max="99" />
-        </div>
-        <div class="field">
-          <label for="entry-max-age">{{ t('governmentFundings.maxAge') }}</label>
-          <InputNumber id="entry-max-age" v-model="entryForm.max_age" :min="1" :max="100" />
-        </div>
-      </div>
-      <template #footer>
-        <Button :label="t('common.cancel')" text @click="entryDialog = false" />
-        <Button :label="t('common.save')" @click="saveEntry" />
-      </template>
-    </Dialog>
-
     <!-- Property Dialog -->
     <Dialog
       v-model:visible="propertyDialog"
@@ -724,6 +595,31 @@ onMounted(() => {
             placeholder="e.g. ganztag, halbtag"
           />
         </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="property-min-age">{{ t('governmentFundings.minAge') }}</label>
+            <InputNumber
+              id="property-min-age"
+              v-model="propertyForm.min_age"
+              :min="0"
+              :max="99"
+              :show-buttons="true"
+              placeholder="Optional"
+            />
+          </div>
+          <div class="field">
+            <label for="property-max-age">{{ t('governmentFundings.maxAge') }}</label>
+            <InputNumber
+              id="property-max-age"
+              v-model="propertyForm.max_age"
+              :min="1"
+              :max="100"
+              :show-buttons="true"
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <small class="text-secondary mb-2">{{ t('governmentFundings.ageRangeHelp') }}</small>
         <div class="field">
           <label for="property-payment">{{ t('governmentFundings.paymentInCents') }}</label>
           <InputNumber id="property-payment" v-model="propertyForm.payment" :min="0" />
@@ -803,5 +699,14 @@ onMounted(() => {
   padding: 1.5rem;
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
+}
+
+.field-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.field-row .field {
+  flex: 1;
 }
 </style>

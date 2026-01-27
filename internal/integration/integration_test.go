@@ -53,7 +53,6 @@ func TestMain(m *testing.M) {
 	if err := testDB.AutoMigrate(
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
-		&models.GovernmentFundingEntry{},
 		&models.GovernmentFundingProperty{},
 		&models.Organization{},
 		&models.User{},
@@ -97,6 +96,7 @@ func setupRouter() *gin.Engine {
 	employeeStore := store.NewEmployeeStore(testDB)
 	childStore := store.NewChildStore(testDB)
 	userGroupStore := store.NewUserGroupStore(testDB)
+	fundingStore := store.NewGovernmentFundingStore(testDB)
 
 	// Setup services
 	orgService := service.NewOrganizationService(orgStore, groupStore)
@@ -104,7 +104,7 @@ func setupRouter() *gin.Engine {
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
-	childService := service.NewChildService(childStore)
+	childService := service.NewChildService(childStore, orgStore, fundingStore)
 
 	// Setup handlers
 	orgHandler := handlers.NewOrganizationHandler(orgService)
@@ -162,7 +162,6 @@ func cleanupDatabase() {
 	testDB.Exec("DELETE FROM users")
 	testDB.Exec("DELETE FROM organizations")
 	testDB.Exec("DELETE FROM government_funding_properties")
-	testDB.Exec("DELETE FROM government_funding_entries")
 	testDB.Exec("DELETE FROM government_funding_periods")
 	testDB.Exec("DELETE FROM government_fundings")
 }

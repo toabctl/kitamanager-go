@@ -252,7 +252,6 @@ export default {
     edit: 'Edit Funding',
     newGovernmentFunding: 'New Government Funding',
     periods: 'Periods',
-    entries: 'Entries',
     amount: 'Amount',
     validFrom: 'Valid From',
     validTo: 'Valid To',
@@ -266,9 +265,6 @@ export default {
     addPeriod: 'Add Period',
     editPeriod: 'Edit Period',
     deletePeriod: 'Delete Period',
-    addEntry: 'Add Entry',
-    editEntry: 'Edit Entry',
-    deleteEntry: 'Delete Entry',
     addProperty: 'Add Property',
     editProperty: 'Edit Property',
     deleteProperty: 'Delete Property',
@@ -285,17 +281,13 @@ export default {
     maxAge: 'Max Age (exclusive)',
     paymentInCents: 'Payment (in cents)',
     requirement: 'Requirement (staffing ratio)',
+    ageRangeHelp: 'Optional: Leave empty if property applies to all ages',
     // Messages
     periodCreated: 'Period created',
     periodUpdated: 'Period updated',
     periodDeleted: 'Period deleted',
     failedToSavePeriod: 'Failed to save period',
     failedToDeletePeriod: 'Failed to delete period',
-    entryCreated: 'Entry created',
-    entryUpdated: 'Entry updated',
-    entryDeleted: 'Entry deleted',
-    failedToSaveEntry: 'Failed to save entry',
-    failedToDeleteEntry: 'Failed to delete entry',
     propertyCreated: 'Property created',
     propertyUpdated: 'Property updated',
     propertyDeleted: 'Property deleted',
@@ -304,15 +296,11 @@ export default {
     failedToLoadFunding: 'Failed to load government funding',
     // Confirmations
     deletePeriodConfirm:
-      'Are you sure you want to delete this period? This will also delete all entries and properties.',
-    deleteEntryConfirm:
-      'Are you sure you want to delete this entry? This will also delete all properties.',
+      'Are you sure you want to delete this period? This will also delete all properties.',
     deletePropertyConfirm: 'Are you sure you want to delete this property?',
     // Empty states
-    noDataDefined:
-      'No data defined. Switch to Panels view to add periods, entries, and properties.',
+    noDataDefined: 'No data defined. Switch to Panels view to add periods and properties.',
     noPropertiesDefined: 'No properties defined. Click + to add one.',
-    noEntriesDefined: 'No entries defined. Click + to add age ranges.',
     noPeriodsDefined: 'No periods defined. Click "Add Period" to get started.',
     // Units
     years: 'years'

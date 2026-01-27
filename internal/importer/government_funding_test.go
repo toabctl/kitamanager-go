@@ -24,7 +24,6 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	err = db.AutoMigrate(
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
-		&models.GovernmentFundingEntry{},
 		&models.GovernmentFundingProperty{},
 	)
 	require.NoError(t, err)
@@ -139,20 +138,23 @@ func TestImportGovernmentFundingFromFile(t *testing.T) {
 	// Periods are ordered by from_date DESC, so the latest (2023-03-01) is first
 	period1 := funding.Periods[0] // 2023-03-01 onwards (ongoing - no end date)
 	assert.Nil(t, period1.To)
-	assert.Len(t, period1.Entries, 1)
-	assert.Len(t, period1.Entries[0].Properties, 2)
+	assert.Len(t, period1.Properties, 2)
 
-	// Check ganztag property has correct cents conversion
+	// Check ganztag property has correct cents conversion and age range
 	var ganztag *models.GovernmentFundingProperty
-	for i := range period1.Entries[0].Properties {
-		if period1.Entries[0].Properties[i].Name == "ganztag" {
-			ganztag = &period1.Entries[0].Properties[i]
+	for i := range period1.Properties {
+		if period1.Properties[i].Name == "ganztag" {
+			ganztag = &period1.Properties[i]
 			break
 		}
 	}
 	require.NotNil(t, ganztag)
 	assert.Equal(t, 166847, ganztag.Payment) // 1668.47 EUR = 166847 cents
 	assert.Equal(t, 0.261, ganztag.Requirement)
+	require.NotNil(t, ganztag.MinAge)
+	require.NotNil(t, ganztag.MaxAge)
+	assert.Equal(t, 0, *ganztag.MinAge)
+	assert.Equal(t, 2, *ganztag.MaxAge)
 
 	// Check second period has end date and comment
 	period2 := funding.Periods[1] // 2022-01-01 to 2023-03-01

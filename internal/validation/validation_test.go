@@ -137,3 +137,67 @@ func TestSanitizeHTML_SpecialChars(t *testing.T) {
 		t.Error("expected special characters to be escaped")
 	}
 }
+
+func TestCalculateAgeOnDate(t *testing.T) {
+	tests := []struct {
+		name          string
+		birthdate     time.Time
+		referenceDate time.Time
+		expectedAge   int
+	}{
+		{
+			name:          "exact birthday",
+			birthdate:     time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC),
+			expectedAge:   5,
+		},
+		{
+			name:          "day before birthday",
+			birthdate:     time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 3, 14, 0, 0, 0, 0, time.UTC),
+			expectedAge:   4,
+		},
+		{
+			name:          "day after birthday",
+			birthdate:     time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 3, 16, 0, 0, 0, 0, time.UTC),
+			expectedAge:   5,
+		},
+		{
+			name:          "newborn",
+			birthdate:     time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+			expectedAge:   0,
+		},
+		{
+			name:          "reference date before birthdate returns 0",
+			birthdate:     time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			expectedAge:   0,
+		},
+		{
+			name:          "leap year birthdate",
+			birthdate:     time.Date(2020, 2, 29, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 2, 28, 0, 0, 0, 0, time.UTC),
+			expectedAge:   4,
+		},
+		{
+			name:          "leap year birthdate on March 1",
+			birthdate:     time.Date(2020, 2, 29, 0, 0, 0, 0, time.UTC),
+			referenceDate: time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+			expectedAge:   5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			age := CalculateAgeOnDate(tt.birthdate, tt.referenceDate)
+			if age != tt.expectedAge {
+				t.Errorf("CalculateAgeOnDate(%v, %v) = %d, want %d",
+					tt.birthdate.Format("2006-01-02"),
+					tt.referenceDate.Format("2006-01-02"),
+					age, tt.expectedAge)
+			}
+		})
+	}
+}

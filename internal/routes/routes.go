@@ -78,15 +78,10 @@ func Setup(
 				governmentFundings.PUT("/:id/periods/:periodId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdatePeriod)
 				governmentFundings.DELETE("/:id/periods/:periodId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeletePeriod)
 
-				// Entry management
-				governmentFundings.POST("/:id/periods/:periodId/entries", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.CreateEntry)
-				governmentFundings.PUT("/:id/periods/:periodId/entries/:entryId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdateEntry)
-				governmentFundings.DELETE("/:id/periods/:periodId/entries/:entryId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeleteEntry)
-
-				// Property management
-				governmentFundings.POST("/:id/periods/:periodId/entries/:entryId/properties", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.CreateProperty)
-				governmentFundings.PUT("/:id/periods/:periodId/entries/:entryId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdateProperty)
-				governmentFundings.DELETE("/:id/periods/:periodId/entries/:entryId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeleteProperty)
+				// Property management (directly under periods)
+				governmentFundings.POST("/:id/periods/:periodId/properties", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.CreateProperty)
+				governmentFundings.PUT("/:id/periods/:periodId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdateProperty)
+				governmentFundings.DELETE("/:id/periods/:periodId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeleteProperty)
 			}
 
 			// ============================================================
@@ -205,6 +200,11 @@ func Setup(
 				// Children
 				children := orgScoped.Group("/children")
 				{
+					// Funding calculation endpoint (must be before /:id to avoid conflict)
+					children.GET("/funding",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						childHandler.GetFunding)
+
 					children.GET("",
 						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
 						childHandler.List)

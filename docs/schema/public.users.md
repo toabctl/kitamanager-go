@@ -4,16 +4,18 @@
 
 ## Columns
 
-| Name       | Type                     | Default                           | Nullable | Children                                                                                              | Parents | Comment |
-| ---------- | ------------------------ | --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- | ------- | ------- |
-| id         | bigint                   | nextval('users_id_seq'::regclass) | false    | [public.user_organizations](public.user_organizations.md) [public.user_groups](public.user_groups.md) |         |         |
-| name       | varchar(255)             |                                   | false    |                                                                                                       |         |         |
-| email      | varchar(255)             |                                   | false    |                                                                                                       |         |         |
-| password   | varchar(255)             |                                   | false    |                                                                                                       |         |         |
-| active     | boolean                  | true                              | true     |                                                                                                       |         |         |
-| created_at | timestamp with time zone |                                   | true     |                                                                                                       |         |         |
-| created_by | varchar(255)             |                                   | true     |                                                                                                       |         |         |
-| updated_at | timestamp with time zone |                                   | true     |                                                                                                       |         |         |
+| Name          | Type                     | Default                           | Nullable | Children                                    | Parents | Comment |
+| ------------- | ------------------------ | --------------------------------- | -------- | ------------------------------------------- | ------- | ------- |
+| id            | bigint                   | nextval('users_id_seq'::regclass) | false    | [public.user_groups](public.user_groups.md) |         |         |
+| name          | varchar(255)             |                                   | false    |                                             |         |         |
+| email         | varchar(255)             |                                   | false    |                                             |         |         |
+| password      | varchar(255)             |                                   | false    |                                             |         |         |
+| active        | boolean                  | true                              | true     |                                             |         |         |
+| is_superadmin | boolean                  | false                             | true     |                                             |         |         |
+| last_login    | timestamp with time zone |                                   | true     |                                             |         |         |
+| created_at    | timestamp with time zone |                                   | true     |                                             |         |         |
+| created_by    | varchar(255)             |                                   | true     |                                             |         |         |
+| updated_at    | timestamp with time zone |                                   | true     |                                             |         |         |
 
 ## Constraints
 
@@ -37,8 +39,6 @@
 ```mermaid
 erDiagram
 
-"public.user_organizations" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
-"public.user_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.user_groups" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
 "public.user_groups" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
 
@@ -48,29 +48,24 @@ erDiagram
   varchar_255_ email
   varchar_255_ password
   boolean active
-  timestamp_with_time_zone created_at
-  varchar_255_ created_by
-  timestamp_with_time_zone updated_at
-}
-"public.user_organizations" {
-  bigint user_id FK
-  bigint organization_id FK
-}
-"public.organizations" {
-  bigint id
-  varchar_255_ name
-  boolean active
+  boolean is_superadmin
+  timestamp_with_time_zone last_login
   timestamp_with_time_zone created_at
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
 }
 "public.user_groups" {
-  bigint group_id FK
   bigint user_id FK
+  bigint group_id FK
+  varchar_50_ role
+  timestamp_with_time_zone created_at
+  varchar_255_ created_by
 }
 "public.groups" {
   bigint id
   varchar_255_ name
+  bigint organization_id FK
+  boolean is_default
   boolean active
   timestamp_with_time_zone created_at
   varchar_255_ created_by

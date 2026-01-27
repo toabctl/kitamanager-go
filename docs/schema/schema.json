@@ -2,6 +2,451 @@
   "name": "kitamanager",
   "tables": [
     {
+      "name": "public.payplans",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('payplans_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "payplans_pkey",
+          "def": "CREATE UNIQUE INDEX payplans_pkey ON public.payplans USING btree (id)",
+          "table": "public.payplans",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_payplans_name",
+          "def": "CREATE UNIQUE INDEX idx_payplans_name ON public.payplans USING btree (name)",
+          "table": "public.payplans",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "payplans_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.payplans",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplans_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.payplans",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "payplans_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.payplans",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.payplan_periods",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('payplan_periods_id_seq'::regclass)"
+        },
+        {
+          "name": "payplan_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "from_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "to_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "comment",
+          "type": "varchar(1000)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "payplan_periods_pkey",
+          "def": "CREATE UNIQUE INDEX payplan_periods_pkey ON public.payplan_periods USING btree (id)",
+          "table": "public.payplan_periods",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_payplan_periods_payplan_id",
+          "def": "CREATE INDEX idx_payplan_periods_payplan_id ON public.payplan_periods USING btree (payplan_id)",
+          "table": "public.payplan_periods",
+          "columns": [
+            "payplan_id"
+          ]
+        },
+        {
+          "name": "idx_payplan_periods_funding_id",
+          "def": "CREATE INDEX idx_payplan_periods_funding_id ON public.payplan_periods USING btree (payplan_id)",
+          "table": "public.payplan_periods",
+          "columns": [
+            "payplan_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "payplan_periods_from_date_not_null",
+          "type": "n",
+          "def": "NOT NULL from_date",
+          "table": "public.payplan_periods",
+          "referenced_table": "",
+          "columns": [
+            "from_date"
+          ]
+        },
+        {
+          "name": "payplan_periods_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.payplan_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_periods_payplan_id_not_null",
+          "type": "n",
+          "def": "NOT NULL payplan_id",
+          "table": "public.payplan_periods",
+          "referenced_table": "",
+          "columns": [
+            "payplan_id"
+          ]
+        },
+        {
+          "name": "fk_payplans_periods",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id) ON DELETE CASCADE",
+          "table": "public.payplan_periods",
+          "referenced_table": "payplans",
+          "columns": [
+            "payplan_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_periods_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.payplan_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.payplan_entries",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('payplan_entries_id_seq'::regclass)"
+        },
+        {
+          "name": "period_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "min_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "max_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "payplan_entries_pkey",
+          "def": "CREATE UNIQUE INDEX payplan_entries_pkey ON public.payplan_entries USING btree (id)",
+          "table": "public.payplan_entries",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_payplan_entries_period_id",
+          "def": "CREATE INDEX idx_payplan_entries_period_id ON public.payplan_entries USING btree (period_id)",
+          "table": "public.payplan_entries",
+          "columns": [
+            "period_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "payplan_entries_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.payplan_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_entries_max_age_not_null",
+          "type": "n",
+          "def": "NOT NULL max_age",
+          "table": "public.payplan_entries",
+          "referenced_table": "",
+          "columns": [
+            "max_age"
+          ]
+        },
+        {
+          "name": "payplan_entries_min_age_not_null",
+          "type": "n",
+          "def": "NOT NULL min_age",
+          "table": "public.payplan_entries",
+          "referenced_table": "",
+          "columns": [
+            "min_age"
+          ]
+        },
+        {
+          "name": "payplan_entries_period_id_not_null",
+          "type": "n",
+          "def": "NOT NULL period_id",
+          "table": "public.payplan_entries",
+          "referenced_table": "",
+          "columns": [
+            "period_id"
+          ]
+        },
+        {
+          "name": "fk_payplan_periods_entries",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (period_id) REFERENCES payplan_periods(id) ON DELETE CASCADE",
+          "table": "public.payplan_entries",
+          "referenced_table": "payplan_periods",
+          "columns": [
+            "period_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_entries_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.payplan_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.payplan_properties",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('payplan_properties_id_seq'::regclass)"
+        },
+        {
+          "name": "entry_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "payment",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "requirement",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "comment",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "payplan_properties_pkey",
+          "def": "CREATE UNIQUE INDEX payplan_properties_pkey ON public.payplan_properties USING btree (id)",
+          "table": "public.payplan_properties",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_payplan_properties_entry_id",
+          "def": "CREATE INDEX idx_payplan_properties_entry_id ON public.payplan_properties USING btree (entry_id)",
+          "table": "public.payplan_properties",
+          "columns": [
+            "entry_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "payplan_properties_entry_id_not_null",
+          "type": "n",
+          "def": "NOT NULL entry_id",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "entry_id"
+          ]
+        },
+        {
+          "name": "payplan_properties_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_properties_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "payplan_properties_payment_not_null",
+          "type": "n",
+          "def": "NOT NULL payment",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "payment"
+          ]
+        },
+        {
+          "name": "payplan_properties_requirement_not_null",
+          "type": "n",
+          "def": "NOT NULL requirement",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "requirement"
+          ]
+        },
+        {
+          "name": "fk_payplan_entries_properties",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (entry_id) REFERENCES payplan_entries(id) ON DELETE CASCADE",
+          "table": "public.payplan_properties",
+          "referenced_table": "payplan_entries",
+          "columns": [
+            "entry_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "payplan_properties_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.payplan_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.organizations",
       "type": "BASE TABLE",
       "columns": [
@@ -23,6 +468,11 @@
           "default": "true"
         },
         {
+          "name": "payplan_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
           "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": true
@@ -35,6 +485,16 @@
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "funding_id",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "government_funding_id",
+          "type": "bigint",
           "nullable": true
         }
       ],
@@ -70,12 +530,51 @@
           ]
         },
         {
+          "name": "fk_organizations_funding",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id)",
+          "table": "public.organizations",
+          "referenced_table": "payplans",
+          "columns": [
+            "payplan_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_organizations_payplan",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id)",
+          "table": "public.organizations",
+          "referenced_table": "payplans",
+          "columns": [
+            "payplan_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
           "name": "organizations_pkey",
           "type": "PRIMARY KEY",
           "def": "PRIMARY KEY (id)",
           "table": "public.organizations",
           "referenced_table": "",
           "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_organizations_government_funding",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (government_funding_id) REFERENCES government_fundings(id)",
+          "table": "public.organizations",
+          "referenced_table": "government_fundings",
+          "columns": [
+            "government_funding_id"
+          ],
+          "referenced_columns": [
             "id"
           ]
         }
@@ -111,6 +610,17 @@
           "type": "boolean",
           "nullable": true,
           "default": "true"
+        },
+        {
+          "name": "is_superadmin",
+          "type": "boolean",
+          "nullable": true,
+          "default": "false"
+        },
+        {
+          "name": "last_login",
+          "type": "timestamp with time zone",
+          "nullable": true
         },
         {
           "name": "created_at",
@@ -200,92 +710,6 @@
       ]
     },
     {
-      "name": "public.user_organizations",
-      "type": "BASE TABLE",
-      "columns": [
-        {
-          "name": "user_id",
-          "type": "bigint",
-          "nullable": false
-        },
-        {
-          "name": "organization_id",
-          "type": "bigint",
-          "nullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "user_organizations_pkey",
-          "def": "CREATE UNIQUE INDEX user_organizations_pkey ON public.user_organizations USING btree (user_id, organization_id)",
-          "table": "public.user_organizations",
-          "columns": [
-            "user_id",
-            "organization_id"
-          ]
-        }
-      ],
-      "constraints": [
-        {
-          "name": "user_organizations_organization_id_not_null",
-          "type": "n",
-          "def": "NOT NULL organization_id",
-          "table": "public.user_organizations",
-          "referenced_table": "",
-          "columns": [
-            "organization_id"
-          ]
-        },
-        {
-          "name": "user_organizations_user_id_not_null",
-          "type": "n",
-          "def": "NOT NULL user_id",
-          "table": "public.user_organizations",
-          "referenced_table": "",
-          "columns": [
-            "user_id"
-          ]
-        },
-        {
-          "name": "fk_user_organizations_organization",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
-          "table": "public.user_organizations",
-          "referenced_table": "organizations",
-          "columns": [
-            "organization_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "fk_user_organizations_user",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (user_id) REFERENCES users(id)",
-          "table": "public.user_organizations",
-          "referenced_table": "users",
-          "columns": [
-            "user_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "user_organizations_pkey",
-          "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (user_id, organization_id)",
-          "table": "public.user_organizations",
-          "referenced_table": "",
-          "columns": [
-            "user_id",
-            "organization_id"
-          ]
-        }
-      ]
-    },
-    {
       "name": "public.groups",
       "type": "BASE TABLE",
       "columns": [
@@ -299,6 +723,17 @@
           "name": "name",
           "type": "varchar(255)",
           "nullable": false
+        },
+        {
+          "name": "organization_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "nullable": true,
+          "default": "false"
         },
         {
           "name": "active",
@@ -354,6 +789,29 @@
           ]
         },
         {
+          "name": "groups_organization_id_not_null",
+          "type": "n",
+          "def": "NOT NULL organization_id",
+          "table": "public.groups",
+          "referenced_table": "",
+          "columns": [
+            "organization_id"
+          ]
+        },
+        {
+          "name": "fk_organizations_groups",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+          "table": "public.groups",
+          "referenced_table": "organizations",
+          "columns": [
+            "organization_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
           "name": "groups_pkey",
           "type": "PRIMARY KEY",
           "def": "PRIMARY KEY (id)",
@@ -366,114 +824,44 @@
       ]
     },
     {
-      "name": "public.group_organizations",
-      "type": "BASE TABLE",
-      "columns": [
-        {
-          "name": "group_id",
-          "type": "bigint",
-          "nullable": false
-        },
-        {
-          "name": "organization_id",
-          "type": "bigint",
-          "nullable": false
-        }
-      ],
-      "indexes": [
-        {
-          "name": "group_organizations_pkey",
-          "def": "CREATE UNIQUE INDEX group_organizations_pkey ON public.group_organizations USING btree (group_id, organization_id)",
-          "table": "public.group_organizations",
-          "columns": [
-            "group_id",
-            "organization_id"
-          ]
-        }
-      ],
-      "constraints": [
-        {
-          "name": "group_organizations_group_id_not_null",
-          "type": "n",
-          "def": "NOT NULL group_id",
-          "table": "public.group_organizations",
-          "referenced_table": "",
-          "columns": [
-            "group_id"
-          ]
-        },
-        {
-          "name": "group_organizations_organization_id_not_null",
-          "type": "n",
-          "def": "NOT NULL organization_id",
-          "table": "public.group_organizations",
-          "referenced_table": "",
-          "columns": [
-            "organization_id"
-          ]
-        },
-        {
-          "name": "fk_group_organizations_organization",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
-          "table": "public.group_organizations",
-          "referenced_table": "organizations",
-          "columns": [
-            "organization_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "fk_group_organizations_group",
-          "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (group_id) REFERENCES groups(id)",
-          "table": "public.group_organizations",
-          "referenced_table": "groups",
-          "columns": [
-            "group_id"
-          ],
-          "referenced_columns": [
-            "id"
-          ]
-        },
-        {
-          "name": "group_organizations_pkey",
-          "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (group_id, organization_id)",
-          "table": "public.group_organizations",
-          "referenced_table": "",
-          "columns": [
-            "group_id",
-            "organization_id"
-          ]
-        }
-      ]
-    },
-    {
       "name": "public.user_groups",
       "type": "BASE TABLE",
       "columns": [
         {
+          "name": "user_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
           "name": "group_id",
           "type": "bigint",
           "nullable": false
         },
         {
-          "name": "user_id",
-          "type": "bigint",
-          "nullable": false
+          "name": "role",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": "'member'::character varying"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "nullable": true
         }
       ],
       "indexes": [
         {
           "name": "user_groups_pkey",
-          "def": "CREATE UNIQUE INDEX user_groups_pkey ON public.user_groups USING btree (group_id, user_id)",
+          "def": "CREATE UNIQUE INDEX user_groups_pkey ON public.user_groups USING btree (user_id, group_id)",
           "table": "public.user_groups",
           "columns": [
-            "group_id",
-            "user_id"
+            "user_id",
+            "group_id"
           ]
         }
       ],
@@ -489,6 +877,16 @@
           ]
         },
         {
+          "name": "user_groups_role_not_null",
+          "type": "n",
+          "def": "NOT NULL role",
+          "table": "public.user_groups",
+          "referenced_table": "",
+          "columns": [
+            "role"
+          ]
+        },
+        {
           "name": "user_groups_user_id_not_null",
           "type": "n",
           "def": "NOT NULL user_id",
@@ -499,7 +897,7 @@
           ]
         },
         {
-          "name": "fk_user_groups_user",
+          "name": "fk_users_user_groups",
           "type": "FOREIGN KEY",
           "def": "FOREIGN KEY (user_id) REFERENCES users(id)",
           "table": "public.user_groups",
@@ -527,12 +925,12 @@
         {
           "name": "user_groups_pkey",
           "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (group_id, user_id)",
+          "def": "PRIMARY KEY (user_id, group_id)",
           "table": "public.user_groups",
           "referenced_table": "",
           "columns": [
-            "group_id",
-            "user_id"
+            "user_id",
+            "group_id"
           ]
         }
       ]
@@ -714,6 +1112,11 @@
         },
         {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "nullable": true
         }
@@ -973,7 +1376,17 @@
           "nullable": true
         },
         {
+          "name": "attributes",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "nullable": true
         }
@@ -1144,11 +1557,963 @@
           ]
         }
       ]
+    },
+    {
+      "name": "public.fundings",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('fundings_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fundings_pkey",
+          "def": "CREATE UNIQUE INDEX fundings_pkey ON public.fundings USING btree (id)",
+          "table": "public.fundings",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_fundings_name",
+          "def": "CREATE UNIQUE INDEX idx_fundings_name ON public.fundings USING btree (name)",
+          "table": "public.fundings",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fundings_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.fundings",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fundings_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.fundings",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "fundings_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.fundings",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.funding_periods",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('funding_periods_id_seq'::regclass)"
+        },
+        {
+          "name": "funding_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "from_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "to_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "comment",
+          "type": "varchar(1000)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "funding_periods_pkey",
+          "def": "CREATE UNIQUE INDEX funding_periods_pkey ON public.funding_periods USING btree (id)",
+          "table": "public.funding_periods",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_funding_periods_funding_id",
+          "def": "CREATE INDEX idx_funding_periods_funding_id ON public.funding_periods USING btree (funding_id)",
+          "table": "public.funding_periods",
+          "columns": [
+            "funding_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "funding_periods_from_date_not_null",
+          "type": "n",
+          "def": "NOT NULL from_date",
+          "table": "public.funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "from_date"
+          ]
+        },
+        {
+          "name": "funding_periods_funding_id_not_null",
+          "type": "n",
+          "def": "NOT NULL funding_id",
+          "table": "public.funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "funding_id"
+          ]
+        },
+        {
+          "name": "funding_periods_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_fundings_periods",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (funding_id) REFERENCES fundings(id) ON DELETE CASCADE",
+          "table": "public.funding_periods",
+          "referenced_table": "fundings",
+          "columns": [
+            "funding_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "funding_periods_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.funding_entries",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('funding_entries_id_seq'::regclass)"
+        },
+        {
+          "name": "period_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "min_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "max_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "funding_entries_pkey",
+          "def": "CREATE UNIQUE INDEX funding_entries_pkey ON public.funding_entries USING btree (id)",
+          "table": "public.funding_entries",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_funding_entries_period_id",
+          "def": "CREATE INDEX idx_funding_entries_period_id ON public.funding_entries USING btree (period_id)",
+          "table": "public.funding_entries",
+          "columns": [
+            "period_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "funding_entries_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "funding_entries_max_age_not_null",
+          "type": "n",
+          "def": "NOT NULL max_age",
+          "table": "public.funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "max_age"
+          ]
+        },
+        {
+          "name": "funding_entries_min_age_not_null",
+          "type": "n",
+          "def": "NOT NULL min_age",
+          "table": "public.funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "min_age"
+          ]
+        },
+        {
+          "name": "funding_entries_period_id_not_null",
+          "type": "n",
+          "def": "NOT NULL period_id",
+          "table": "public.funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "period_id"
+          ]
+        },
+        {
+          "name": "fk_funding_periods_entries",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (period_id) REFERENCES funding_periods(id) ON DELETE CASCADE",
+          "table": "public.funding_entries",
+          "referenced_table": "funding_periods",
+          "columns": [
+            "period_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "funding_entries_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.funding_properties",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('funding_properties_id_seq'::regclass)"
+        },
+        {
+          "name": "entry_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "payment",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "requirement",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "comment",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "funding_properties_pkey",
+          "def": "CREATE UNIQUE INDEX funding_properties_pkey ON public.funding_properties USING btree (id)",
+          "table": "public.funding_properties",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_funding_properties_entry_id",
+          "def": "CREATE INDEX idx_funding_properties_entry_id ON public.funding_properties USING btree (entry_id)",
+          "table": "public.funding_properties",
+          "columns": [
+            "entry_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "funding_properties_entry_id_not_null",
+          "type": "n",
+          "def": "NOT NULL entry_id",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "entry_id"
+          ]
+        },
+        {
+          "name": "funding_properties_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "funding_properties_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "funding_properties_payment_not_null",
+          "type": "n",
+          "def": "NOT NULL payment",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "payment"
+          ]
+        },
+        {
+          "name": "funding_properties_requirement_not_null",
+          "type": "n",
+          "def": "NOT NULL requirement",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "requirement"
+          ]
+        },
+        {
+          "name": "fk_funding_entries_properties",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (entry_id) REFERENCES funding_entries(id) ON DELETE CASCADE",
+          "table": "public.funding_properties",
+          "referenced_table": "funding_entries",
+          "columns": [
+            "entry_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "funding_properties_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.government_fundings",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('government_fundings_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "government_fundings_pkey",
+          "def": "CREATE UNIQUE INDEX government_fundings_pkey ON public.government_fundings USING btree (id)",
+          "table": "public.government_fundings",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_government_fundings_name",
+          "def": "CREATE UNIQUE INDEX idx_government_fundings_name ON public.government_fundings USING btree (name)",
+          "table": "public.government_fundings",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "government_fundings_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.government_fundings",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_fundings_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.government_fundings",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "government_fundings_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.government_fundings",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.government_funding_periods",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('government_funding_periods_id_seq'::regclass)"
+        },
+        {
+          "name": "government_funding_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "from_date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "to_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "comment",
+          "type": "varchar(1000)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "government_funding_periods_pkey",
+          "def": "CREATE UNIQUE INDEX government_funding_periods_pkey ON public.government_funding_periods USING btree (id)",
+          "table": "public.government_funding_periods",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_government_funding_periods_government_funding_id",
+          "def": "CREATE INDEX idx_government_funding_periods_government_funding_id ON public.government_funding_periods USING btree (government_funding_id)",
+          "table": "public.government_funding_periods",
+          "columns": [
+            "government_funding_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "government_funding_periods_from_date_not_null",
+          "type": "n",
+          "def": "NOT NULL from_date",
+          "table": "public.government_funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "from_date"
+          ]
+        },
+        {
+          "name": "government_funding_periods_government_funding_id_not_null",
+          "type": "n",
+          "def": "NOT NULL government_funding_id",
+          "table": "public.government_funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "government_funding_id"
+          ]
+        },
+        {
+          "name": "government_funding_periods_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.government_funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_government_fundings_periods",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (government_funding_id) REFERENCES government_fundings(id) ON DELETE CASCADE",
+          "table": "public.government_funding_periods",
+          "referenced_table": "government_fundings",
+          "columns": [
+            "government_funding_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_funding_periods_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.government_funding_periods",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.government_funding_entries",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('government_funding_entries_id_seq'::regclass)"
+        },
+        {
+          "name": "period_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "min_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "max_age",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "government_funding_entries_pkey",
+          "def": "CREATE UNIQUE INDEX government_funding_entries_pkey ON public.government_funding_entries USING btree (id)",
+          "table": "public.government_funding_entries",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_government_funding_entries_period_id",
+          "def": "CREATE INDEX idx_government_funding_entries_period_id ON public.government_funding_entries USING btree (period_id)",
+          "table": "public.government_funding_entries",
+          "columns": [
+            "period_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "government_funding_entries_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.government_funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_funding_entries_max_age_not_null",
+          "type": "n",
+          "def": "NOT NULL max_age",
+          "table": "public.government_funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "max_age"
+          ]
+        },
+        {
+          "name": "government_funding_entries_min_age_not_null",
+          "type": "n",
+          "def": "NOT NULL min_age",
+          "table": "public.government_funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "min_age"
+          ]
+        },
+        {
+          "name": "government_funding_entries_period_id_not_null",
+          "type": "n",
+          "def": "NOT NULL period_id",
+          "table": "public.government_funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "period_id"
+          ]
+        },
+        {
+          "name": "fk_government_funding_periods_entries",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (period_id) REFERENCES government_funding_periods(id) ON DELETE CASCADE",
+          "table": "public.government_funding_entries",
+          "referenced_table": "government_funding_periods",
+          "columns": [
+            "period_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_funding_entries_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.government_funding_entries",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.government_funding_properties",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "default": "nextval('government_funding_properties_id_seq'::regclass)"
+        },
+        {
+          "name": "entry_id",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "payment",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "requirement",
+          "type": "numeric",
+          "nullable": false
+        },
+        {
+          "name": "comment",
+          "type": "varchar(500)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "government_funding_properties_pkey",
+          "def": "CREATE UNIQUE INDEX government_funding_properties_pkey ON public.government_funding_properties USING btree (id)",
+          "table": "public.government_funding_properties",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "idx_government_funding_properties_entry_id",
+          "def": "CREATE INDEX idx_government_funding_properties_entry_id ON public.government_funding_properties USING btree (entry_id)",
+          "table": "public.government_funding_properties",
+          "columns": [
+            "entry_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "government_funding_properties_entry_id_not_null",
+          "type": "n",
+          "def": "NOT NULL entry_id",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "entry_id"
+          ]
+        },
+        {
+          "name": "government_funding_properties_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_funding_properties_name_not_null",
+          "type": "n",
+          "def": "NOT NULL name",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "government_funding_properties_payment_not_null",
+          "type": "n",
+          "def": "NOT NULL payment",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "payment"
+          ]
+        },
+        {
+          "name": "government_funding_properties_requirement_not_null",
+          "type": "n",
+          "def": "NOT NULL requirement",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "requirement"
+          ]
+        },
+        {
+          "name": "fk_government_funding_entries_properties",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (entry_id) REFERENCES government_funding_entries(id) ON DELETE CASCADE",
+          "table": "public.government_funding_properties",
+          "referenced_table": "government_funding_entries",
+          "columns": [
+            "entry_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "government_funding_properties_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.government_funding_properties",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
     {
-      "table": "public.user_organizations",
+      "table": "public.payplan_periods",
+      "columns": [
+        "payplan_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.payplans",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.payplan_entries",
+      "columns": [
+        "period_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.payplan_periods",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (period_id) REFERENCES payplan_periods(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.payplan_properties",
+      "columns": [
+        "entry_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.payplan_entries",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (entry_id) REFERENCES payplan_entries(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.organizations",
+      "columns": [
+        "payplan_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.payplans",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id)"
+    },
+    {
+      "table": "public.organizations",
+      "columns": [
+        "payplan_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.payplans",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (payplan_id) REFERENCES payplans(id)"
+    },
+    {
+      "table": "public.organizations",
+      "columns": [
+        "government_funding_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.government_fundings",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (government_funding_id) REFERENCES government_fundings(id)"
+    },
+    {
+      "table": "public.groups",
       "columns": [
         "organization_id"
       ],
@@ -1159,45 +2524,6 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-    },
-    {
-      "table": "public.user_organizations",
-      "columns": [
-        "user_id"
-      ],
-      "cardinality": "zero_or_more",
-      "parent_table": "public.users",
-      "parent_columns": [
-        "id"
-      ],
-      "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (user_id) REFERENCES users(id)"
-    },
-    {
-      "table": "public.group_organizations",
-      "columns": [
-        "organization_id"
-      ],
-      "cardinality": "zero_or_more",
-      "parent_table": "public.organizations",
-      "parent_columns": [
-        "id"
-      ],
-      "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-    },
-    {
-      "table": "public.group_organizations",
-      "columns": [
-        "group_id"
-      ],
-      "cardinality": "zero_or_more",
-      "parent_table": "public.groups",
-      "parent_columns": [
-        "id"
-      ],
-      "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (group_id) REFERENCES groups(id)"
     },
     {
       "table": "public.user_groups",
@@ -1276,6 +2602,84 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (child_id) REFERENCES children(id)"
+    },
+    {
+      "table": "public.funding_periods",
+      "columns": [
+        "funding_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.fundings",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (funding_id) REFERENCES fundings(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.funding_entries",
+      "columns": [
+        "period_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.funding_periods",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (period_id) REFERENCES funding_periods(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.funding_properties",
+      "columns": [
+        "entry_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.funding_entries",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (entry_id) REFERENCES funding_entries(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.government_funding_periods",
+      "columns": [
+        "government_funding_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.government_fundings",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (government_funding_id) REFERENCES government_fundings(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.government_funding_entries",
+      "columns": [
+        "period_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.government_funding_periods",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (period_id) REFERENCES government_funding_periods(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.government_funding_properties",
+      "columns": [
+        "entry_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.government_funding_entries",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (entry_id) REFERENCES government_funding_entries(id) ON DELETE CASCADE"
     }
   ],
   "driver": {

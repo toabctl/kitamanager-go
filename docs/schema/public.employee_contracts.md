@@ -14,6 +14,7 @@
 | weekly_hours | numeric                  |                                                | true     |          |                                         |         |
 | salary       | bigint                   |                                                | true     |          |                                         |         |
 | created_at   | timestamp with time zone |                                                | true     |          |                                         |         |
+| updated_at   | timestamp with time zone |                                                | true     |          |                                         |         |
 
 ## Constraints
 
@@ -49,6 +50,7 @@ erDiagram
   numeric weekly_hours
   bigint salary
   timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 "public.employees" {
   bigint id
@@ -63,9 +65,12 @@ erDiagram
   bigint id
   varchar_255_ name
   boolean active
+  bigint payplan_id FK
   timestamp_with_time_zone created_at
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
+  bigint funding_id
+  bigint government_funding_id FK
 }
 ```
 

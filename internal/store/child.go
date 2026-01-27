@@ -1,6 +1,8 @@
 package store
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -96,4 +98,24 @@ func (s *ChildStore) UpdateContract(contract *models.ChildContract) error {
 
 func (s *ChildStore) DeleteContract(id uint) error {
 	return s.db.Delete(&models.ChildContract{}, id).Error
+}
+
+// FindByOrganizationWithContractOn returns children that have an active contract on the given date.
+// A contract is active if: from_date <= date AND (to_date IS NULL OR to_date >= date)
+func (s *ChildStore) FindByOrganizationWithContractOn(orgID uint, date time.Time) ([]models.Child, error) {
+	var children []models.Child
+
+	// Find children with contracts active on the given date
+	if err := s.db.
+		Preload("Contracts", "from_date <= ? AND (to_date IS NULL OR to_date >= ?)", date, date).
+		Joins("JOIN child_contracts ON child_contracts.child_id = children.id").
+		Where("children.organization_id = ?", orgID).
+		Where("child_contracts.from_date <= ?", date).
+		Where("child_contracts.to_date IS NULL OR child_contracts.to_date >= ?", date).
+		Distinct().
+		Find(&children).Error; err != nil {
+		return nil, err
+	}
+
+	return children, nil
 }

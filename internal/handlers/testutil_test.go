@@ -40,7 +40,6 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&models.ChildContract{},
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
-		&models.GovernmentFundingEntry{},
 		&models.GovernmentFundingProperty{},
 	)
 	if err != nil {
@@ -203,5 +202,7 @@ func createEmployeeService(db *gorm.DB) *service.EmployeeService {
 // createChildService creates a child service for testing.
 func createChildService(db *gorm.DB) *service.ChildService {
 	childStore := store.NewChildStore(db)
-	return service.NewChildService(childStore)
+	orgStore := store.NewOrganizationStore(db)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	return service.NewChildService(childStore, orgStore, fundingStore)
 }

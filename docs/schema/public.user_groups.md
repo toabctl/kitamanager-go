@@ -4,52 +4,46 @@
 
 ## Columns
 
-| Name     | Type   | Default | Nullable | Children | Parents                           | Comment |
-| -------- | ------ | ------- | -------- | -------- | --------------------------------- | ------- |
-| group_id | bigint |         | false    |          | [public.groups](public.groups.md) |         |
-| user_id  | bigint |         | false    |          | [public.users](public.users.md)   |         |
+| Name       | Type                     | Default                     | Nullable | Children | Parents                           | Comment |
+| ---------- | ------------------------ | --------------------------- | -------- | -------- | --------------------------------- | ------- |
+| user_id    | bigint                   |                             | false    |          | [public.users](public.users.md)   |         |
+| group_id   | bigint                   |                             | false    |          | [public.groups](public.groups.md) |         |
+| role       | varchar(50)              | 'member'::character varying | false    |          |                                   |         |
+| created_at | timestamp with time zone |                             | true     |          |                                   |         |
+| created_by | varchar(255)             |                             | true     |          |                                   |         |
 
 ## Constraints
 
 | Name                          | Type        | Definition                                   |
 | ----------------------------- | ----------- | -------------------------------------------- |
 | user_groups_group_id_not_null | n           | NOT NULL group_id                            |
+| user_groups_role_not_null     | n           | NOT NULL role                                |
 | user_groups_user_id_not_null  | n           | NOT NULL user_id                             |
-| fk_user_groups_user           | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id)   |
+| fk_users_user_groups          | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id)   |
 | fk_user_groups_group          | FOREIGN KEY | FOREIGN KEY (group_id) REFERENCES groups(id) |
-| user_groups_pkey              | PRIMARY KEY | PRIMARY KEY (group_id, user_id)              |
+| user_groups_pkey              | PRIMARY KEY | PRIMARY KEY (user_id, group_id)              |
 
 ## Indexes
 
 | Name             | Definition                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------ |
-| user_groups_pkey | CREATE UNIQUE INDEX user_groups_pkey ON public.user_groups USING btree (group_id, user_id) |
+| user_groups_pkey | CREATE UNIQUE INDEX user_groups_pkey ON public.user_groups USING btree (user_id, group_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"public.user_groups" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
-"public.group_organizations" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
 "public.user_groups" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
-"public.user_organizations" }o--|| "public.users" : "FOREIGN KEY (user_id) REFERENCES users(id)"
+"public.user_groups" }o--|| "public.groups" : "FOREIGN KEY (group_id) REFERENCES groups(id)"
+"public.groups" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 
 "public.user_groups" {
-  bigint group_id FK
   bigint user_id FK
-}
-"public.groups" {
-  bigint id
-  varchar_255_ name
-  boolean active
+  bigint group_id FK
+  varchar_50_ role
   timestamp_with_time_zone created_at
   varchar_255_ created_by
-  timestamp_with_time_zone updated_at
-}
-"public.group_organizations" {
-  bigint group_id FK
-  bigint organization_id FK
 }
 "public.users" {
   bigint id
@@ -57,13 +51,32 @@ erDiagram
   varchar_255_ email
   varchar_255_ password
   boolean active
+  boolean is_superadmin
+  timestamp_with_time_zone last_login
   timestamp_with_time_zone created_at
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
 }
-"public.user_organizations" {
-  bigint user_id FK
+"public.groups" {
+  bigint id
+  varchar_255_ name
   bigint organization_id FK
+  boolean is_default
+  boolean active
+  timestamp_with_time_zone created_at
+  varchar_255_ created_by
+  timestamp_with_time_zone updated_at
+}
+"public.organizations" {
+  bigint id
+  varchar_255_ name
+  boolean active
+  bigint payplan_id FK
+  timestamp_with_time_zone created_at
+  varchar_255_ created_by
+  timestamp_with_time_zone updated_at
+  bigint funding_id
+  bigint government_funding_id FK
 }
 ```
 

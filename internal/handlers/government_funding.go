@@ -54,7 +54,7 @@ func (h *GovernmentFundingHandler) List(c *gin.Context) {
 
 // Get godoc
 // @Summary Get government funding by ID
-// @Description Get a single government funding by its ID with all nested periods, entries, and properties
+// @Description Get a single government funding by its ID with all nested periods and properties
 // @Tags government-fundings
 // @Accept json
 // @Produce json
@@ -313,26 +313,26 @@ func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
-// Entry handlers
+// Property handlers
 
-// CreateEntry godoc
-// @Summary Create a new entry
-// @Description Create a new entry for a period (superadmin only)
+// CreateProperty godoc
+// @Summary Create a new property
+// @Description Create a new property for a period (superadmin only)
 // @Tags government-fundings
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "GovernmentFunding ID"
 // @Param periodId path int true "Period ID"
-// @Param request body models.GovernmentFundingEntryCreateRequest true "Entry data"
-// @Success 201 {object} models.GovernmentFundingEntry
+// @Param request body models.GovernmentFundingPropertyCreateRequest true "Property data"
+// @Success 201 {object} models.GovernmentFundingProperty
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries [post]
-func (h *GovernmentFundingHandler) CreateEntry(c *gin.Context) {
+// @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties [post]
+func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 	_, err := parseID(c, "id")
 	if err != nil {
 		respondError(c, err)
@@ -345,162 +345,13 @@ func (h *GovernmentFundingHandler) CreateEntry(c *gin.Context) {
 		return
 	}
 
-	var req models.GovernmentFundingEntryCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	entry, err := h.service.CreateEntry(c.Request.Context(), periodID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusCreated, entry)
-}
-
-// UpdateEntry godoc
-// @Summary Update an entry
-// @Description Update an existing entry by ID (superadmin only)
-// @Tags government-fundings
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "GovernmentFunding ID"
-// @Param periodId path int true "Period ID"
-// @Param entryId path int true "Entry ID"
-// @Param request body models.GovernmentFundingEntryUpdateRequest true "Entry data"
-// @Success 200 {object} models.GovernmentFundingEntry
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId} [put]
-func (h *GovernmentFundingHandler) UpdateEntry(c *gin.Context) {
-	_, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	_, err = parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	var req models.GovernmentFundingEntryUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	entry, err := h.service.UpdateEntry(c.Request.Context(), entryID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, entry)
-}
-
-// DeleteEntry godoc
-// @Summary Delete an entry
-// @Description Delete an entry by ID (superadmin only)
-// @Tags government-fundings
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "GovernmentFunding ID"
-// @Param periodId path int true "Period ID"
-// @Param entryId path int true "Entry ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId} [delete]
-func (h *GovernmentFundingHandler) DeleteEntry(c *gin.Context) {
-	_, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	_, err = parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteEntry(c.Request.Context(), entryID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-// Property handlers
-
-// CreateProperty godoc
-// @Summary Create a new property
-// @Description Create a new property for an entry (superadmin only)
-// @Tags government-fundings
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "GovernmentFunding ID"
-// @Param periodId path int true "Period ID"
-// @Param entryId path int true "Entry ID"
-// @Param request body models.GovernmentFundingPropertyCreateRequest true "Property data"
-// @Success 201 {object} models.GovernmentFundingProperty
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties [post]
-func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
-	_, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	_, err = parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
 	var req models.GovernmentFundingPropertyCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	property, err := h.service.CreateProperty(c.Request.Context(), entryID, &req)
+	property, err := h.service.CreateProperty(c.Request.Context(), periodID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -518,7 +369,6 @@ func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "GovernmentFunding ID"
 // @Param periodId path int true "Period ID"
-// @Param entryId path int true "Entry ID"
 // @Param propId path int true "Property ID"
 // @Param request body models.GovernmentFundingPropertyUpdateRequest true "Property data"
 // @Success 200 {object} models.GovernmentFundingProperty
@@ -527,7 +377,7 @@ func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 // @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties/{propId} [put]
+// @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [put]
 func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 	_, err := parseID(c, "id")
 	if err != nil {
@@ -536,12 +386,6 @@ func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 	}
 
 	_, err = parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	_, err = parseID(c, "entryId")
 	if err != nil {
 		respondError(c, err)
 		return
@@ -577,14 +421,13 @@ func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "GovernmentFunding ID"
 // @Param periodId path int true "Period ID"
-// @Param entryId path int true "Entry ID"
 // @Param propId path int true "Property ID"
 // @Success 204 "No Content"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties/{propId} [delete]
+// @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [delete]
 func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
 	_, err := parseID(c, "id")
 	if err != nil {
@@ -593,12 +436,6 @@ func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
 	}
 
 	_, err = parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	_, err = parseID(c, "entryId")
 	if err != nil {
 		respondError(c, err)
 		return

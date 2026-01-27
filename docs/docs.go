@@ -148,7 +148,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a single government funding by its ID with all nested periods, entries, and properties",
+                "description": "Get a single government funding by its ID with all nested periods and properties",
                 "consumes": [
                     "application/json"
                 ],
@@ -548,257 +548,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/government-fundings/{id}/periods/{periodId}/entries": {
+        "/api/v1/government-fundings/{id}/periods/{periodId}/properties": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new entry for a period (superadmin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "government-fundings"
-                ],
-                "summary": "Create a new entry",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "GovernmentFunding ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Period ID",
-                        "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Entry data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing entry by ID (superadmin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "government-fundings"
-                ],
-                "summary": "Update an entry",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "GovernmentFunding ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Period ID",
-                        "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Entry ID",
-                        "name": "entryId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Entry data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an entry by ID (superadmin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "government-fundings"
-                ],
-                "summary": "Delete an entry",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "GovernmentFunding ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Period ID",
-                        "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Entry ID",
-                        "name": "entryId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new property for an entry (superadmin only)",
+                "description": "Create a new property for a period (superadmin only)",
                 "consumes": [
                     "application/json"
                 ],
@@ -821,13 +578,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Period ID",
                         "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Entry ID",
-                        "name": "entryId",
                         "in": "path",
                         "required": true
                     },
@@ -881,7 +631,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties/{propId}": {
+        "/api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId}": {
             "put": {
                 "security": [
                     {
@@ -911,13 +661,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Period ID",
                         "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Entry ID",
-                        "name": "entryId",
                         "in": "path",
                         "required": true
                     },
@@ -1006,13 +749,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Period ID",
                         "name": "periodId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Entry ID",
-                        "name": "entryId",
                         "in": "path",
                         "required": true
                     },
@@ -1573,6 +1309,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/children/funding": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Calculate government funding for all children with active contracts on a given date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "children"
+                ],
+                "summary": "Calculate children funding",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date for calculation (YYYY-MM-DD format, defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildrenFundingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/children/{id}": {
             "get": {
                 "security": [
@@ -1982,6 +1785,94 @@ const docTemplate = `{
             }
         },
         "/api/v1/organizations/{orgId}/children/{id}/contracts/{contractId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing contract by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "children"
+                ],
+                "summary": "Update child contract",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Child ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Contract ID",
+                        "name": "contractId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Contract data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContractUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContract"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Contract overlaps with existing",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -4087,19 +3978,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "attributes": {
+                    "description": "Contract properties - care type and extras are stored in Attributes\ne.g., [\"ganztags\", \"integration_a\", \"ndh\"]",
                     "type": "array",
                     "items": {
                         "type": "string"
                     },
                     "example": [
-                        "ganztag",
+                        "ganztags",
                         "ndh"
                     ]
-                },
-                "care_hours_per_week": {
-                    "description": "Contract properties",
-                    "type": "number",
-                    "example": 35
                 },
                 "child_id": {
                     "type": "integer",
@@ -4111,23 +3998,14 @@ const docTemplate = `{
                 "from": {
                     "type": "string"
                 },
-                "group_id": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
                 },
-                "meals_included": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "special_needs": {
-                    "type": "string",
-                    "example": ""
-                },
                 "to": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4135,7 +4013,6 @@ const docTemplate = `{
         "github_com_eenemeene_kitamanager-go_internal_models.ChildContractCreateRequest": {
             "type": "object",
             "required": [
-                "care_hours_per_week",
                 "from"
             ],
             "properties": {
@@ -4145,32 +4022,36 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "ganztag",
+                        "ganztags",
                         "ndh"
                     ]
-                },
-                "care_hours_per_week": {
-                    "type": "number",
-                    "maximum": 168,
-                    "minimum": 0,
-                    "example": 35
                 },
                 "from": {
                     "type": "string",
                     "example": "2025-01-01"
                 },
-                "group_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "meals_included": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "special_needs": {
+                "to": {
                     "type": "string",
-                    "maxLength": 1000,
-                    "example": ""
+                    "example": "2025-12-31"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.ChildContractUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "ganztags",
+                        "ndh"
+                    ]
+                },
+                "from": {
+                    "type": "string",
+                    "example": "2025-01-01"
                 },
                 "to": {
                     "type": "string",
@@ -4202,6 +4083,46 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.ChildFundingResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "child_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "child_name": {
+                    "type": "string",
+                    "example": "Max Mustermann"
+                },
+                "funding": {
+                    "type": "integer",
+                    "example": 166847
+                },
+                "matched_attributes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "ganztags",
+                        "ndh"
+                    ]
+                },
+                "unmatched_attributes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "xyz"
+                    ]
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.ChildUpdateRequest": {
             "type": "object",
             "properties": {
@@ -4218,6 +4139,21 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Schmidt"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.ChildrenFundingResponse": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingResponse"
+                    }
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2025-01-27"
                 }
             }
         },
@@ -4289,6 +4225,9 @@ const docTemplate = `{
                     "example": 350000
                 },
                 "to": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 },
                 "weekly_hours": {
@@ -4402,70 +4341,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "max_age": {
-                    "description": "MaxAge is the maximum age in years (exclusive). A child whose age \u003c MaxAge qualifies.",
-                    "type": "integer",
-                    "example": 2
-                },
-                "min_age": {
-                    "description": "MinAge is the minimum age in years (inclusive). A child whose age \u003e= MinAge qualifies.",
-                    "type": "integer",
-                    "example": 0
-                },
-                "period_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "properties": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingProperty"
-                    }
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryCreateRequest": {
-            "type": "object",
-            "required": [
-                "max_age"
-            ],
-            "properties": {
-                "max_age": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "min_age": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 0
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "max_age": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "min_age": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 0
-                }
-            }
-        },
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod": {
             "type": "object",
             "properties": {
@@ -4476,12 +4351,6 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
-                },
-                "entries": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry"
-                    }
                 },
                 "from": {
                     "type": "string",
@@ -4494,6 +4363,12 @@ const docTemplate = `{
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "properties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingProperty"
+                    }
                 },
                 "to": {
                     "type": "string",
@@ -4545,19 +4420,23 @@ const docTemplate = `{
             "properties": {
                 "comment": {
                     "type": "string",
-                    "example": "Full-day care funding"
+                    "example": "Full-day care funding for U3"
                 },
                 "created_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
                 },
-                "entry_id": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "max_age": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "min_age": {
+                    "type": "integer",
+                    "example": 0
                 },
                 "name": {
                     "type": "string",
@@ -4566,6 +4445,10 @@ const docTemplate = `{
                 "payment": {
                     "type": "integer",
                     "example": 166847
+                },
+                "period_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "requirement": {
                     "type": "number",
@@ -4582,7 +4465,17 @@ const docTemplate = `{
                 "comment": {
                     "type": "string",
                     "maxLength": 500,
-                    "example": "Full-day care funding"
+                    "example": "Full-day care funding for U3"
+                },
+                "max_age": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 3
+                },
+                "min_age": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 0
                 },
                 "name": {
                     "type": "string",
@@ -4608,6 +4501,16 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500,
                     "example": "Updated comment"
+                },
+                "max_age": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 3
+                },
+                "min_age": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 0
                 },
                 "name": {
                     "type": "string",

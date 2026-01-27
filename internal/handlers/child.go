@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -421,4 +422,49 @@ func (h *ChildHandler) DeleteContract(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// GetFunding godoc
+// @Summary Calculate children funding
+// @Description Calculate government funding for all children with active contracts on a given date
+// @Tags children
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param date query string false "Date for calculation (YYYY-MM-DD format, defaults to today)"
+// @Success 200 {object} models.ChildrenFundingResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/children/funding [get]
+func (h *ChildHandler) GetFunding(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Parse date parameter, default to today
+	dateStr := c.Query("date")
+	var date time.Time
+	if dateStr == "" {
+		date = time.Now()
+	} else {
+		var parseErr error
+		date, parseErr = time.Parse("2006-01-02", dateStr)
+		if parseErr != nil {
+			respondError(c, apperror.BadRequest("invalid date format, expected YYYY-MM-DD"))
+			return
+		}
+	}
+
+	funding, err := h.service.CalculateFunding(c.Request.Context(), orgID, date)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, funding)
 }

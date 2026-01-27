@@ -114,7 +114,7 @@ func main() {
 	orgService := service.NewOrganizationService(orgStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
-	childService := service.NewChildService(childStore)
+	childService := service.NewChildService(childStore, orgStore, governmentFundingStore)
 	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore, orgStore)
 
 	// Initialize handlers

@@ -319,3 +319,133 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 		t.Errorf("expected no error for non-overlapping contract, got %v", err)
 	}
 }
+
+func TestChildStore_FindByOrganizationWithContractOn(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewChildStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	org2 := createTestOrganization(t, db, "Other Org")
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+
+	// Child with active contract on refDate
+	childActive := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Active",
+			LastName:       "Child",
+			Birthdate:      time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childActive)
+	db.Create(&models.ChildContract{
+		ChildID:    childActive.ID,
+		Period:     models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+		Attributes: []string{"ganztags"},
+	})
+
+	// Child with ongoing contract (no end date)
+	childOngoing := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Ongoing",
+			LastName:       "Child",
+			Birthdate:      time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childOngoing)
+	db.Create(&models.ChildContract{
+		ChildID:    childOngoing.ID,
+		Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+		Attributes: []string{"halbtags", "ndh"},
+	})
+
+	// Child with expired contract (before refDate)
+	childExpired := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Expired",
+			LastName:       "Child",
+			Birthdate:      time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childExpired)
+	db.Create(&models.ChildContract{
+		ChildID: childExpired.ID,
+		Period: models.Period{
+			From: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
+		},
+	})
+
+	// Child with future contract (after refDate)
+	childFuture := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Future",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childFuture)
+	db.Create(&models.ChildContract{
+		ChildID: childFuture.ID,
+		Period:  models.Period{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)},
+	})
+
+	// Child with no contract
+	childNoContract := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "NoContract",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childNoContract)
+
+	// Child in different organization with active contract
+	childOtherOrg := &models.Child{
+		Person: models.Person{
+			OrganizationID: org2.ID,
+			FirstName:      "OtherOrg",
+			LastName:       "Child",
+			Birthdate:      time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(childOtherOrg)
+	db.Create(&models.ChildContract{
+		ChildID: childOtherOrg.ID,
+		Period:  models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+	})
+
+	// Query for children with active contracts on refDate
+	children, err := store.FindByOrganizationWithContractOn(org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Should return only childActive and childOngoing
+	if len(children) != 2 {
+		t.Errorf("expected 2 children with active contracts, got %d", len(children))
+		for _, c := range children {
+			t.Logf("  - %s %s (ID: %d)", c.FirstName, c.LastName, c.ID)
+		}
+	}
+
+	// Verify each child has contracts loaded
+	for _, child := range children {
+		if len(child.Contracts) == 0 {
+			t.Errorf("expected child %s to have contracts loaded", child.FirstName)
+		}
+	}
+
+	// Verify correct children are returned
+	names := make(map[string]bool)
+	for _, c := range children {
+		names[c.FirstName] = true
+	}
+	if !names["Active"] || !names["Ongoing"] {
+		t.Errorf("expected Active and Ongoing children, got names: %v", names)
+	}
+}

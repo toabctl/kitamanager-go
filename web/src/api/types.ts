@@ -38,24 +38,17 @@ export interface GovernmentFundingPeriod {
   to?: string | null
   comment?: string
   created_at: string
-  entries?: GovernmentFundingEntry[]
-}
-
-export interface GovernmentFundingEntry {
-  id: number
-  period_id: number
-  min_age: number
-  max_age: number
-  created_at: string
   properties?: GovernmentFundingProperty[]
 }
 
 export interface GovernmentFundingProperty {
   id: number
-  entry_id: number
+  period_id: number
   name: string
   payment: number
   requirement: number
+  min_age?: number | null
+  max_age?: number | null
   comment?: string
   created_at: string
 }
@@ -80,20 +73,12 @@ export interface GovernmentFundingPeriodUpdateRequest {
   comment?: string
 }
 
-export interface GovernmentFundingEntryCreateRequest {
-  min_age: number
-  max_age: number
-}
-
-export interface GovernmentFundingEntryUpdateRequest {
-  min_age?: number
-  max_age?: number
-}
-
 export interface GovernmentFundingPropertyCreateRequest {
   name: string
   payment: number
   requirement: number
+  min_age?: number | null
+  max_age?: number | null
   comment?: string
 }
 
@@ -101,6 +86,8 @@ export interface GovernmentFundingPropertyUpdateRequest {
   name?: string
   payment?: number
   requirement?: number
+  min_age?: number | null
+  max_age?: number | null
   comment?: string
 }
 

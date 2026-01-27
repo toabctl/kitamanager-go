@@ -688,3 +688,364 @@ func TestChildService_GetCurrentContract_WrongOrg(t *testing.T) {
 		t.Errorf("expected ErrNotFound (not forbidden - security), got %v", err)
 	}
 }
+
+// =========================================
+// Funding Calculation Tests
+// =========================================
+
+func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	// Create org with government funding
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+
+	// Assign funding to org
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	// Create funding period covering our test date
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+
+	// Create properties with age filter (ages 3-6)
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7) // 1000.00 EUR
+	createTestFundingProperty(t, db, period.ID, "ndh", 50000, 3, 7)       // 500.00 EUR
+
+	// Create child (born 2022-01-15, age 3 on 2025-01-27)
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	// Create contract with attributes
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags", "ndh"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Calculate funding
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Children) != 1 {
+		t.Fatalf("expected 1 child, got %d", len(result.Children))
+	}
+
+	cf := result.Children[0]
+	if cf.ChildID != child.ID {
+		t.Errorf("ChildID = %d, want %d", cf.ChildID, child.ID)
+	}
+	if cf.Funding != 150000 { // 1000.00 + 500.00 = 1500.00 EUR = 150000 cents
+		t.Errorf("Funding = %d, want 150000 (cents)", cf.Funding)
+	}
+	if len(cf.MatchedAttributes) != 2 {
+		t.Errorf("MatchedAttributes = %v, want 2 items", cf.MatchedAttributes)
+	}
+	if len(cf.UnmatchedAttributes) != 0 {
+		t.Errorf("UnmatchedAttributes = %v, want 0 items", cf.UnmatchedAttributes)
+	}
+}
+
+func TestChildService_CalculateFunding_NoFundingAssigned(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	// Create org WITHOUT government funding
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create child with contract
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags", "ndh"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Calculate funding
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Children) != 1 {
+		t.Fatalf("expected 1 child, got %d", len(result.Children))
+	}
+
+	cf := result.Children[0]
+	if cf.Funding != 0 {
+		t.Errorf("Funding = %d, want 0 (no funding assigned)", cf.Funding)
+	}
+	if len(cf.UnmatchedAttributes) != 2 {
+		t.Errorf("UnmatchedAttributes = %v, want 2 items", cf.UnmatchedAttributes)
+	}
+}
+
+func TestChildService_CalculateFunding_NoMatchingPeriod(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	// Create org with funding
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	// Create period that doesn't cover our test date
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to)
+
+	// Create child with contract
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags"},
+	})
+
+	// Calculate funding for date outside period
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	cf := result.Children[0]
+	if cf.Funding != 0 {
+		t.Errorf("Funding = %d, want 0 (no matching period)", cf.Funding)
+	}
+}
+
+func TestChildService_CalculateFunding_NoMatchingAgeProperty(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	// Create org with funding
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	// Create period
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+
+	// Create property for ages 0-2 only
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 0, 2)
+
+	// Create child age 3 (doesn't match 0-2 property)
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC) // Age 3 on 2025-01-27
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags"},
+	})
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	cf := result.Children[0]
+	if cf.Funding != 0 {
+		t.Errorf("Funding = %d, want 0 (no matching age property)", cf.Funding)
+	}
+	if len(cf.UnmatchedAttributes) != 1 {
+		t.Errorf("UnmatchedAttributes = %v, want [ganztags]", cf.UnmatchedAttributes)
+	}
+}
+
+func TestChildService_CalculateFunding_PartialAttributeMatch(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	// Create org with funding
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
+	// "xyz" property does NOT exist
+
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags", "xyz"}, // xyz doesn't match any property
+	})
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	cf := result.Children[0]
+	if cf.Funding != 100000 {
+		t.Errorf("Funding = %d, want 100000", cf.Funding)
+	}
+	if len(cf.MatchedAttributes) != 1 || cf.MatchedAttributes[0] != "ganztags" {
+		t.Errorf("MatchedAttributes = %v, want [ganztags]", cf.MatchedAttributes)
+	}
+	if len(cf.UnmatchedAttributes) != 1 || cf.UnmatchedAttributes[0] != "xyz" {
+		t.Errorf("UnmatchedAttributes = %v, want [xyz]", cf.UnmatchedAttributes)
+	}
+}
+
+func TestChildService_CalculateFunding_DuplicateAttributes(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
+
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags", "ganztags", "ganztags"}, // Duplicates
+	})
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	cf := result.Children[0]
+	// Should only count once even with duplicates
+	if cf.Funding != 100000 {
+		t.Errorf("Funding = %d, want 100000 (counted once despite duplicates)", cf.Funding)
+	}
+	if len(cf.MatchedAttributes) != 1 {
+		t.Errorf("MatchedAttributes = %v, want 1 item (deduplicated)", cf.MatchedAttributes)
+	}
+}
+
+func TestChildService_CalculateFunding_ChildNoContractOnDate(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
+
+	// Child with active contract
+	childActive := createTestChild(t, db, "Active", "Child", org.ID)
+	childActive.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(childActive)
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, childActive.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags"},
+	})
+
+	// Child with NO contract (should not appear in results)
+	childNoContract := createTestChild(t, db, "NoContract", "Child", org.ID)
+	childNoContract.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(childNoContract)
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Should only include child with active contract
+	if len(result.Children) != 1 {
+		t.Errorf("expected 1 child (with active contract), got %d", len(result.Children))
+	}
+	if result.Children[0].ChildName != "Active Child" {
+		t.Errorf("expected Active Child, got %s", result.Children[0].ChildName)
+	}
+}
+
+// SECURITY TEST: Cross-organization funding calculation
+func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+
+	funding := createTestGovernmentFunding(t, db, "Funding")
+	db.Model(&models.Organization{}).Where("id = ?", org1.ID).Update("government_funding_id", funding.ID)
+	db.Model(&models.Organization{}).Where("id = ?", org2.ID).Update("government_funding_id", funding.ID)
+
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
+
+	// Child in org1
+	child1 := createTestChild(t, db, "Org1", "Child", org1.ID)
+	child1.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child1)
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child1.ID, org1.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags"},
+	})
+
+	// Child in org2
+	child2 := createTestChild(t, db, "Org2", "Child", org2.ID)
+	child2.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child2)
+	_, _ = svc.CreateContract(ctx, child2.ID, org2.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Attributes: []string{"ganztags"},
+	})
+
+	// Calculate funding for org1 - should NOT include org2's child
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org1.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Children) != 1 {
+		t.Errorf("expected 1 child from org1, got %d", len(result.Children))
+	}
+
+	for _, cf := range result.Children {
+		if cf.ChildName == "Org2 Child" {
+			t.Error("SECURITY: org2's child leaked into org1's funding calculation")
+		}
+	}
+}

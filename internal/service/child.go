@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -13,12 +14,18 @@ import (
 
 // ChildService handles business logic for child operations
 type ChildService struct {
-	store store.ChildStorer
+	store        store.ChildStorer
+	orgStore     store.OrganizationStorer
+	fundingStore store.GovernmentFundingStorer
 }
 
 // NewChildService creates a new child service
-func NewChildService(store store.ChildStorer) *ChildService {
-	return &ChildService{store: store}
+func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer) *ChildService {
+	return &ChildService{
+		store:        store,
+		orgStore:     orgStore,
+		fundingStore: fundingStore,
+	}
 }
 
 // List returns a paginated list of children
@@ -317,4 +324,134 @@ func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, 
 		return apperror.Internal("failed to delete contract")
 	}
 	return nil
+}
+
+// CalculateFunding calculates government funding for all children with active contracts on the given date
+func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date time.Time) (*models.ChildrenFundingResponse, error) {
+	// Get organization to check funding assignment
+	org, err := s.orgStore.FindByID(orgID)
+	if err != nil {
+		return nil, apperror.NotFound("organization")
+	}
+
+	// Get children with active contracts on this date
+	children, err := s.store.FindByOrganizationWithContractOn(orgID, date)
+	if err != nil {
+		return nil, apperror.Internal("failed to fetch children")
+	}
+
+	response := &models.ChildrenFundingResponse{
+		Date:     date,
+		Children: make([]models.ChildFundingResponse, 0, len(children)),
+	}
+
+	// If no government funding assigned, return 0 funding for all children
+	if org.GovernmentFundingID == nil {
+		for _, child := range children {
+			if len(child.Contracts) == 0 {
+				continue
+			}
+			contract := child.Contracts[0] // Already filtered to contracts active on the date
+			response.Children = append(response.Children, models.ChildFundingResponse{
+				ChildID:             child.ID,
+				ChildName:           child.FirstName + " " + child.LastName,
+				Age:                 validation.CalculateAgeOnDate(child.Birthdate, date),
+				Funding:             0,
+				MatchedAttributes:   []string{},
+				UnmatchedAttributes: uniqueStrings(contract.Attributes),
+			})
+		}
+		return response, nil
+	}
+
+	// Get funding with all details
+	funding, err := s.fundingStore.FindByIDWithDetails(*org.GovernmentFundingID)
+	if err != nil {
+		return nil, apperror.Internal("failed to fetch government funding")
+	}
+
+	// Find the period covering this date
+	period := s.findPeriodForDate(funding.Periods, date)
+
+	for _, child := range children {
+		if len(child.Contracts) == 0 {
+			continue
+		}
+		contract := child.Contracts[0]
+		childAge := validation.CalculateAgeOnDate(child.Birthdate, date)
+
+		childFunding := s.calculateChildFunding(childAge, contract.Attributes, period)
+		childFunding.ChildID = child.ID
+		childFunding.ChildName = child.FirstName + " " + child.LastName
+		childFunding.Age = childAge
+
+		response.Children = append(response.Children, childFunding)
+	}
+
+	return response, nil
+}
+
+// findPeriodForDate finds the funding period that covers the given date
+func (s *ChildService) findPeriodForDate(periods []models.GovernmentFundingPeriod, date time.Time) *models.GovernmentFundingPeriod {
+	for i := range periods {
+		period := &periods[i]
+		// Check if date is within period: from <= date AND (to is nil OR to >= date)
+		if !period.From.After(date) && (period.To == nil || !period.To.Before(date)) {
+			return period
+		}
+	}
+	return nil
+}
+
+// calculateChildFunding calculates funding for a single child based on their age and contract attributes
+func (s *ChildService) calculateChildFunding(age int, attributes []string, period *models.GovernmentFundingPeriod) models.ChildFundingResponse {
+	result := models.ChildFundingResponse{
+		MatchedAttributes:   []string{},
+		UnmatchedAttributes: []string{},
+	}
+
+	uniqueAttrs := uniqueStrings(attributes)
+
+	// No period covering this date
+	if period == nil {
+		result.UnmatchedAttributes = uniqueAttrs
+		return result
+	}
+
+	// Build a map of attribute names to matching properties (filtered by age)
+	// A property matches if its name matches the attribute AND the age is within range
+	propertyMap := make(map[string]int)
+	for _, prop := range period.Properties {
+		if prop.MatchesAge(age) {
+			// If multiple properties with same name match, sum their payments
+			propertyMap[prop.Name] += prop.Payment
+		}
+	}
+
+	// Match attributes to properties
+	totalFunding := 0
+	for _, attr := range uniqueAttrs {
+		if payment, exists := propertyMap[attr]; exists {
+			totalFunding += payment
+			result.MatchedAttributes = append(result.MatchedAttributes, attr)
+		} else {
+			result.UnmatchedAttributes = append(result.UnmatchedAttributes, attr)
+		}
+	}
+
+	result.Funding = totalFunding
+	return result
+}
+
+// uniqueStrings returns a slice with duplicate strings removed, preserving order
+func uniqueStrings(input []string) []string {
+	seen := make(map[string]bool)
+	result := make([]string, 0, len(input))
+	for _, s := range input {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
 }

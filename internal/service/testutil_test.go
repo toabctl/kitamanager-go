@@ -29,6 +29,9 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&models.EmployeeContract{},
 		&models.Child{},
 		&models.ChildContract{},
+		&models.GovernmentFunding{},
+		&models.GovernmentFundingPeriod{},
+		&models.GovernmentFundingProperty{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
@@ -195,10 +198,67 @@ func createGroupService(db *gorm.DB) *GroupService {
 
 func createChildService(db *gorm.DB) *ChildService {
 	childStore := store.NewChildStore(db)
-	return NewChildService(childStore)
+	orgStore := store.NewOrganizationStore(db)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	return NewChildService(childStore, orgStore, fundingStore)
 }
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
 	return NewEmployeeService(employeeStore)
+}
+
+// createTestGovernmentFunding creates a government funding plan with periods, entries, and properties for testing.
+func createTestGovernmentFunding(t *testing.T, db *gorm.DB, name string) *models.GovernmentFunding {
+	t.Helper()
+
+	funding := &models.GovernmentFunding{
+		Name: name,
+	}
+	if err := db.Create(funding).Error; err != nil {
+		t.Fatalf("failed to create test government funding: %v", err)
+	}
+	return funding
+}
+
+// createTestFundingPeriod creates a funding period for testing.
+func createTestFundingPeriod(t *testing.T, db *gorm.DB, fundingID uint, from time.Time, to *time.Time) *models.GovernmentFundingPeriod {
+	t.Helper()
+
+	period := &models.GovernmentFundingPeriod{
+		GovernmentFundingID: fundingID,
+		From:                from,
+		To:                  to,
+	}
+	if err := db.Create(period).Error; err != nil {
+		t.Fatalf("failed to create test funding period: %v", err)
+	}
+	return period
+}
+
+// createTestFundingProperty creates a funding property for testing.
+// If minAge or maxAge is negative, nil is used (no age filter).
+func createTestFundingProperty(t *testing.T, db *gorm.DB, periodID uint, name string, payment int, minAge, maxAge int) *models.GovernmentFundingProperty {
+	t.Helper()
+
+	var minAgePtr, maxAgePtr *int
+	if minAge >= 0 {
+		minAgePtr = &minAge
+	}
+	if maxAge >= 0 {
+		maxAgePtr = &maxAge
+	}
+
+	prop := &models.GovernmentFundingProperty{
+		PeriodID:    periodID,
+		Name:        name,
+		Payment:     payment,
+		Requirement: 0.1,
+		MinAge:      minAgePtr,
+		MaxAge:      maxAgePtr,
+	}
+	if err := db.Create(prop).Error; err != nil {
+		t.Fatalf("failed to create test funding property: %v", err)
+	}
+	return prop
 }

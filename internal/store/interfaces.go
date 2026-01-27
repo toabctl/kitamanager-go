@@ -81,6 +81,7 @@ type EmployeeStorer interface {
 type ChildStorer interface {
 	FindAll(limit, offset int) ([]models.Child, int64, error)
 	FindByOrganization(orgID uint, limit, offset int) ([]models.Child, int64, error)
+	FindByOrganizationWithContractOn(orgID uint, date time.Time) ([]models.Child, error)
 	FindByID(id uint) (*models.Child, error)
 	Create(child *models.Child) error
 	Update(child *models.Child) error
@@ -119,12 +120,6 @@ type GovernmentFundingStorer interface {
 	CreatePeriod(period *models.GovernmentFundingPeriod) error
 	UpdatePeriod(period *models.GovernmentFundingPeriod) error
 	DeletePeriod(id uint) error
-
-	// Entry CRUD
-	FindEntryByID(id uint) (*models.GovernmentFundingEntry, error)
-	CreateEntry(entry *models.GovernmentFundingEntry) error
-	UpdateEntry(entry *models.GovernmentFundingEntry) error
-	DeleteEntry(id uint) error
 
 	// Property CRUD
 	FindPropertyByID(id uint) (*models.GovernmentFundingProperty, error)

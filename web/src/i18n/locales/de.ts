@@ -252,7 +252,6 @@ export default {
     edit: 'Finanzierung bearbeiten',
     newGovernmentFunding: 'Neue staatliche Finanzierung',
     periods: 'Zeiträume',
-    entries: 'Einträge',
     amount: 'Betrag',
     validFrom: 'Gültig ab',
     validTo: 'Gültig bis',
@@ -266,9 +265,6 @@ export default {
     addPeriod: 'Zeitraum hinzufügen',
     editPeriod: 'Zeitraum bearbeiten',
     deletePeriod: 'Zeitraum löschen',
-    addEntry: 'Eintrag hinzufügen',
-    editEntry: 'Eintrag bearbeiten',
-    deleteEntry: 'Eintrag löschen',
     addProperty: 'Eigenschaft hinzufügen',
     editProperty: 'Eigenschaft bearbeiten',
     deleteProperty: 'Eigenschaft löschen',
@@ -285,17 +281,13 @@ export default {
     maxAge: 'Höchstalter (exklusive)',
     paymentInCents: 'Zahlung (in Cent)',
     requirement: 'Bedarf (Betreuungsschlüssel)',
+    ageRangeHelp: 'Optional: Leer lassen, wenn Eigenschaft für alle Altersgruppen gilt',
     // Messages
     periodCreated: 'Zeitraum erstellt',
     periodUpdated: 'Zeitraum aktualisiert',
     periodDeleted: 'Zeitraum gelöscht',
     failedToSavePeriod: 'Fehler beim Speichern des Zeitraums',
     failedToDeletePeriod: 'Fehler beim Löschen des Zeitraums',
-    entryCreated: 'Eintrag erstellt',
-    entryUpdated: 'Eintrag aktualisiert',
-    entryDeleted: 'Eintrag gelöscht',
-    failedToSaveEntry: 'Fehler beim Speichern des Eintrags',
-    failedToDeleteEntry: 'Fehler beim Löschen des Eintrags',
     propertyCreated: 'Eigenschaft erstellt',
     propertyUpdated: 'Eigenschaft aktualisiert',
     propertyDeleted: 'Eigenschaft gelöscht',
@@ -304,16 +296,12 @@ export default {
     failedToLoadFunding: 'Fehler beim Laden der staatlichen Finanzierung',
     // Confirmations
     deletePeriodConfirm:
-      'Möchten Sie diesen Zeitraum wirklich löschen? Dies löscht auch alle Einträge und Eigenschaften.',
-    deleteEntryConfirm:
-      'Möchten Sie diesen Eintrag wirklich löschen? Dies löscht auch alle Eigenschaften.',
+      'Möchten Sie diesen Zeitraum wirklich löschen? Dies löscht auch alle Eigenschaften.',
     deletePropertyConfirm: 'Möchten Sie diese Eigenschaft wirklich löschen?',
     // Empty states
     noDataDefined:
-      'Keine Daten definiert. Wechseln Sie zur Panels-Ansicht, um Zeiträume, Einträge und Eigenschaften hinzuzufügen.',
+      'Keine Daten definiert. Wechseln Sie zur Panels-Ansicht, um Zeiträume und Eigenschaften hinzuzufügen.',
     noPropertiesDefined: 'Keine Eigenschaften definiert. Klicken Sie auf +, um eine hinzuzufügen.',
-    noEntriesDefined:
-      'Keine Einträge definiert. Klicken Sie auf +, um Altersbereiche hinzuzufügen.',
     noPeriodsDefined:
       'Keine Zeiträume definiert. Klicken Sie auf "Zeitraum hinzufügen", um zu beginnen.',
     // Units

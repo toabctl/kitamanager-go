@@ -11,226 +11,6 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
-func TestGovernmentFundingHandler_CreateEntry_ValidAgeRange(t *testing.T) {
-	db := setupTestDB(t)
-	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
-	handler := NewGovernmentFundingHandler(svc)
-
-	// Create test funding and period
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
-	db.Create(funding)
-	period := &models.GovernmentFundingPeriod{
-		GovernmentFundingID: funding.ID,
-		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-	}
-	db.Create(period)
-
-	r := setupTestRouter()
-	r.POST("/fundings/:id/periods/:periodId/entries", handler.CreateEntry)
-
-	tests := []struct {
-		name           string
-		minAge         int
-		maxAge         int
-		expectedStatus int
-		description    string
-	}{
-		{
-			name:           "valid range 0-2 (covers ages 0 and 1)",
-			minAge:         0,
-			maxAge:         2,
-			expectedStatus: http.StatusCreated,
-			description:    "Children from birth up to but not including 2nd birthday",
-		},
-		{
-			name:           "valid range 2-3 (covers age 2 only)",
-			minAge:         2,
-			maxAge:         3,
-			expectedStatus: http.StatusCreated,
-			description:    "Children from 2nd birthday up to but not including 3rd birthday",
-		},
-		{
-			name:           "valid range 3-7 (covers ages 3, 4, 5, 6)",
-			minAge:         3,
-			maxAge:         7,
-			expectedStatus: http.StatusCreated,
-			description:    "Children from 3rd birthday up to but not including 7th birthday",
-		},
-		{
-			name:           "invalid: min equals max",
-			minAge:         2,
-			maxAge:         2,
-			expectedStatus: http.StatusBadRequest,
-			description:    "Empty range - no children would qualify",
-		},
-		{
-			name:           "invalid: min greater than max",
-			minAge:         5,
-			maxAge:         3,
-			expectedStatus: http.StatusBadRequest,
-			description:    "Inverted range is invalid",
-		},
-		{
-			name:           "valid: single year range",
-			minAge:         1,
-			maxAge:         2,
-			expectedStatus: http.StatusCreated,
-			description:    "Children who are exactly 1 year old (up to but not including 2nd birthday)",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			body := models.GovernmentFundingEntryCreateRequest{
-				MinAge: tt.minAge,
-				MaxAge: tt.maxAge,
-			}
-
-			w := performRequest(r, "POST", "/fundings/1/periods/1/entries", body)
-
-			if w.Code != tt.expectedStatus {
-				t.Errorf("%s: expected status %d, got %d: %s",
-					tt.description, tt.expectedStatus, w.Code, w.Body.String())
-			}
-		})
-	}
-}
-
-func TestGovernmentFundingHandler_UpdateEntry_AgeRangeValidation(t *testing.T) {
-	db := setupTestDB(t)
-	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
-	handler := NewGovernmentFundingHandler(svc)
-
-	// Create test funding, period, and entry
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
-	db.Create(funding)
-	period := &models.GovernmentFundingPeriod{
-		GovernmentFundingID: funding.ID,
-		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-	}
-	db.Create(period)
-	entry := &models.GovernmentFundingEntry{
-		PeriodID: period.ID,
-		MinAge:   0,
-		MaxAge:   3,
-	}
-	db.Create(entry)
-
-	r := setupTestRouter()
-	r.PUT("/fundings/:id/periods/:periodId/entries/:entryId", handler.UpdateEntry)
-
-	tests := []struct {
-		name           string
-		minAge         *int
-		maxAge         *int
-		expectedStatus int
-		description    string
-	}{
-		{
-			name:           "update only max_age to valid value",
-			minAge:         nil,
-			maxAge:         intPtr(5),
-			expectedStatus: http.StatusOK,
-			description:    "Extending max age should succeed",
-		},
-		{
-			name:           "update max_age to equal min_age",
-			minAge:         nil,
-			maxAge:         intPtr(0),
-			expectedStatus: http.StatusBadRequest,
-			description:    "max_age equal to current min_age (0) is invalid",
-		},
-		{
-			name:           "update min_age to exceed max_age",
-			minAge:         intPtr(10),
-			maxAge:         nil,
-			expectedStatus: http.StatusBadRequest,
-			description:    "min_age greater than current max_age is invalid",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset entry to known state
-			db.Model(&models.GovernmentFundingEntry{}).Where("id = ?", entry.ID).Updates(map[string]interface{}{
-				"min_age": 0,
-				"max_age": 3,
-			})
-
-			body := models.GovernmentFundingEntryUpdateRequest{
-				MinAge: tt.minAge,
-				MaxAge: tt.maxAge,
-			}
-
-			w := performRequest(r, "PUT", "/fundings/1/periods/1/entries/1", body)
-
-			if w.Code != tt.expectedStatus {
-				t.Errorf("%s: expected status %d, got %d: %s",
-					tt.description, tt.expectedStatus, w.Code, w.Body.String())
-			}
-		})
-	}
-}
-
-func TestGovernmentFundingHandler_Entry_AgeRangeBoundarySemantics(t *testing.T) {
-	// This test documents the expected behavior of age ranges:
-	// - MinAge is INCLUSIVE: a child whose age >= MinAge qualifies
-	// - MaxAge is EXCLUSIVE: a child whose age < MaxAge qualifies
-	//
-	// Example: MinAge=0, MaxAge=2 means:
-	// - Age 0 qualifies (0 >= 0 AND 0 < 2)
-	// - Age 1 qualifies (1 >= 0 AND 1 < 2)
-	// - Age 2 does NOT qualify (2 >= 0 BUT 2 < 2 is FALSE)
-
-	db := setupTestDB(t)
-	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
-	handler := NewGovernmentFundingHandler(svc)
-
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
-	db.Create(funding)
-	period := &models.GovernmentFundingPeriod{
-		GovernmentFundingID: funding.ID,
-		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-	}
-	db.Create(period)
-
-	r := setupTestRouter()
-	r.POST("/fundings/:id/periods/:periodId/entries", handler.CreateEntry)
-
-	// Create an entry for ages 0-2 (covers ages 0 and 1)
-	body := models.GovernmentFundingEntryCreateRequest{
-		MinAge: 0,
-		MaxAge: 2,
-	}
-
-	w := performRequest(r, "POST", "/fundings/1/periods/1/entries", body)
-
-	if w.Code != http.StatusCreated {
-		t.Fatalf("failed to create entry: %s", w.Body.String())
-	}
-
-	var result models.GovernmentFundingEntry
-	parseResponse(t, w, &result)
-
-	// Verify the entry was created with correct values
-	if result.MinAge != 0 {
-		t.Errorf("expected min_age 0, got %d", result.MinAge)
-	}
-	if result.MaxAge != 2 {
-		t.Errorf("expected max_age 2, got %d", result.MaxAge)
-	}
-
-	// Document the semantics in test output
-	t.Logf("Entry created: MinAge=%d (inclusive), MaxAge=%d (exclusive)", result.MinAge, result.MaxAge)
-	t.Logf("This entry covers children aged 0 and 1 (from birth up to but not including 2nd birthday)")
-}
-
 func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
@@ -532,6 +312,93 @@ func TestGovernmentFundingHandler_UpdatePeriod_NoOverlap(t *testing.T) {
 				http.StatusOK, w.Code, w.Body.String())
 		}
 	})
+}
+
+func TestGovernmentFundingHandler_Property_AgeRange(t *testing.T) {
+	db := setupTestDB(t)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	orgStore := store.NewOrganizationStore(db)
+	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	handler := NewGovernmentFundingHandler(svc)
+
+	// Create test funding and period
+	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	db.Create(funding)
+	period := &models.GovernmentFundingPeriod{
+		GovernmentFundingID: funding.ID,
+		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	db.Create(period)
+
+	r := setupTestRouter()
+	r.POST("/fundings/:id/periods/:periodId/properties", handler.CreateProperty)
+
+	tests := []struct {
+		name           string
+		minAge         *int
+		maxAge         *int
+		expectedStatus int
+		description    string
+	}{
+		{
+			name:           "valid range 0-2",
+			minAge:         intPtr(0),
+			maxAge:         intPtr(2),
+			expectedStatus: http.StatusCreated,
+			description:    "Children from birth up to but not including 2nd birthday",
+		},
+		{
+			name:           "valid range 3-7",
+			minAge:         intPtr(3),
+			maxAge:         intPtr(7),
+			expectedStatus: http.StatusCreated,
+			description:    "Children from 3rd birthday up to but not including 7th birthday",
+		},
+		{
+			name:           "no age filter",
+			minAge:         nil,
+			maxAge:         nil,
+			expectedStatus: http.StatusCreated,
+			description:    "Property applies to all ages",
+		},
+		{
+			name:           "invalid: min equals max",
+			minAge:         intPtr(2),
+			maxAge:         intPtr(2),
+			expectedStatus: http.StatusBadRequest,
+			description:    "Empty range - no children would qualify",
+		},
+		{
+			name:           "invalid: min greater than max",
+			minAge:         intPtr(5),
+			maxAge:         intPtr(3),
+			expectedStatus: http.StatusBadRequest,
+			description:    "Inverted range is invalid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := map[string]interface{}{
+				"name":        "test-property",
+				"payment":     100000,
+				"requirement": 0.1,
+			}
+			if tt.minAge != nil {
+				body["min_age"] = *tt.minAge
+			}
+			if tt.maxAge != nil {
+				body["max_age"] = *tt.maxAge
+			}
+
+			w := performRequest(r, "POST", fmt.Sprintf("/fundings/%d/periods/%d/properties", funding.ID, period.ID), body)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("%s: expected status %d, got %d: %s",
+					tt.description, tt.expectedStatus, w.Code, w.Body.String())
+			}
+		})
+	}
 }
 
 func itoa(i int) string {

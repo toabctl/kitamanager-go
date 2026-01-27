@@ -46,7 +46,7 @@ func (s *GovernmentFundingService) GetByID(ctx context.Context, id uint) (*model
 	return &resp, nil
 }
 
-// GetByIDWithDetails returns a government funding by ID with all nested periods, entries, and properties
+// GetByIDWithDetails returns a government funding by ID with all nested periods and properties
 // Note: Returns raw model for complex nested structure
 func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint) (*models.GovernmentFunding, error) {
 	funding, err := s.store.FindByIDWithDetails(id)
@@ -118,12 +118,6 @@ func (s *GovernmentFundingService) Delete(ctx context.Context, id uint) error {
 }
 
 // Period operations
-
-// GovernmentFundingPeriodServiceCreateRequest represents the request for creating a period
-type GovernmentFundingPeriodServiceCreateRequest struct {
-	GovernmentFundingID uint
-	From                models.GovernmentFundingPeriodCreateRequest
-}
 
 // governmentFundingPeriodsOverlap checks if two date ranges overlap.
 // A period with nil To date extends indefinitely into the future.
@@ -251,91 +245,27 @@ func (s *GovernmentFundingService) DeletePeriod(ctx context.Context, periodID ui
 	return nil
 }
 
-// Entry operations
+// Property operations
 
-// CreateEntry creates a new entry
-func (s *GovernmentFundingService) CreateEntry(ctx context.Context, periodID uint, req *models.GovernmentFundingEntryCreateRequest) (*models.GovernmentFundingEntryResponse, error) {
+// CreateProperty creates a new property
+func (s *GovernmentFundingService) CreateProperty(ctx context.Context, periodID uint, req *models.GovernmentFundingPropertyCreateRequest) (*models.GovernmentFundingPropertyResponse, error) {
 	// Verify period exists
 	if _, err := s.store.FindPeriodByID(periodID); err != nil {
 		return nil, apperror.NotFound("period")
 	}
 
-	if req.MinAge >= req.MaxAge {
+	// Validate age range if both are provided
+	if req.MinAge != nil && req.MaxAge != nil && *req.MinAge >= *req.MaxAge {
 		return nil, apperror.BadRequest("max_age must be greater than min_age")
-	}
-
-	entry := &models.GovernmentFundingEntry{
-		PeriodID: periodID,
-		MinAge:   req.MinAge,
-		MaxAge:   req.MaxAge,
-	}
-
-	if err := s.store.CreateEntry(entry); err != nil {
-		return nil, apperror.Internal("failed to create entry")
-	}
-
-	resp := entry.ToResponse()
-	return &resp, nil
-}
-
-// GetEntryByID returns an entry by ID
-func (s *GovernmentFundingService) GetEntryByID(ctx context.Context, id uint) (*models.GovernmentFundingEntryResponse, error) {
-	entry, err := s.store.FindEntryByID(id)
-	if err != nil {
-		return nil, apperror.NotFound("entry")
-	}
-	resp := entry.ToResponse()
-	return &resp, nil
-}
-
-// UpdateEntry updates an existing entry
-func (s *GovernmentFundingService) UpdateEntry(ctx context.Context, entryID uint, req *models.GovernmentFundingEntryUpdateRequest) (*models.GovernmentFundingEntryResponse, error) {
-	entry, err := s.store.FindEntryByID(entryID)
-	if err != nil {
-		return nil, apperror.NotFound("entry")
-	}
-
-	if req.MinAge != nil {
-		entry.MinAge = *req.MinAge
-	}
-	if req.MaxAge != nil {
-		entry.MaxAge = *req.MaxAge
-	}
-
-	if entry.MinAge >= entry.MaxAge {
-		return nil, apperror.BadRequest("max_age must be greater than min_age")
-	}
-
-	if err := s.store.UpdateEntry(entry); err != nil {
-		return nil, apperror.Internal("failed to update entry")
-	}
-
-	resp := entry.ToResponse()
-	return &resp, nil
-}
-
-// DeleteEntry deletes an entry
-func (s *GovernmentFundingService) DeleteEntry(ctx context.Context, entryID uint) error {
-	if err := s.store.DeleteEntry(entryID); err != nil {
-		return apperror.Internal("failed to delete entry")
-	}
-	return nil
-}
-
-// Property operations
-
-// CreateProperty creates a new property
-func (s *GovernmentFundingService) CreateProperty(ctx context.Context, entryID uint, req *models.GovernmentFundingPropertyCreateRequest) (*models.GovernmentFundingPropertyResponse, error) {
-	// Verify entry exists
-	if _, err := s.store.FindEntryByID(entryID); err != nil {
-		return nil, apperror.NotFound("entry")
 	}
 
 	property := &models.GovernmentFundingProperty{
-		EntryID:     entryID,
+		PeriodID:    periodID,
 		Name:        strings.TrimSpace(req.Name),
 		Payment:     req.Payment,
 		Requirement: req.Requirement,
+		MinAge:      req.MinAge,
+		MaxAge:      req.MaxAge,
 		Comment:     strings.TrimSpace(req.Comment),
 	}
 
@@ -381,8 +311,19 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyI
 	if req.Requirement != nil {
 		property.Requirement = *req.Requirement
 	}
+	if req.MinAge != nil {
+		property.MinAge = req.MinAge
+	}
+	if req.MaxAge != nil {
+		property.MaxAge = req.MaxAge
+	}
 	if req.Comment != nil {
 		property.Comment = strings.TrimSpace(*req.Comment)
+	}
+
+	// Validate age range if both are set
+	if property.MinAge != nil && property.MaxAge != nil && *property.MinAge >= *property.MaxAge {
+		return nil, apperror.BadRequest("max_age must be greater than min_age")
 	}
 
 	if err := s.store.UpdateProperty(property); err != nil {

@@ -53,11 +53,8 @@ func (s *GovernmentFundingStore) FindByIDWithDetails(id uint) (*models.Governmen
 		Preload("Periods", func(db *gorm.DB) *gorm.DB {
 			return db.Order("from_date DESC")
 		}).
-		Preload("Periods.Entries", func(db *gorm.DB) *gorm.DB {
-			return db.Order("min_age ASC")
-		}).
-		Preload("Periods.Entries.Properties", func(db *gorm.DB) *gorm.DB {
-			return db.Order("name ASC")
+		Preload("Periods.Properties", func(db *gorm.DB) *gorm.DB {
+			return db.Order("name ASC, min_age ASC NULLS LAST")
 		}).
 		First(&funding, id).Error; err != nil {
 		return nil, err
@@ -82,11 +79,8 @@ func (s *GovernmentFundingStore) Delete(id uint) error {
 func (s *GovernmentFundingStore) FindPeriodByID(id uint) (*models.GovernmentFundingPeriod, error) {
 	var period models.GovernmentFundingPeriod
 	if err := s.db.
-		Preload("Entries", func(db *gorm.DB) *gorm.DB {
-			return db.Order("min_age ASC")
-		}).
-		Preload("Entries.Properties", func(db *gorm.DB) *gorm.DB {
-			return db.Order("name ASC")
+		Preload("Properties", func(db *gorm.DB) *gorm.DB {
+			return db.Order("name ASC, min_age ASC NULLS LAST")
 		}).
 		First(&period, id).Error; err != nil {
 		return nil, err
@@ -112,32 +106,6 @@ func (s *GovernmentFundingStore) UpdatePeriod(period *models.GovernmentFundingPe
 
 func (s *GovernmentFundingStore) DeletePeriod(id uint) error {
 	return s.db.Delete(&models.GovernmentFundingPeriod{}, id).Error
-}
-
-// GovernmentFundingEntry CRUD
-
-func (s *GovernmentFundingStore) FindEntryByID(id uint) (*models.GovernmentFundingEntry, error) {
-	var entry models.GovernmentFundingEntry
-	if err := s.db.
-		Preload("Properties", func(db *gorm.DB) *gorm.DB {
-			return db.Order("name ASC")
-		}).
-		First(&entry, id).Error; err != nil {
-		return nil, err
-	}
-	return &entry, nil
-}
-
-func (s *GovernmentFundingStore) CreateEntry(entry *models.GovernmentFundingEntry) error {
-	return s.db.Create(entry).Error
-}
-
-func (s *GovernmentFundingStore) UpdateEntry(entry *models.GovernmentFundingEntry) error {
-	return s.db.Save(entry).Error
-}
-
-func (s *GovernmentFundingStore) DeleteEntry(id uint) error {
-	return s.db.Delete(&models.GovernmentFundingEntry{}, id).Error
 }
 
 // GovernmentFundingProperty CRUD

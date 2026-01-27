@@ -52,16 +52,15 @@ definitions:
   github_com_eenemeene_kitamanager-go_internal_models.ChildContract:
     properties:
       attributes:
+        description: |-
+          Contract properties - care type and extras are stored in Attributes
+          e.g., ["ganztags", "integration_a", "ndh"]
         example:
-        - ganztag
+        - ganztags
         - ndh
         items:
           type: string
         type: array
-      care_hours_per_week:
-        description: Contract properties
-        example: 35
-        type: number
       child_id:
         example: 1
         type: integer
@@ -69,54 +68,47 @@ definitions:
         type: string
       from:
         type: string
-      group_id:
-        example: 1
-        type: integer
       id:
         example: 1
         type: integer
-      meals_included:
-        example: true
-        type: boolean
-      special_needs:
-        example: ""
-        type: string
       to:
+        type: string
+      updated_at:
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildContractCreateRequest:
     properties:
       attributes:
         example:
-        - ganztag
+        - ganztags
         - ndh
         items:
           type: string
         type: array
-      care_hours_per_week:
-        example: 35
-        maximum: 168
-        minimum: 0
-        type: number
       from:
         example: "2025-01-01"
-        type: string
-      group_id:
-        example: 1
-        type: integer
-      meals_included:
-        example: true
-        type: boolean
-      special_needs:
-        example: ""
-        maxLength: 1000
         type: string
       to:
         example: "2025-12-31"
         type: string
     required:
-    - care_hours_per_week
     - from
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ChildContractUpdateRequest:
+    properties:
+      attributes:
+        example:
+        - ganztags
+        - ndh
+        items:
+          type: string
+        type: array
+      from:
+        example: "2025-01-01"
+        type: string
+      to:
+        example: "2025-12-31"
+        type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildCreateRequest:
     properties:
@@ -136,6 +128,34 @@ definitions:
     - first_name
     - last_name
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ChildFundingResponse:
+    properties:
+      age:
+        example: 3
+        type: integer
+      child_id:
+        example: 1
+        type: integer
+      child_name:
+        example: Max Mustermann
+        type: string
+      funding:
+        example: 166847
+        type: integer
+      matched_attributes:
+        example:
+        - ganztags
+        - ndh
+        items:
+          type: string
+        type: array
+      unmatched_attributes:
+        example:
+        - xyz
+        items:
+          type: string
+        type: array
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildUpdateRequest:
     properties:
       birthdate:
@@ -148,6 +168,16 @@ definitions:
       last_name:
         example: Schmidt
         maxLength: 255
+        type: string
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ChildrenFundingResponse:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingResponse'
+        type: array
+      date:
+        example: "2025-01-27"
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.Employee:
@@ -199,6 +229,8 @@ definitions:
         example: 350000
         type: integer
       to:
+        type: string
+      updated_at:
         type: string
       weekly_hours:
         example: 40
@@ -282,54 +314,6 @@ definitions:
         example: "2024-01-15T10:30:00Z"
         type: string
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry:
-    properties:
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      max_age:
-        description: MaxAge is the maximum age in years (exclusive). A child whose
-          age < MaxAge qualifies.
-        example: 2
-        type: integer
-      min_age:
-        description: MinAge is the minimum age in years (inclusive). A child whose
-          age >= MinAge qualifies.
-        example: 0
-        type: integer
-      period_id:
-        example: 1
-        type: integer
-      properties:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingProperty'
-        type: array
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryCreateRequest:
-    properties:
-      max_age:
-        example: 2
-        type: integer
-      min_age:
-        example: 0
-        minimum: 0
-        type: integer
-    required:
-    - max_age
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryUpdateRequest:
-    properties:
-      max_age:
-        example: 3
-        type: integer
-      min_age:
-        example: 0
-        minimum: 0
-        type: integer
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod:
     properties:
       comment:
@@ -338,10 +322,6 @@ definitions:
       created_at:
         example: "2024-01-15T10:30:00Z"
         type: string
-      entries:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry'
-        type: array
       from:
         example: "2023-03-01"
         type: string
@@ -351,6 +331,10 @@ definitions:
       id:
         example: 1
         type: integer
+      properties:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingProperty'
+        type: array
       to:
         example: "2024-02-29"
         type: string
@@ -386,22 +370,28 @@ definitions:
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingProperty:
     properties:
       comment:
-        example: Full-day care funding
+        example: Full-day care funding for U3
         type: string
       created_at:
         example: "2024-01-15T10:30:00Z"
         type: string
-      entry_id:
-        example: 1
-        type: integer
       id:
         example: 1
+        type: integer
+      max_age:
+        example: 3
+        type: integer
+      min_age:
+        example: 0
         type: integer
       name:
         example: ganztag
         type: string
       payment:
         example: 166847
+        type: integer
+      period_id:
+        example: 1
         type: integer
       requirement:
         example: 0.261
@@ -410,9 +400,17 @@ definitions:
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPropertyCreateRequest:
     properties:
       comment:
-        example: Full-day care funding
+        example: Full-day care funding for U3
         maxLength: 500
         type: string
+      max_age:
+        example: 3
+        minimum: 0
+        type: integer
+      min_age:
+        example: 0
+        minimum: 0
+        type: integer
       name:
         example: ganztag
         maxLength: 255
@@ -434,6 +432,14 @@ definitions:
         example: Updated comment
         maxLength: 500
         type: string
+      max_age:
+        example: 3
+        minimum: 0
+        type: integer
+      min_age:
+        example: 0
+        minimum: 0
+        type: integer
       name:
         example: ganztag
         maxLength: 255
@@ -1110,8 +1116,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a single government funding by its ID with all nested periods,
-        entries, and properties
+      description: Get a single government funding by its ID with all nested periods
+        and properties
       parameters:
       - description: GovernmentFunding ID
         in: path
@@ -1334,11 +1340,11 @@ paths:
       summary: Update a period
       tags:
       - government-fundings
-  /api/v1/government-fundings/{id}/periods/{periodId}/entries:
+  /api/v1/government-fundings/{id}/periods/{periodId}/properties:
     post:
       consumes:
       - application/json
-      description: Create a new entry for a period (superadmin only)
+      description: Create a new property for a period (superadmin only)
       parameters:
       - description: GovernmentFunding ID
         in: path
@@ -1348,170 +1354,6 @@ paths:
       - description: Period ID
         in: path
         name: periodId
-        required: true
-        type: integer
-      - description: Entry data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new entry
-      tags:
-      - government-fundings
-  /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete an entry by ID (superadmin only)
-      parameters:
-      - description: GovernmentFunding ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Period ID
-        in: path
-        name: periodId
-        required: true
-        type: integer
-      - description: Entry ID
-        in: path
-        name: entryId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete an entry
-      tags:
-      - government-fundings
-    put:
-      consumes:
-      - application/json
-      description: Update an existing entry by ID (superadmin only)
-      parameters:
-      - description: GovernmentFunding ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Period ID
-        in: path
-        name: periodId
-        required: true
-        type: integer
-      - description: Entry ID
-        in: path
-        name: entryId
-        required: true
-        type: integer
-      - description: Entry data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntryUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingEntry'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update an entry
-      tags:
-      - government-fundings
-  /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties:
-    post:
-      consumes:
-      - application/json
-      description: Create a new property for an entry (superadmin only)
-      parameters:
-      - description: GovernmentFunding ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Period ID
-        in: path
-        name: periodId
-        required: true
-        type: integer
-      - description: Entry ID
-        in: path
-        name: entryId
         required: true
         type: integer
       - description: Property data
@@ -1552,7 +1394,7 @@ paths:
       summary: Create a new property
       tags:
       - government-fundings
-  /api/v1/government-fundings/{id}/periods/{periodId}/entries/{entryId}/properties/{propId}:
+  /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId}:
     delete:
       consumes:
       - application/json
@@ -1566,11 +1408,6 @@ paths:
       - description: Period ID
         in: path
         name: periodId
-        required: true
-        type: integer
-      - description: Entry ID
-        in: path
-        name: entryId
         required: true
         type: integer
       - description: Property ID
@@ -1617,11 +1454,6 @@ paths:
       - description: Period ID
         in: path
         name: periodId
-        required: true
-        type: integer
-      - description: Entry ID
-        in: path
-        name: entryId
         required: true
         type: integer
       - description: Property ID
@@ -2270,6 +2102,64 @@ paths:
       summary: Delete child contract
       tags:
       - children
+    put:
+      consumes:
+      - application/json
+      description: Update an existing contract by ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Child ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contract ID
+        in: path
+        name: contractId
+        required: true
+        type: integer
+      - description: Contract data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContractUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContract'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "409":
+          description: Contract overlaps with existing
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update child contract
+      tags:
+      - children
   /api/v1/organizations/{orgId}/children/{id}/contracts/current:
     get:
       consumes:
@@ -2308,6 +2198,50 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current child contract
+      tags:
+      - children
+  /api/v1/organizations/{orgId}/children/funding:
+    get:
+      consumes:
+      - application/json
+      description: Calculate government funding for all children with active contracts
+        on a given date
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Date for calculation (YYYY-MM-DD format, defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildrenFundingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Calculate children funding
       tags:
       - children
   /api/v1/organizations/{orgId}/employees:

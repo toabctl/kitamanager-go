@@ -79,10 +79,10 @@ func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, fu
 				return fmt.Errorf("failed to import period: %w", err)
 			}
 
-			// Import entries
+			// Import properties from entries (flatten age-based entries to properties with age ranges)
 			for _, yamlEntry := range yamlPeriod.Entries {
-				if err := i.importEntry(tx, period.ID, yamlEntry); err != nil {
-					return fmt.Errorf("failed to import entry: %w", err)
+				if err := i.importPropertiesFromEntry(tx, period.ID, yamlEntry); err != nil {
+					return fmt.Errorf("failed to import properties: %w", err)
 				}
 			}
 		}
@@ -128,24 +128,20 @@ func (i *GovernmentFundingImporter) importPeriod(tx *gorm.DB, fundingID uint, ya
 	return period, nil
 }
 
-func (i *GovernmentFundingImporter) importEntry(tx *gorm.DB, periodID uint, yamlEntry YAMLGovernmentFundingEntry) error {
-	entry := &models.GovernmentFundingEntry{
-		PeriodID: periodID,
-		MinAge:   yamlEntry.Age[0],
-		MaxAge:   yamlEntry.Age[1],
-	}
+// importPropertiesFromEntry converts a YAML entry (with age range) to properties with age filters.
+func (i *GovernmentFundingImporter) importPropertiesFromEntry(tx *gorm.DB, periodID uint, yamlEntry YAMLGovernmentFundingEntry) error {
+	minAge := yamlEntry.Age[0]
+	maxAge := yamlEntry.Age[1]
 
-	if err := tx.Create(entry).Error; err != nil {
-		return err
-	}
-
-	// Import properties
+	// Import properties with the age range from the entry
 	for name, yamlProp := range yamlEntry.Properties {
 		property := &models.GovernmentFundingProperty{
-			EntryID:     entry.ID,
+			PeriodID:    periodID,
 			Name:        name,
 			Payment:     euroToCents(yamlProp.Payment),
 			Requirement: yamlProp.Requirement,
+			MinAge:      &minAge,
+			MaxAge:      &maxAge,
 			Comment:     yamlProp.Comment,
 		}
 

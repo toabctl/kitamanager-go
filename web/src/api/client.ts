@@ -31,9 +31,6 @@ import type {
   GovernmentFundingPeriod,
   GovernmentFundingPeriodCreateRequest,
   GovernmentFundingPeriodUpdateRequest,
-  GovernmentFundingEntry,
-  GovernmentFundingEntryCreateRequest,
-  GovernmentFundingEntryUpdateRequest,
   GovernmentFundingProperty,
   GovernmentFundingPropertyCreateRequest,
   GovernmentFundingPropertyUpdateRequest
@@ -407,51 +404,14 @@ class ApiClient {
     await this.client.delete(`/government-fundings/${governmentFundingId}/periods/${periodId}`)
   }
 
-  // GovernmentFunding Entries
-  async createGovernmentFundingEntry(
-    governmentFundingId: number,
-    periodId: number,
-    data: GovernmentFundingEntryCreateRequest
-  ): Promise<GovernmentFundingEntry> {
-    const response = await this.client.post<GovernmentFundingEntry>(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries`,
-      data
-    )
-    return response.data
-  }
-
-  async updateGovernmentFundingEntry(
-    governmentFundingId: number,
-    periodId: number,
-    entryId: number,
-    data: GovernmentFundingEntryUpdateRequest
-  ): Promise<GovernmentFundingEntry> {
-    const response = await this.client.put<GovernmentFundingEntry>(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries/${entryId}`,
-      data
-    )
-    return response.data
-  }
-
-  async deleteGovernmentFundingEntry(
-    governmentFundingId: number,
-    periodId: number,
-    entryId: number
-  ): Promise<void> {
-    await this.client.delete(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries/${entryId}`
-    )
-  }
-
-  // GovernmentFunding Properties
+  // GovernmentFunding Properties (directly under periods)
   async createGovernmentFundingProperty(
     governmentFundingId: number,
     periodId: number,
-    entryId: number,
     data: GovernmentFundingPropertyCreateRequest
   ): Promise<GovernmentFundingProperty> {
     const response = await this.client.post<GovernmentFundingProperty>(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries/${entryId}/properties`,
+      `/government-fundings/${governmentFundingId}/periods/${periodId}/properties`,
       data
     )
     return response.data
@@ -460,12 +420,11 @@ class ApiClient {
   async updateGovernmentFundingProperty(
     governmentFundingId: number,
     periodId: number,
-    entryId: number,
     propId: number,
     data: GovernmentFundingPropertyUpdateRequest
   ): Promise<GovernmentFundingProperty> {
     const response = await this.client.put<GovernmentFundingProperty>(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries/${entryId}/properties/${propId}`,
+      `/government-fundings/${governmentFundingId}/periods/${periodId}/properties/${propId}`,
       data
     )
     return response.data
@@ -474,11 +433,10 @@ class ApiClient {
   async deleteGovernmentFundingProperty(
     governmentFundingId: number,
     periodId: number,
-    entryId: number,
     propId: number
   ): Promise<void> {
     await this.client.delete(
-      `/government-fundings/${governmentFundingId}/periods/${periodId}/entries/${entryId}/properties/${propId}`
+      `/government-fundings/${governmentFundingId}/periods/${periodId}/properties/${propId}`
     )
   }
 

@@ -40,9 +40,11 @@ erDiagram
 
 "public.employee_contracts" }o--|| "public.employees" : "FOREIGN KEY (employee_id) REFERENCES employees(id)"
 "public.employees" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-"public.user_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
-"public.group_organizations" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+"public.groups" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
 "public.children" }o--|| "public.organizations" : "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+"public.organizations" }o--o| "public.payplans" : "FOREIGN KEY (payplan_id) REFERENCES payplans(id)"
+"public.organizations" }o--o| "public.payplans" : "FOREIGN KEY (payplan_id) REFERENCES payplans(id)"
+"public.organizations" }o--o| "public.government_fundings" : "FOREIGN KEY (government_funding_id) REFERENCES government_fundings(id)"
 
 "public.employees" {
   bigint id
@@ -62,22 +64,28 @@ erDiagram
   numeric weekly_hours
   bigint salary
   timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 "public.organizations" {
   bigint id
   varchar_255_ name
   boolean active
+  bigint payplan_id FK
   timestamp_with_time_zone created_at
   varchar_255_ created_by
   timestamp_with_time_zone updated_at
+  bigint funding_id
+  bigint government_funding_id FK
 }
-"public.user_organizations" {
-  bigint user_id FK
+"public.groups" {
+  bigint id
+  varchar_255_ name
   bigint organization_id FK
-}
-"public.group_organizations" {
-  bigint group_id FK
-  bigint organization_id FK
+  boolean is_default
+  boolean active
+  timestamp_with_time_zone created_at
+  varchar_255_ created_by
+  timestamp_with_time_zone updated_at
 }
 "public.children" {
   bigint id
@@ -85,6 +93,18 @@ erDiagram
   varchar_255_ first_name
   varchar_255_ last_name
   date birthdate
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.payplans" {
+  bigint id
+  varchar_255_ name
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.government_fundings" {
+  bigint id
+  varchar_255_ name
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
 }

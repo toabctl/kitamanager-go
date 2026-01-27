@@ -59,3 +59,18 @@ func ValidateSalary(salary int) error {
 	}
 	return nil
 }
+
+// CalculateAgeOnDate calculates the age in complete years on a given reference date.
+// The age is the number of complete years from birthdate to referenceDate.
+func CalculateAgeOnDate(birthdate, referenceDate time.Time) int {
+	years := referenceDate.Year() - birthdate.Year()
+	// Check if birthday hasn't occurred yet this year
+	if referenceDate.Month() < birthdate.Month() ||
+		(referenceDate.Month() == birthdate.Month() && referenceDate.Day() < birthdate.Day()) {
+		years--
+	}
+	if years < 0 {
+		return 0
+	}
+	return years
+}

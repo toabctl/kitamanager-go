@@ -28,7 +28,6 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	if err := db.AutoMigrate(
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
-		&models.GovernmentFundingEntry{},
 		&models.GovernmentFundingProperty{},
 		&models.Organization{},
 		&models.User{},

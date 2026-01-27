@@ -18,17 +18,17 @@ func (GovernmentFunding) TableName() string {
 }
 
 // GovernmentFundingPeriod represents a time period within a government funding.
-// Each period has its own set of age-based entries with payment amounts.
+// Each period has its own set of properties with payment amounts.
 // Periods within the same government funding must not overlap - this is enforced at the service layer.
 // A period with nil To date is considered ongoing (extends indefinitely into the future).
 type GovernmentFundingPeriod struct {
-	ID                  uint                     `gorm:"primaryKey" json:"id" example:"1"`
-	GovernmentFundingID uint                     `gorm:"not null;index" json:"government_funding_id" example:"1"`
-	From                time.Time                `gorm:"column:from_date;type:date;not null" json:"from" example:"2023-03-01"`
-	To                  *time.Time               `gorm:"column:to_date;type:date" json:"to" example:"2024-02-29"`
-	Comment             string                   `gorm:"size:1000" json:"comment,omitempty" example:"Funding period 2023/2024"`
-	CreatedAt           time.Time                `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	Entries             []GovernmentFundingEntry `gorm:"foreignKey:PeriodID;constraint:OnDelete:CASCADE" json:"entries,omitempty"`
+	ID                  uint                        `gorm:"primaryKey" json:"id" example:"1"`
+	GovernmentFundingID uint                        `gorm:"not null;index" json:"government_funding_id" example:"1"`
+	From                time.Time                   `gorm:"column:from_date;type:date;not null" json:"from" example:"2023-03-01"`
+	To                  *time.Time                  `gorm:"column:to_date;type:date" json:"to" example:"2024-02-29"`
+	Comment             string                      `gorm:"size:1000" json:"comment,omitempty" example:"Funding period 2023/2024"`
+	CreatedAt           time.Time                   `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	Properties          []GovernmentFundingProperty `gorm:"foreignKey:PeriodID;constraint:OnDelete:CASCADE" json:"properties,omitempty"`
 }
 
 // TableName specifies the table name for GORM
@@ -36,40 +36,43 @@ func (GovernmentFundingPeriod) TableName() string {
 	return "government_funding_periods"
 }
 
-// GovernmentFundingEntry represents an age range entry within a period.
-// MinAge is inclusive, MaxAge is exclusive (e.g., MinAge=0, MaxAge=2 covers ages 0 and 1,
-// meaning children from birth up to but not including their 2nd birthday).
-type GovernmentFundingEntry struct {
-	ID       uint `gorm:"primaryKey" json:"id" example:"1"`
-	PeriodID uint `gorm:"not null;index" json:"period_id" example:"1"`
-	// MinAge is the minimum age in years (inclusive). A child whose age >= MinAge qualifies.
-	MinAge int `gorm:"not null" json:"min_age" example:"0"`
-	// MaxAge is the maximum age in years (exclusive). A child whose age < MaxAge qualifies.
-	MaxAge     int                         `gorm:"not null" json:"max_age" example:"2"`
-	CreatedAt  time.Time                   `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	Properties []GovernmentFundingProperty `gorm:"foreignKey:EntryID;constraint:OnDelete:CASCADE" json:"properties,omitempty"`
-}
-
-// TableName specifies the table name for GORM
-func (GovernmentFundingEntry) TableName() string {
-	return "government_funding_entries"
-}
-
-// GovernmentFundingProperty represents a property value with payment and staffing requirement.
+// GovernmentFundingProperty represents a funding property with optional age range.
+// If MinAge and MaxAge are nil, the property applies to all ages.
+// If set, MinAge is inclusive and MaxAge is exclusive (e.g., MinAge=0, MaxAge=3 covers ages 0, 1, and 2).
 // Payment is stored in cents to avoid floating-point issues (e.g., 166847 = 1668.47 EUR).
 type GovernmentFundingProperty struct {
 	ID          uint      `gorm:"primaryKey" json:"id" example:"1"`
-	EntryID     uint      `gorm:"not null;index" json:"entry_id" example:"1"`
+	PeriodID    uint      `gorm:"not null;index" json:"period_id" example:"1"`
 	Name        string    `gorm:"size:255;not null" json:"name" example:"ganztag"`
 	Payment     int       `gorm:"not null" json:"payment" example:"166847"`
 	Requirement float64   `gorm:"not null" json:"requirement" example:"0.261"`
-	Comment     string    `gorm:"size:500" json:"comment,omitempty" example:"Full-day care funding"`
+	MinAge      *int      `json:"min_age,omitempty" example:"0"`
+	MaxAge      *int      `json:"max_age,omitempty" example:"3"`
+	Comment     string    `gorm:"size:500" json:"comment,omitempty" example:"Full-day care funding for U3"`
 	CreatedAt   time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 }
 
 // TableName specifies the table name for GORM
 func (GovernmentFundingProperty) TableName() string {
 	return "government_funding_properties"
+}
+
+// MatchesAge checks if the property applies to the given age.
+// Returns true if no age filter is set, or if the age falls within the range.
+func (p *GovernmentFundingProperty) MatchesAge(age int) bool {
+	// No age filter means it applies to all ages
+	if p.MinAge == nil && p.MaxAge == nil {
+		return true
+	}
+	// Check MinAge (inclusive)
+	if p.MinAge != nil && age < *p.MinAge {
+		return false
+	}
+	// Check MaxAge (exclusive)
+	if p.MaxAge != nil && age >= *p.MaxAge {
+		return false
+	}
+	return true
 }
 
 // GovernmentFundingCreateRequest represents the request body for creating a government funding.
@@ -96,26 +99,14 @@ type GovernmentFundingPeriodUpdateRequest struct {
 	Comment *string    `json:"comment" binding:"omitempty,max=1000" example:"Updated comment"`
 }
 
-// GovernmentFundingEntryCreateRequest represents the request body for creating a government funding entry.
-// MinAge is inclusive, MaxAge is exclusive (e.g., MinAge=0, MaxAge=2 covers ages 0 and 1).
-type GovernmentFundingEntryCreateRequest struct {
-	MinAge int `json:"min_age" binding:"gte=0" example:"0"`
-	MaxAge int `json:"max_age" binding:"required,gtfield=MinAge" example:"2"`
-}
-
-// GovernmentFundingEntryUpdateRequest represents the request body for updating a government funding entry.
-// MinAge is inclusive, MaxAge is exclusive (e.g., MinAge=0, MaxAge=2 covers ages 0 and 1).
-type GovernmentFundingEntryUpdateRequest struct {
-	MinAge *int `json:"min_age" binding:"omitempty,gte=0" example:"0"`
-	MaxAge *int `json:"max_age" example:"3"`
-}
-
 // GovernmentFundingPropertyCreateRequest represents the request body for creating a government funding property.
 type GovernmentFundingPropertyCreateRequest struct {
 	Name        string  `json:"name" binding:"required,max=255" example:"ganztag"`
 	Payment     int     `json:"payment" binding:"gte=0" example:"166847"`
 	Requirement float64 `json:"requirement" binding:"gte=0" example:"0.261"`
-	Comment     string  `json:"comment" binding:"max=500" example:"Full-day care funding"`
+	MinAge      *int    `json:"min_age" binding:"omitempty,gte=0" example:"0"`
+	MaxAge      *int    `json:"max_age" binding:"omitempty,gte=0" example:"3"`
+	Comment     string  `json:"comment" binding:"max=500" example:"Full-day care funding for U3"`
 }
 
 // GovernmentFundingPropertyUpdateRequest represents the request body for updating a government funding property.
@@ -123,6 +114,8 @@ type GovernmentFundingPropertyUpdateRequest struct {
 	Name        *string  `json:"name" binding:"omitempty,max=255" example:"ganztag"`
 	Payment     *int     `json:"payment" binding:"omitempty,gte=0" example:"166847"`
 	Requirement *float64 `json:"requirement" binding:"omitempty,gte=0" example:"0.261"`
+	MinAge      *int     `json:"min_age" binding:"omitempty,gte=0" example:"0"`
+	MaxAge      *int     `json:"max_age" binding:"omitempty,gte=0" example:"3"`
 	Comment     *string  `json:"comment" binding:"omitempty,max=500" example:"Updated comment"`
 }
 
@@ -169,44 +162,45 @@ func (p *GovernmentFundingPeriod) ToResponse() GovernmentFundingPeriodResponse {
 	}
 }
 
-// GovernmentFundingEntryResponse represents the government funding entry response
-type GovernmentFundingEntryResponse struct {
-	ID        uint      `json:"id" example:"1"`
-	PeriodID  uint      `json:"period_id" example:"1"`
-	MinAge    int       `json:"min_age" example:"0"`
-	MaxAge    int       `json:"max_age" example:"2"`
-	CreatedAt time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
-}
-
-func (e *GovernmentFundingEntry) ToResponse() GovernmentFundingEntryResponse {
-	return GovernmentFundingEntryResponse{
-		ID:        e.ID,
-		PeriodID:  e.PeriodID,
-		MinAge:    e.MinAge,
-		MaxAge:    e.MaxAge,
-		CreatedAt: e.CreatedAt,
-	}
-}
-
 // GovernmentFundingPropertyResponse represents the government funding property response
 type GovernmentFundingPropertyResponse struct {
 	ID          uint      `json:"id" example:"1"`
-	EntryID     uint      `json:"entry_id" example:"1"`
+	PeriodID    uint      `json:"period_id" example:"1"`
 	Name        string    `json:"name" example:"ganztag"`
 	Payment     int       `json:"payment" example:"166847"`
 	Requirement float64   `json:"requirement" example:"0.261"`
-	Comment     string    `json:"comment,omitempty" example:"Full-day care funding"`
+	MinAge      *int      `json:"min_age,omitempty" example:"0"`
+	MaxAge      *int      `json:"max_age,omitempty" example:"3"`
+	Comment     string    `json:"comment,omitempty" example:"Full-day care funding for U3"`
 	CreatedAt   time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 }
 
 func (p *GovernmentFundingProperty) ToResponse() GovernmentFundingPropertyResponse {
 	return GovernmentFundingPropertyResponse{
 		ID:          p.ID,
-		EntryID:     p.EntryID,
+		PeriodID:    p.PeriodID,
 		Name:        p.Name,
 		Payment:     p.Payment,
 		Requirement: p.Requirement,
+		MinAge:      p.MinAge,
+		MaxAge:      p.MaxAge,
 		Comment:     p.Comment,
 		CreatedAt:   p.CreatedAt,
 	}
+}
+
+// ChildFundingResponse represents funding calculation for a single child
+type ChildFundingResponse struct {
+	ChildID             uint     `json:"child_id" example:"1"`
+	ChildName           string   `json:"child_name" example:"Max Mustermann"`
+	Age                 int      `json:"age" example:"3"`
+	Funding             int      `json:"funding" example:"166847"`
+	MatchedAttributes   []string `json:"matched_attributes" example:"ganztags,ndh"`
+	UnmatchedAttributes []string `json:"unmatched_attributes" example:"xyz"`
+}
+
+// ChildrenFundingResponse represents the funding calculation response for all children
+type ChildrenFundingResponse struct {
+	Date     time.Time              `json:"date" example:"2025-01-27"`
+	Children []ChildFundingResponse `json:"children"`
 }
