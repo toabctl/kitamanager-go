@@ -1032,3 +1032,321 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 		t.Errorf("SECURITY: expected status %d when getting current contract from wrong org, got %d", http.StatusNotFound, w.Code)
 	}
 }
+
+// PAGINATION TESTS
+
+func TestChildHandler_List_Pagination(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 15 children
+	for i := 1; i <= 15; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Test page 1 with limit 5
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=1&limit=5", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 5 {
+		t.Errorf("expected 5 children on page 1, got %d", len(response.Data))
+	}
+	if response.Page != 1 {
+		t.Errorf("expected page 1, got %d", response.Page)
+	}
+	if response.Limit != 5 {
+		t.Errorf("expected limit 5, got %d", response.Limit)
+	}
+	if response.Total != 15 {
+		t.Errorf("expected total 15, got %d", response.Total)
+	}
+	if response.TotalPages != 3 {
+		t.Errorf("expected 3 total pages, got %d", response.TotalPages)
+	}
+}
+
+func TestChildHandler_List_Pagination_SecondPage(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 15 children
+	for i := 1; i <= 15; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Get page 1
+	w1 := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=1&limit=5", org.ID), nil)
+	var response1 models.PaginatedResponse[models.Child]
+	parseResponse(t, w1, &response1)
+
+	// Get page 2
+	w2 := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=2&limit=5", org.ID), nil)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w2.Code)
+	}
+
+	var response2 models.PaginatedResponse[models.Child]
+	parseResponse(t, w2, &response2)
+
+	if len(response2.Data) != 5 {
+		t.Errorf("expected 5 children on page 2, got %d", len(response2.Data))
+	}
+	if response2.Page != 2 {
+		t.Errorf("expected page 2, got %d", response2.Page)
+	}
+
+	// Verify page 1 and page 2 have different children
+	page1IDs := make(map[uint]bool)
+	for _, child := range response1.Data {
+		page1IDs[child.ID] = true
+	}
+	for _, child := range response2.Data {
+		if page1IDs[child.ID] {
+			t.Errorf("child ID %d appears on both page 1 and page 2", child.ID)
+		}
+	}
+}
+
+func TestChildHandler_List_Pagination_LastPage(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 12 children (3 pages of 5, last page has 2)
+	for i := 1; i <= 12; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Get last page (page 3)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=3&limit=5", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 children on last page, got %d", len(response.Data))
+	}
+	if response.TotalPages != 3 {
+		t.Errorf("expected 3 total pages, got %d", response.TotalPages)
+	}
+}
+
+func TestChildHandler_List_Pagination_BeyondLastPage(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 5 children
+	for i := 1; i <= 5; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Request page 10 (beyond available data)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=10&limit=5", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 0 {
+		t.Errorf("expected 0 children beyond last page, got %d", len(response.Data))
+	}
+	if response.Total != 5 {
+		t.Errorf("expected total 5, got %d", response.Total)
+	}
+}
+
+func TestChildHandler_List_Pagination_DefaultValues(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 25 children
+	for i := 1; i <= 25; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Request without pagination params (should use defaults: page=1, limit=20)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 20 {
+		t.Errorf("expected 20 children with default limit, got %d", len(response.Data))
+	}
+	if response.Page != 1 {
+		t.Errorf("expected default page 1, got %d", response.Page)
+	}
+	if response.Limit != 20 {
+		t.Errorf("expected default limit 20, got %d", response.Limit)
+	}
+}
+
+func TestChildHandler_List_Pagination_InvalidNegativePage(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=-1&limit=10", org.ID), nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for negative page, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestChildHandler_List_Pagination_InvalidNegativeLimit(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=1&limit=-5", org.ID), nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for negative limit, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestChildHandler_List_Pagination_LimitExceedsMax(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=1&limit=101", org.ID), nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for limit > 100, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestChildHandler_List_Pagination_MaxLimit(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create 5 children
+	for i := 1; i <= 5; i++ {
+		db.Create(&models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Child%02d", i),
+				LastName:       "Last",
+				Birthdate:      time.Now(),
+			},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children", handler.List)
+
+	// Request with max limit (100)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children?page=1&limit=100", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d for limit=100, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.Child]
+	parseResponse(t, w, &response)
+
+	if response.Limit != 100 {
+		t.Errorf("expected limit 100, got %d", response.Limit)
+	}
+}
