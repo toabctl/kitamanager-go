@@ -117,7 +117,7 @@ async function loadStats() {
     statsData.value = await apiClient.getChildrenContractCountByMonth(props.orgId)
   } catch (err) {
     console.error('Failed to load children monthly stats:', err)
-    error.value = t('dashboard.chartError')
+    error.value = t('statistics.chartError')
   } finally {
     loading.value = false
   }
@@ -137,7 +137,7 @@ onMounted(() => {
 
 <template>
   <div class="children-monthly-chart">
-    <h3>{{ t('dashboard.childrenMonthlyStats') }}</h3>
+    <h3>{{ t('statistics.childrenContractCount') }}</h3>
 
     <div v-if="loading" class="chart-loading">
       <i class="pi pi-spin pi-spinner"></i>
@@ -150,7 +150,7 @@ onMounted(() => {
     </div>
 
     <div v-else-if="!orgId" class="chart-placeholder">
-      {{ t('dashboard.selectOrgForChart') }}
+      {{ t('statistics.selectOrgForStats') }}
     </div>
 
     <div v-else class="chart-container">

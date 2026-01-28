@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { apiClient } from '@/api/client'
 import { useUiStore } from '@/stores/ui'
-import ChildrenMonthlyChart from '@/components/ChildrenMonthlyChart.vue'
 
 const { t } = useI18n()
 const uiStore = useUiStore()
@@ -93,7 +92,5 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <ChildrenMonthlyChart :org-id="uiStore.selectedOrganizationId" />
   </div>
 </template>

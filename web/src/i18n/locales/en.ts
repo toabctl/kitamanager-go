@@ -60,6 +60,7 @@ export default {
     users: 'Users',
     groups: 'Groups',
     governmentFundings: 'Government Fundings',
+    statistics: 'Statistics',
     settings: 'Settings'
   },
   dashboard: {
@@ -69,10 +70,13 @@ export default {
     totalOrganizations: 'Total Organizations',
     totalEmployees: 'Total Employees',
     totalChildren: 'Total Children',
-    totalUsers: 'Total Users',
-    childrenMonthlyStats: 'Children with Active Contracts',
-    chartError: 'Failed to load chart data',
-    selectOrgForChart: 'Select an organization to view statistics'
+    totalUsers: 'Total Users'
+  },
+  statistics: {
+    title: 'Statistics',
+    selectOrgForStats: 'Select an organization to view statistics',
+    childrenContractCount: 'Children with Active Contracts',
+    chartError: 'Failed to load chart data'
   },
   months: {
     jan: 'Jan',

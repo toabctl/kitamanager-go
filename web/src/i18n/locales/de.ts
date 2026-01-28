@@ -60,6 +60,7 @@ export default {
     users: 'Benutzer',
     groups: 'Gruppen',
     governmentFundings: 'Staatliche Finanzierungen',
+    statistics: 'Statistiken',
     settings: 'Einstellungen'
   },
   dashboard: {
@@ -69,10 +70,13 @@ export default {
     totalOrganizations: 'Organisationen gesamt',
     totalEmployees: 'Mitarbeiter gesamt',
     totalChildren: 'Kinder gesamt',
-    totalUsers: 'Benutzer gesamt',
-    childrenMonthlyStats: 'Kinder mit aktiven Verträgen',
-    chartError: 'Fehler beim Laden der Diagrammdaten',
-    selectOrgForChart: 'Wählen Sie eine Organisation, um Statistiken anzuzeigen'
+    totalUsers: 'Benutzer gesamt'
+  },
+  statistics: {
+    title: 'Statistiken',
+    selectOrgForStats: 'Wählen Sie eine Organisation, um Statistiken anzuzeigen',
+    childrenContractCount: 'Kinder mit aktiven Verträgen',
+    chartError: 'Fehler beim Laden der Diagrammdaten'
   },
   months: {
     jan: 'Jan',

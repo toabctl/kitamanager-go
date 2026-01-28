@@ -55,6 +55,13 @@ const router = createRouter({
           meta: { orgScoped: true }
         },
         {
+          path: 'organizations/:orgId/statistics',
+          name: 'statistics',
+          component: () => import('@/views/statistics/StatisticsView.vue'),
+          props: true,
+          meta: { orgScoped: true }
+        },
+        {
           path: 'government-fundings',
           name: 'government-fundings',
           component: () => import('@/views/government-fundings/GovernmentFundingsView.vue')
