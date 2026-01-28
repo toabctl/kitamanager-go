@@ -128,6 +128,7 @@ jobs:
 
       - name: Run integration tests
         env:
+          TEST_DB_TYPE: postgres
           TEST_DB_HOST: localhost
           TEST_DB_PORT: 5432
           TEST_DB_USER: kitamanager
@@ -260,6 +261,7 @@ jobs:
 
       - name: Run API contract tests
         env:
+          TEST_DB_TYPE: postgres
           TEST_DB_HOST: localhost
           TEST_DB_PORT: 5432
           TEST_DB_USER: kitamanager
