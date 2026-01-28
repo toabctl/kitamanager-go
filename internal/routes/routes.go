@@ -220,6 +220,11 @@ func Setup(
 				// Children
 				children := orgScoped.Group("/children")
 				{
+					// Statistics endpoint (must be before /:id to avoid conflict)
+					children.GET("/statistics/contract-count-by-month",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						childHandler.GetContractCountByMonth)
+
 					// Funding calculation endpoint (must be before /:id to avoid conflict)
 					children.GET("/funding",
 						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),

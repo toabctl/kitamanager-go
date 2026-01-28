@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -422,6 +423,67 @@ func (h *ChildHandler) DeleteContract(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
+}
+
+// GetContractCountByMonth godoc
+// @Summary Get children contract count by month
+// @Description Get children contract counts per month for the specified year range
+// @Tags children
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param min_year query int false "Start year (default: current year - 3)"
+// @Param max_year query int false "End year (default: current year + 1)"
+// @Success 200 {object} models.ChildrenContractCountByMonthResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/children/statistics/contract-count-by-month [get]
+func (h *ChildHandler) GetContractCountByMonth(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	currentYear := time.Now().Year()
+
+	// Parse min_year parameter, default to current year - 3
+	minYear := currentYear - 3
+	if minYearStr := c.Query("min_year"); minYearStr != "" {
+		parsedYear, parseErr := strconv.Atoi(minYearStr)
+		if parseErr != nil {
+			respondError(c, apperror.BadRequest("min_year must be an integer"))
+			return
+		}
+		minYear = parsedYear
+	}
+
+	// Parse max_year parameter, default to current year + 1
+	maxYear := currentYear + 1
+	if maxYearStr := c.Query("max_year"); maxYearStr != "" {
+		parsedYear, parseErr := strconv.Atoi(maxYearStr)
+		if parseErr != nil {
+			respondError(c, apperror.BadRequest("max_year must be an integer"))
+			return
+		}
+		maxYear = parsedYear
+	}
+
+	// Validate year range
+	if minYear > maxYear {
+		respondError(c, apperror.BadRequest("min_year cannot be greater than max_year"))
+		return
+	}
+
+	stats, err := h.service.GetContractCountByMonth(c.Request.Context(), orgID, minYear, maxYear)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
 
 // GetFunding godoc

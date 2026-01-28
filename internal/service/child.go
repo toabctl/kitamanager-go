@@ -455,3 +455,45 @@ func uniqueStrings(input []string) []string {
 	}
 	return result
 }
+
+// GetContractCountByMonth returns children contract counts per month for the specified year range
+func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, minYear, maxYear int) (*models.ChildrenContractCountByMonthResponse, error) {
+	// Calculate number of years in range
+	numYears := maxYear - minYear + 1
+
+	startDate := time.Date(minYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(maxYear, 12, 31, 0, 0, 0, 0, time.UTC)
+
+	response := &models.ChildrenContractCountByMonthResponse{
+		Period: models.ContractCountPeriod{
+			Start: startDate.Format("2006-01-02"),
+			End:   endDate.Format("2006-01-02"),
+		},
+		Years: make([]models.ContractCountByMonthYear, numYears),
+	}
+
+	// Initialize yearly data
+	for i := 0; i < numYears; i++ {
+		response.Years[i] = models.ContractCountByMonthYear{
+			Year:   minYear + i,
+			Counts: make([]int, 12),
+		}
+	}
+
+	// Loop through each month and count children with active contracts
+	for yearIdx := 0; yearIdx < numYears; yearIdx++ {
+		year := minYear + yearIdx
+
+		for month := 1; month <= 12; month++ {
+			// Use 15th of the month as sample date
+			sampleDate := time.Date(year, time.Month(month), 15, 0, 0, 0, 0, time.UTC)
+			count, err := s.store.CountByOrganizationWithContractOn(orgID, sampleDate)
+			if err != nil {
+				return nil, apperror.Internal("failed to count children for month")
+			}
+			response.Years[yearIdx].Counts[month-1] = int(count)
+		}
+	}
+
+	return response, nil
+}

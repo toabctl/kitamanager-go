@@ -331,3 +331,17 @@ export interface ChildrenFundingResponse {
   date: string
   children: ChildFundingResponse[]
 }
+
+// Children contract count by month
+export interface ChildrenContractCountByMonthResponse {
+  period: {
+    start: string
+    end: string
+  }
+  years: ContractCountByMonthYear[]
+}
+
+export interface ContractCountByMonthYear {
+  year: number
+  counts: number[] // 12 values, one per month (Jan=0, Dec=11)
+}

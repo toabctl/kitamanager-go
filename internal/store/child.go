@@ -119,3 +119,19 @@ func (s *ChildStore) FindByOrganizationWithContractOn(orgID uint, date time.Time
 
 	return children, nil
 }
+
+// CountByOrganizationWithContractOn counts children with active contracts on the given date.
+// A contract is active if: from_date <= date AND (to_date IS NULL OR to_date >= date)
+func (s *ChildStore) CountByOrganizationWithContractOn(orgID uint, date time.Time) (int64, error) {
+	var count int64
+	if err := s.db.Model(&models.Child{}).
+		Joins("JOIN child_contracts ON child_contracts.child_id = children.id").
+		Where("children.organization_id = ?", orgID).
+		Where("child_contracts.from_date <= ?", date).
+		Where("child_contracts.to_date IS NULL OR child_contracts.to_date >= ?", date).
+		Distinct("children.id").
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}

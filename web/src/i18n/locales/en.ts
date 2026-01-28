@@ -69,7 +69,24 @@ export default {
     totalOrganizations: 'Total Organizations',
     totalEmployees: 'Total Employees',
     totalChildren: 'Total Children',
-    totalUsers: 'Total Users'
+    totalUsers: 'Total Users',
+    childrenMonthlyStats: 'Children with Active Contracts',
+    chartError: 'Failed to load chart data',
+    selectOrgForChart: 'Select an organization to view statistics'
+  },
+  months: {
+    jan: 'Jan',
+    feb: 'Feb',
+    mar: 'Mar',
+    apr: 'Apr',
+    may: 'May',
+    jun: 'Jun',
+    jul: 'Jul',
+    aug: 'Aug',
+    sep: 'Sep',
+    oct: 'Oct',
+    nov: 'Nov',
+    dec: 'Dec'
   },
   organizations: {
     title: 'Organizations',

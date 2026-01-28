@@ -143,7 +143,7 @@ var attributeCombinations = [][]string{
 //   - admin@example.com (admin role in organization)
 //   - manager@example.com (manager role in organization)
 //
-// - 50 children distributed by age with contracts
+// - 200 children distributed over the last 4 years with contracts
 func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.GovernmentFundingStore) error {
 	if !cfg.SeedTestData {
 		slog.Info("Test data seeding skipped: SEED_TEST_DATA not set to true")
@@ -254,8 +254,8 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 		}
 	}
 
-	// Create 50 children with age distribution
-	children := createTestChildren(org.ID, 50)
+	// Create 200 children distributed over the last 4 years
+	children := createTestChildren(org.ID, 200)
 	for i := range children {
 		if err := db.Create(&children[i]).Error; err != nil {
 			return err
@@ -263,11 +263,11 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created test children", "count", len(children))
 
-	// Create contracts for all children
-	// ~30% of children get multiple contracts (contract history)
+	// Create contracts for all children distributed over 4 years
+	// Some children have left (contracts ended), some are current
 	contractCount := 0
 	for i, child := range children {
-		contracts := createTestContracts(child.ID, child.Birthdate, i%3 == 0) // every 3rd child gets history
+		contracts := createTestContractsDistributed(child.ID, child.Birthdate, i)
 		for _, contract := range contracts {
 			if err := db.Create(&contract).Error; err != nil {
 				return err
@@ -292,20 +292,24 @@ func createTestChildren(orgID uint, count int) []models.Child {
 	children := make([]models.Child, count)
 	now := time.Now()
 
-	// Age distribution for a typical Kita:
-	// 0-1 years: 10%, 1-2 years: 15%, 2-3 years: 20%,
-	// 3-4 years: 20%, 4-5 years: 20%, 5-6 years: 15%
+	// For 200 children distributed over 4 years, we need birthdates going back further
+	// Children can be 0-10 years old to cover those who started 4 years ago and have since left
+	// Age distribution:
+	// 0-1 years: 5%, 1-2 years: 10%, 2-3 years: 15%, 3-4 years: 20%,
+	// 4-5 years: 15%, 5-6 years: 15%, 6-8 years: 15%, 8-10 years: 5%
 	ageDistribution := []struct {
 		minMonths int
 		maxMonths int
 		percent   int
 	}{
-		{6, 12, 10},
-		{12, 24, 15},
-		{24, 36, 20},
+		{6, 12, 5},
+		{12, 24, 10},
+		{24, 36, 15},
 		{36, 48, 20},
-		{48, 60, 20},
+		{48, 60, 15},
 		{60, 72, 15},
+		{72, 96, 15},
+		{96, 120, 5},
 	}
 
 	idx := 0
@@ -329,7 +333,7 @@ func createTestChildren(orgID uint, count int) []models.Child {
 
 	// Fill remaining slots
 	for idx < count {
-		ageMonths := 24 + rand.Intn(36)
+		ageMonths := 24 + rand.Intn(60)
 		birthdate := now.AddDate(0, -ageMonths, -rand.Intn(28))
 
 		children[idx] = models.Child{
@@ -346,20 +350,70 @@ func createTestChildren(orgID uint, count int) []models.Child {
 	return children
 }
 
+// createTestContractsDistributed creates contracts for children distributed over the last 4 years.
+// - Some children started years ago and have left (ended contracts on July 31st - typical Kita exit)
+// - Some children are currently enrolled (ongoing contracts)
+// - ~30% of children have multiple contracts (contract history)
+//
 //nolint:gosec // G404: math/rand is fine for test data generation
-func createTestContracts(childID uint, birthdate time.Time, withHistory bool) []models.ChildContract {
+func createTestContractsDistributed(childID uint, birthdate time.Time, childIndex int) []models.ChildContract {
 	now := time.Now()
 
-	// First contract starts 6-18 months after birth
-	contractStart := birthdate.AddDate(0, 6+rand.Intn(12), 0)
+	// Determine when this child's contract should start based on their index
+	// Distribute contract starts over the last 4 years (48 months)
+	monthsAgo := rand.Intn(48) // Random start within last 4 years
+
+	// Contract must start at least 6 months after birth
+	earliestStart := birthdate.AddDate(0, 6, 0)
+	contractStart := now.AddDate(0, -monthsAgo, 0)
 	contractStart = time.Date(contractStart.Year(), contractStart.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	if contractStart.Before(earliestStart) {
+		contractStart = time.Date(earliestStart.Year(), earliestStart.Month(), 1, 0, 0, 0, 0, time.UTC)
+	}
 
 	if contractStart.After(now) {
 		contractStart = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	}
 
+	// Calculate child's current age in months
+	childAgeMonths := int(now.Sub(birthdate).Hours() / 24 / 30)
+
+	// Determine if child has left (contract ended) or is still enrolled
+	// Children over 6 years old (72 months) have typically left for school
+	hasLeft := false
+	if childAgeMonths > 72 {
+		hasLeft = rand.Intn(100) < 90 // 90% of school-age children have left
+	} else if childAgeMonths > 60 {
+		hasLeft = rand.Intn(100) < 30 // 30% of 5-6 year olds have left
+	}
+
+	withHistory := childIndex%3 == 0 // ~30% get contract history
+
 	if !withHistory {
-		// Single contract (open-ended)
+		if hasLeft {
+			// Contract ended on July 31st (typical Kita exit date)
+			contractEnd := findJuly31stForExit(contractStart, now, birthdate)
+
+			// Ensure end is after start
+			if !contractEnd.After(contractStart) {
+				contractEnd = time.Date(contractStart.Year(), time.July, 31, 0, 0, 0, 0, time.UTC)
+				if !contractEnd.After(contractStart) {
+					contractEnd = time.Date(contractStart.Year()+1, time.July, 31, 0, 0, 0, 0, time.UTC)
+				}
+			}
+
+			return []models.ChildContract{{
+				ChildID: childID,
+				Period: models.Period{
+					From: contractStart,
+					To:   &contractEnd,
+				},
+				Attributes: attributeCombinations[rand.Intn(len(attributeCombinations))],
+			}}
+		}
+
+		// Active contract (open-ended)
 		return []models.ChildContract{{
 			ChildID: childID,
 			Period: models.Period{
@@ -371,19 +425,50 @@ func createTestContracts(childID uint, birthdate time.Time, withHistory bool) []
 	}
 
 	// Create 2-3 contracts with history
-	numContracts := 2 + rand.Intn(2) // 2 or 3 contracts
+	numContracts := 2 + rand.Intn(2)
 	contracts := make([]models.ChildContract, 0, numContracts)
 
 	currentStart := contractStart
 	for i := 0; i < numContracts; i++ {
-		// Each contract lasts 6-18 months
-		duration := 6 + rand.Intn(12)
-		contractEnd := currentStart.AddDate(0, duration, 0)
-		contractEnd = time.Date(contractEnd.Year(), contractEnd.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 0, -1) // last day of prev month
-
 		isLast := i == numContracts-1
-		if contractEnd.After(now) || isLast {
-			// Last contract or would end in future: make it open-ended
+
+		if isLast {
+			if hasLeft {
+				// Last contract ended on July 31st
+				contractEnd := findJuly31stForExit(currentStart, now, birthdate)
+				if !contractEnd.After(currentStart) {
+					contractEnd = time.Date(currentStart.Year()+1, time.July, 31, 0, 0, 0, 0, time.UTC)
+				}
+				contracts = append(contracts, models.ChildContract{
+					ChildID: childID,
+					Period: models.Period{
+						From: currentStart,
+						To:   &contractEnd,
+					},
+					Attributes: attributeCombinations[rand.Intn(len(attributeCombinations))],
+				})
+			} else {
+				// Last contract is open-ended (still enrolled)
+				contracts = append(contracts, models.ChildContract{
+					ChildID: childID,
+					Period: models.Period{
+						From: currentStart,
+						To:   nil,
+					},
+					Attributes: attributeCombinations[rand.Intn(len(attributeCombinations))],
+				})
+			}
+			break
+		}
+
+		// Non-last contracts end on July 31st of some year (contract renewals)
+		contractEnd := time.Date(currentStart.Year(), time.July, 31, 0, 0, 0, 0, time.UTC)
+		if !contractEnd.After(currentStart) {
+			contractEnd = time.Date(currentStart.Year()+1, time.July, 31, 0, 0, 0, 0, time.UTC)
+		}
+
+		if contractEnd.After(now) {
+			// Would end in future, just make it open-ended
 			contracts = append(contracts, models.ChildContract{
 				ChildID: childID,
 				Period: models.Period{
@@ -404,9 +489,35 @@ func createTestContracts(childID uint, birthdate time.Time, withHistory bool) []
 			Attributes: attributeCombinations[rand.Intn(len(attributeCombinations))],
 		})
 
-		// Next contract starts the day after
-		currentStart = contractEnd.AddDate(0, 0, 1)
+		// Next contract starts August 1st
+		currentStart = time.Date(contractEnd.Year(), time.August, 1, 0, 0, 0, 0, time.UTC)
 	}
 
 	return contracts
+}
+
+// findJuly31stForExit finds the appropriate July 31st exit date for a child.
+// Children typically leave when they turn ~6 years old and start school.
+func findJuly31stForExit(contractStart, now time.Time, birthdate time.Time) time.Time {
+	// Child would typically leave at age 6 (school start)
+	// Find the July 31st when the child is around 6 years old
+	schoolStartYear := birthdate.Year() + 6
+
+	// If child was born after July, they'd start school a year later
+	if birthdate.Month() > time.July {
+		schoolStartYear++
+	}
+
+	exitDate := time.Date(schoolStartYear, time.July, 31, 0, 0, 0, 0, time.UTC)
+
+	// Make sure exit date is after contract start and before now
+	if exitDate.Before(contractStart) || exitDate.After(now) {
+		// Find the most recent July 31st before now
+		exitDate = time.Date(now.Year(), time.July, 31, 0, 0, 0, 0, time.UTC)
+		if exitDate.After(now) {
+			exitDate = time.Date(now.Year()-1, time.July, 31, 0, 0, 0, 0, time.UTC)
+		}
+	}
+
+	return exitDate
 }

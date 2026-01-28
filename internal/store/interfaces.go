@@ -91,6 +91,7 @@ type ChildStorer interface {
 	FindAll(limit, offset int) ([]models.Child, int64, error)
 	FindByOrganization(orgID uint, limit, offset int) ([]models.Child, int64, error)
 	FindByOrganizationWithContractOn(orgID uint, date time.Time) ([]models.Child, error)
+	CountByOrganizationWithContractOn(orgID uint, date time.Time) (int64, error)
 	FindByID(id uint) (*models.Child, error)
 	Create(child *models.Child) error
 	Update(child *models.Child) error

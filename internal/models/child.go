@@ -114,3 +114,21 @@ func (c *ChildContract) ToResponse() ChildContractResponse {
 		UpdatedAt:  c.UpdatedAt,
 	}
 }
+
+// ChildrenContractCountByMonthResponse represents contract counts per month over multiple years
+type ChildrenContractCountByMonthResponse struct {
+	Period ContractCountPeriod        `json:"period"`
+	Years  []ContractCountByMonthYear `json:"years"`
+}
+
+// ContractCountPeriod represents the time range for the statistics
+type ContractCountPeriod struct {
+	Start string `json:"start" example:"2023-01-01"`
+	End   string `json:"end" example:"2026-01-01"`
+}
+
+// ContractCountByMonthYear represents contract counts per month for a single year
+type ContractCountByMonthYear struct {
+	Year   int   `json:"year" example:"2025"`
+	Counts []int `json:"counts"` // 12 values, one per month (Jan=0, Dec=11)
+}

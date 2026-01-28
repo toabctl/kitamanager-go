@@ -170,6 +170,15 @@ definitions:
         maxLength: 255
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ChildrenContractCountByMonthResponse:
+    properties:
+      period:
+        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractCountPeriod'
+      years:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractCountByMonthYear'
+        type: array
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildrenFundingResponse:
     properties:
       children:
@@ -178,6 +187,26 @@ definitions:
         type: array
       date:
         example: "2025-01-27"
+        type: string
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ContractCountByMonthYear:
+    properties:
+      counts:
+        description: 12 values, one per month (Jan=0, Dec=11)
+        items:
+          type: integer
+        type: array
+      year:
+        example: 2025
+        type: integer
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ContractCountPeriod:
+    properties:
+      end:
+        example: "2026-01-01"
+        type: string
+      start:
+        example: "2023-01-01"
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.Employee:
@@ -2388,6 +2417,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Calculate children funding
+      tags:
+      - children
+  /api/v1/organizations/{orgId}/children/statistics/contract-count-by-month:
+    get:
+      consumes:
+      - application/json
+      description: Get children contract counts per month for the specified year range
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: 'Start year (default: current year - 3)'
+        in: query
+        name: min_year
+        type: integer
+      - description: 'End year (default: current year + 1)'
+        in: query
+        name: max_year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildrenContractCountByMonthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get children contract count by month
       tags:
       - children
   /api/v1/organizations/{orgId}/employees:
