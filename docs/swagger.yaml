@@ -57,6 +57,9 @@ definitions:
       first_name:
         example: Max
         type: string
+      gender:
+        example: male
+        type: string
       id:
         example: 1
         type: integer
@@ -142,6 +145,9 @@ definitions:
         example: Emma
         maxLength: 255
         type: string
+      gender:
+        example: female
+        type: string
       last_name:
         example: Schmidt
         maxLength: 255
@@ -149,6 +155,7 @@ definitions:
     required:
     - birthdate
     - first_name
+    - gender
     - last_name
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildFundingResponse:
@@ -187,6 +194,9 @@ definitions:
       first_name:
         example: Emma
         maxLength: 255
+        type: string
+      gender:
+        example: female
         type: string
       last_name:
         example: Schmidt
@@ -245,6 +255,9 @@ definitions:
         type: string
       first_name:
         example: Max
+        type: string
+      gender:
+        example: male
         type: string
       id:
         example: 1
@@ -444,6 +457,9 @@ definitions:
         example: Max
         maxLength: 255
         type: string
+      gender:
+        example: male
+        type: string
       last_name:
         example: Mustermann
         maxLength: 255
@@ -451,6 +467,7 @@ definitions:
     required:
     - birthdate
     - first_name
+    - gender
     - last_name
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.EmployeeUpdateRequest:
@@ -461,6 +478,9 @@ definitions:
       first_name:
         example: Max
         maxLength: 255
+        type: string
+      gender:
+        example: male
         type: string
       last_name:
         example: Mustermann

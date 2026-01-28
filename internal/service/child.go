@@ -82,6 +82,9 @@ func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.Child
 	if validation.IsWhitespaceOnly(req.LastName) {
 		return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
 	}
+	if !models.IsValidGender(req.Gender) {
+		return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
+	}
 	if err := validation.ValidateBirthdate(req.Birthdate); err != nil {
 		return nil, apperror.BadRequest(err.Error())
 	}
@@ -91,6 +94,7 @@ func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.Child
 			OrganizationID: orgID,
 			FirstName:      req.FirstName,
 			LastName:       req.LastName,
+			Gender:         req.Gender,
 			Birthdate:      req.Birthdate,
 		},
 	}
@@ -127,6 +131,12 @@ func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.C
 			return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
 		}
 		child.LastName = trimmed
+	}
+	if req.Gender != nil {
+		if !models.IsValidGender(*req.Gender) {
+			return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
+		}
+		child.Gender = *req.Gender
 	}
 	if req.Birthdate != nil {
 		if err := validation.ValidateBirthdate(*req.Birthdate); err != nil {

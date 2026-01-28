@@ -101,6 +101,7 @@ func TestChildService_Create(t *testing.T) {
 	req := &models.ChildCreateRequest{
 		FirstName: "John",
 		LastName:  "Doe",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -164,6 +165,7 @@ func TestChildService_Create_TrimmedNames(t *testing.T) {
 	req := &models.ChildCreateRequest{
 		FirstName: "  John  ",
 		LastName:  "  Doe  ",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 

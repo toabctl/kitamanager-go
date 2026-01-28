@@ -23,6 +23,20 @@ func randInt(n int) int {
 	return rand.Intn(n)
 }
 
+// randomGender returns a random gender for test data.
+// Distribution: ~49% male, ~49% female, ~2% diverse
+//
+//nolint:gosec // G404: math/rand is fine for test data generation
+func randomGender() string {
+	r := rand.Intn(100)
+	if r < 49 {
+		return string(models.GenderMale)
+	} else if r < 98 {
+		return string(models.GenderFemale)
+	}
+	return string(models.GenderDiverse)
+}
+
 // SeedAdmin creates an initial admin user if SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are set.
 // If the user already exists, it will be skipped.
 // The user will be assigned the superadmin role (in database).
@@ -327,6 +341,7 @@ func createTestChildren(orgID uint, count int) []models.Child {
 					OrganizationID: orgID,
 					FirstName:      firstNames[randInt(len(firstNames))],
 					LastName:       lastNames[randInt(len(lastNames))],
+					Gender:         randomGender(),
 					Birthdate:      birthdate,
 				},
 			}
@@ -344,6 +359,7 @@ func createTestChildren(orgID uint, count int) []models.Child {
 				OrganizationID: orgID,
 				FirstName:      firstNames[randInt(len(firstNames))],
 				LastName:       lastNames[randInt(len(lastNames))],
+				Gender:         randomGender(),
 				Birthdate:      birthdate,
 			},
 		}

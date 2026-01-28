@@ -171,6 +171,7 @@ func (p *EmployeeContractProperty) ToResponse() EmployeeContractPropertyResponse
 type EmployeeCreateRequest struct {
 	FirstName string    `json:"first_name" binding:"required,max=255" example:"Max"`
 	LastName  string    `json:"last_name" binding:"required,max=255" example:"Mustermann"`
+	Gender    string    `json:"gender" binding:"required" example:"male"`
 	Birthdate time.Time `json:"birthdate" binding:"required" example:"1990-05-15"`
 }
 
@@ -178,6 +179,7 @@ type EmployeeCreateRequest struct {
 type EmployeeUpdateRequest struct {
 	FirstName *string    `json:"first_name" binding:"omitempty,max=255" example:"Max"`
 	LastName  *string    `json:"last_name" binding:"omitempty,max=255" example:"Mustermann"`
+	Gender    *string    `json:"gender" binding:"omitempty" example:"male"`
 	Birthdate *time.Time `json:"birthdate" example:"1990-05-15"`
 }
 
@@ -187,6 +189,7 @@ type EmployeeResponse struct {
 	OrganizationID uint      `json:"organization_id" example:"1"`
 	FirstName      string    `json:"first_name" example:"Max"`
 	LastName       string    `json:"last_name" example:"Mustermann"`
+	Gender         string    `json:"gender" example:"male"`
 	Birthdate      time.Time `json:"birthdate" example:"1990-05-15"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
@@ -198,6 +201,7 @@ func (e *Employee) ToResponse() EmployeeResponse {
 		OrganizationID: e.OrganizationID,
 		FirstName:      e.FirstName,
 		LastName:       e.LastName,
+		Gender:         e.Gender,
 		Birthdate:      e.Birthdate,
 		CreatedAt:      e.CreatedAt,
 		UpdatedAt:      e.UpdatedAt,

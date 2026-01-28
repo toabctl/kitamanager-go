@@ -1,5 +1,8 @@
 // API Types - matching the Go backend models
 
+// Gender type
+export type Gender = 'male' | 'female' | 'diverse'
+
 // Roles for user-group membership
 export type Role = 'admin' | 'manager' | 'member'
 
@@ -177,6 +180,7 @@ export interface Person {
   organization?: Organization
   first_name: string
   last_name: string
+  gender: Gender
   birthdate: string
   created_at: string
   updated_at: string
@@ -203,12 +207,14 @@ export interface EmployeeCreateRequest {
   organization_id: number
   first_name: string
   last_name: string
+  gender: Gender
   birthdate: string
 }
 
 export interface EmployeeUpdateRequest {
   first_name?: string
   last_name?: string
+  gender?: Gender
   birthdate?: string
 }
 
@@ -239,12 +245,14 @@ export interface ChildCreateRequest {
   organization_id: number
   first_name: string
   last_name: string
+  gender: Gender
   birthdate: string
 }
 
 export interface ChildUpdateRequest {
   first_name?: string
   last_name?: string
+  gender?: Gender
   birthdate?: string
 }
 

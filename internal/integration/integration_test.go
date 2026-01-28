@@ -339,6 +339,7 @@ func TestEmployeeWithContracts(t *testing.T) {
 	empResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/employees", org.ID), map[string]interface{}{
 		"first_name": "John",
 		"last_name":  "Doe",
+		"gender":     "male",
 		"birthdate":  "1990-01-15T00:00:00Z",
 	})
 	if empResp.Code != http.StatusCreated {
@@ -373,6 +374,7 @@ func TestChildWithContracts(t *testing.T) {
 	childResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/children", org.ID), map[string]interface{}{
 		"first_name": "Emma",
 		"last_name":  "Smith",
+		"gender":     "female",
 		"birthdate":  "2020-06-15T00:00:00Z",
 	})
 	if childResp.Code != http.StatusCreated {

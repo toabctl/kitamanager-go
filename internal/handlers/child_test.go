@@ -17,10 +17,10 @@ func TestChildHandler_List(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Child1", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child1", LastName: "Last", Gender: "female", Birthdate: time.Now()},
 	})
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -47,7 +47,7 @@ func TestChildHandler_Get(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -80,6 +80,7 @@ func TestChildHandler_Create(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "New",
 		LastName:  "Child",
+		Gender:    "female",
 		Birthdate: time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -107,7 +108,7 @@ func TestChildHandler_Update(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Child", Gender: "male", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -139,7 +140,7 @@ func TestChildHandler_Delete(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "ToDelete", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "ToDelete", LastName: "Child", Gender: "male", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -159,7 +160,7 @@ func TestChildHandler_ListContracts(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -192,7 +193,7 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -226,7 +227,7 @@ func TestChildHandler_GetCurrentContract_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -247,7 +248,7 @@ func TestChildHandler_CreateContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -281,7 +282,7 @@ func TestChildHandler_CreateContract_SameDay(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -320,7 +321,7 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -355,7 +356,7 @@ func TestChildHandler_DeleteContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -461,6 +462,7 @@ func TestChildHandler_Create_EmptyFirstName(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "",
 		LastName:  "Child",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -484,6 +486,7 @@ func TestChildHandler_Create_EmptyLastName(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "Test",
 		LastName:  "",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -620,7 +623,7 @@ func TestChildHandler_ListContracts_Empty(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -691,7 +694,7 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -730,7 +733,7 @@ func TestChildHandler_CreateContract_SameDayTransitionRejected(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -766,7 +769,7 @@ func TestChildHandler_DeleteContract_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -786,7 +789,7 @@ func TestChildHandler_DeleteContract_InvalidContractID(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	})
 
 	r := setupTestRouter()
@@ -831,6 +834,7 @@ func TestChildHandler_Create_FutureBirthdate(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "Test",
 		LastName:  "Child",
+		Gender:    "male",
 		Birthdate: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -854,6 +858,7 @@ func TestChildHandler_Create_WhitespaceOnlyFirstName(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "   ",
 		LastName:  "Child",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -877,6 +882,7 @@ func TestChildHandler_Create_WhitespaceOnlyLastName(t *testing.T) {
 	body := models.ChildCreateRequest{
 		FirstName: "Test",
 		LastName:  "   ",
+		Gender:    "male",
 		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -894,7 +900,7 @@ func TestChildHandler_CreateContract_FromAfterTo(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -926,7 +932,7 @@ func TestChildHandler_Get_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -951,7 +957,7 @@ func TestChildHandler_Update_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Original", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Original", LastName: "Child", Gender: "male", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -981,7 +987,7 @@ func TestChildHandler_Delete_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -1006,7 +1012,7 @@ func TestChildHandler_ListContracts_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -1031,7 +1037,7 @@ func TestChildHandler_CreateContract_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -1060,7 +1066,7 @@ func TestChildHandler_DeleteContract_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 
@@ -1092,7 +1098,7 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	// Create child in org1
 	child := &models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Now()},
 	}
 	db.Create(child)
 

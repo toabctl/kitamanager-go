@@ -50,6 +50,7 @@ type ChildContractUpdateRequest struct {
 type ChildCreateRequest struct {
 	FirstName string    `json:"first_name" binding:"required,max=255" example:"Emma"`
 	LastName  string    `json:"last_name" binding:"required,max=255" example:"Schmidt"`
+	Gender    string    `json:"gender" binding:"required" example:"female"`
 	Birthdate time.Time `json:"birthdate" binding:"required" example:"2020-03-10"`
 }
 
@@ -57,6 +58,7 @@ type ChildCreateRequest struct {
 type ChildUpdateRequest struct {
 	FirstName *string    `json:"first_name" binding:"omitempty,max=255" example:"Emma"`
 	LastName  *string    `json:"last_name" binding:"omitempty,max=255" example:"Schmidt"`
+	Gender    *string    `json:"gender" binding:"omitempty" example:"female"`
 	Birthdate *time.Time `json:"birthdate" example:"2020-03-10"`
 }
 
@@ -66,6 +68,7 @@ type ChildResponse struct {
 	OrganizationID uint                    `json:"organization_id" example:"1"`
 	FirstName      string                  `json:"first_name" example:"Emma"`
 	LastName       string                  `json:"last_name" example:"Schmidt"`
+	Gender         string                  `json:"gender" example:"female"`
 	Birthdate      time.Time               `json:"birthdate" example:"2020-03-10"`
 	Contracts      []ChildContractResponse `json:"contracts,omitempty"`
 	CreatedAt      time.Time               `json:"created_at"`
@@ -78,6 +81,7 @@ func (c *Child) ToResponse() ChildResponse {
 		OrganizationID: c.OrganizationID,
 		FirstName:      c.FirstName,
 		LastName:       c.LastName,
+		Gender:         c.Gender,
 		Birthdate:      c.Birthdate,
 		CreatedAt:      c.CreatedAt,
 		UpdatedAt:      c.UpdatedAt,

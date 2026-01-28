@@ -109,6 +109,7 @@ func TestEmployeeService_Create(t *testing.T) {
 	req := &models.EmployeeCreateRequest{
 		FirstName: "John",
 		LastName:  "Doe",
+		Gender:    "male",
 		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -176,6 +177,7 @@ func TestEmployeeService_Create_TrimmedNames(t *testing.T) {
 	req := &models.EmployeeCreateRequest{
 		FirstName: "  John  ",
 		LastName:  "  Doe  ",
+		Gender:    "male",
 		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
 	}
 

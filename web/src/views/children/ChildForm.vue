@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Child, ChildCreateRequest } from '@/api/types'
+import type { Child, ChildCreateRequest, Gender } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
+import Select from 'primevue/select'
 import Button from 'primevue/button'
 
 const { t } = useI18n()
@@ -22,10 +23,22 @@ const emit = defineEmits<{
 const form = ref({
   first_name: '',
   last_name: '',
+  gender: null as Gender | null,
   birthdate: null as Date | null
 })
 
-const errors = ref<{ first_name?: string; last_name?: string; birthdate?: string }>({})
+const genderOptions = computed(() => [
+  { value: 'male', label: t('gender.male') },
+  { value: 'female', label: t('gender.female') },
+  { value: 'diverse', label: t('gender.diverse') }
+])
+
+const errors = ref<{
+  first_name?: string
+  last_name?: string
+  gender?: string
+  birthdate?: string
+}>({})
 
 const isEditing = computed(() => !!props.child)
 const dialogTitle = computed(() => (isEditing.value ? t('children.edit') : t('children.newChild')))
@@ -38,12 +51,14 @@ watch(
         form.value = {
           first_name: props.child.first_name,
           last_name: props.child.last_name,
+          gender: props.child.gender,
           birthdate: new Date(props.child.birthdate)
         }
       } else {
         form.value = {
           first_name: '',
           last_name: '',
+          gender: null,
           birthdate: null
         }
       }
@@ -63,6 +78,10 @@ function validate(): boolean {
     errors.value.last_name = t('validation.lastNameRequired')
   }
 
+  if (!form.value.gender) {
+    errors.value.gender = t('validation.genderRequired')
+  }
+
   if (!form.value.birthdate) {
     errors.value.birthdate = t('validation.birthdateRequired')
   }
@@ -75,6 +94,7 @@ function handleSave() {
     emit('save', {
       first_name: form.value.first_name,
       last_name: form.value.last_name,
+      gender: form.value.gender!,
       birthdate: form.value.birthdate!.toISOString()
     })
   }
@@ -111,6 +131,20 @@ function handleSave() {
           :placeholder="t('children.lastName')"
         />
         <small v-if="errors.last_name" class="p-error">{{ errors.last_name }}</small>
+      </div>
+
+      <div class="field">
+        <label for="gender">{{ t('gender.label') }}</label>
+        <Select
+          id="gender"
+          v-model="form.gender"
+          :options="genderOptions"
+          option-label="label"
+          option-value="value"
+          :class="{ 'p-invalid': errors.gender }"
+          :placeholder="t('gender.selectGender')"
+        />
+        <small v-if="errors.gender" class="p-error">{{ errors.gender }}</small>
       </div>
 
       <div class="field">

@@ -9,6 +9,7 @@ type Person struct {
 	Organization   *Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization,omitempty"`
 	FirstName      string        `gorm:"size:255;not null" json:"first_name" example:"Max"`
 	LastName       string        `gorm:"size:255;not null" json:"last_name" example:"Mustermann"`
+	Gender         string        `gorm:"size:20;not null" json:"gender" example:"male"`
 	Birthdate      time.Time     `gorm:"type:date;not null" json:"birthdate" example:"1990-05-15"`
 	CreatedAt      time.Time     `json:"created_at"`
 	UpdatedAt      time.Time     `json:"updated_at"`

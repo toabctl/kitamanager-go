@@ -144,6 +144,13 @@ export default {
     weeklyHoursRequired: 'Wochenstunden müssen größer als 0 sein',
     salaryRequired: 'Gehalt muss größer als 0 sein'
   },
+  gender: {
+    label: 'Geschlecht',
+    male: 'Männlich',
+    female: 'Weiblich',
+    diverse: 'Divers',
+    selectGender: 'Geschlecht auswählen'
+  },
   children: {
     title: 'Kinder',
     create: 'Kind erstellen',
@@ -263,6 +270,7 @@ export default {
     firstNameRequired: 'Vorname ist erforderlich',
     lastNameRequired: 'Nachname ist erforderlich',
     birthdateRequired: 'Geburtsdatum ist erforderlich',
+    genderRequired: 'Geschlecht ist erforderlich',
     nameRequired: 'Name ist erforderlich',
     selectBirthdate: 'Geburtsdatum auswählen',
     fromDateRequired: 'Von-Datum ist erforderlich',

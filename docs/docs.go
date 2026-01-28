@@ -4460,6 +4460,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Max"
                 },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -4570,6 +4574,7 @@ const docTemplate = `{
             "required": [
                 "birthdate",
                 "first_name",
+                "gender",
                 "last_name"
             ],
             "properties": {
@@ -4581,6 +4586,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Emma"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "female"
                 },
                 "last_name": {
                     "type": "string",
@@ -4640,6 +4649,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Emma"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "female"
                 },
                 "last_name": {
                     "type": "string",
@@ -4725,6 +4738,10 @@ const docTemplate = `{
                 "first_name": {
                     "type": "string",
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "id": {
                     "type": "integer",
@@ -4992,6 +5009,7 @@ const docTemplate = `{
             "required": [
                 "birthdate",
                 "first_name",
+                "gender",
                 "last_name"
             ],
             "properties": {
@@ -5003,6 +5021,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "last_name": {
                     "type": "string",
@@ -5022,6 +5044,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "last_name": {
                     "type": "string",

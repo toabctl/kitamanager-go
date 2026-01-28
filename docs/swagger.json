@@ -4454,6 +4454,10 @@
                     "type": "string",
                     "example": "Max"
                 },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -4564,6 +4568,7 @@
             "required": [
                 "birthdate",
                 "first_name",
+                "gender",
                 "last_name"
             ],
             "properties": {
@@ -4575,6 +4580,10 @@
                     "type": "string",
                     "maxLength": 255,
                     "example": "Emma"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "female"
                 },
                 "last_name": {
                     "type": "string",
@@ -4634,6 +4643,10 @@
                     "type": "string",
                     "maxLength": 255,
                     "example": "Emma"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "female"
                 },
                 "last_name": {
                     "type": "string",
@@ -4719,6 +4732,10 @@
                 "first_name": {
                     "type": "string",
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "id": {
                     "type": "integer",
@@ -4986,6 +5003,7 @@
             "required": [
                 "birthdate",
                 "first_name",
+                "gender",
                 "last_name"
             ],
             "properties": {
@@ -4997,6 +5015,10 @@
                     "type": "string",
                     "maxLength": 255,
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "last_name": {
                     "type": "string",
@@ -5016,6 +5038,10 @@
                     "type": "string",
                     "maxLength": 255,
                     "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "last_name": {
                     "type": "string",

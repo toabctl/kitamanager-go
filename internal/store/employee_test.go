@@ -103,13 +103,13 @@ func TestEmployeeStore_FindByOrganization(t *testing.T) {
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	db.Create(&models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp1", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp1", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 	db.Create(&models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp2", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp2", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 	db.Create(&models.Employee{
-		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp3", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp3", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
 	employees, total, err := store.FindByOrganization(org1.ID, 100, 0)

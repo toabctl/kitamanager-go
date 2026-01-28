@@ -37,10 +37,10 @@ func TestChildStore_FindAll(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Child1", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child1", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
 	children, total, err := store.FindAll(100, 0)
@@ -90,13 +90,13 @@ func TestChildStore_FindByOrganization(t *testing.T) {
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Child1", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Child1", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Child2", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Child2", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 	db.Create(&models.Child{
-		Person: models.Person{OrganizationID: org2.ID, FirstName: "Child3", LastName: "Last", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org2.ID, FirstName: "Child3", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
 	children, total, err := store.FindByOrganization(org1.ID, 100, 0)
