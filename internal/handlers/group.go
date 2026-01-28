@@ -34,22 +34,15 @@ func NewGroupHandler(service *service.GroupService) *GroupHandler {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/groups [get]
 func (h *GroupHandler) List(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	groups, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
 	if err != nil {
@@ -75,19 +68,12 @@ func (h *GroupHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/groups/{groupId} [get]
 func (h *GroupHandler) Get(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, groupID, ok := parseOrgAndResourceID(c, "groupId")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "groupId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	group, err := h.service.GetByIDAndOrg(c.Request.Context(), id, orgID)
+	group, err := h.service.GetByIDAndOrg(c.Request.Context(), groupID, orgID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -117,9 +103,8 @@ type GroupCreateRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/groups [post]
 func (h *GroupHandler) Create(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
@@ -129,14 +114,11 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		return
 	}
 
-	userEmail, _ := c.Get("userEmail")
-	createdBy, _ := userEmail.(string)
-
 	group, err := h.service.Create(c.Request.Context(), &service.GroupCreateRequest{
 		Name:           req.Name,
 		OrganizationID: orgID,
 		Active:         req.Active,
-	}, createdBy)
+	}, getCreatedBy(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -168,15 +150,8 @@ type GroupUpdateRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/groups/{groupId} [put]
 func (h *GroupHandler) Update(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "groupId")
-	if err != nil {
-		respondError(c, err)
+	orgID, groupID, ok := parseOrgAndResourceID(c, "groupId")
+	if !ok {
 		return
 	}
 
@@ -186,7 +161,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		return
 	}
 
-	group, err := h.service.UpdateByIDAndOrg(c.Request.Context(), id, orgID, &service.GroupUpdateRequest{
+	group, err := h.service.UpdateByIDAndOrg(c.Request.Context(), groupID, orgID, &service.GroupUpdateRequest{
 		Name:   req.Name,
 		Active: req.Active,
 	})
@@ -214,19 +189,12 @@ func (h *GroupHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/groups/{groupId} [delete]
 func (h *GroupHandler) Delete(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, groupID, ok := parseOrgAndResourceID(c, "groupId")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "groupId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteByIDAndOrg(c.Request.Context(), id, orgID); err != nil {
+	if err := h.service.DeleteByIDAndOrg(c.Request.Context(), groupID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}

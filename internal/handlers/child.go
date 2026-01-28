@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,22 +35,15 @@ func NewChildHandler(service *service.ChildService) *ChildHandler {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children [get]
 func (h *ChildHandler) List(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	children, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
 	if err != nil {
@@ -77,15 +69,8 @@ func (h *ChildHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id} [get]
 func (h *ChildHandler) Get(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -113,9 +98,8 @@ func (h *ChildHandler) Get(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children [post]
 func (h *ChildHandler) Create(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
@@ -151,15 +135,8 @@ func (h *ChildHandler) Create(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id} [put]
 func (h *ChildHandler) Update(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -193,15 +170,8 @@ func (h *ChildHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id} [delete]
 func (h *ChildHandler) Delete(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -229,15 +199,8 @@ func (h *ChildHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts [get]
 func (h *ChildHandler) ListContracts(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -265,15 +228,8 @@ func (h *ChildHandler) ListContracts(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/current [get]
 func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -313,15 +269,8 @@ func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts [post]
 func (h *ChildHandler) CreateContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -331,7 +280,7 @@ func (h *ChildHandler) CreateContract(c *gin.Context) {
 		return
 	}
 
-	contract, err := h.service.CreateContract(c.Request.Context(), id, orgID, &req)
+	contract, err := h.service.CreateContract(c.Request.Context(), childID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -360,21 +309,8 @@ func (h *ChildHandler) CreateContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/{contractId} [put]
 func (h *ChildHandler) UpdateContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -384,7 +320,7 @@ func (h *ChildHandler) UpdateContract(c *gin.Context) {
 		return
 	}
 
-	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, id, orgID, &req)
+	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, childID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -409,25 +345,12 @@ func (h *ChildHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/{contractId} [delete]
 func (h *ChildHandler) DeleteContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteContract(c.Request.Context(), contractID, id, orgID); err != nil {
+	if err := h.service.DeleteContract(c.Request.Context(), contractID, childID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -450,24 +373,14 @@ func (h *ChildHandler) DeleteContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/statistics/age-distribution [get]
 func (h *ChildHandler) GetAgeDistribution(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	// Parse date parameter, default to today
-	dateStr := c.Query("date")
-	var date time.Time
-	if dateStr == "" {
-		date = time.Now()
-	} else {
-		var parseErr error
-		date, parseErr = time.Parse("2006-01-02", dateStr)
-		if parseErr != nil {
-			respondError(c, apperror.BadRequest("invalid date format, expected YYYY-MM-DD"))
-			return
-		}
+	date, ok := parseOptionalDate(c, "date")
+	if !ok {
+		return
 	}
 
 	stats, err := h.service.GetAgeDistribution(c.Request.Context(), orgID, date)
@@ -495,37 +408,23 @@ func (h *ChildHandler) GetAgeDistribution(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/statistics/contract-count-by-month [get]
 func (h *ChildHandler) GetContractCountByMonth(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
 	currentYear := time.Now().Year()
 
-	// Parse min_year parameter, default to current year - 3
-	minYear := currentYear - 3
-	if minYearStr := c.Query("min_year"); minYearStr != "" {
-		parsedYear, parseErr := strconv.Atoi(minYearStr)
-		if parseErr != nil {
-			respondError(c, apperror.BadRequest("min_year must be an integer"))
-			return
-		}
-		minYear = parsedYear
+	minYear, ok := parseOptionalInt(c, "min_year", currentYear-3)
+	if !ok {
+		return
 	}
 
-	// Parse max_year parameter, default to current year + 1
-	maxYear := currentYear + 1
-	if maxYearStr := c.Query("max_year"); maxYearStr != "" {
-		parsedYear, parseErr := strconv.Atoi(maxYearStr)
-		if parseErr != nil {
-			respondError(c, apperror.BadRequest("max_year must be an integer"))
-			return
-		}
-		maxYear = parsedYear
+	maxYear, ok := parseOptionalInt(c, "max_year", currentYear+1)
+	if !ok {
+		return
 	}
 
-	// Validate year range
 	if minYear > maxYear {
 		respondError(c, apperror.BadRequest("min_year cannot be greater than max_year"))
 		return
@@ -556,24 +455,14 @@ func (h *ChildHandler) GetContractCountByMonth(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/funding [get]
 func (h *ChildHandler) GetFunding(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	// Parse date parameter, default to today
-	dateStr := c.Query("date")
-	var date time.Time
-	if dateStr == "" {
-		date = time.Now()
-	} else {
-		var parseErr error
-		date, parseErr = time.Parse("2006-01-02", dateStr)
-		if parseErr != nil {
-			respondError(c, apperror.BadRequest("invalid date format, expected YYYY-MM-DD"))
-			return
-		}
+	date, ok := parseOptionalDate(c, "date")
+	if !ok {
+		return
 	}
 
 	funding, err := h.service.CalculateFunding(c.Request.Context(), orgID, date)

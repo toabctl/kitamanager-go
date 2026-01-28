@@ -34,22 +34,15 @@ func NewEmployeeHandler(service *service.EmployeeService) *EmployeeHandler {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees [get]
 func (h *EmployeeHandler) List(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	employees, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
 	if err != nil {
@@ -75,15 +68,8 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id} [get]
 func (h *EmployeeHandler) Get(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -111,9 +97,8 @@ func (h *EmployeeHandler) Get(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees [post]
 func (h *EmployeeHandler) Create(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
@@ -149,15 +134,8 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id} [put]
 func (h *EmployeeHandler) Update(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -191,15 +169,8 @@ func (h *EmployeeHandler) Update(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id} [delete]
 func (h *EmployeeHandler) Delete(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -227,15 +198,8 @@ func (h *EmployeeHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts [get]
 func (h *EmployeeHandler) ListContracts(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -263,15 +227,8 @@ func (h *EmployeeHandler) ListContracts(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/current [get]
 func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, id, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -311,15 +268,8 @@ func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts [post]
 func (h *EmployeeHandler) CreateContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, ok := parseOrgAndResourceID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -329,7 +279,7 @@ func (h *EmployeeHandler) CreateContract(c *gin.Context) {
 		return
 	}
 
-	contract, err := h.service.CreateContract(c.Request.Context(), id, orgID, &req)
+	contract, err := h.service.CreateContract(c.Request.Context(), employeeID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -354,25 +304,12 @@ func (h *EmployeeHandler) CreateContract(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [get]
 func (h *EmployeeHandler) GetContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contract, err := h.service.GetContractByID(c.Request.Context(), contractID, id, orgID)
+	contract, err := h.service.GetContractByID(c.Request.Context(), contractID, employeeID, orgID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -401,21 +338,8 @@ func (h *EmployeeHandler) GetContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [put]
 func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -425,7 +349,7 @@ func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
 		return
 	}
 
-	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, id, orgID, &req)
+	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, employeeID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -450,25 +374,12 @@ func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [delete]
 func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteContract(c.Request.Context(), contractID, id, orgID); err != nil {
+	if err := h.service.DeleteContract(c.Request.Context(), contractID, employeeID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -492,25 +403,12 @@ func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties [get]
 func (h *EmployeeHandler) ListContractProperties(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	properties, err := h.service.ListContractProperties(c.Request.Context(), contractID, id, orgID)
+	properties, err := h.service.ListContractProperties(c.Request.Context(), contractID, employeeID, orgID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -538,21 +436,8 @@ func (h *EmployeeHandler) ListContractProperties(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties [post]
 func (h *EmployeeHandler) CreateContractProperty(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -562,7 +447,7 @@ func (h *EmployeeHandler) CreateContractProperty(c *gin.Context) {
 		return
 	}
 
-	property, err := h.service.CreateContractProperty(c.Request.Context(), contractID, id, orgID, &req)
+	property, err := h.service.CreateContractProperty(c.Request.Context(), contractID, employeeID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -590,27 +475,8 @@ func (h *EmployeeHandler) CreateContractProperty(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties/{propId} [put]
 func (h *EmployeeHandler) UpdateContractProperty(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	propID, err := parseID(c, "propId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, propID, ok := parseOrgResourceContractAndPropertyID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -620,7 +486,7 @@ func (h *EmployeeHandler) UpdateContractProperty(c *gin.Context) {
 		return
 	}
 
-	property, err := h.service.UpdateContractProperty(c.Request.Context(), propID, contractID, id, orgID, &req)
+	property, err := h.service.UpdateContractProperty(c.Request.Context(), propID, contractID, employeeID, orgID, &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -647,31 +513,12 @@ func (h *EmployeeHandler) UpdateContractProperty(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties/{propId} [delete]
 func (h *EmployeeHandler) DeleteContractProperty(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, employeeID, contractID, propID, ok := parseOrgResourceContractAndPropertyID(c, "id")
+	if !ok {
 		return
 	}
 
-	id, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	contractID, err := parseID(c, "contractId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	propID, err := parseID(c, "propId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteContractProperty(c.Request.Context(), propID, contractID, id, orgID); err != nil {
+	if err := h.service.DeleteContractProperty(c.Request.Context(), propID, contractID, employeeID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}

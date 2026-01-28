@@ -33,16 +33,10 @@ func NewGovernmentFundingHandler(service *service.GovernmentFundingService) *Gov
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/government-fundings [get]
 func (h *GovernmentFundingHandler) List(c *gin.Context) {
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	fundings, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
 	if err != nil {

@@ -32,16 +32,10 @@ func NewOrganizationHandler(service *service.OrganizationService) *OrganizationH
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations [get]
 func (h *OrganizationHandler) List(c *gin.Context) {
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	organizations, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
 	if err != nil {
@@ -108,14 +102,11 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	userEmail, _ := c.Get("userEmail")
-	createdBy, _ := userEmail.(string)
-
 	organization, err := h.service.Create(c.Request.Context(), &service.OrganizationCreateRequest{
 		Name:   req.Name,
 		Active: req.Active,
 		State:  req.State,
-	}, createdBy)
+	}, getCreatedBy(c))
 	if err != nil {
 		respondError(c, err)
 		return

@@ -36,16 +36,10 @@ func NewUserHandler(service *service.UserService, userGroupService *service.User
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/users [get]
 func (h *UserHandler) List(c *gin.Context) {
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	users, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
 	if err != nil {
@@ -72,22 +66,15 @@ func (h *UserHandler) List(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/organizations/{orgId}/users [get]
 func (h *UserHandler) ListByOrganization(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
+	orgID, ok := parseOrgID(c)
+	if !ok {
 		return
 	}
 
-	var params models.PaginationParams
-	if err := c.ShouldBindQuery(&params); err != nil {
-		respondError(c, apperror.BadRequest("invalid pagination parameters"))
+	params, ok := parsePagination(c)
+	if !ok {
 		return
 	}
-	if err := params.Validate(); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-	params.SetDefaults()
 
 	users, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
 	if err != nil {
@@ -147,10 +134,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
-	userEmail, _ := c.Get("userEmail")
-	createdBy, _ := userEmail.(string)
-
-	user, err := h.service.Create(c.Request.Context(), &req, createdBy)
+	user, err := h.service.Create(c.Request.Context(), &req, getCreatedBy(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -253,10 +237,7 @@ func (h *UserHandler) AddToGroup(c *gin.Context) {
 		return
 	}
 
-	userEmail, _ := c.Get("userEmail")
-	createdBy, _ := userEmail.(string)
-
-	resp, err := h.userGroupService.AddUserToGroup(c.Request.Context(), userID, req.GroupID, req.Role, createdBy)
+	resp, err := h.userGroupService.AddUserToGroup(c.Request.Context(), userID, req.GroupID, req.Role, getCreatedBy(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -453,10 +434,7 @@ func (h *UserHandler) AddToOrganization(c *gin.Context) {
 		return
 	}
 
-	userEmail, _ := c.Get("userEmail")
-	createdBy, _ := userEmail.(string)
-
-	resp, err := h.userGroupService.AddUserToOrganization(c.Request.Context(), userID, req.OrganizationID, createdBy)
+	resp, err := h.userGroupService.AddUserToOrganization(c.Request.Context(), userID, req.OrganizationID, getCreatedBy(c))
 	if err != nil {
 		respondError(c, err)
 		return
