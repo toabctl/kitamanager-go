@@ -332,6 +332,7 @@ jobs:
           SEED_ADMIN_PASSWORD=supersecret \
           SEED_ADMIN_NAME=admin \
           SEED_RBAC_POLICIES=true \
+          SEED_TEST_DATA=true \
           LOGIN_RATE_LIMIT_PER_MINUTE=0 \
           GOVERNMENT_FUNDING_SEED_PATH=configs/government-fundings/berlin.yaml \
           GOVERNMENT_FUNDING_SEED_NAME=Berlin \

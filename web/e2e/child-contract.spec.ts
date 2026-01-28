@@ -67,7 +67,7 @@ test.describe('Child Contract Management', () => {
     await page.getByRole('button', { name: 'Save' }).click()
 
     // Wait for dialog to close (confirms success)
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 
     // Verify child appears in table
     const childFullName = `${childFirstName} ${childLastName}`
@@ -104,7 +104,7 @@ test.describe('Child Contract Management', () => {
     await page.getByRole('button', { name: 'Save' }).click()
 
     // Wait for dialog to close (confirms success)
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 
     // Verify the attribute shows in the table
     await expect(childRow.getByText('ganztags')).toBeVisible({ timeout: 5000 })
@@ -157,7 +157,7 @@ test.describe('Child Contract Management', () => {
     await page.getByRole('button', { name: 'Save' }).click()
 
     // Wait for dialog to close (indicates save completed successfully)
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 
     // =====================================
     // Step 4: Verify contract history
@@ -184,7 +184,7 @@ test.describe('Child Contract Management', () => {
 
     // Close history dialog (click the footer Close button, not the header X)
     await historyDialog.locator('button:has-text("Close"):not(.p-dialog-close-button)').click()
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 5000 })
   })
 
   test('should allow creating contract without ending existing when unchecked', async ({
@@ -219,7 +219,7 @@ test.describe('Child Contract Management', () => {
       .click()
     await page.getByRole('button', { name: 'Save' }).click()
     // Wait for dialog to close (confirms child created)
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 
     // Add first contract
     const childRow = page.getByRole('row').filter({ hasText: `Test ${childName2}` })
@@ -230,7 +230,7 @@ test.describe('Child Contract Management', () => {
     await page.locator('.p-datepicker-calendar td.p-datepicker-today span').click()
     await page.getByRole('button', { name: 'Save' }).click()
     // Wait for dialog to close (confirms contract created)
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 
     // Try to add overlapping contract with checkbox unchecked
     await childRow.locator('button[title="Add Contract"]').click()

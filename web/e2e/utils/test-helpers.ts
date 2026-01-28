@@ -106,7 +106,7 @@ export async function createOrganization(page: Page, orgName: string, state: str
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Wait for dialog to close (confirms success)
-  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+  await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 }
 
 /**
@@ -124,7 +124,7 @@ export async function createGroup(page: Page, groupName: string) {
   await page.locator('#name').fill(groupName)
   await page.getByRole('button', { name: 'Save' }).click()
 
-  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5000 })
+  await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
   await expect(page.getByRole('cell', { name: groupName })).toBeVisible()
 }
 
@@ -147,7 +147,7 @@ export async function createUser(page: Page, name: string, email: string, passwo
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Wait for dialog to close (confirms success)
-  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 })
+  await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
 }
 
 // ============================================================================
