@@ -96,12 +96,6 @@ func (h *GovernmentFundingHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, funding)
 }
 
-// GovernmentFundingCreateRequest represents the request body for creating a government funding
-type GovernmentFundingCreateRequest struct {
-	Name  string `json:"name" binding:"required,max=255" example:"Berlin Kita Funding"`
-	State string `json:"state" binding:"required" example:"berlin"`
-}
-
 // Create godoc
 // @Summary Create a new government funding
 // @Description Create a new government funding (superadmin only)
@@ -109,7 +103,7 @@ type GovernmentFundingCreateRequest struct {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body GovernmentFundingCreateRequest true "GovernmentFunding data"
+// @Param request body models.GovernmentFundingCreateRequest true "GovernmentFunding data"
 // @Success 201 {object} models.GovernmentFunding
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
@@ -117,7 +111,7 @@ type GovernmentFundingCreateRequest struct {
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/government-fundings [post]
 func (h *GovernmentFundingHandler) Create(c *gin.Context) {
-	var req GovernmentFundingCreateRequest
+	var req models.GovernmentFundingCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
 		return
@@ -135,11 +129,6 @@ func (h *GovernmentFundingHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, funding)
 }
 
-// GovernmentFundingUpdateRequest represents the request body for updating a government funding
-type GovernmentFundingUpdateRequest struct {
-	Name *string `json:"name" binding:"omitempty,max=255" example:"Berlin Updated"`
-}
-
 // Update godoc
 // @Summary Update a government funding
 // @Description Update an existing government funding by ID (superadmin only)
@@ -148,7 +137,7 @@ type GovernmentFundingUpdateRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "GovernmentFunding ID"
-// @Param request body GovernmentFundingUpdateRequest true "GovernmentFunding data"
+// @Param request body models.GovernmentFundingUpdateRequest true "GovernmentFunding data"
 // @Success 200 {object} models.GovernmentFunding
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
@@ -163,7 +152,7 @@ func (h *GovernmentFundingHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req GovernmentFundingUpdateRequest
+	var req models.GovernmentFundingUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
 		return

@@ -26,7 +26,7 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 
 	// Test Create
 	t.Run("Create", func(t *testing.T) {
-		body := GovernmentFundingCreateRequest{Name: "Berlin Kita Funding", State: "berlin"}
+		body := models.GovernmentFundingCreateRequest{Name: "Berlin Kita Funding", State: "berlin"}
 		w := performRequest(r, "POST", "/fundings", body)
 
 		if w.Code != http.StatusCreated {
@@ -76,7 +76,7 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 	// Test Update
 	t.Run("Update", func(t *testing.T) {
 		name := "Berlin Updated"
-		body := GovernmentFundingUpdateRequest{Name: &name}
+		body := models.GovernmentFundingUpdateRequest{Name: &name}
 		w := performRequest(r, "PUT", "/fundings/1", body)
 
 		if w.Code != http.StatusOK {

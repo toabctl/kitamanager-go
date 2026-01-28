@@ -168,7 +168,7 @@ func TestUserHandler_Get(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.GET("/users/:uid", handler.Get)
+	r.GET("/users/:userId", handler.Get)
 
 	w := performRequest(r, "GET", "/users/1", nil)
 
@@ -191,7 +191,7 @@ func TestUserHandler_Get_NotFound(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.GET("/users/:uid", handler.Get)
+	r.GET("/users/:userId", handler.Get)
 
 	w := performRequest(r, "GET", "/users/999", nil)
 
@@ -263,7 +263,7 @@ func TestUserHandler_Update(t *testing.T) {
 	createTestUser(t, db, "Original Name", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid", handler.Update)
+	r.PUT("/users/:userId", handler.Update)
 
 	body := models.UserUpdateRequest{
 		Name: "Updated Name",
@@ -292,7 +292,7 @@ func TestUserHandler_Delete(t *testing.T) {
 	createTestUser(t, db, "To Delete", "delete@example.com", "password")
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid", handler.Delete)
+	r.DELETE("/users/:userId", handler.Delete)
 
 	w := performRequest(r, "DELETE", "/users/1", nil)
 
@@ -321,7 +321,7 @@ func TestUserHandler_AddToGroup(t *testing.T) {
 	_ = org // org is used to create the group
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/groups", handler.AddToGroup)
+	r.POST("/users/:userId/groups", handler.AddToGroup)
 
 	body := models.AddUserToGroupRequest{
 		GroupID: group.ID,
@@ -360,7 +360,7 @@ func TestUserHandler_RemoveFromGroup(t *testing.T) {
 	}
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/groups/:gid", handler.RemoveFromGroup)
+	r.DELETE("/users/:userId/groups/:groupId", handler.RemoveFromGroup)
 
 	w := performRequest(r, "DELETE", fmt.Sprintf("/users/%d/groups/%d", user.ID, group.ID), nil)
 
@@ -388,7 +388,7 @@ func TestUserHandler_AddToOrganization(t *testing.T) {
 	defaultGroup := createTestGroupWithOrgAndDefault(t, db, "Members", org.ID, true)
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/organizations", handler.AddToOrganization)
+	r.POST("/users/:userId/organizations", handler.AddToOrganization)
 
 	body := AddToOrganizationRequest{
 		OrganizationID: org.ID,
@@ -426,7 +426,7 @@ func TestUserHandler_RemoveFromOrganization(t *testing.T) {
 	}
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/organizations/:oid", handler.RemoveFromOrganization)
+	r.DELETE("/users/:userId/organizations/:orgId", handler.RemoveFromOrganization)
 
 	w := performRequest(r, "DELETE", "/users/1/organizations/1", nil)
 
@@ -451,7 +451,7 @@ func TestUserHandler_Get_InvalidID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.GET("/users/:uid", handler.Get)
+	r.GET("/users/:userId", handler.Get)
 
 	w := performRequest(r, "GET", "/users/invalid", nil)
 
@@ -467,7 +467,7 @@ func TestUserHandler_Get_ZeroID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.GET("/users/:uid", handler.Get)
+	r.GET("/users/:userId", handler.Get)
 
 	w := performRequest(r, "GET", "/users/0", nil)
 
@@ -578,7 +578,7 @@ func TestUserHandler_Update_NotFound(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid", handler.Update)
+	r.PUT("/users/:userId", handler.Update)
 
 	body := models.UserUpdateRequest{
 		Name: "Updated Name",
@@ -598,7 +598,7 @@ func TestUserHandler_Update_InvalidID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid", handler.Update)
+	r.PUT("/users/:userId", handler.Update)
 
 	body := models.UserUpdateRequest{
 		Name: "Updated Name",
@@ -618,7 +618,7 @@ func TestUserHandler_Delete_NotFound(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid", handler.Delete)
+	r.DELETE("/users/:userId", handler.Delete)
 
 	w := performRequest(r, "DELETE", "/users/999", nil)
 
@@ -635,7 +635,7 @@ func TestUserHandler_Delete_InvalidID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid", handler.Delete)
+	r.DELETE("/users/:userId", handler.Delete)
 
 	w := performRequest(r, "DELETE", "/users/invalid", nil)
 
@@ -674,7 +674,7 @@ func TestUserHandler_AddToGroup_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/groups", handler.AddToGroup)
+	r.POST("/users/:userId/groups", handler.AddToGroup)
 
 	body := models.AddUserToGroupRequest{
 		GroupID: 1,
@@ -697,7 +697,7 @@ func TestUserHandler_AddToGroup_UserNotFound(t *testing.T) {
 	group := createTestGroup(t, db, "Test Group")
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/groups", handler.AddToGroup)
+	r.POST("/users/:userId/groups", handler.AddToGroup)
 
 	body := models.AddUserToGroupRequest{
 		GroupID: group.ID,
@@ -720,7 +720,7 @@ func TestUserHandler_AddToGroup_GroupNotFound(t *testing.T) {
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/groups", handler.AddToGroup)
+	r.POST("/users/:userId/groups", handler.AddToGroup)
 
 	body := models.AddUserToGroupRequest{
 		GroupID: 999, // Non-existent group
@@ -741,7 +741,7 @@ func TestUserHandler_RemoveFromGroup_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/groups/:gid", handler.RemoveFromGroup)
+	r.DELETE("/users/:userId/groups/:groupId", handler.RemoveFromGroup)
 
 	w := performRequest(r, "DELETE", "/users/invalid/groups/1", nil)
 
@@ -759,7 +759,7 @@ func TestUserHandler_RemoveFromGroup_InvalidGroupID(t *testing.T) {
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/groups/:gid", handler.RemoveFromGroup)
+	r.DELETE("/users/:userId/groups/:groupId", handler.RemoveFromGroup)
 
 	w := performRequest(r, "DELETE", "/users/1/groups/invalid", nil)
 
@@ -775,7 +775,7 @@ func TestUserHandler_AddToOrganization_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/organizations", handler.AddToOrganization)
+	r.POST("/users/:userId/organizations", handler.AddToOrganization)
 
 	body := AddToOrganizationRequest{
 		OrganizationID: 1,
@@ -797,7 +797,7 @@ func TestUserHandler_AddToOrganization_UserNotFound(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/organizations", handler.AddToOrganization)
+	r.POST("/users/:userId/organizations", handler.AddToOrganization)
 
 	body := AddToOrganizationRequest{
 		OrganizationID: org.ID,
@@ -817,7 +817,7 @@ func TestUserHandler_RemoveFromOrganization_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/organizations/:oid", handler.RemoveFromOrganization)
+	r.DELETE("/users/:userId/organizations/:orgId", handler.RemoveFromOrganization)
 
 	w := performRequest(r, "DELETE", "/users/invalid/organizations/1", nil)
 
@@ -835,7 +835,7 @@ func TestUserHandler_RemoveFromOrganization_InvalidOrgID(t *testing.T) {
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/organizations/:oid", handler.RemoveFromOrganization)
+	r.DELETE("/users/:userId/organizations/:orgId", handler.RemoveFromOrganization)
 
 	w := performRequest(r, "DELETE", "/users/1/organizations/invalid", nil)
 
@@ -972,7 +972,7 @@ func TestUserHandler_UpdateGroupRole(t *testing.T) {
 	db.Create(ug)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := models.UpdateUserGroupRoleRequest{
 		Role: models.RoleAdmin,
@@ -1012,7 +1012,7 @@ func TestUserHandler_UpdateGroupRole_InvalidRole(t *testing.T) {
 	db.Create(ug)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := map[string]interface{}{
 		"role": "invalid_role",
@@ -1034,7 +1034,7 @@ func TestUserHandler_UpdateGroupRole_UserNotFound(t *testing.T) {
 	group := createTestGroup(t, db, "Test Group")
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := models.UpdateUserGroupRoleRequest{
 		Role: models.RoleAdmin,
@@ -1059,7 +1059,7 @@ func TestUserHandler_UpdateGroupRole_UserNotInGroup(t *testing.T) {
 	// User is NOT added to group
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := models.UpdateUserGroupRoleRequest{
 		Role: models.RoleAdmin,
@@ -1079,7 +1079,7 @@ func TestUserHandler_UpdateGroupRole_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := models.UpdateUserGroupRoleRequest{
 		Role: models.RoleAdmin,
@@ -1101,7 +1101,7 @@ func TestUserHandler_UpdateGroupRole_InvalidGroupID(t *testing.T) {
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/groups/:gid", handler.UpdateGroupRole)
+	r.PUT("/users/:userId/groups/:groupId", handler.UpdateGroupRole)
 
 	body := models.UpdateUserGroupRoleRequest{
 		Role: models.RoleAdmin,
@@ -1132,7 +1132,7 @@ func TestUserHandler_GetMemberships(t *testing.T) {
 	db.Create(&models.UserGroup{UserID: user.ID, GroupID: group2.ID, Role: models.RoleMember, CreatedBy: "test@example.com"})
 
 	r := setupTestRouter()
-	r.GET("/users/:uid/memberships", handler.GetMemberships)
+	r.GET("/users/:userId/memberships", handler.GetMemberships)
 
 	w := performRequest(r, "GET", fmt.Sprintf("/users/%d/memberships", user.ID), nil)
 
@@ -1164,7 +1164,7 @@ func TestUserHandler_GetMemberships_WithEffectiveRole(t *testing.T) {
 	db.Create(&models.UserGroup{UserID: user.ID, GroupID: group2.ID, Role: models.RoleMember, CreatedBy: "test@example.com"})
 
 	r := setupTestRouter()
-	r.GET("/users/:uid/memberships", handler.GetMemberships)
+	r.GET("/users/:userId/memberships", handler.GetMemberships)
 
 	w := performRequest(r, "GET", fmt.Sprintf("/users/%d/memberships", user.ID), nil)
 
@@ -1190,7 +1190,7 @@ func TestUserHandler_GetMemberships_UserNotFound(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.GET("/users/:uid/memberships", handler.GetMemberships)
+	r.GET("/users/:userId/memberships", handler.GetMemberships)
 
 	w := performRequest(r, "GET", "/users/999/memberships", nil)
 
@@ -1208,7 +1208,7 @@ func TestUserHandler_GetMemberships_Empty(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.GET("/users/:uid/memberships", handler.GetMemberships)
+	r.GET("/users/:userId/memberships", handler.GetMemberships)
 
 	w := performRequest(r, "GET", fmt.Sprintf("/users/%d/memberships", user.ID), nil)
 
@@ -1231,7 +1231,7 @@ func TestUserHandler_GetMemberships_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.GET("/users/:uid/memberships", handler.GetMemberships)
+	r.GET("/users/:userId/memberships", handler.GetMemberships)
 
 	w := performRequest(r, "GET", "/users/invalid/memberships", nil)
 
@@ -1251,7 +1251,7 @@ func TestUserHandler_SetSuperAdmin_True(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/superadmin", handler.SetSuperAdmin)
+	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	body := models.SetSuperAdminRequest{
 		IsSuperAdmin: true,
@@ -1282,7 +1282,7 @@ func TestUserHandler_SetSuperAdmin_False(t *testing.T) {
 	db.Model(&models.User{}).Where("id = ?", user.ID).Update("is_superadmin", true)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/superadmin", handler.SetSuperAdmin)
+	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	body := models.SetSuperAdminRequest{
 		IsSuperAdmin: false,
@@ -1309,7 +1309,7 @@ func TestUserHandler_SetSuperAdmin_UserNotFound(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/superadmin", handler.SetSuperAdmin)
+	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	body := models.SetSuperAdminRequest{
 		IsSuperAdmin: true,
@@ -1329,7 +1329,7 @@ func TestUserHandler_SetSuperAdmin_InvalidUserID(t *testing.T) {
 	handler := NewUserHandler(userService, userGroupService)
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/superadmin", handler.SetSuperAdmin)
+	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	body := models.SetSuperAdminRequest{
 		IsSuperAdmin: true,
@@ -1351,7 +1351,7 @@ func TestUserHandler_SetSuperAdmin_MissingBody(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.PUT("/users/:uid/superadmin", handler.SetSuperAdmin)
+	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	// Send empty body
 	w := performRequest(r, "PUT", fmt.Sprintf("/users/%d/superadmin", user.ID), nil)
@@ -1372,7 +1372,7 @@ func TestUserHandler_AddToOrganization_OrgNotFound(t *testing.T) {
 	createTestUser(t, db, "Test User", "test@example.com", "password")
 
 	r := setupTestRouter()
-	r.POST("/users/:uid/organizations", handler.AddToOrganization)
+	r.POST("/users/:userId/organizations", handler.AddToOrganization)
 
 	body := AddToOrganizationRequest{
 		OrganizationID: 999, // Non-existent
@@ -1396,7 +1396,7 @@ func TestUserHandler_RemoveFromOrganization_UserNotFound(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	r := setupTestRouter()
-	r.DELETE("/users/:uid/organizations/:oid", handler.RemoveFromOrganization)
+	r.DELETE("/users/:userId/organizations/:orgId", handler.RemoveFromOrganization)
 
 	w := performRequest(r, "DELETE", fmt.Sprintf("/users/999/organizations/%d", org.ID), nil)
 

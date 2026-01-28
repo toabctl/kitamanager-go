@@ -91,37 +91,37 @@ func Setup(
 				users.GET("",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionRead),
 					userHandler.List)
-				users.GET("/:uid",
+				users.GET("/:userId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionRead),
 					userHandler.Get)
 				users.POST("",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionCreate),
 					userHandler.Create)
-				users.PUT("/:uid",
+				users.PUT("/:userId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.Update)
-				users.DELETE("/:uid",
+				users.DELETE("/:userId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionDelete),
 					userHandler.Delete)
-				users.POST("/:uid/groups",
+				users.POST("/:userId/groups",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.AddToGroup)
-				users.PUT("/:uid/groups/:gid",
+				users.PUT("/:userId/groups/:groupId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.UpdateGroupRole)
-				users.DELETE("/:uid/groups/:gid",
+				users.DELETE("/:userId/groups/:groupId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.RemoveFromGroup)
-				users.GET("/:uid/memberships",
+				users.GET("/:userId/memberships",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionRead),
 					userHandler.GetMemberships)
-				users.PUT("/:uid/superadmin",
+				users.PUT("/:userId/superadmin",
 					authzMiddleware.RequireSuperAdmin(),
 					userHandler.SetSuperAdmin)
-				users.POST("/:uid/organizations",
+				users.POST("/:userId/organizations",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.AddToOrganization)
-				users.DELETE("/:uid/organizations/:oid",
+				users.DELETE("/:userId/organizations/:orgId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
 					userHandler.RemoveFromOrganization)
 			}

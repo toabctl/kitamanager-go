@@ -103,7 +103,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.GovernmentFundingCreateRequest"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingCreateRequest"
                         }
                     }
                 ],
@@ -232,7 +232,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.GovernmentFundingUpdateRequest"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingUpdateRequest"
                         }
                     }
                 ],
@@ -3708,7 +3708,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}": {
+        "/api/v1/users/{userId}": {
             "get": {
                 "security": [
                     {
@@ -3730,7 +3730,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -3783,7 +3783,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
@@ -3851,7 +3851,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -3881,7 +3881,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/groups": {
+        "/api/v1/users/{userId}/groups": {
             "post": {
                 "security": [
                     {
@@ -3903,7 +3903,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
@@ -3957,7 +3957,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/groups/{gid}": {
+        "/api/v1/users/{userId}/groups/{groupId}": {
             "put": {
                 "security": [
                     {
@@ -3979,14 +3979,14 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
                         "description": "Group ID",
-                        "name": "gid",
+                        "name": "groupId",
                         "in": "path",
                         "required": true
                     },
@@ -4060,14 +4060,14 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
                         "description": "Group ID",
-                        "name": "gid",
+                        "name": "groupId",
                         "in": "path",
                         "required": true
                     }
@@ -4103,7 +4103,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/memberships": {
+        "/api/v1/users/{userId}/memberships": {
             "get": {
                 "security": [
                     {
@@ -4125,7 +4125,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -4164,7 +4164,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/organizations": {
+        "/api/v1/users/{userId}/organizations": {
             "post": {
                 "security": [
                     {
@@ -4186,7 +4186,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
@@ -4234,7 +4234,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/organizations/{oid}": {
+        "/api/v1/users/{userId}/organizations/{orgId}": {
             "delete": {
                 "security": [
                     {
@@ -4256,14 +4256,14 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
                         "description": "Organization ID",
-                        "name": "oid",
+                        "name": "orgId",
                         "in": "path",
                         "required": true
                     }
@@ -4299,7 +4299,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{uid}/superadmin": {
+        "/api/v1/users/{userId}/superadmin": {
             "put": {
                 "security": [
                     {
@@ -4321,7 +4321,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "uid",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     },
@@ -5061,6 +5061,24 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingCreateRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "state"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Berlin Kita Funding"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod": {
             "type": "object",
             "properties": {
@@ -5246,6 +5264,16 @@ const docTemplate = `{
                     "type": "number",
                     "minimum": 0,
                     "example": 0.261
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Berlin Updated"
                 }
             }
         },
@@ -5910,34 +5938,6 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "resource not found"
-                }
-            }
-        },
-        "internal_handlers.GovernmentFundingCreateRequest": {
-            "type": "object",
-            "required": [
-                "name",
-                "state"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "Berlin Kita Funding"
-                },
-                "state": {
-                    "type": "string",
-                    "example": "berlin"
-                }
-            }
-        },
-        "internal_handlers.GovernmentFundingUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "Berlin Updated"
                 }
             }
         },
