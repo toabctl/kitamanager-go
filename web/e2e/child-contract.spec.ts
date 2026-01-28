@@ -54,7 +54,7 @@ test.describe('Child Contract Management', () => {
 
     // Select gender
     await page.locator('#gender').click()
-    await page.getByRole('option', { name: 'Female' }).click()
+    await page.getByRole('option', { name: 'Female', exact: true }).click()
 
     // Set birthdate - click the calendar icon and select a date
     const birthdateInput = page.locator('#birthdate')
@@ -233,7 +233,7 @@ test.describe('Child Contract Management', () => {
     await page.getByLabel('Last Name').fill(childName2)
     // Select gender
     await page.locator('#gender').click()
-    await page.getByRole('option', { name: 'Male' }).click()
+    await page.getByRole('option', { name: 'Male', exact: true }).click()
     await page.locator('#birthdate').click()
     await page.waitForTimeout(300)
     await page
