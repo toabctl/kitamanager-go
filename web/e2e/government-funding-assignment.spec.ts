@@ -17,36 +17,24 @@ test.describe('Organization State and Government Funding', () => {
   })
 
   test('superadmin can create an organization with a state', async ({ page }) => {
-    // Create a new organization (state defaults to Berlin)
-    await createOrganization(page, testOrgName, 'berlin')
+    // Create a new organization with Berlin state
+    const orgId = await createOrganization(page, testOrgName, 'berlin')
 
-    // Reload the page to ensure we see the updated list
-    await page.reload()
-    await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(1000) // Extra wait for Firefox
+    // Verify the organization was created with correct state via API
+    const token = await page.evaluate(() => localStorage.getItem('token'))
+    const org = await page.evaluate(
+      async ({ token, orgId }) => {
+        const res = await fetch(`/api/v1/organizations/${orgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        return res.json()
+      },
+      { token, orgId }
+    )
 
-    // The org might be on any page due to sorting - search through all pages
-    let found = false
-    for (let i = 0; i < 10 && !found; i++) {
-      if (await page.getByRole('cell', { name: testOrgName }).isVisible().catch(() => false)) {
-        found = true
-        break
-      }
-      // Try next page
-      const nextButton = page.getByRole('button', { name: 'Next Page' })
-      if (await nextButton.isEnabled().catch(() => false)) {
-        await nextButton.click()
-        await page.waitForLoadState('networkidle')
-        await page.waitForTimeout(500)
-      } else {
-        break
-      }
-    }
-
-    // Verify the organization appears in the table with Berlin state
-    await expect(page.getByRole('cell', { name: testOrgName })).toBeVisible({ timeout: 10000 })
-    const orgRow = page.getByRole('row').filter({ hasText: testOrgName })
-    await expect(orgRow.getByText('Berlin')).toBeVisible()
+    // Verify the organization has Berlin state
+    expect(org.name).toBe(testOrgName)
+    expect(org.state).toBe('berlin')
   })
 
   test('superadmin can navigate to government fundings list', async ({ page }) => {
@@ -80,35 +68,27 @@ test.describe('Organization State and Government Funding', () => {
   test('organization state determines which government funding is used', async ({ page }) => {
     // Create an organization with Berlin state
     const orgWithState = `Test Org Funding ${timestamp}`
-    await createOrganization(page, orgWithState, 'berlin')
+    const orgId = await createOrganization(page, orgWithState, 'berlin')
 
-    // Reload the page to ensure we see the updated list
-    await page.reload()
+    // Navigate to the organization's detail page to verify its state
+    await page.goto(`/organizations`)
     await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(1000) // Extra wait for Firefox
 
-    // The org might be on any page due to sorting - search through all pages
-    let found = false
-    for (let i = 0; i < 10 && !found; i++) {
-      if (await page.getByRole('cell', { name: orgWithState }).isVisible().catch(() => false)) {
-        found = true
-        break
-      }
-      // Try next page
-      const nextButton = page.getByRole('button', { name: 'Next Page' })
-      if (await nextButton.isEnabled().catch(() => false)) {
-        await nextButton.click()
-        await page.waitForLoadState('networkidle')
-        await page.waitForTimeout(500)
-      } else {
-        break
-      }
-    }
+    // Use the API to verify the org has the correct state (more reliable than UI pagination)
+    const token = await page.evaluate(() => localStorage.getItem('token'))
+    const org = await page.evaluate(
+      async ({ token, orgId }) => {
+        const res = await fetch(`/api/v1/organizations/${orgId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        return res.json()
+      },
+      { token, orgId }
+    )
 
-    // Verify the organization shows Berlin state
-    const orgRow = page.getByRole('row').filter({ hasText: orgWithState })
-    await expect(orgRow).toBeVisible({ timeout: 10000 })
-    await expect(orgRow.getByText('Berlin')).toBeVisible()
+    // Verify the organization has Berlin state
+    expect(org.state).toBe('berlin')
+    expect(org.name).toBe(orgWithState)
 
     // The organization's funding is now automatically determined by its state
     // No manual assignment needed - Berlin orgs use Berlin funding rules

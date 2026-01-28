@@ -300,6 +300,7 @@ export async function getApiToken(page: Page, email: string, password: string): 
 /**
  * Get a user by email via the API.
  * Note: Requires superadmin token to see all users.
+ * Uses pagination to search through all users.
  */
 export async function getUserByEmail(
   page: Page,
@@ -308,18 +309,22 @@ export async function getUserByEmail(
 ): Promise<{ id: number; email: string; name: string }> {
   const response = await page.evaluate(
     async ({ token, email }) => {
-      const res = await fetch('/api/v1/users?limit=100', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!res.ok) {
-        throw new Error(`Failed to fetch users: ${res.status} ${res.statusText}`)
+      // Search through pages until we find the user (max 10 pages = 1000 users)
+      for (let pageNum = 1; pageNum <= 10; pageNum++) {
+        const res = await fetch(`/api/v1/users?limit=100&page=${pageNum}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (!res.ok) {
+          throw new Error(`Failed to fetch users: ${res.status} ${res.statusText}`)
+        }
+        const data = await res.json()
+        const users = data.data || data
+        if (!Array.isArray(users) || users.length === 0) break
+
+        const user = users.find((u: { email: string }) => u.email === email)
+        if (user) return user
       }
-      const data = await res.json()
-      const user = data.data.find((u: { email: string }) => u.email === email)
-      if (!user) {
-        throw new Error(`User with email ${email} not found in ${data.data.length} users`)
-      }
-      return user
+      throw new Error(`User with email ${email} not found`)
     },
     { token, email }
   )
