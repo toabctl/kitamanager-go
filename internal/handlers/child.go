@@ -425,6 +425,50 @@ func (h *ChildHandler) DeleteContract(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// GetAgeDistribution godoc
+// @Summary Get children age distribution
+// @Description Get age distribution of children with active contracts on the specified date
+// @Tags children
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param date query string false "Date for calculation (YYYY-MM-DD format, defaults to today)"
+// @Success 200 {object} models.AgeDistributionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/children/statistics/age-distribution [get]
+func (h *ChildHandler) GetAgeDistribution(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Parse date parameter, default to today
+	dateStr := c.Query("date")
+	var date time.Time
+	if dateStr == "" {
+		date = time.Now()
+	} else {
+		var parseErr error
+		date, parseErr = time.Parse("2006-01-02", dateStr)
+		if parseErr != nil {
+			respondError(c, apperror.BadRequest("invalid date format, expected YYYY-MM-DD"))
+			return
+		}
+	}
+
+	stats, err := h.service.GetAgeDistribution(c.Request.Context(), orgID, date)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
 // GetContractCountByMonth godoc
 // @Summary Get children contract count by month
 // @Description Get children contract counts per month for the specified year range

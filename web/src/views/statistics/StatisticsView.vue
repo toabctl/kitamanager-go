@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import ChildrenMonthlyChart from '@/components/ChildrenMonthlyChart.vue'
+import AgeDistributionChart from '@/components/AgeDistributionChart.vue'
 
 const { t } = useI18n()
 const uiStore = useUiStore()
@@ -19,6 +20,7 @@ const uiStore = useUiStore()
     </div>
 
     <div v-else class="charts-container">
+      <AgeDistributionChart :org-id="uiStore.selectedOrganizationId" />
       <ChildrenMonthlyChart :org-id="uiStore.selectedOrganizationId" />
     </div>
   </div>

@@ -24,6 +24,7 @@ import type {
   ChildContractUpdateRequest,
   ChildrenFundingResponse,
   ChildrenContractCountByMonthResponse,
+  AgeDistributionResponse,
   Role,
   UserGroupResponse,
   UserMembershipsResponse,
@@ -368,6 +369,15 @@ class ApiClient {
     if (maxYear !== undefined) params.max_year = maxYear
     const response = await this.client.get<ChildrenContractCountByMonthResponse>(
       `/organizations/${orgId}/children/statistics/contract-count-by-month`,
+      { params }
+    )
+    return response.data
+  }
+
+  async getAgeDistribution(orgId: number, date?: string): Promise<AgeDistributionResponse> {
+    const params = date ? { date } : {}
+    const response = await this.client.get<AgeDistributionResponse>(
+      `/organizations/${orgId}/children/statistics/age-distribution`,
       { params }
     )
     return response.data

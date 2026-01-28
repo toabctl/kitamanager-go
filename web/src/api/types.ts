@@ -345,3 +345,17 @@ export interface ContractCountByMonthYear {
   year: number
   counts: number[] // 12 values, one per month (Jan=0, Dec=11)
 }
+
+// Age distribution
+export interface AgeDistributionResponse {
+  date: string
+  total_count: number
+  distribution: AgeDistributionBucket[]
+}
+
+export interface AgeDistributionBucket {
+  age_label: string // e.g., "0", "1", "2", "3", "4", "5", "6+"
+  min_age: number
+  max_age?: number | null // null for open-ended (6+)
+  count: number
+}

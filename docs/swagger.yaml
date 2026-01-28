@@ -13,6 +13,36 @@ definitions:
     - group_id
     - role
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionBucket:
+    properties:
+      age_label:
+        description: e.g., "0", "1", "2", "3", "4", "5", "6+"
+        example: "3"
+        type: string
+      count:
+        example: 12
+        type: integer
+      max_age:
+        description: nil for open-ended (6+)
+        example: 3
+        type: integer
+      min_age:
+        example: 3
+        type: integer
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionResponse:
+    properties:
+      date:
+        example: "2025-01-28"
+        type: string
+      distribution:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionBucket'
+        type: array
+      total_count:
+        example: 50
+        type: integer
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.AssignGovernmentFundingRequest:
     properties:
       government_funding_id:
@@ -2417,6 +2447,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Calculate children funding
+      tags:
+      - children
+  /api/v1/organizations/{orgId}/children/statistics/age-distribution:
+    get:
+      consumes:
+      - application/json
+      description: Get age distribution of children with active contracts on the specified
+        date
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Date for calculation (YYYY-MM-DD format, defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get children age distribution
       tags:
       - children
   /api/v1/organizations/{orgId}/children/statistics/contract-count-by-month:

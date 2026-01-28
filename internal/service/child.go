@@ -456,6 +456,58 @@ func uniqueStrings(input []string) []string {
 	return result
 }
 
+// GetAgeDistribution returns age distribution of children with active contracts on the given date
+func (s *ChildService) GetAgeDistribution(ctx context.Context, orgID uint, date time.Time) (*models.AgeDistributionResponse, error) {
+	// Get children with active contracts on this date
+	children, err := s.store.FindByOrganizationWithContractOn(orgID, date)
+	if err != nil {
+		return nil, apperror.Internal("failed to fetch children")
+	}
+
+	// Define age buckets: 0, 1, 2, 3, 4, 5, 6+
+	buckets := []models.AgeDistributionBucket{
+		{AgeLabel: "0", MinAge: 0, MaxAge: intPtr(0), Count: 0},
+		{AgeLabel: "1", MinAge: 1, MaxAge: intPtr(1), Count: 0},
+		{AgeLabel: "2", MinAge: 2, MaxAge: intPtr(2), Count: 0},
+		{AgeLabel: "3", MinAge: 3, MaxAge: intPtr(3), Count: 0},
+		{AgeLabel: "4", MinAge: 4, MaxAge: intPtr(4), Count: 0},
+		{AgeLabel: "5", MinAge: 5, MaxAge: intPtr(5), Count: 0},
+		{AgeLabel: "6+", MinAge: 6, MaxAge: nil, Count: 0}, // Open-ended
+	}
+
+	totalCount := 0
+	for _, child := range children {
+		age := validation.CalculateAgeOnDate(child.Birthdate, date)
+		totalCount++
+
+		// Find matching bucket
+		for i := range buckets {
+			bucket := &buckets[i]
+			if bucket.MaxAge == nil {
+				// Open-ended bucket (6+)
+				if age >= bucket.MinAge {
+					bucket.Count++
+					break
+				}
+			} else if age >= bucket.MinAge && age <= *bucket.MaxAge {
+				bucket.Count++
+				break
+			}
+		}
+	}
+
+	return &models.AgeDistributionResponse{
+		Date:         date.Format("2006-01-02"),
+		TotalCount:   totalCount,
+		Distribution: buckets,
+	}, nil
+}
+
+// intPtr returns a pointer to an int
+func intPtr(i int) *int {
+	return &i
+}
+
 // GetContractCountByMonth returns children contract counts per month for the specified year range
 func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, minYear, maxYear int) (*models.ChildrenContractCountByMonthResponse, error) {
 	// Calculate number of years in range

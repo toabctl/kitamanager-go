@@ -1787,3 +1787,378 @@ func TestChildHandler_GetContractCountByMonth_FutureYears(t *testing.T) {
 		}
 	}
 }
+
+// =========================================
+// Age Distribution Handler Tests
+// =========================================
+
+func TestChildHandler_GetAgeDistribution(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create children with different ages
+	refDate := time.Date(2025, 1, 28, 0, 0, 0, 0, time.UTC)
+
+	// Child age 3 (born 2022-01-28)
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Test",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 28, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(child)
+	db.Create(&models.ChildContract{
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=%s", org.ID, refDate.Format("2006-01-02")), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 1 {
+		t.Errorf("expected total count 1, got %d", response.TotalCount)
+	}
+
+	if response.Date != "2025-01-28" {
+		t.Errorf("expected date '2025-01-28', got '%s'", response.Date)
+	}
+
+	if len(response.Distribution) != 7 {
+		t.Errorf("expected 7 buckets, got %d", len(response.Distribution))
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_DefaultDate(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	// No date parameter - should default to today
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	// Just check it returns a valid response with today's date
+	if response.Date == "" {
+		t.Error("expected date to be set to today")
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_InvalidDate(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=not-a-date", org.ID), nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for invalid date, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_InvalidOrgId(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	w := performRequest(r, "GET", "/organizations/invalid/children/statistics/age-distribution", nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for invalid org ID, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_NoChildren(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2025-01-28", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 0 {
+		t.Errorf("expected total count 0, got %d", response.TotalCount)
+	}
+
+	// All buckets should have 0
+	for _, bucket := range response.Distribution {
+		if bucket.Count != 0 {
+			t.Errorf("bucket %s should have 0 count, got %d", bucket.AgeLabel, bucket.Count)
+		}
+	}
+}
+
+// SECURITY TEST: Cross-organization isolation
+func TestChildHandler_GetAgeDistribution_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+
+	// Create child in org1
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org1.ID,
+			FirstName:      "Test",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 28, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(child)
+	db.Create(&models.ChildContract{
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	// Query org2 - should not see org1's children
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2025-01-28", org2.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 0 {
+		t.Errorf("SECURITY: expected total count 0 for org2 (child in org1), got %d", response.TotalCount)
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_AllBuckets(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+	refDate := time.Date(2025, 1, 28, 0, 0, 0, 0, time.UTC)
+
+	// Create one child for each age bucket (0-6+)
+	ages := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	for _, age := range ages {
+		child := &models.Child{
+			Person: models.Person{
+				OrganizationID: org.ID,
+				FirstName:      fmt.Sprintf("Age%d", age),
+				LastName:       "Child",
+				Birthdate:      refDate.AddDate(-age, 0, 0),
+			},
+		}
+		db.Create(child)
+		db.Create(&models.ChildContract{
+			ChildID: child.ID,
+			Period:  models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+		})
+	}
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2025-01-28", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	// Total should be 9
+	if response.TotalCount != 9 {
+		t.Errorf("expected total count 9, got %d", response.TotalCount)
+	}
+
+	// Check distribution: 0-5 should have 1 each, 6+ should have 3
+	expected := map[string]int{
+		"0":  1,
+		"1":  1,
+		"2":  1,
+		"3":  1,
+		"4":  1,
+		"5":  1,
+		"6+": 3, // ages 6, 7, 8
+	}
+
+	for _, bucket := range response.Distribution {
+		if bucket.Count != expected[bucket.AgeLabel] {
+			t.Errorf("bucket %s: expected %d, got %d", bucket.AgeLabel, expected[bucket.AgeLabel], bucket.Count)
+		}
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_ExpiredContract(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create child with expired contract
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Expired",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 28, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(child)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	db.Create(&models.ChildContract{
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	// Query date after contract expired
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2025-01-28", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 0 {
+		t.Errorf("expected total count 0 (contract expired), got %d", response.TotalCount)
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_FutureContract(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create child with future contract
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Future",
+			LastName:       "Child",
+			Birthdate:      time.Date(2022, 1, 28, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(child)
+	db.Create(&models.ChildContract{
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)}, // Starts in future
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	// Query date before contract starts
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2025-01-28", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 0 {
+		t.Errorf("expected total count 0 (contract not started), got %d", response.TotalCount)
+	}
+}
+
+func TestChildHandler_GetAgeDistribution_HistoricalDate(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create child with historical contract
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Historical",
+			LastName:       "Child",
+			Birthdate:      time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	db.Create(child)
+	to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
+	db.Create(&models.ChildContract{
+		ChildID: child.ID,
+		Period:  models.Period{From: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/children/statistics/age-distribution", handler.GetAgeDistribution)
+
+	// Query historical date when contract was active
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/children/statistics/age-distribution?date=2023-06-15", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.AgeDistributionResponse
+	parseResponse(t, w, &response)
+
+	if response.TotalCount != 1 {
+		t.Errorf("expected total count 1 (contract active on historical date), got %d", response.TotalCount)
+	}
+
+	// Child should be age 3 on 2023-06-15 (born 2020-01-01)
+	for _, bucket := range response.Distribution {
+		if bucket.AgeLabel == "3" && bucket.Count != 1 {
+			t.Errorf("expected age 3 bucket count 1, got %d", bucket.Count)
+		}
+	}
+}

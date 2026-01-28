@@ -132,3 +132,18 @@ type ContractCountByMonthYear struct {
 	Year   int   `json:"year" example:"2025"`
 	Counts []int `json:"counts"` // 12 values, one per month (Jan=0, Dec=11)
 }
+
+// AgeDistributionResponse represents the age distribution of children with active contracts
+type AgeDistributionResponse struct {
+	Date         string                  `json:"date" example:"2025-01-28"`
+	TotalCount   int                     `json:"total_count" example:"50"`
+	Distribution []AgeDistributionBucket `json:"distribution"`
+}
+
+// AgeDistributionBucket represents count of children in an age range
+type AgeDistributionBucket struct {
+	AgeLabel string `json:"age_label" example:"3"` // e.g., "0", "1", "2", "3", "4", "5", "6+"
+	MinAge   int    `json:"min_age" example:"3"`
+	MaxAge   *int   `json:"max_age,omitempty" example:"3"` // nil for open-ended (6+)
+	Count    int    `json:"count" example:"12"`
+}

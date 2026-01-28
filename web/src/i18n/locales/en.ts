@@ -76,7 +76,12 @@ export default {
     title: 'Statistics',
     selectOrgForStats: 'Select an organization to view statistics',
     childrenContractCount: 'Children with Active Contracts',
-    chartError: 'Failed to load chart data'
+    chartError: 'Failed to load chart data',
+    ageDistribution: 'Age Distribution',
+    childrenCount: 'Children',
+    totalChildren: '{count} children total',
+    ageYears: '{age} years',
+    ageSixPlus: '6+ years'
   },
   months: {
     jan: 'Jan',

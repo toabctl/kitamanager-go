@@ -1382,6 +1382,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/children/statistics/age-distribution": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get age distribution of children with active contracts on the specified date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "children"
+                ],
+                "summary": "Get children age distribution",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date for calculation (YYYY-MM-DD format, defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/children/statistics/contract-count-by-month": {
             "get": {
                 "security": [
@@ -4475,6 +4536,48 @@ const docTemplate = `{
                         }
                     ],
                     "example": "member"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionBucket": {
+            "type": "object",
+            "properties": {
+                "age_label": {
+                    "description": "e.g., \"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6+\"",
+                    "type": "string",
+                    "example": "3"
+                },
+                "count": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "max_age": {
+                    "description": "nil for open-ended (6+)",
+                    "type": "integer",
+                    "example": 3
+                },
+                "min_age": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-01-28"
+                },
+                "distribution": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AgeDistributionBucket"
+                    }
+                },
+                "total_count": {
+                    "type": "integer",
+                    "example": 50
                 }
             }
         },

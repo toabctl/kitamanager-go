@@ -76,7 +76,12 @@ export default {
     title: 'Statistiken',
     selectOrgForStats: 'Wählen Sie eine Organisation, um Statistiken anzuzeigen',
     childrenContractCount: 'Kinder mit aktiven Verträgen',
-    chartError: 'Fehler beim Laden der Diagrammdaten'
+    chartError: 'Fehler beim Laden der Diagrammdaten',
+    ageDistribution: 'Altersverteilung',
+    childrenCount: 'Kinder',
+    totalChildren: '{count} Kinder insgesamt',
+    ageYears: '{age} Jahre',
+    ageSixPlus: '6+ Jahre'
   },
   months: {
     jan: 'Jan',
