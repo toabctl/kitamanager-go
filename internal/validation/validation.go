@@ -23,14 +23,11 @@ func ValidateBirthdate(birthdate time.Time) error {
 	return nil
 }
 
-// ValidatePeriod ensures From < To when To is provided (contracts must have positive duration)
+// ValidatePeriod ensures From <= To when To is provided (allows same-day contracts)
 func ValidatePeriod(from time.Time, to *time.Time) error {
 	if to != nil {
 		if from.After(*to) {
-			return fmt.Errorf("from date must be before to date")
-		}
-		if from.Equal(*to) {
-			return fmt.Errorf("contract must have a positive duration (from and to dates cannot be equal)")
+			return fmt.Errorf("from date must be before or equal to to date")
 		}
 	}
 	return nil

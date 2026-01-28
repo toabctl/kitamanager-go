@@ -274,6 +274,45 @@ func TestChildHandler_CreateContract(t *testing.T) {
 	}
 }
 
+func TestChildHandler_CreateContract_SameDay(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService)
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Birthdate: time.Now()},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
+
+	// Create a same-day contract (from == to)
+	sameDay := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
+	body := models.ChildContractCreateRequest{
+		From:       sameDay,
+		To:         &sameDay,
+		Attributes: []string{"ganztags"},
+	}
+
+	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status %d for same-day contract, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var contract models.ChildContract
+	parseResponse(t, w, &contract)
+
+	if !contract.From.Equal(sameDay) {
+		t.Errorf("expected from %v, got %v", sameDay, contract.From)
+	}
+	if contract.To == nil || !contract.To.Equal(sameDay) {
+		t.Errorf("expected to %v, got %v", sameDay, contract.To)
+	}
+}
+
 func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 	db := setupTestDB(t)
 	childService := createChildService(db)
