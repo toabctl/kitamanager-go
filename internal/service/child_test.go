@@ -703,7 +703,7 @@ func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
 
 	// Assign funding to org
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	// Create funding period covering our test date
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
@@ -803,7 +803,7 @@ func TestChildService_CalculateFunding_NoMatchingPeriod(t *testing.T) {
 	// Create org with funding
 	org := createTestOrganization(t, db, "Test Org")
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	// Create period that doesn't cover our test date
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
@@ -841,7 +841,7 @@ func TestChildService_CalculateFunding_NoMatchingAgeProperty(t *testing.T) {
 	// Create org with funding
 	org := createTestOrganization(t, db, "Test Org")
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	// Create period
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
@@ -883,7 +883,7 @@ func TestChildService_CalculateFunding_PartialAttributeMatch(t *testing.T) {
 	// Create org with funding
 	org := createTestOrganization(t, db, "Test Org")
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
 	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
@@ -924,7 +924,7 @@ func TestChildService_CalculateFunding_DuplicateAttributes(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
 	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
@@ -962,7 +962,7 @@ func TestChildService_CalculateFunding_ChildNoContractOnDate(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org.ID).Update("government_funding_id", funding.ID)
+	// Funding is now automatically looked up by org.State ("berlin")
 
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
 	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)
@@ -1006,9 +1006,8 @@ func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
 
+	// Both orgs have state="berlin", so they share the same funding
 	funding := createTestGovernmentFunding(t, db, "Funding")
-	db.Model(&models.Organization{}).Where("id = ?", org1.ID).Update("government_funding_id", funding.ID)
-	db.Model(&models.Organization{}).Where("id = ?", org2.ID).Update("government_funding_id", funding.ID)
 
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
 	createTestFundingProperty(t, db, period.ID, "ganztags", 100000, 3, 7)

@@ -328,7 +328,7 @@ func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, 
 
 // CalculateFunding calculates government funding for all children with active contracts on the given date
 func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date time.Time) (*models.ChildrenFundingResponse, error) {
-	// Get organization to check funding assignment
+	// Get organization to determine state
 	org, err := s.orgStore.FindByID(orgID)
 	if err != nil {
 		return nil, apperror.NotFound("organization")
@@ -345,8 +345,10 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 		Children: make([]models.ChildFundingResponse, 0, len(children)),
 	}
 
-	// If no government funding assigned, return 0 funding for all children
-	if org.GovernmentFundingID == nil {
+	// Look up funding by organization's state (0 = all periods, needed to find matching period for date)
+	funding, err := s.fundingStore.FindByStateWithDetails(org.State, 0)
+	if err != nil {
+		// No funding defined for this state - return 0 funding for all children
 		for _, child := range children {
 			if len(child.Contracts) == 0 {
 				continue
@@ -362,12 +364,6 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 			})
 		}
 		return response, nil
-	}
-
-	// Get funding with all details (0 = all periods, needed to find matching period for date)
-	funding, err := s.fundingStore.FindByIDWithDetails(*org.GovernmentFundingID, 0)
-	if err != nil {
-		return nil, apperror.Internal("failed to fetch government funding")
 	}
 
 	// Find the period covering this date

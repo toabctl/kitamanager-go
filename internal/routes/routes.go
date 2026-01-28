@@ -45,8 +45,6 @@ func Setup(
 				// Superadmin only
 				orgs.POST("", authzMiddleware.RequireSuperAdmin(), orgHandler.Create)
 				orgs.DELETE("/:orgId", authzMiddleware.RequireSuperAdmin(), orgHandler.Delete)
-				orgs.PUT("/:orgId/government-funding", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.AssignFunding)
-				orgs.DELETE("/:orgId/government-funding", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.RemoveFunding)
 
 				// List: requires any role (filtered by access in handler/service)
 				orgs.GET("", orgHandler.List)

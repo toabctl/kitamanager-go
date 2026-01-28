@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { GovernmentFunding, GovernmentFundingCreateRequest } from '@/api/types'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import Button from 'primevue/button'
 
 const { t } = useI18n()
@@ -18,11 +19,14 @@ const emit = defineEmits<{
   save: [data: GovernmentFundingCreateRequest]
 }>()
 
+const stateOptions = [{ value: 'berlin', label: 'Berlin' }]
+
 const form = ref({
-  name: ''
+  name: '',
+  state: ''
 })
 
-const errors = ref<{ name?: string }>({})
+const errors = ref<{ name?: string; state?: string }>({})
 
 const isEditing = computed(() => !!props.governmentFunding)
 const dialogTitle = computed(() =>
@@ -35,11 +39,13 @@ watch(
     if (visible) {
       if (props.governmentFunding) {
         form.value = {
-          name: props.governmentFunding.name
+          name: props.governmentFunding.name,
+          state: props.governmentFunding.state
         }
       } else {
         form.value = {
-          name: ''
+          name: '',
+          state: ''
         }
       }
       errors.value = {}
@@ -51,6 +57,9 @@ function validate(): boolean {
   errors.value = {}
   if (!form.value.name.trim()) {
     errors.value.name = t('validation.nameRequired')
+  }
+  if (!form.value.state) {
+    errors.value.state = t('validation.required')
   }
   return Object.keys(errors.value).length === 0
 }
@@ -78,9 +87,22 @@ function handleSave() {
           id="name"
           v-model="form.name"
           :class="{ 'p-invalid': errors.name }"
-          placeholder="e.g. Berlin"
+          placeholder="e.g. Berlin Kita-Förderung"
         />
         <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
+      </div>
+      <div class="field">
+        <label for="state">{{ t('states.state') }}</label>
+        <Select
+          id="state"
+          v-model="form.state"
+          :options="stateOptions"
+          option-label="label"
+          option-value="value"
+          :class="{ 'p-invalid': errors.state }"
+          :disabled="isEditing"
+        />
+        <small v-if="errors.state" class="p-error">{{ errors.state }}</small>
       </div>
     </div>
 

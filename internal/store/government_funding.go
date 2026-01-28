@@ -47,6 +47,34 @@ func (s *GovernmentFundingStore) FindByName(name string) (*models.GovernmentFund
 	return &funding, nil
 }
 
+func (s *GovernmentFundingStore) FindByState(state string) (*models.GovernmentFunding, error) {
+	var funding models.GovernmentFunding
+	if err := s.db.Where("state = ?", state).First(&funding).Error; err != nil {
+		return nil, err
+	}
+	return &funding, nil
+}
+
+func (s *GovernmentFundingStore) FindByStateWithDetails(state string, periodsLimit int) (*models.GovernmentFunding, error) {
+	var funding models.GovernmentFunding
+	if err := s.db.
+		Preload("Periods", func(db *gorm.DB) *gorm.DB {
+			q := db.Order("from_date DESC")
+			if periodsLimit > 0 {
+				q = q.Limit(periodsLimit)
+			}
+			return q
+		}).
+		Preload("Periods.Properties", func(db *gorm.DB) *gorm.DB {
+			return db.Order("name ASC, min_age ASC NULLS LAST")
+		}).
+		Where("state = ?", state).
+		First(&funding).Error; err != nil {
+		return nil, err
+	}
+	return &funding, nil
+}
+
 func (s *GovernmentFundingStore) FindByIDWithDetails(id uint, periodsLimit int) (*models.GovernmentFunding, error) {
 	var funding models.GovernmentFunding
 	if err := s.db.
@@ -140,14 +168,4 @@ func (s *GovernmentFundingStore) UpdateProperty(property *models.GovernmentFundi
 
 func (s *GovernmentFundingStore) DeleteProperty(id uint) error {
 	return s.db.Delete(&models.GovernmentFundingProperty{}, id).Error
-}
-
-// Organization government funding assignment
-
-func (s *GovernmentFundingStore) AssignGovernmentFundingToOrg(orgID, governmentFundingID uint) error {
-	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).Update("government_funding_id", governmentFundingID).Error
-}
-
-func (s *GovernmentFundingStore) RemoveGovernmentFundingFromOrg(orgID uint) error {
-	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).Update("government_funding_id", nil).Error
 }

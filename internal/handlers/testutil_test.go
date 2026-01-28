@@ -93,6 +93,7 @@ func createTestOrganization(t *testing.T, db *gorm.DB, name string) *models.Orga
 	org := &models.Organization{
 		Name:   name,
 		Active: true,
+		State:  string(models.StateBerlin),
 	}
 	if err := db.Create(org).Error; err != nil {
 		t.Fatalf("failed to create test organization: %v", err)

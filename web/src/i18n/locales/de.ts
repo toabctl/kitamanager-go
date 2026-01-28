@@ -273,6 +273,11 @@ export default {
     lightMode: 'Heller Modus',
     darkMode: 'Dunkler Modus'
   },
+  states: {
+    state: 'Bundesland',
+    berlin: 'Berlin',
+    selectState: 'Bundesland auswählen'
+  },
   governmentFundings: {
     title: 'Staatliche Finanzierungen',
     create: 'Finanzierung erstellen',

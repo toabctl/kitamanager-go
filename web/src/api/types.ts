@@ -26,6 +26,7 @@ export interface MessageResponse {
 export interface GovernmentFunding {
   id: number
   name: string
+  state: string
   created_at: string
   updated_at: string
   periods?: GovernmentFundingPeriod[]
@@ -56,6 +57,7 @@ export interface GovernmentFundingProperty {
 
 export interface GovernmentFundingCreateRequest {
   name: string
+  state: string
 }
 
 export interface GovernmentFundingUpdateRequest {
@@ -92,17 +94,12 @@ export interface GovernmentFundingPropertyUpdateRequest {
   comment?: string
 }
 
-export interface AssignGovernmentFundingRequest {
-  government_funding_id: number
-}
-
 // Organization
 export interface Organization {
   id: number
   name: string
   active: boolean
-  government_funding_id?: number | null
-  government_funding?: GovernmentFunding
+  state: string
   created_at: string
   created_by: string
   updated_at: string
@@ -113,11 +110,13 @@ export interface Organization {
 export interface OrganizationCreateRequest {
   name: string
   active?: boolean
+  state: string
 }
 
 export interface OrganizationUpdateRequest {
   name?: string
   active?: boolean
+  state?: string
 }
 
 // User

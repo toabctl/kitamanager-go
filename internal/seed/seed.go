@@ -93,16 +93,16 @@ func SeedGovernmentFunding(cfg *config.Config, db *gorm.DB, fundingStore *store.
 
 	governmentFundingImporter := importer.NewGovernmentFundingImporter(db, fundingStore)
 
-	fundingID, err := governmentFundingImporter.ImportGovernmentFundingFromFile(cfg.GovernmentFundingSeedPath, cfg.GovernmentFundingSeedName)
+	fundingID, err := governmentFundingImporter.ImportGovernmentFundingFromFile(cfg.GovernmentFundingSeedPath, cfg.GovernmentFundingSeedState)
 	if err != nil {
 		if errors.Is(err, importer.ErrGovernmentFundingExists) {
-			slog.Info("Government funding already seeded", "name", cfg.GovernmentFundingSeedName, "id", fundingID)
+			slog.Info("Government funding already seeded", "state", cfg.GovernmentFundingSeedState, "id", fundingID)
 			return nil
 		}
 		return err
 	}
 
-	slog.Info("Government funding seeded successfully", "name", cfg.GovernmentFundingSeedName, "id", fundingID, "path", cfg.GovernmentFundingSeedPath)
+	slog.Info("Government funding seeded successfully", "state", cfg.GovernmentFundingSeedState, "id", fundingID, "path", cfg.GovernmentFundingSeedPath)
 	return nil
 }
 
@@ -160,32 +160,29 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	slog.Info("Seeding test data...")
 
 	// Import Berlin government funding plan
-	var fundingID *uint
 	governmentFundingImporter := importer.NewGovernmentFundingImporter(db, fundingStore)
-	id, err := governmentFundingImporter.ImportGovernmentFundingFromFile("configs/government-fundings/berlin.yaml", "Berlin")
+	id, err := governmentFundingImporter.ImportGovernmentFundingFromFile("configs/government-fundings/berlin.yaml", "berlin")
 	if err != nil {
 		if errors.Is(err, importer.ErrGovernmentFundingExists) {
 			slog.Info("Berlin government funding already exists", "id", id)
-			fundingID = &id
 		} else {
 			return fmt.Errorf("failed to import Berlin government funding: %w", err)
 		}
 	} else {
 		slog.Info("Berlin government funding imported", "id", id)
-		fundingID = &id
 	}
 
-	// Create organization with Berlin funding
+	// Create organization with Berlin state (funding is looked up by state automatically)
 	org := &models.Organization{
-		Name:                "Kita Sonnenschein",
-		Active:              true,
-		GovernmentFundingID: fundingID,
-		CreatedBy:           "seed",
+		Name:      "Kita Sonnenschein",
+		Active:    true,
+		State:     string(models.StateBerlin),
+		CreatedBy: "seed",
 	}
 	if err := db.Create(org).Error; err != nil {
 		return err
 	}
-	slog.Info("Created test organization", "name", org.Name, "id", org.ID, "fundingId", fundingID)
+	slog.Info("Created test organization", "name", org.Name, "id", org.ID, "state", org.State)
 
 	// Create default group for the organization
 	group := &models.Group{

@@ -6,6 +6,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 
 const { t } = useI18n()
 
@@ -19,12 +20,15 @@ const emit = defineEmits<{
   save: [data: OrganizationCreateRequest]
 }>()
 
+const stateOptions = computed(() => [{ value: 'berlin', label: t('states.berlin') }])
+
 const form = ref({
   name: '',
-  active: true
+  active: true,
+  state: ''
 })
 
-const errors = ref<{ name?: string }>({})
+const errors = ref<{ name?: string; state?: string }>({})
 
 const isEditing = computed(() => !!props.organization)
 const dialogTitle = computed(() =>
@@ -38,12 +42,14 @@ watch(
       if (props.organization) {
         form.value = {
           name: props.organization.name,
-          active: props.organization.active
+          active: props.organization.active,
+          state: props.organization.state
         }
       } else {
         form.value = {
           name: '',
-          active: true
+          active: true,
+          state: ''
         }
       }
       errors.value = {}
@@ -55,6 +61,9 @@ function validate(): boolean {
   errors.value = {}
   if (!form.value.name.trim()) {
     errors.value.name = t('validation.nameRequired')
+  }
+  if (!form.value.state) {
+    errors.value.state = t('validation.required')
   }
   return Object.keys(errors.value).length === 0
 }
@@ -88,6 +97,21 @@ function handleSave() {
       </div>
 
       <div class="field">
+        <label for="state">{{ t('states.state') }}</label>
+        <Select
+          id="state"
+          v-model="form.state"
+          :options="stateOptions"
+          option-label="label"
+          option-value="value"
+          :placeholder="t('states.selectState')"
+          :class="{ 'p-invalid': errors.state }"
+          class="w-full"
+        />
+        <small v-if="errors.state" class="p-error">{{ errors.state }}</small>
+      </div>
+
+      <div class="field">
         <div class="flex align-items-center gap-2">
           <Checkbox v-model="form.active" input-id="active" :binary="true" />
           <label for="active">{{ t('common.active') }}</label>
@@ -115,5 +139,9 @@ function handleSave() {
 
 .gap-2 {
   gap: 0.5rem;
+}
+
+.w-full {
+  width: 100%;
 }
 </style>

@@ -12,6 +12,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
     }
@@ -23,6 +24,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -54,6 +56,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -96,6 +99,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -135,6 +139,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -174,6 +179,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -213,6 +219,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Berlin',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -295,6 +302,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [
@@ -369,6 +377,7 @@ describe('flattenGovernmentFundingToRows', () => {
     const governmentFunding: GovernmentFunding = {
       id: 1,
       name: 'Test',
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       periods: [

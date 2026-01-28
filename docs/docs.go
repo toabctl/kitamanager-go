@@ -3161,147 +3161,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/organizations/{orgId}/government-funding": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Assign a government funding to an organization (superadmin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Assign government funding to organization",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Organization ID",
-                        "name": "orgId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "GovernmentFunding assignment",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AssignGovernmentFundingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Remove the government funding assignment from an organization (superadmin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Remove government funding from organization",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Organization ID",
-                        "name": "orgId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/organizations/{orgId}/groups": {
             "get": {
                 "security": [
@@ -4581,18 +4440,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_eenemeene_kitamanager-go_internal_models.AssignGovernmentFundingRequest": {
-            "type": "object",
-            "required": [
-                "government_funding_id"
-            ],
-            "properties": {
-                "government_funding_id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
         "github_com_eenemeene_kitamanager-go_internal_models.Child": {
             "type": "object",
             "properties": {
@@ -5196,13 +5043,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "Berlin"
+                    "example": "Berlin Kita Funding"
                 },
                 "periods": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod"
                     }
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 },
                 "updated_at": {
                     "type": "string",
@@ -5511,13 +5362,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "admin@example.com"
                 },
-                "government_funding": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFunding"
-                },
-                "government_funding_id": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "groups": {
                     "type": "array",
                     "items": {
@@ -5531,6 +5375,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Acme Corp"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 },
                 "updated_at": {
                     "type": "string",
@@ -6019,13 +5867,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "Berlin"
+                    "example": "Berlin Kita Funding"
                 },
                 "periods": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod"
                     }
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 },
                 "total_periods": {
                     "type": "integer"
@@ -6064,13 +5916,18 @@ const docTemplate = `{
         "internal_handlers.GovernmentFundingCreateRequest": {
             "type": "object",
             "required": [
-                "name"
+                "name",
+                "state"
             ],
             "properties": {
                 "name": {
                     "type": "string",
                     "maxLength": 255,
-                    "example": "Berlin"
+                    "example": "Berlin Kita Funding"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 }
             }
         },
@@ -6163,7 +6020,8 @@ const docTemplate = `{
         "internal_handlers.OrganizationCreateRequest": {
             "type": "object",
             "required": [
-                "name"
+                "name",
+                "state"
             ],
             "properties": {
                 "active": {
@@ -6174,6 +6032,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Acme Corp"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 }
             }
         },
@@ -6188,6 +6050,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Acme Corp Updated"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
                 }
             }
         }

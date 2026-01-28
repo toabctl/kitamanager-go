@@ -14,8 +14,7 @@ import (
 func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	svc := service.NewGovernmentFundingService(fundingStore)
 	handler := NewGovernmentFundingHandler(svc)
 
 	r := setupTestRouter()
@@ -27,7 +26,7 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 
 	// Test Create
 	t.Run("Create", func(t *testing.T) {
-		body := GovernmentFundingCreateRequest{Name: "Berlin"}
+		body := GovernmentFundingCreateRequest{Name: "Berlin Kita Funding", State: "berlin"}
 		w := performRequest(r, "POST", "/fundings", body)
 
 		if w.Code != http.StatusCreated {
@@ -36,8 +35,11 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 
 		var result models.GovernmentFunding
 		parseResponse(t, w, &result)
-		if result.Name != "Berlin" {
-			t.Errorf("expected name 'Berlin', got '%s'", result.Name)
+		if result.Name != "Berlin Kita Funding" {
+			t.Errorf("expected name 'Berlin Kita Funding', got '%s'", result.Name)
+		}
+		if result.State != "berlin" {
+			t.Errorf("expected state 'berlin', got '%s'", result.State)
 		}
 	})
 
@@ -66,8 +68,8 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 
 		var result models.GovernmentFunding
 		parseResponse(t, w, &result)
-		if result.Name != "Berlin" {
-			t.Errorf("expected name 'Berlin', got '%s'", result.Name)
+		if result.Name != "Berlin Kita Funding" {
+			t.Errorf("expected name 'Berlin Kita Funding', got '%s'", result.Name)
 		}
 	})
 
@@ -101,12 +103,11 @@ func TestGovernmentFundingHandler_CRUD(t *testing.T) {
 func TestGovernmentFundingHandler_CreatePeriod_NoOverlap(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	svc := service.NewGovernmentFundingService(fundingStore)
 	handler := NewGovernmentFundingHandler(svc)
 
 	// Create test funding
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
 	db.Create(funding)
 
 	r := setupTestRouter()
@@ -244,12 +245,11 @@ func TestGovernmentFundingHandler_CreatePeriod_NoOverlap(t *testing.T) {
 func TestGovernmentFundingHandler_UpdatePeriod_NoOverlap(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	svc := service.NewGovernmentFundingService(fundingStore)
 	handler := NewGovernmentFundingHandler(svc)
 
 	// Create test funding
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
 	db.Create(funding)
 
 	r := setupTestRouter()
@@ -317,12 +317,11 @@ func TestGovernmentFundingHandler_UpdatePeriod_NoOverlap(t *testing.T) {
 func TestGovernmentFundingHandler_Property_AgeRange(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	svc := service.NewGovernmentFundingService(fundingStore)
 	handler := NewGovernmentFundingHandler(svc)
 
 	// Create test funding and period
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
 	db.Create(funding)
 	period := &models.GovernmentFundingPeriod{
 		GovernmentFundingID: funding.ID,
@@ -404,12 +403,11 @@ func TestGovernmentFundingHandler_Property_AgeRange(t *testing.T) {
 func TestGovernmentFundingHandler_Get_PeriodsLimit(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	orgStore := store.NewOrganizationStore(db)
-	svc := service.NewGovernmentFundingService(fundingStore, orgStore)
+	svc := service.NewGovernmentFundingService(fundingStore)
 	handler := NewGovernmentFundingHandler(svc)
 
 	// Create test funding with multiple periods
-	funding := &models.GovernmentFunding{Name: "Test Funding"}
+	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
 	db.Create(funding)
 
 	// Create 3 periods (oldest to newest)

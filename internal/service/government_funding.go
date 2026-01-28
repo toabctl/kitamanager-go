@@ -13,13 +13,12 @@ import (
 
 // GovernmentFundingService handles business logic for government funding operations
 type GovernmentFundingService struct {
-	store    store.GovernmentFundingStorer
-	orgStore store.OrganizationStorer
+	store store.GovernmentFundingStorer
 }
 
 // NewGovernmentFundingService creates a new government funding service
-func NewGovernmentFundingService(store store.GovernmentFundingStorer, orgStore store.OrganizationStorer) *GovernmentFundingService {
-	return &GovernmentFundingService{store: store, orgStore: orgStore}
+func NewGovernmentFundingService(store store.GovernmentFundingStorer) *GovernmentFundingService {
+	return &GovernmentFundingService{store: store}
 }
 
 // List returns a paginated list of government fundings
@@ -73,7 +72,8 @@ func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id ui
 
 // GovernmentFundingCreateRequest represents the request for creating a government funding
 type GovernmentFundingCreateRequest struct {
-	Name string
+	Name  string
+	State string
 }
 
 // Create creates a new government funding
@@ -84,8 +84,13 @@ func (s *GovernmentFundingService) Create(ctx context.Context, req *GovernmentFu
 		return nil, apperror.BadRequest("name cannot be empty or whitespace only")
 	}
 
+	if !models.IsValidState(req.State) {
+		return nil, apperror.BadRequest("invalid state, must be one of: berlin")
+	}
+
 	funding := &models.GovernmentFunding{
-		Name: req.Name,
+		Name:  req.Name,
+		State: req.State,
 	}
 
 	if err := s.store.Create(funding); err != nil {
@@ -353,39 +358,6 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyI
 func (s *GovernmentFundingService) DeleteProperty(ctx context.Context, propertyID uint) error {
 	if err := s.store.DeleteProperty(propertyID); err != nil {
 		return apperror.Internal("failed to delete property")
-	}
-	return nil
-}
-
-// Organization government funding assignment
-
-// AssignGovernmentFundingToOrg assigns a government funding to an organization
-func (s *GovernmentFundingService) AssignGovernmentFundingToOrg(ctx context.Context, orgID, governmentFundingID uint) error {
-	// Verify organization exists
-	if _, err := s.orgStore.FindByID(orgID); err != nil {
-		return apperror.NotFound("organization")
-	}
-
-	// Verify government funding exists
-	if _, err := s.store.FindByID(governmentFundingID); err != nil {
-		return apperror.NotFound("government funding")
-	}
-
-	if err := s.store.AssignGovernmentFundingToOrg(orgID, governmentFundingID); err != nil {
-		return apperror.Internal("failed to assign government funding to organization")
-	}
-	return nil
-}
-
-// RemoveGovernmentFundingFromOrg removes the government funding assignment from an organization
-func (s *GovernmentFundingService) RemoveGovernmentFundingFromOrg(ctx context.Context, orgID uint) error {
-	// Verify organization exists
-	if _, err := s.orgStore.FindByID(orgID); err != nil {
-		return apperror.NotFound("organization")
-	}
-
-	if err := s.store.RemoveGovernmentFundingFromOrg(orgID); err != nil {
-		return apperror.Internal("failed to remove government funding from organization")
 	}
 	return nil
 }

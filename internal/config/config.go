@@ -45,8 +45,8 @@ type Config struct {
 	SeedAdminName     string
 
 	// Government Funding Seeding
-	GovernmentFundingSeedPath string
-	GovernmentFundingSeedName string
+	GovernmentFundingSeedPath  string
+	GovernmentFundingSeedState string
 
 	// Test Data Seeding
 	SeedTestData bool
@@ -185,7 +185,7 @@ func Load() (*Config, error) {
 
 		// Government Funding Seeding
 		GovernmentFundingSeedPath: getEnv("GOVERNMENT_FUNDING_SEED_PATH", ""),
-		GovernmentFundingSeedName: getEnv("GOVERNMENT_FUNDING_SEED_NAME", "Berlin"),
+		GovernmentFundingSeedState: getEnv("GOVERNMENT_FUNDING_SEED_STATE", "berlin"),
 
 		// Test Data Seeding
 		SeedTestData: getEnv("SEED_TEST_DATA", "false") == "true",

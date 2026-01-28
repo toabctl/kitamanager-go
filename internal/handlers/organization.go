@@ -85,6 +85,7 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 type OrganizationCreateRequest struct {
 	Name   string `json:"name" binding:"required,max=255" example:"Acme Corp"`
 	Active bool   `json:"active" example:"true"`
+	State  string `json:"state" binding:"required" example:"berlin"`
 }
 
 // Create godoc
@@ -113,6 +114,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 	organization, err := h.service.Create(c.Request.Context(), &service.OrganizationCreateRequest{
 		Name:   req.Name,
 		Active: req.Active,
+		State:  req.State,
 	}, createdBy)
 	if err != nil {
 		respondError(c, err)
@@ -124,8 +126,9 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 
 // OrganizationUpdateRequest represents the request body for updating an organization
 type OrganizationUpdateRequest struct {
-	Name   string `json:"name" binding:"omitempty,max=255" example:"Acme Corp Updated"`
-	Active *bool  `json:"active" example:"false"`
+	Name   string  `json:"name" binding:"omitempty,max=255" example:"Acme Corp Updated"`
+	Active *bool   `json:"active" example:"false"`
+	State  *string `json:"state" binding:"omitempty" example:"berlin"`
 }
 
 // Update godoc
@@ -159,6 +162,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 	organization, err := h.service.Update(c.Request.Context(), id, &service.OrganizationUpdateRequest{
 		Name:   req.Name,
 		Active: req.Active,
+		State:  req.State,
 	})
 	if err != nil {
 		respondError(c, err)

@@ -480,20 +480,6 @@ class ApiClient {
       `/government-fundings/${governmentFundingId}/periods/${periodId}/properties/${propId}`
     )
   }
-
-  // Organization GovernmentFunding Assignment
-  async assignGovernmentFundingToOrganization(
-    orgId: number,
-    governmentFundingId: number
-  ): Promise<void> {
-    await this.client.put(`/organizations/${orgId}/government-funding`, {
-      government_funding_id: governmentFundingId
-    })
-  }
-
-  async removeGovernmentFundingFromOrganization(orgId: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/government-funding`)
-  }
 }
 
 export const apiClient = new ApiClient()

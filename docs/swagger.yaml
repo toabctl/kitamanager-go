@@ -43,14 +43,6 @@ definitions:
         example: 50
         type: integer
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.AssignGovernmentFundingRequest:
-    properties:
-      government_funding_id:
-        example: 1
-        type: integer
-    required:
-    - government_funding_id
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.Child:
     properties:
       birthdate:
@@ -483,12 +475,15 @@ definitions:
         example: 1
         type: integer
       name:
-        example: Berlin
+        example: Berlin Kita Funding
         type: string
       periods:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod'
         type: array
+      state:
+        example: berlin
+        type: string
       updated_at:
         example: "2024-01-15T10:30:00Z"
         type: string
@@ -711,11 +706,6 @@ definitions:
       created_by:
         example: admin@example.com
         type: string
-      government_funding:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFunding'
-      government_funding_id:
-        example: 1
-        type: integer
       groups:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
@@ -725,6 +715,9 @@ definitions:
         type: integer
       name:
         example: Acme Corp
+        type: string
+      state:
+        example: berlin
         type: string
       updated_at:
         example: "2024-01-15T10:30:00Z"
@@ -1067,12 +1060,15 @@ definitions:
         example: 1
         type: integer
       name:
-        example: Berlin
+        example: Berlin Kita Funding
         type: string
       periods:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod'
         type: array
+      state:
+        example: berlin
+        type: string
       total_periods:
         type: integer
       updated_at:
@@ -1099,11 +1095,15 @@ definitions:
   internal_handlers.GovernmentFundingCreateRequest:
     properties:
       name:
-        example: Berlin
+        example: Berlin Kita Funding
         maxLength: 255
+        type: string
+      state:
+        example: berlin
         type: string
     required:
     - name
+    - state
     type: object
   internal_handlers.GovernmentFundingUpdateRequest:
     properties:
@@ -1174,8 +1174,12 @@ definitions:
         example: Acme Corp
         maxLength: 255
         type: string
+      state:
+        example: berlin
+        type: string
     required:
     - name
+    - state
     type: object
   internal_handlers.OrganizationUpdateRequest:
     properties:
@@ -1185,6 +1189,9 @@ definitions:
       name:
         example: Acme Corp Updated
         maxLength: 255
+        type: string
+      state:
+        example: berlin
         type: string
     type: object
 host: localhost:8080
@@ -3244,98 +3251,6 @@ paths:
       summary: Get current employee contract
       tags:
       - employees
-  /api/v1/organizations/{orgId}/government-funding:
-    delete:
-      consumes:
-      - application/json
-      description: Remove the government funding assignment from an organization (superadmin
-        only)
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Remove government funding from organization
-      tags:
-      - organizations
-    put:
-      consumes:
-      - application/json
-      description: Assign a government funding to an organization (superadmin only)
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: GovernmentFunding assignment
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AssignGovernmentFundingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_handlers.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Assign government funding to organization
-      tags:
-      - organizations
   /api/v1/organizations/{orgId}/groups:
     get:
       consumes:

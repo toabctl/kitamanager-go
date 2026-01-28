@@ -119,6 +119,8 @@ type GovernmentFundingStorer interface {
 	FindAll(limit, offset int) ([]models.GovernmentFunding, int64, error)
 	FindByID(id uint) (*models.GovernmentFunding, error)
 	FindByIDWithDetails(id uint, periodsLimit int) (*models.GovernmentFunding, error)
+	FindByState(state string) (*models.GovernmentFunding, error)
+	FindByStateWithDetails(state string, periodsLimit int) (*models.GovernmentFunding, error)
 	CountPeriods(fundingID uint) (int64, error)
 	FindByName(name string) (*models.GovernmentFunding, error)
 	Create(funding *models.GovernmentFunding) error
@@ -137,10 +139,6 @@ type GovernmentFundingStorer interface {
 	CreateProperty(property *models.GovernmentFundingProperty) error
 	UpdateProperty(property *models.GovernmentFundingProperty) error
 	DeleteProperty(id uint) error
-
-	// Organization government funding assignment
-	AssignGovernmentFundingToOrg(orgID, fundingID uint) error
-	RemoveGovernmentFundingFromOrg(orgID uint) error
 }
 
 // Compile-time interface compliance checks

@@ -14,6 +14,7 @@ describe('API Types', () => {
       id: 1,
       name: 'Test Org',
       active: true,
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       created_by: 'admin@example.com',
       updated_at: '2024-01-01T00:00:00Z'
@@ -22,6 +23,7 @@ describe('API Types', () => {
     expect(org.id).toBe(1)
     expect(org.name).toBe('Test Org')
     expect(org.active).toBe(true)
+    expect(org.state).toBe('berlin')
   })
 
   it('should allow Organization with optional users and groups', () => {
@@ -29,6 +31,7 @@ describe('API Types', () => {
       id: 1,
       name: 'Test Org',
       active: true,
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       created_by: 'admin@example.com',
       updated_at: '2024-01-01T00:00:00Z',

@@ -48,6 +48,7 @@ func createTestOrganization(t *testing.T, db *gorm.DB, name string) *models.Orga
 	org := &models.Organization{
 		Name:   name,
 		Active: true,
+		State:  string(models.StateBerlin),
 	}
 	if err := db.Create(org).Error; err != nil {
 		t.Fatalf("failed to create test organization: %v", err)
@@ -210,11 +211,13 @@ func createEmployeeService(db *gorm.DB) *EmployeeService {
 }
 
 // createTestGovernmentFunding creates a government funding plan with periods, entries, and properties for testing.
+// The funding is created with state="berlin" to match test organizations.
 func createTestGovernmentFunding(t *testing.T, db *gorm.DB, name string) *models.GovernmentFunding {
 	t.Helper()
 
 	funding := &models.GovernmentFunding{
-		Name: name,
+		Name:  name,
+		State: string(models.StateBerlin),
 	}
 	if err := db.Create(funding).Error; err != nil {
 		t.Fatalf("failed to create test government funding: %v", err)

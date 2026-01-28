@@ -97,6 +97,7 @@ func TestOrganizationHandler_Create(t *testing.T) {
 	body := OrganizationCreateRequest{
 		Name:   "New Org",
 		Active: true,
+		State:  "berlin",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -113,6 +114,9 @@ func TestOrganizationHandler_Create(t *testing.T) {
 	}
 	if result.CreatedBy != "test@example.com" {
 		t.Errorf("expected created_by 'test@example.com', got '%s'", result.CreatedBy)
+	}
+	if result.State != "berlin" {
+		t.Errorf("expected state 'berlin', got '%s'", result.State)
 	}
 }
 
@@ -433,5 +437,98 @@ func TestOrganizationHandler_Update_ActiveStatus(t *testing.T) {
 
 	if result.Active != false {
 		t.Errorf("expected active to be false, got %v", result.Active)
+	}
+}
+
+func TestOrganizationHandler_Create_InvalidState(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
+
+	r := setupTestRouter()
+	r.POST("/organizations", handler.Create)
+
+	body := OrganizationCreateRequest{
+		Name:   "New Org",
+		Active: true,
+		State:  "invalid_state",
+	}
+
+	w := performRequest(r, "POST", "/organizations", body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for invalid state, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestOrganizationHandler_Create_MissingState(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
+
+	r := setupTestRouter()
+	r.POST("/organizations", handler.Create)
+
+	// Missing state field
+	body := map[string]interface{}{
+		"name":   "New Org",
+		"active": true,
+	}
+
+	w := performRequest(r, "POST", "/organizations", body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for missing state, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestOrganizationHandler_Update_State(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
+
+	createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.PUT("/organizations/:orgId", handler.Update)
+
+	state := "berlin"
+	body := OrganizationUpdateRequest{
+		State: &state,
+	}
+
+	w := performRequest(r, "PUT", "/organizations/1", body)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var result models.Organization
+	parseResponse(t, w, &result)
+
+	if result.State != "berlin" {
+		t.Errorf("expected state 'berlin', got '%s'", result.State)
+	}
+}
+
+func TestOrganizationHandler_Update_InvalidState(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService)
+
+	createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.PUT("/organizations/:orgId", handler.Update)
+
+	state := "invalid_state"
+	body := OrganizationUpdateRequest{
+		State: &state,
+	}
+
+	w := performRequest(r, "PUT", "/organizations/1", body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for invalid state, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }

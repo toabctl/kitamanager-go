@@ -127,6 +127,7 @@ func TestOrganizationService_Create(t *testing.T) {
 	req := &OrganizationCreateRequest{
 		Name:   "New Organization",
 		Active: true,
+		State:  "berlin",
 	}
 
 	org, err := svc.Create(ctx, req, "creator@example.com")
@@ -143,6 +144,9 @@ func TestOrganizationService_Create(t *testing.T) {
 	if org.CreatedBy != "creator@example.com" {
 		t.Errorf("CreatedBy = %v, want creator@example.com", org.CreatedBy)
 	}
+	if org.State != "berlin" {
+		t.Errorf("State = %v, want berlin", org.State)
+	}
 }
 
 func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
@@ -154,6 +158,7 @@ func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
 	req := &OrganizationCreateRequest{
 		Name:   "New Organization",
 		Active: true,
+		State:  "berlin",
 	}
 
 	org, err := svc.Create(ctx, req, "creator@example.com")
@@ -215,6 +220,7 @@ func TestOrganizationService_Create_TrimmedName(t *testing.T) {
 	req := &OrganizationCreateRequest{
 		Name:   "  Trimmed Name  ",
 		Active: true,
+		State:  "berlin",
 	}
 
 	org, err := svc.Create(ctx, req, "test@example.com")
@@ -394,4 +400,119 @@ func TestOrganizationService_Delete_NonExistent(t *testing.T) {
 	// Deleting non-existent org - GORM's delete with non-existent ID doesn't error by default
 	// This is acceptable behavior for this implementation
 	_ = svc.Delete(ctx, 999)
+}
+
+func TestOrganizationService_Create_InvalidState(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	req := &OrganizationCreateRequest{
+		Name:   "Test Org",
+		Active: true,
+		State:  "invalid_state",
+	}
+
+	_, err := svc.Create(ctx, req, "test@example.com")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestOrganizationService_Create_EmptyState(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	req := &OrganizationCreateRequest{
+		Name:   "Test Org",
+		Active: true,
+		State:  "",
+	}
+
+	_, err := svc.Create(ctx, req, "test@example.com")
+	if err == nil {
+		t.Fatal("expected error for empty state, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestOrganizationService_Update_State(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	state := "berlin"
+	req := &OrganizationUpdateRequest{
+		State: &state,
+	}
+
+	updated, err := svc.Update(ctx, org.ID, req)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if updated.State != "berlin" {
+		t.Errorf("State = %v, want berlin", updated.State)
+	}
+}
+
+func TestOrganizationService_Update_InvalidState(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	state := "invalid_state"
+	req := &OrganizationUpdateRequest{
+		State: &state,
+	}
+
+	_, err := svc.Update(ctx, org.ID, req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestOrganizationService_GetByID_IncludesState(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	found, err := svc.GetByID(ctx, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if found.State != "berlin" {
+		t.Errorf("State = %v, want berlin", found.State)
+	}
 }

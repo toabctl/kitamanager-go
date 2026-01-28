@@ -273,6 +273,11 @@ export default {
     lightMode: 'Light Mode',
     darkMode: 'Dark Mode'
   },
+  states: {
+    state: 'State',
+    berlin: 'Berlin',
+    selectState: 'Select State'
+  },
   governmentFundings: {
     title: 'Government Fundings',
     create: 'Create Funding',

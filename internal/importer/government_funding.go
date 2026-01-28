@@ -34,17 +34,23 @@ func NewGovernmentFundingImporter(db *gorm.DB, fundingStore *store.GovernmentFun
 }
 
 // ImportGovernmentFundingFromFile reads a YAML file and imports the government funding data.
-// If a government funding with the given name already exists, it returns ErrGovernmentFundingExists
+// The state parameter specifies which Bundesland this funding applies to.
+// If a government funding for the given state already exists, it returns ErrGovernmentFundingExists
 // and the existing government funding's ID.
-func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, fundingName string) (uint, error) {
-	// Check if government funding already exists
-	existingFunding, err := i.fundingStore.FindByName(fundingName)
+func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, state string) (uint, error) {
+	// Check if government funding for this state already exists
+	existingFunding, err := i.fundingStore.FindByState(state)
 	if err == nil && existingFunding != nil {
-		slog.Info("Government funding already exists, skipping import", "name", fundingName, "id", existingFunding.ID)
+		slog.Info("Government funding for state already exists, skipping import", "state", state, "id", existingFunding.ID)
 		return existingFunding.ID, ErrGovernmentFundingExists
 	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, fmt.Errorf("failed to check existing government funding: %w", err)
+	}
+
+	// Validate state
+	if !models.IsValidState(state) {
+		return 0, fmt.Errorf("invalid state: %s", state)
 	}
 
 	// Read YAML file
@@ -64,8 +70,11 @@ func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, fu
 	var fundingID uint
 	err = i.db.Transaction(func(tx *gorm.DB) error {
 		// Create government funding
+		// Capitalize first letter of state name
+		stateName := strings.ToUpper(state[:1]) + state[1:]
 		funding := &models.GovernmentFunding{
-			Name: fundingName,
+			Name:  stateName + " Kita-Förderung",
+			State: state,
 		}
 		if err := tx.Create(funding).Error; err != nil {
 			return fmt.Errorf("failed to create government funding: %w", err)
@@ -94,7 +103,7 @@ func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, fu
 		return 0, err
 	}
 
-	slog.Info("Government funding imported successfully", "name", fundingName, "id", fundingID, "periods", len(periods))
+	slog.Info("Government funding imported successfully", "state", state, "id", fundingID, "periods", len(periods))
 	return fundingID, nil
 }
 

@@ -49,6 +49,7 @@ func (s *OrganizationService) GetByID(ctx context.Context, id uint) (*models.Org
 type OrganizationCreateRequest struct {
 	Name   string
 	Active bool
+	State  string
 }
 
 // Create creates a new organization with a default group (transactional)
@@ -60,9 +61,14 @@ func (s *OrganizationService) Create(ctx context.Context, req *OrganizationCreat
 		return nil, apperror.BadRequest("name cannot be empty or whitespace only")
 	}
 
+	if !models.IsValidState(req.State) {
+		return nil, apperror.BadRequest("invalid state, must be one of: berlin")
+	}
+
 	org := &models.Organization{
 		Name:      req.Name,
 		Active:    req.Active,
+		State:     req.State,
 		CreatedBy: createdBy,
 	}
 
@@ -87,6 +93,7 @@ func (s *OrganizationService) Create(ctx context.Context, req *OrganizationCreat
 type OrganizationUpdateRequest struct {
 	Name   string
 	Active *bool
+	State  *string
 }
 
 // Update updates an existing organization
@@ -107,6 +114,12 @@ func (s *OrganizationService) Update(ctx context.Context, id uint, req *Organiza
 	}
 	if req.Active != nil {
 		org.Active = *req.Active
+	}
+	if req.State != nil {
+		if !models.IsValidState(*req.State) {
+			return nil, apperror.BadRequest("invalid state, must be one of: berlin")
+		}
+		org.State = *req.State
 	}
 
 	if err := s.store.Update(org); err != nil {

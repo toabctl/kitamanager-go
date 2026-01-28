@@ -94,6 +94,7 @@ describe('UI Store', () => {
       id,
       name,
       active: true,
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       created_by: 'test',
       updated_at: '2024-01-01T00:00:00Z'
@@ -173,6 +174,7 @@ describe('UI Store', () => {
       id,
       name,
       active: true,
+      state: 'berlin',
       created_at: '2024-01-01T00:00:00Z',
       created_by: 'test',
       updated_at: '2024-01-01T00:00:00Z'

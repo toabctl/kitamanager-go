@@ -98,7 +98,8 @@ func (h *GovernmentFundingHandler) Get(c *gin.Context) {
 
 // GovernmentFundingCreateRequest represents the request body for creating a government funding
 type GovernmentFundingCreateRequest struct {
-	Name string `json:"name" binding:"required,max=255" example:"Berlin"`
+	Name  string `json:"name" binding:"required,max=255" example:"Berlin Kita Funding"`
+	State string `json:"state" binding:"required" example:"berlin"`
 }
 
 // Create godoc
@@ -123,7 +124,8 @@ func (h *GovernmentFundingHandler) Create(c *gin.Context) {
 	}
 
 	funding, err := h.service.Create(c.Request.Context(), &service.GovernmentFundingCreateRequest{
-		Name: req.Name,
+		Name:  req.Name,
+		State: req.State,
 	})
 	if err != nil {
 		respondError(c, err)
@@ -463,75 +465,6 @@ func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteProperty(c.Request.Context(), propID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-// Organization funding assignment handlers
-
-// AssignFunding godoc
-// @Summary Assign government funding to organization
-// @Description Assign a government funding to an organization (superadmin only)
-// @Tags organizations
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param orgId path int true "Organization ID"
-// @Param request body models.AssignGovernmentFundingRequest true "GovernmentFunding assignment"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /api/v1/organizations/{orgId}/government-funding [put]
-func (h *GovernmentFundingHandler) AssignFunding(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	var req models.AssignGovernmentFundingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	if err := h.service.AssignGovernmentFundingToOrg(c.Request.Context(), orgID, req.GovernmentFundingID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "funding assigned successfully"})
-}
-
-// RemoveFunding godoc
-// @Summary Remove government funding from organization
-// @Description Remove the government funding assignment from an organization (superadmin only)
-// @Tags organizations
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param orgId path int true "Organization ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} ErrorResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /api/v1/organizations/{orgId}/government-funding [delete]
-func (h *GovernmentFundingHandler) RemoveFunding(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.RemoveGovernmentFundingFromOrg(c.Request.Context(), orgID); err != nil {
 		respondError(c, err)
 		return
 	}

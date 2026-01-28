@@ -121,7 +121,7 @@ func main() {
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
 	childService := service.NewChildService(childStore, orgStore, governmentFundingStore)
-	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore, orgStore)
+	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret)

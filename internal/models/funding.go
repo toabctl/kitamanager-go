@@ -3,10 +3,12 @@ package models
 import "time"
 
 // GovernmentFunding represents a top-level government funding plan definition.
-// Organizations are assigned to a government funding to determine funding calculations.
+// Each funding is associated with a specific state (Bundesland).
+// Organizations automatically use the funding for their state.
 type GovernmentFunding struct {
 	ID        uint                      `gorm:"primaryKey" json:"id" example:"1"`
-	Name      string                    `gorm:"size:255;not null;uniqueIndex" json:"name" example:"Berlin"`
+	Name      string                    `gorm:"size:255;not null" json:"name" example:"Berlin Kita Funding"`
+	State     string                    `gorm:"size:50;not null;uniqueIndex" json:"state" example:"berlin"`
 	CreatedAt time.Time                 `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt time.Time                 `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 	Periods   []GovernmentFundingPeriod `gorm:"foreignKey:GovernmentFundingID;constraint:OnDelete:CASCADE" json:"periods,omitempty"`
@@ -78,7 +80,8 @@ func (p *GovernmentFundingProperty) MatchesAge(age int) bool {
 
 // GovernmentFundingCreateRequest represents the request body for creating a government funding.
 type GovernmentFundingCreateRequest struct {
-	Name string `json:"name" binding:"required,max=255" example:"Berlin"`
+	Name  string `json:"name" binding:"required,max=255" example:"Berlin Kita Funding"`
+	State string `json:"state" binding:"required" example:"berlin"`
 }
 
 // GovernmentFundingUpdateRequest represents the request body for updating a government funding.
@@ -120,15 +123,11 @@ type GovernmentFundingPropertyUpdateRequest struct {
 	Comment     *string  `json:"comment" binding:"omitempty,max=500" example:"Updated comment"`
 }
 
-// AssignGovernmentFundingRequest represents the request body for assigning a government funding to an organization.
-type AssignGovernmentFundingRequest struct {
-	GovernmentFundingID uint `json:"government_funding_id" binding:"required" example:"1"`
-}
-
 // GovernmentFundingResponse represents the government funding response
 type GovernmentFundingResponse struct {
 	ID        uint      `json:"id" example:"1"`
-	Name      string    `json:"name" example:"Berlin"`
+	Name      string    `json:"name" example:"Berlin Kita Funding"`
+	State     string    `json:"state" example:"berlin"`
 	CreatedAt time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
@@ -137,6 +136,7 @@ func (f *GovernmentFunding) ToResponse() GovernmentFundingResponse {
 	return GovernmentFundingResponse{
 		ID:        f.ID,
 		Name:      f.Name,
+		State:     f.State,
 		CreatedAt: f.CreatedAt,
 		UpdatedAt: f.UpdatedAt,
 	}
