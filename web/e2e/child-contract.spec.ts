@@ -136,7 +136,8 @@ test.describe('Child Contract Management', () => {
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     await page.locator('#from').click()
-    await page.waitForTimeout(300)
+    // Wait for calendar panel to appear
+    await expect(page.locator('.p-datepicker-panel')).toBeVisible({ timeout: 5000 })
 
     // Navigate to next day if needed (click the day after today)
     const tomorrowDay = tomorrow.getDate().toString()
@@ -148,16 +149,31 @@ test.describe('Child Contract Management', () => {
       .first()
       .click()
 
+    // Wait for calendar to close
+    await expect(page.locator('.p-datepicker-panel')).not.toBeVisible({ timeout: 5000 })
+
     // Add different attribute for new contract
     const newChipsInput = page.locator('#attributes input')
     await newChipsInput.fill('halbtags')
     await newChipsInput.press('Enter')
+    await page.waitForTimeout(300) // Wait for chip to register
 
     // Save - should end old contract and create new one
     await page.getByRole('button', { name: 'Save' }).click()
 
+    // Wait for either dialog to close (success) or error toast
+    // First wait a moment for the network request
+    await page.waitForTimeout(500)
+
+    // Check for error toast - if present, fail with the error message
+    const errorToast = page.locator('.p-toast-message-error')
+    if (await errorToast.isVisible().catch(() => false)) {
+      const errorText = await errorToast.textContent()
+      throw new Error(`API error occurred: ${errorText}`)
+    }
+
     // Wait for dialog to close (indicates save completed successfully)
-    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.p-dialog')).not.toBeVisible({ timeout: 15000 })
 
     // =====================================
     // Step 4: Verify contract history
