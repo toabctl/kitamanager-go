@@ -40,6 +40,13 @@ repos:
         types: [go]
         pass_filenames: false
 
+      - id: go-contract-test
+        name: go contract test (sqlite)
+        entry: go test -tags=contract ./internal/contract/...
+        language: system
+        types: [go]
+        pass_filenames: false
+
       - id: go-build
         name: go build
         entry: go build -o /dev/null ./cmd/api

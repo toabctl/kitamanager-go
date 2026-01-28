@@ -23,6 +23,7 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/service"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -53,18 +54,27 @@ func TestMain(m *testing.M) {
 	}
 
 	// Get database connection
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		getEnv("TEST_DB_HOST", "localhost"),
-		getEnv("TEST_DB_PORT", "5432"),
-		getEnv("TEST_DB_USER", "kitamanager"),
-		getEnv("TEST_DB_PASSWORD", "kitamanager"),
-		getEnv("TEST_DB_NAME", "kitamanager_test"),
-	)
+	dbType := getEnv("TEST_DB_TYPE", "sqlite")
 
-	testDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	if dbType == "postgres" {
+		dsn := fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			getEnv("TEST_DB_HOST", "localhost"),
+			getEnv("TEST_DB_PORT", "5432"),
+			getEnv("TEST_DB_USER", "kitamanager"),
+			getEnv("TEST_DB_PASSWORD", "kitamanager"),
+			getEnv("TEST_DB_NAME", "kitamanager_test"),
+		)
+		testDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	} else {
+		// SQLite in-memory database for fast local testing
+		testDB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	}
+
 	if err != nil {
 		fmt.Printf("Failed to connect to test database: %v\n", err)
 		os.Exit(1)
