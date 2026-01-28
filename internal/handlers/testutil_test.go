@@ -36,6 +36,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&models.UserGroup{},
 		&models.Employee{},
 		&models.EmployeeContract{},
+		&models.EmployeeContractProperty{},
 		&models.Child{},
 		&models.ChildContract{},
 		&models.GovernmentFunding{},

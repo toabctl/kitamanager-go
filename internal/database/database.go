@@ -35,6 +35,7 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		&models.UserGroup{},
 		&models.Employee{},
 		&models.EmployeeContract{},
+		&models.EmployeeContractProperty{},
 		&models.Child{},
 		&models.ChildContract{},
 	); err != nil {

@@ -192,9 +192,29 @@ func Setup(
 					employees.POST("/:id/contracts",
 						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionCreate),
 						employeeHandler.CreateContract)
+					employees.GET("/:id/contracts/:contractId",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionRead),
+						employeeHandler.GetContract)
+					employees.PUT("/:id/contracts/:contractId",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionUpdate),
+						employeeHandler.UpdateContract)
 					employees.DELETE("/:id/contracts/:contractId",
 						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionDelete),
 						employeeHandler.DeleteContract)
+
+					// Employee contract properties
+					employees.GET("/:id/contracts/:contractId/properties",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionRead),
+						employeeHandler.ListContractProperties)
+					employees.POST("/:id/contracts/:contractId/properties",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionUpdate),
+						employeeHandler.CreateContractProperty)
+					employees.PUT("/:id/contracts/:contractId/properties/:propId",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionUpdate),
+						employeeHandler.UpdateContractProperty)
+					employees.DELETE("/:id/contracts/:contractId/properties/:propId",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployeeContracts, rbac.ActionUpdate),
+						employeeHandler.DeleteContractProperty)
 				}
 
 				// Children

@@ -329,6 +329,101 @@ func (h *EmployeeHandler) CreateContract(c *gin.Context) {
 	c.JSON(http.StatusCreated, contract)
 }
 
+// GetContract godoc
+// @Summary Get employee contract by ID
+// @Description Get a single contract by ID with properties
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Success 200 {object} models.EmployeeContractResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [get]
+func (h *EmployeeHandler) GetContract(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contract, err := h.service.GetContractByID(c.Request.Context(), contractID, id, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, contract)
+}
+
+// UpdateContract godoc
+// @Summary Update employee contract
+// @Description Update an existing contract by ID
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Param request body models.EmployeeContractUpdateRequest true "Contract data"
+// @Success 200 {object} models.EmployeeContractResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse "Contract overlaps with existing"
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [put]
+func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	var req models.EmployeeContractUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+
+	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, id, orgID, &req)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, contract)
+}
+
 // DeleteContract godoc
 // @Summary Delete employee contract
 // @Description Delete a contract by ID
@@ -364,6 +459,209 @@ func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteContract(c.Request.Context(), contractID, id, orgID); err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+// ListContractProperties godoc
+// @Summary List contract properties
+// @Description Get all properties for a contract
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Success 200 {array} models.EmployeeContractPropertyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties [get]
+func (h *EmployeeHandler) ListContractProperties(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	properties, err := h.service.ListContractProperties(c.Request.Context(), contractID, id, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, properties)
+}
+
+// CreateContractProperty godoc
+// @Summary Create contract property
+// @Description Create a new property for a contract
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Param request body models.EmployeeContractPropertyCreateRequest true "Property data"
+// @Success 201 {object} models.EmployeeContractPropertyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse "Property with this name already exists"
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties [post]
+func (h *EmployeeHandler) CreateContractProperty(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	var req models.EmployeeContractPropertyCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+
+	property, err := h.service.CreateContractProperty(c.Request.Context(), contractID, id, orgID, &req)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, property)
+}
+
+// UpdateContractProperty godoc
+// @Summary Update contract property
+// @Description Update an existing property by ID
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Param propId path int true "Property ID"
+// @Param request body models.EmployeeContractPropertyUpdateRequest true "Property data"
+// @Success 200 {object} models.EmployeeContractPropertyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties/{propId} [put]
+func (h *EmployeeHandler) UpdateContractProperty(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	propID, err := parseID(c, "propId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	var req models.EmployeeContractPropertyUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return
+	}
+
+	property, err := h.service.UpdateContractProperty(c.Request.Context(), propID, contractID, id, orgID, &req)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, property)
+}
+
+// DeleteContractProperty godoc
+// @Summary Delete contract property
+// @Description Delete a property by ID
+// @Tags employees
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param id path int true "Employee ID"
+// @Param contractId path int true "Contract ID"
+// @Param propId path int true "Property ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId}/properties/{propId} [delete]
+func (h *EmployeeHandler) DeleteContractProperty(c *gin.Context) {
+	orgID, err := parseID(c, "orgId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	id, err := parseID(c, "id")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	contractID, err := parseID(c, "contractId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	propID, err := parseID(c, "propId")
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	if err := h.service.DeleteContractProperty(c.Request.Context(), propID, contractID, id, orgID); err != nil {
 		respondError(c, err)
 		return
 	}
