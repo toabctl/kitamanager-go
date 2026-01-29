@@ -423,7 +423,7 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 		To:          nil,
 		Position:    "Senior Developer",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -461,7 +461,7 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 		To:          &sameDay,
 		Position:    "One-Day Consultant",
 		WeeklyHours: 8,
-		Salary:      50000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -506,7 +506,7 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 		To:          nil,
 		Position:    "Malicious Contract",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	// Try to create contract from org2 (should fail with 404)
@@ -551,7 +551,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 		To:          nil,
 		Position:    "Senior Developer",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1072,7 +1072,7 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/999/contracts", org.ID), body)
@@ -1096,7 +1096,7 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/invalid/contracts", org.ID), body)
@@ -1152,7 +1152,7 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Developer",
 		WeeklyHours: 0,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1190,7 +1190,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Senior Developer",
 		WeeklyHours: 40,
-		Salary:      700000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1231,7 +1231,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 		From:        time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC),
 		Position:    "Senior Developer",
 		WeeklyHours: 40,
-		Salary:      700000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1396,7 +1396,7 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 		To:          &toDate,
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1424,7 +1424,7 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Developer",
 		WeeklyHours: -1,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1452,41 +1452,13 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "Developer",
 		WeeklyHours: 169,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d for weekly hours > 168, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
-	}
-}
-
-func TestEmployeeHandler_CreateContract_NegativeSalary(t *testing.T) {
-	db := setupTestDB(t)
-	employeeService := createEmployeeService(db)
-	handler := NewEmployeeHandler(employeeService, nil)
-
-	org := createTestOrganization(t, db, "Test Org")
-	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
-	}
-	db.Create(employee)
-
-	r := setupTestRouter()
-	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
-
-	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Salary:      -1,
-	}
-
-	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for negative salary, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }
 
@@ -1508,7 +1480,7 @@ func TestEmployeeHandler_CreateContract_WhitespacePosition(t *testing.T) {
 		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Position:    "   ",
 		WeeklyHours: 40,
-		Salary:      600000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)

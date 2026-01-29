@@ -197,8 +197,9 @@ export interface EmployeeContract {
   from: string
   to?: string | null
   position: string
+  grade: string
+  step: number
   weekly_hours: number
-  salary: number
   created_at: string
   updated_at: string
 }
@@ -222,8 +223,9 @@ export interface EmployeeContractCreateRequest {
   from: string
   to?: string | null
   position: string
+  grade: string
+  step: number
   weekly_hours: number
-  salary: number
 }
 
 // Child

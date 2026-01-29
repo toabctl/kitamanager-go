@@ -325,6 +325,9 @@ definitions:
         type: integer
       from:
         type: string
+      grade:
+        example: S8a
+        type: string
       id:
         example: 1
         type: integer
@@ -337,9 +340,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractProperty'
         type: array
-      salary:
-        description: cents per month
-        example: 350000
+      step:
+        example: 3
         type: integer
       to:
         type: string
@@ -354,12 +356,17 @@ definitions:
       from:
         example: "2025-01-01"
         type: string
+      grade:
+        example: S8a
+        maxLength: 20
+        type: string
       position:
         example: Erzieher
         maxLength: 255
         type: string
-      salary:
-        example: 350000
+      step:
+        example: 3
+        maximum: 10
         minimum: 0
         type: integer
       to:
@@ -373,7 +380,6 @@ definitions:
     required:
     - from
     - position
-    - salary
     - weekly_hours
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractProperty:
@@ -447,6 +453,9 @@ definitions:
       from:
         example: "2025-01-01"
         type: string
+      grade:
+        example: S8a
+        type: string
       id:
         example: 1
         type: integer
@@ -457,8 +466,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractPropertyResponse'
         type: array
-      salary:
-        example: 350000
+      step:
+        example: 3
         type: integer
       to:
         example: "2025-12-31"
@@ -474,12 +483,17 @@ definitions:
       from:
         example: "2025-01-01"
         type: string
+      grade:
+        example: S8a
+        maxLength: 20
+        type: string
       position:
         example: Erzieher
         maxLength: 255
         type: string
-      salary:
-        example: 350000
+      step:
+        example: 3
+        maximum: 10
         minimum: 0
         type: integer
       to:

@@ -37,7 +37,7 @@ func TestPeriodStore_GetCurrentContract(t *testing.T) {
 		},
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      500000,
+		Grade:       "S8a", Step: 3,
 	}
 	db.Create(contract)
 
@@ -106,7 +106,7 @@ func TestPeriodStore_GetContractOn(t *testing.T) {
 		},
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      500000,
+		Grade:       "S8a", Step: 3,
 	}
 	db.Create(contract)
 

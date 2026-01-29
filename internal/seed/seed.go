@@ -359,7 +359,7 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created test employees", "count", len(employees))
 
-	// Create employee contracts with salary based on pay plan
+	// Create employee contracts with grade and step from pay plan
 	now := time.Now()
 	employeeContractCount := 0
 	grades := []string{"S4", "S8a", "S8a", "S8b", "S8a", "S9", "S8a", "S8a", "S4", "S8b"}
@@ -368,22 +368,13 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	positions := []string{"Kinderpfleger", "Erzieher", "Erzieher", "Erzieher", "Gruppenleitung", "Sozialarbeiter", "Erzieher", "Erzieher", "Kinderpfleger", "Erzieher"}
 
 	for i, emp := range employees {
-		// Calculate salary based on pay plan entry and weekly hours
-		var monthlyAmount int
-		for _, e := range payEntries {
-			if e.grade == grades[i] && e.step == steps[i] {
-				monthlyAmount = e.amount
-				break
-			}
-		}
-		salary := int(float64(monthlyAmount) * (hours[i] / 39.0))
-
 		contract := models.EmployeeContract{
 			EmployeeID:  emp.ID,
 			Period:      models.Period{From: now.AddDate(-2, -i, 0), To: nil},
 			Position:    positions[i],
+			Grade:       grades[i],
+			Step:        steps[i],
 			WeeklyHours: hours[i],
-			Salary:      salary,
 		}
 		if err := db.Create(&contract).Error; err != nil {
 			return err

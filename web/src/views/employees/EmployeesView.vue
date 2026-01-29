@@ -5,7 +5,7 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useI18n } from 'vue-i18n'
 import { apiClient, getErrorMessage } from '@/api/client'
-import { formatDate, formatCurrency } from '@/utils/formatting'
+import { formatDate } from '@/utils/formatting'
 import type {
   Employee,
   EmployeeCreateRequest,
@@ -225,14 +225,19 @@ onMounted(() => {
             {{ getCurrentContract(data)?.position || '-' }}
           </template>
         </Column>
-        <Column :header="t('employees.weeklyHours')" style="width: 120px">
+        <Column :header="t('employees.weeklyHours')" style="width: 100px">
           <template #body="{ data }">
             {{ getCurrentContract(data)?.weekly_hours || '-' }}
           </template>
         </Column>
-        <Column :header="t('employees.salary')" style="width: 120px">
+        <Column :header="t('employees.grade')" style="width: 80px">
           <template #body="{ data }">
-            {{ getCurrentContract(data) ? formatCurrency(getCurrentContract(data)!.salary) : '-' }}
+            {{ getCurrentContract(data)?.grade || '-' }}
+          </template>
+        </Column>
+        <Column :header="t('employees.step')" style="width: 80px">
+          <template #body="{ data }">
+            {{ getCurrentContract(data)?.step || '-' }}
           </template>
         </Column>
         <Column :header="t('common.actions')" style="width: 200px">

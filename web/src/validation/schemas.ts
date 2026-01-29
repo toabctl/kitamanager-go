@@ -92,11 +92,12 @@ export const employeeContractSchema = z
     position: z
       .string({ required_error: 'validation.positionRequired' })
       .min(1, 'validation.positionRequired'),
+    grade: z.string().optional(),
+    step: z.number().min(1).max(6).optional(),
     weekly_hours: z
       .number({ required_error: 'validation.weeklyHoursRequired' })
       .min(0, 'validation.weeklyHoursMin')
-      .max(168, 'validation.weeklyHoursMax'),
-    salary: z.number({ required_error: 'validation.salaryRequired' }).min(0, 'validation.salaryMin')
+      .max(168, 'validation.weeklyHoursMax')
   })
   .refine(
     (data) => {

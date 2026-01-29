@@ -382,7 +382,7 @@ func TestEmployeeService_CreateContract(t *testing.T) {
 		To:          &to,
 		Position:    "Teacher",
 		WeeklyHours: 40,
-		Salary:      5000000, // 50000.00 in cents
+		Grade:       "S8a", Step: 3, // 50000.00 in cents
 	}
 
 	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -416,7 +416,7 @@ func TestEmployeeService_CreateContract_EmployeeNotFound(t *testing.T) {
 		From:        from,
 		Position:    "Teacher",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	_, err := svc.CreateContract(ctx, 999, org.ID, req)
@@ -448,7 +448,7 @@ func TestEmployeeService_CreateContract_WrongOrg(t *testing.T) {
 		From:        from,
 		Position:    "Hacker",
 		WeeklyHours: 40,
-		Salary:      9999999,
+		Grade:       "S8a", Step: 3,
 	}
 
 	// Try to create contract for employee from org1 using org2's context
@@ -488,7 +488,7 @@ func TestEmployeeService_CreateContract_EmptyPosition(t *testing.T) {
 		From:        from,
 		Position:    "",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -518,7 +518,7 @@ func TestEmployeeService_CreateContract_WhitespaceOnlyPosition(t *testing.T) {
 		From:        from,
 		Position:    "   ",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -551,7 +551,7 @@ func TestEmployeeService_CreateContract_InvalidPeriod(t *testing.T) {
 		To:          &to,
 		Position:    "Teacher",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -584,7 +584,7 @@ func TestEmployeeService_CreateContract_OverlappingContract(t *testing.T) {
 		To:          &to1,
 		Position:    "Teacher",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req1)
 	if err != nil {
@@ -599,7 +599,7 @@ func TestEmployeeService_CreateContract_OverlappingContract(t *testing.T) {
 		To:          &to2,
 		Position:    "Senior Teacher",
 		WeeklyHours: 35,
-		Salary:      6000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	_, err = svc.CreateContract(ctx, employee.ID, org.ID, req2)
@@ -631,7 +631,7 @@ func TestEmployeeService_CreateContract_OngoingContract(t *testing.T) {
 		To:          nil,
 		Position:    "Teacher",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -657,7 +657,7 @@ func TestEmployeeService_CreateContract_TrimmedPosition(t *testing.T) {
 		From:        from,
 		Position:    "  Teacher  ",
 		WeeklyHours: 40,
-		Salary:      5000000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
@@ -681,11 +681,11 @@ func TestEmployeeService_ListContracts(t *testing.T) {
 	// Create two contracts
 	from1 := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2022, 12, 31, 0, 0, 0, 0, time.UTC)
-	req1 := &models.EmployeeContractCreateRequest{From: from1, To: &to1, Position: "Junior", WeeklyHours: 40, Salary: 4000000}
+	req1 := &models.EmployeeContractCreateRequest{From: from1, To: &to1, Position: "Junior", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	_, _ = svc.CreateContract(ctx, employee.ID, org.ID, req1)
 
 	from2 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req2 := &models.EmployeeContractCreateRequest{From: from2, Position: "Senior", WeeklyHours: 40, Salary: 5000000}
+	req2 := &models.EmployeeContractCreateRequest{From: from2, Position: "Senior", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	_, _ = svc.CreateContract(ctx, employee.ID, org.ID, req2)
 
 	contracts, _, err := svc.ListContracts(ctx, employee.ID, org.ID, 100, 0)
@@ -731,7 +731,7 @@ func TestEmployeeService_ListContracts_WrongOrg(t *testing.T) {
 
 	// Create a contract for org1's employee
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	_, _ = svc.CreateContract(ctx, employee.ID, org1.ID, req)
 
 	// Try to list contracts for employee from org1 using org2's context
@@ -842,7 +842,7 @@ func TestEmployeeService_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	// Create an active (ongoing) contract for org1's employee
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	_, _ = svc.CreateContract(ctx, employee.ID, org1.ID, req)
 
 	// Try to get current contract for employee from org1 using org2's context
@@ -873,7 +873,7 @@ func TestEmployeeService_DeleteContract_WrongOrg(t *testing.T) {
 	// Create a contract for org1's employee
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	contract, err := svc.CreateContract(ctx, employee.ID, org1.ID, req)
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -914,7 +914,7 @@ func TestEmployeeService_DeleteContract(t *testing.T) {
 	// Create a contract
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -971,7 +971,7 @@ func TestEmployeeService_DeleteContract_WrongEmployee(t *testing.T) {
 	// Create a contract for employee1
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	contract, err := svc.CreateContract(ctx, employee1.ID, org.ID, req)
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1011,7 +1011,7 @@ func TestEmployeeService_GetCurrentContract(t *testing.T) {
 
 	// Create an ongoing contract (no end date)
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	created, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1042,7 +1042,7 @@ func TestEmployeeService_GetCurrentContract_NoActiveContract(t *testing.T) {
 	// Create an expired contract
 	from := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC)
-	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Salary: 5000000}
+	req := &models.EmployeeContractCreateRequest{From: from, To: &to, Position: "Teacher", WeeklyHours: 40, Grade: "S8a", Step: 3}
 	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)

@@ -20,8 +20,9 @@ type EmployeeContract struct {
 
 	// Contract properties
 	Position    string  `gorm:"size:255" json:"position" example:"Erzieher"`
+	Grade       string  `gorm:"size:20" json:"grade" example:"S8a"`
+	Step        int     `json:"step" example:"3"`
 	WeeklyHours float64 `json:"weekly_hours" example:"40"`
-	Salary      int     `json:"salary" example:"350000"` // cents per month
 
 	// Key-value properties for additional contract attributes
 	Properties []EmployeeContractProperty `gorm:"foreignKey:ContractID" json:"properties,omitempty"`
@@ -121,8 +122,9 @@ type EmployeeContractCreateRequest struct {
 	From        time.Time  `json:"from" binding:"required" example:"2025-01-01"`
 	To          *time.Time `json:"to" example:"2025-12-31"`
 	Position    string     `json:"position" binding:"required,max=255" example:"Erzieher"`
+	Grade       string     `json:"grade" binding:"max=20" example:"S8a"`
+	Step        int        `json:"step" binding:"gte=0,lte=10" example:"3"`
 	WeeklyHours float64    `json:"weekly_hours" binding:"required,gte=0,lte=168" example:"40"`
-	Salary      int        `json:"salary" binding:"required,gte=0" example:"350000"`
 }
 
 // EmployeeContractUpdateRequest represents the request body for updating an employee contract.
@@ -130,8 +132,9 @@ type EmployeeContractUpdateRequest struct {
 	From        *time.Time `json:"from" example:"2025-01-01"`
 	To          *time.Time `json:"to" example:"2025-12-31"`
 	Position    *string    `json:"position" binding:"omitempty,max=255" example:"Erzieher"`
+	Grade       *string    `json:"grade" binding:"omitempty,max=20" example:"S8a"`
+	Step        *int       `json:"step" binding:"omitempty,gte=0,lte=10" example:"3"`
 	WeeklyHours *float64   `json:"weekly_hours" binding:"omitempty,gte=0,lte=168" example:"40"`
-	Salary      *int       `json:"salary" binding:"omitempty,gte=0" example:"350000"`
 }
 
 // EmployeeContractPropertyCreateRequest represents the request body for creating a contract property.
@@ -215,8 +218,9 @@ type EmployeeContractResponse struct {
 	From        time.Time                          `json:"from" example:"2025-01-01"`
 	To          *time.Time                         `json:"to" example:"2025-12-31"`
 	Position    string                             `json:"position" example:"Erzieher"`
+	Grade       string                             `json:"grade" example:"S8a"`
+	Step        int                                `json:"step" example:"3"`
 	WeeklyHours float64                            `json:"weekly_hours" example:"40"`
-	Salary      int                                `json:"salary" example:"350000"`
 	Properties  []EmployeeContractPropertyResponse `json:"properties,omitempty"`
 	CreatedAt   time.Time                          `json:"created_at"`
 	UpdatedAt   time.Time                          `json:"updated_at"`
@@ -229,8 +233,9 @@ func (c *EmployeeContract) ToResponse() EmployeeContractResponse {
 		From:        c.From,
 		To:          c.To,
 		Position:    c.Position,
+		Grade:       c.Grade,
+		Step:        c.Step,
 		WeeklyHours: c.WeeklyHours,
-		Salary:      c.Salary,
 		CreatedAt:   c.CreatedAt,
 		UpdatedAt:   c.UpdatedAt,
 	}

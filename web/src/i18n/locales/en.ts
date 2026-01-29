@@ -142,13 +142,12 @@ export default {
     confirmDeleteMessage: 'Are you sure you want to delete {name}?',
     currentPosition: 'Current Position',
     weeklyHours: 'Weekly Hours',
-    salary: 'Salary',
+    grade: 'Grade',
+    step: 'Step',
     birthdate: 'Birthdate',
     position: 'Position',
-    monthlySalary: 'Monthly Salary',
     positionRequired: 'Position is required',
-    weeklyHoursRequired: 'Weekly hours must be greater than 0',
-    salaryRequired: 'Salary must be greater than 0'
+    weeklyHoursRequired: 'Weekly hours must be greater than 0'
   },
   gender: {
     label: 'Gender',
@@ -293,9 +292,7 @@ export default {
     positionRequired: 'Position is required',
     weeklyHoursRequired: 'Weekly hours is required',
     weeklyHoursMin: 'Weekly hours must be at least 0',
-    weeklyHoursMax: 'Weekly hours cannot exceed 168',
-    salaryRequired: 'Salary is required',
-    salaryMin: 'Salary must be at least 0'
+    weeklyHoursMax: 'Weekly hours cannot exceed 168'
   },
   settings: {
     title: 'Settings',

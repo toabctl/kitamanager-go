@@ -5954,6 +5954,10 @@ const docTemplate = `{
                 "from": {
                     "type": "string"
                 },
+                "grade": {
+                    "type": "string",
+                    "example": "S8a"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -5970,10 +5974,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractProperty"
                     }
                 },
-                "salary": {
-                    "description": "cents per month",
+                "step": {
                     "type": "integer",
-                    "example": 350000
+                    "example": 3
                 },
                 "to": {
                     "type": "string"
@@ -5992,7 +5995,6 @@ const docTemplate = `{
             "required": [
                 "from",
                 "position",
-                "salary",
                 "weekly_hours"
             ],
             "properties": {
@@ -6000,15 +6002,21 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2025-01-01"
                 },
+                "grade": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "S8a"
+                },
                 "position": {
                     "type": "string",
                     "maxLength": 255,
                     "example": "Erzieher"
                 },
-                "salary": {
+                "step": {
                     "type": "integer",
+                    "maximum": 10,
                     "minimum": 0,
-                    "example": 350000
+                    "example": 3
                 },
                 "to": {
                     "type": "string",
@@ -6122,6 +6130,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2025-01-01"
                 },
+                "grade": {
+                    "type": "string",
+                    "example": "S8a"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -6136,9 +6148,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractPropertyResponse"
                     }
                 },
-                "salary": {
+                "step": {
                     "type": "integer",
-                    "example": 350000
+                    "example": 3
                 },
                 "to": {
                     "type": "string",
@@ -6160,15 +6172,21 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2025-01-01"
                 },
+                "grade": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "S8a"
+                },
                 "position": {
                     "type": "string",
                     "maxLength": 255,
                     "example": "Erzieher"
                 },
-                "salary": {
+                "step": {
                     "type": "integer",
+                    "maximum": 10,
                     "minimum": 0,
-                    "example": 350000
+                    "example": 3
                 },
                 "to": {
                     "type": "string",

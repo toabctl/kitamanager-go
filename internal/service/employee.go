@@ -223,9 +223,7 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 	if err := validation.ValidateWeeklyHours(req.WeeklyHours, "weekly_hours"); err != nil {
 		return nil, apperror.BadRequest(err.Error())
 	}
-	if err := validation.ValidateSalary(req.Salary); err != nil {
-		return nil, apperror.BadRequest(err.Error())
-	}
+	req.Grade = strings.TrimSpace(req.Grade)
 
 	// Verify employee exists and belongs to org (use minimal query - no preloads needed)
 	employee, err := s.store.FindByIDMinimal(employeeID)
@@ -252,8 +250,9 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 			To:   req.To,
 		},
 		Position:    req.Position,
+		Grade:       req.Grade,
+		Step:        req.Step,
 		WeeklyHours: req.WeeklyHours,
-		Salary:      req.Salary,
 	}
 
 	if err := s.store.CreateContract(contract); err != nil {
@@ -348,11 +347,11 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 		}
 		contract.WeeklyHours = *req.WeeklyHours
 	}
-	if req.Salary != nil {
-		if err := validation.ValidateSalary(*req.Salary); err != nil {
-			return nil, apperror.BadRequest(err.Error())
-		}
-		contract.Salary = *req.Salary
+	if req.Grade != nil {
+		contract.Grade = strings.TrimSpace(*req.Grade)
+	}
+	if req.Step != nil {
+		contract.Step = *req.Step
 	}
 
 	// Handle date changes

@@ -67,8 +67,9 @@ describe('API Types', () => {
       from: '2024-01-01',
       to: '2024-12-31',
       position: 'Erzieher',
+      grade: 'S8a',
+      step: 3,
       weekly_hours: 40,
-      salary: 350000,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
     }
@@ -96,8 +97,9 @@ describe('API Types', () => {
       from: '2024-01-01',
       to: null,
       position: 'Erzieher',
+      grade: 'S8a',
+      step: 3,
       weekly_hours: 40,
-      salary: 350000,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
     }

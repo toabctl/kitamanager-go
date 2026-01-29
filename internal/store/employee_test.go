@@ -202,7 +202,7 @@ func TestEmployeeStore_CreateContract(t *testing.T) {
 		},
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      500000,
+		Grade:       "S8a", Step: 3,
 	}
 
 	err := store.CreateContract(contract)
@@ -237,7 +237,7 @@ func TestEmployeeStore_DeleteContract(t *testing.T) {
 		},
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      500000,
+		Grade:       "S8a", Step: 3,
 	}
 	db.Create(contract)
 
@@ -274,7 +274,7 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 		},
 		Position:    "Developer",
 		WeeklyHours: 40,
-		Salary:      500000,
+		Grade:       "S8a", Step: 3,
 	}
 	db.Create(contract)
 	contractID := contract.ID

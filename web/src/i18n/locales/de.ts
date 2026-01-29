@@ -142,13 +142,12 @@ export default {
     confirmDeleteMessage: 'Möchten Sie {name} wirklich löschen?',
     currentPosition: 'Aktuelle Position',
     weeklyHours: 'Wochenstunden',
-    salary: 'Gehalt',
+    grade: 'Entgeltgruppe',
+    step: 'Stufe',
     birthdate: 'Geburtsdatum',
     position: 'Position',
-    monthlySalary: 'Monatsgehalt',
     positionRequired: 'Position ist erforderlich',
-    weeklyHoursRequired: 'Wochenstunden müssen größer als 0 sein',
-    salaryRequired: 'Gehalt muss größer als 0 sein'
+    weeklyHoursRequired: 'Wochenstunden müssen größer als 0 sein'
   },
   gender: {
     label: 'Geschlecht',
@@ -293,9 +292,7 @@ export default {
     positionRequired: 'Position ist erforderlich',
     weeklyHoursRequired: 'Wochenstunden sind erforderlich',
     weeklyHoursMin: 'Wochenstunden müssen mindestens 0 sein',
-    weeklyHoursMax: 'Wochenstunden können 168 nicht überschreiten',
-    salaryRequired: 'Gehalt ist erforderlich',
-    salaryMin: 'Gehalt muss mindestens 0 sein'
+    weeklyHoursMax: 'Wochenstunden können 168 nicht überschreiten'
   },
   settings: {
     title: 'Einstellungen',
