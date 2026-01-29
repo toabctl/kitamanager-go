@@ -41,7 +41,7 @@ func (s *EmployeeStore) FindByOrganization(orgID uint, limit, offset int) ([]mod
 		return nil, 0, err
 	}
 
-	if err := s.db.Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
+	if err := s.db.Preload("Contracts").Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
 		return nil, 0, err
 	}
 
