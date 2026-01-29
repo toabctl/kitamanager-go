@@ -142,6 +142,8 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.StructuredLogger())
+	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.BodySizeLimit(middleware.MaxRequestBodySize))
 
 	// Configure CORS
 	r.Use(cors.New(cors.Config{

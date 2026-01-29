@@ -92,6 +92,7 @@ function toggleMenu(event: Event) {
       icon="pi pi-user"
       @click="toggleMenu"
       text
+      :aria-label="t('common.userMenu')"
     />
     <Menu ref="menu" :model="menuItems" popup />
   </header>

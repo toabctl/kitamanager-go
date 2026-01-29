@@ -80,7 +80,9 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     token.value = null
     user.value = null
+    // Clear all auth-related localStorage to prevent state leakage
     localStorage.removeItem('token')
+    localStorage.removeItem('selectedOrgId')
     router.push('/login')
   }
 

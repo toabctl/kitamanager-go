@@ -42,7 +42,12 @@ export default {
     remove: 'Entfernen',
     organization: 'Organisation',
     comment: 'Kommentar',
-    unknown: 'Unbekannt'
+    unknown: 'Unbekannt',
+    userMenu: 'Benutzermenü',
+    confirmDeleteMessage: 'Möchten Sie diese(n) {resource} wirklich löschen?',
+    updateSuccess: '{resource} erfolgreich aktualisiert',
+    createSuccess: '{resource} erfolgreich erstellt',
+    deleteSuccess: '{resource} erfolgreich gelöscht'
   },
   auth: {
     login: 'Anmelden',
