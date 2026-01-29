@@ -45,6 +45,7 @@ const chartData = computed(() => {
   const maleData = statsData.value.distribution.map((bucket) => bucket.male_count)
   const femaleData = statsData.value.distribution.map((bucket) => bucket.female_count)
   const diverseData = statsData.value.distribution.map((bucket) => bucket.diverse_count)
+  const totalData = statsData.value.distribution.map((bucket) => bucket.count)
 
   return {
     labels,
@@ -68,7 +69,21 @@ const chartData = computed(() => {
         data: diverseData,
         backgroundColor: genderColors.diverse.background,
         borderColor: genderColors.diverse.border,
-        borderWidth: 1
+        borderWidth: 1,
+        // Show total on top of the last visible segment
+        datalabels: {
+          anchor: 'end' as const,
+          align: 'end' as const,
+          color: 'var(--text-color)',
+          font: {
+            weight: 'bold' as const,
+            size: 12
+          },
+          formatter: (_value: number, context: { dataIndex: number }) => {
+            const total = totalData[context.dataIndex]
+            return total > 0 ? total : ''
+          }
+        }
       }
     ]
   }
@@ -79,7 +94,7 @@ const chartOptions = computed(() => ({
   maintainAspectRatio: false,
   layout: {
     padding: {
-      top: 20
+      top: 30
     }
   },
   plugins: {
@@ -88,7 +103,15 @@ const chartOptions = computed(() => ({
       position: 'bottom' as const
     },
     datalabels: {
-      display: false // Disable individual bar labels for stacked bars
+      color: 'white',
+      font: {
+        weight: 'bold' as const,
+        size: 11
+      },
+      formatter: (value: number) => (value > 0 ? value : ''),
+      // Show segment labels inside bars
+      anchor: 'center' as const,
+      align: 'center' as const
     },
     tooltip: {
       callbacks: {
@@ -106,7 +129,7 @@ const chartOptions = computed(() => ({
     y: {
       stacked: true,
       beginAtZero: true,
-      grace: '15%',
+      grace: '20%',
       ticks: {
         stepSize: 1,
         precision: 0
@@ -162,6 +185,11 @@ onMounted(() => {
 
     <div v-else-if="!orgId" class="chart-placeholder">
       {{ t('statistics.selectOrgForStats') }}
+    </div>
+
+    <div v-else-if="!statsData" class="chart-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      {{ t('common.loading') }}
     </div>
 
     <div v-else class="chart-wrapper">
