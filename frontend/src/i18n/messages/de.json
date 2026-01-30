@@ -255,6 +255,7 @@
   "contracts": {
     "title": "Verträge",
     "create": "Vertrag erstellen",
+    "edit": "Vertrag bearbeiten",
     "startDate": "Startdatum",
     "endDate": "Enddatum",
     "hoursPerWeek": "Stunden pro Woche",
@@ -266,17 +267,21 @@
     "startDateRequired": "Startdatum ist erforderlich",
     "endDateOptional": "Enddatum (optional)",
     "attributesLabel": "Attribute (Betreuungsart & Extras)",
-    "attributesHelp": "Drücken Sie Enter, um ein Attribut hinzuzufügen (z.B. ganztags, halbtags, teilzeit, ndh, integration_a)",
+    "attributesHelp": "Komma-getrennt (z.B. ganztags, halbtags, teilzeit, ndh, integration_a)",
     "noAttributes": "keine Attribute",
     "previousContractEnded": "Vorheriger Vertrag beendet und neuer Vertrag erfolgreich erstellt",
     "updateSuccess": "Vertrag erfolgreich aktualisiert",
     "hasActiveContract": "Dieses Kind hat einen aktiven Vertrag:",
+    "hasActiveContractEmployee": "Dieser Mitarbeiter hat einen aktiven Vertrag:",
     "activeSince": "Aktiv seit {date} ({attrs})",
+    "activeSinceEmployee": "Aktiv seit {date}: {position} ({grade}/{step})",
     "endCurrentContract": "Aktuellen Vertrag am {date} beenden (Tag vor Beginn des neuen Vertrags)",
     "contractStartPlaceholder": "Vertragsbeginn",
     "contractEndPlaceholder": "Vertragsende",
     "from": "Von",
-    "to": "Bis"
+    "to": "Bis",
+    "noChangesDetected": "Keine Änderungen erkannt",
+    "noChangesDescription": "Der neue Vertrag hat die gleichen Details wie der aktuelle. Wenn Sie nur die Daten ändern möchten, bearbeiten Sie bitte stattdessen den bestehenden Vertrag."
   },
   "validation": {
     "required": "Dieses Feld ist erforderlich",

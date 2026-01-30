@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -49,12 +49,20 @@ import type {
   Employee,
   EmployeeContract,
   EmployeeContractCreateRequest,
+  EmployeeContractUpdateRequest,
   Gender,
 } from '@/lib/api/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { formatDate, calculateAge, formatDateForInput } from '@/lib/utils/formatting';
+import {
+  formatDate,
+  calculateAge,
+  formatDateForInput,
+  formatDateForApi,
+} from '@/lib/utils/formatting';
 import { Pagination } from '@/components/ui/pagination';
 
 const employeeSchema = z.object({
@@ -78,6 +86,7 @@ type ContractFormData = z.infer<typeof contractSchema>;
 
 export default function EmployeesPage() {
   const params = useParams();
+  const router = useRouter();
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { toast } = useToast();
@@ -89,6 +98,7 @@ export default function EmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
   const [contractEmployee, setContractEmployee] = useState<Employee | null>(null);
+  const [endCurrentContract, setEndCurrentContract] = useState(true);
   const [page, setPage] = useState(1);
 
   const { data: paginatedData, isLoading } = useQuery({
@@ -154,18 +164,35 @@ export default function EmployeesPage() {
   });
 
   const createContractMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       employeeId,
       data,
     }: {
       employeeId: number;
       data: EmployeeContractCreateRequest;
-    }) => apiClient.createEmployeeContract(orgId, employeeId, data),
+    }) => {
+      // If we need to end the current contract first
+      if (contractEmployee && endCurrentContract) {
+        const activeContract = getActiveContract(contractEmployee.contracts);
+        if (activeContract && data.from) {
+          const endDate = getDayBefore(data.from);
+          await apiClient.updateEmployeeContract(orgId, employeeId, activeContract.id, {
+            to: formatDateForApi(endDate),
+          });
+        }
+      }
+      return apiClient.createEmployeeContract(orgId, employeeId, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees', orgId] });
-      toast({ title: t('contracts.createSuccess') });
+      toast({
+        title: endCurrentContract
+          ? t('contracts.previousContractEnded')
+          : t('contracts.createSuccess'),
+      });
       setIsContractDialogOpen(false);
       setContractEmployee(null);
+      setEndCurrentContract(true);
       resetContract();
     },
     onError: (error) => {
@@ -213,6 +240,26 @@ export default function EmployeesPage() {
     },
   });
 
+  const contractFromDate = watchContract('from');
+
+  // Helper to get a truly active contract (currently in effect, not ended)
+  const getActiveContract = (contracts?: EmployeeContract[]): EmployeeContract | null => {
+    if (!contracts || contracts.length === 0) return null;
+    const today = new Date().toISOString().split('T')[0];
+    return contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) || null;
+  };
+
+  // Helper to get day before a date string
+  const getDayBefore = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Calculate end date preview based on contract from date
+  const activeContract = contractEmployee ? getActiveContract(contractEmployee.contracts) : null;
+  const endDatePreview = contractFromDate ? getDayBefore(contractFromDate) : null;
+
   const handleCreateEmployee = () => {
     setEditingEmployee(null);
     resetEmployee({ first_name: '', last_name: '', gender: 'male', birthdate: '' });
@@ -237,8 +284,32 @@ export default function EmployeesPage() {
 
   const handleAddContract = (employee: Employee) => {
     setContractEmployee(employee);
-    resetContract({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
+    setEndCurrentContract(true);
+
+    // Prefill from active contract if exists
+    const active = getActiveContract(employee.contracts);
+    if (active) {
+      // Suggest start date as tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      resetContract({
+        from: tomorrowStr,
+        to: '',
+        position: active.position,
+        grade: active.grade,
+        step: active.step,
+        weekly_hours: active.weekly_hours,
+      });
+    } else {
+      resetContract({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
+    }
     setIsContractDialogOpen(true);
+  };
+
+  const handleViewContractHistory = (employee: Employee) => {
+    router.push(`/organizations/${orgId}/employees/${employee.id}/contracts`);
   };
 
   const onSubmitEmployee = (data: EmployeeFormData) => {
@@ -249,13 +320,51 @@ export default function EmployeesPage() {
     }
   };
 
+  // Helper to check if contract details have changed
+  const contractDetailsChanged = (
+    newData: { position: string; grade: string; step: number; weekly_hours: number },
+    oldContract: EmployeeContract
+  ): boolean => {
+    return (
+      newData.position !== oldContract.position ||
+      newData.grade !== oldContract.grade ||
+      newData.step !== oldContract.step ||
+      newData.weekly_hours !== oldContract.weekly_hours
+    );
+  };
+
   const onSubmitContract = (data: ContractFormData) => {
     if (contractEmployee) {
+      // If there's an active contract and we're ending it, check if something actually changed
+      if (activeContract && endCurrentContract) {
+        const hasChanges = contractDetailsChanged(
+          {
+            position: data.position,
+            grade: data.grade,
+            step: data.step,
+            weekly_hours: data.weekly_hours,
+          },
+          activeContract
+        );
+        if (!hasChanges) {
+          toast({
+            title: t('contracts.noChangesDetected'),
+            description: t('contracts.noChangesDescription'),
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       createContractMutation.mutate({
         employeeId: contractEmployee.id,
         data: {
-          ...data,
-          to: data.to || null,
+          from: formatDateForApi(data.from) || data.from,
+          to: formatDateForApi(data.to),
+          position: data.position,
+          grade: data.grade,
+          step: data.step,
+          weekly_hours: data.weekly_hours,
         },
       });
     }
@@ -333,8 +442,18 @@ export default function EmployeesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => handleViewContractHistory(employee)}
+                          title={t('employees.contractHistory')}
+                          aria-label={t('employees.contractHistory')}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleAddContract(employee)}
                           title={t('employees.addContract')}
+                          aria-label={t('employees.addContract')}
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
@@ -342,6 +461,7 @@ export default function EmployeesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEditEmployee(employee)}
+                          aria-label={t('common.edit')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -349,6 +469,7 @@ export default function EmployeesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteEmployee(employee)}
+                          aria-label={t('common.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -451,7 +572,7 @@ export default function EmployeesPage() {
 
       {/* Contract Create Dialog */}
       <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {t('contracts.newContractFor', {
@@ -462,6 +583,38 @@ export default function EmployeesPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitContract(onSubmitContract)} className="space-y-4">
+            {/* Show active contract info if exists */}
+            {activeContract && (
+              <Alert>
+                <AlertDescription className="space-y-3">
+                  <p className="font-medium">{t('contracts.hasActiveContractEmployee')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('contracts.activeSinceEmployee', {
+                      date: formatDate(activeContract.from),
+                      position: activeContract.position,
+                      grade: activeContract.grade,
+                      step: activeContract.step,
+                    })}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="endCurrentContract"
+                      checked={endCurrentContract}
+                      onCheckedChange={(checked) => setEndCurrentContract(checked === true)}
+                    />
+                    <label
+                      htmlFor="endCurrentContract"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {endDatePreview
+                        ? t('contracts.endCurrentContract', { date: formatDate(endDatePreview) })
+                        : t('contracts.endCurrentContract', { date: '...' })}
+                    </label>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="from">{t('contracts.startDate')}</Label>

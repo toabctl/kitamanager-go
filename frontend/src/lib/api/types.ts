@@ -234,6 +234,15 @@ export interface EmployeeContractCreateRequest {
   weekly_hours: number;
 }
 
+export interface EmployeeContractUpdateRequest {
+  from?: string;
+  to?: string | null;
+  position?: string;
+  grade?: string;
+  step?: number;
+  weekly_hours?: number;
+}
+
 // Child
 export interface Child extends Person {
   contracts?: ChildContract[];

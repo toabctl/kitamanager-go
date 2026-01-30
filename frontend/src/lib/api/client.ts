@@ -16,6 +16,7 @@ import type {
   EmployeeUpdateRequest,
   EmployeeContract,
   EmployeeContractCreateRequest,
+  EmployeeContractUpdateRequest,
   Child,
   ChildCreateRequest,
   ChildUpdateRequest,
@@ -330,6 +331,19 @@ class ApiClient {
   ): Promise<EmployeeContract> {
     const response = await this.client.post<EmployeeContract>(
       `/organizations/${orgId}/employees/${employeeId}/contracts`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateEmployeeContract(
+    orgId: number,
+    employeeId: number,
+    contractId: number,
+    data: EmployeeContractUpdateRequest
+  ): Promise<EmployeeContract> {
+    const response = await this.client.put<EmployeeContract>(
+      `/organizations/${orgId}/employees/${employeeId}/contracts/${contractId}`,
       data
     );
     return response.data;

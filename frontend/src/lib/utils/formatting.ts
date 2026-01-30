@@ -33,6 +33,22 @@ export function formatDateForInput(dateString: string | null | undefined): strin
 }
 
 /**
+ * Format a date string for API submission (RFC3339 format)
+ * Converts "2025-01-15" to "2025-01-15T00:00:00Z"
+ */
+export function formatDateForApi(dateString: string | null | undefined): string | null {
+  if (!dateString) return null;
+  try {
+    // If already in RFC3339 format, return as-is
+    if (dateString.includes('T')) return dateString;
+    // Convert YYYY-MM-DD to RFC3339
+    return `${dateString}T00:00:00Z`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Calculate age from birthdate
  */
 export function calculateAge(birthdate: string): number {

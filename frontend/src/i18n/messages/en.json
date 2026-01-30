@@ -255,6 +255,7 @@
   "contracts": {
     "title": "Contracts",
     "create": "Create Contract",
+    "edit": "Edit Contract",
     "startDate": "Start Date",
     "endDate": "End Date",
     "hoursPerWeek": "Hours per Week",
@@ -266,17 +267,21 @@
     "startDateRequired": "Start date is required",
     "endDateOptional": "End Date (optional)",
     "attributesLabel": "Attributes (care type & extras)",
-    "attributesHelp": "Press Enter to add each attribute (e.g., ganztags, halbtags, teilzeit, ndh, integration_a)",
+    "attributesHelp": "Comma-separated (e.g., ganztags, halbtags, teilzeit, ndh, integration_a)",
     "noAttributes": "no attributes",
     "previousContractEnded": "Previous contract ended and new contract created successfully",
     "updateSuccess": "Contract updated successfully",
     "hasActiveContract": "This child has an active contract:",
+    "hasActiveContractEmployee": "This employee has an active contract:",
     "activeSince": "Active since {date} ({attrs})",
+    "activeSinceEmployee": "Active since {date}: {position} ({grade}/{step})",
     "endCurrentContract": "End current contract on {date} (day before new contract starts)",
     "contractStartPlaceholder": "Contract start date",
     "contractEndPlaceholder": "Contract end date",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "noChangesDetected": "No changes detected",
+    "noChangesDescription": "The new contract has the same details as the current one. If you only need to change the dates, please edit the existing contract instead."
   },
   "validation": {
     "required": "This field is required",

@@ -192,3 +192,35 @@ When importing monetary data from external sources (YAML, CSV, APIs), always con
 ```go
 payment := int(math.Round(yamlProperty.Payment * 100))
 ```
+
+## E2E Testing
+
+### Language/Locale
+
+**ALWAYS use English locale for E2E tests.** This ensures consistent text matching regardless of the developer's system locale.
+
+```typescript
+// At the top of each test file
+test.use({ locale: 'en-US' });
+```
+
+Use English text in test assertions and test data (e.g., "Deputy Manager" not "Gruppenleitung").
+
+### Avoid Date-Dependent Assertions
+
+**Do NOT test status values that depend on "today's date"** (e.g., "Active", "Upcoming", "Ended"). These tests become flaky over time as dates pass.
+
+Instead:
+- Use fixed past dates (e.g., `2024-01-01`) when creating test data
+- Test that the data appears correctly, not its computed status
+- If status must be tested, mock the date or use date ranges that won't expire
+
+```typescript
+// BAD - will fail when 2024-06-01 passes
+await page.getByLabel(/Start Date/i).fill('2024-06-01');
+await expect(page.getByText('Upcoming')).toBeVisible();
+
+// GOOD - test the data, not the status
+await page.getByLabel(/Start Date/i).fill('2024-01-01');
+await expect(page.getByText(/fulltime/i)).toBeVisible();
+```

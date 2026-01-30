@@ -155,16 +155,26 @@ export async function createOrganizationViaApi(
 ): Promise<{ id: number; name: string }> {
   return page.evaluate(
     async ({ token, name, state }) => {
+      // Get CSRF token from cookie
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch('/api/v1/organizations', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ name, state, active: true }),
       });
       if (!response.ok) {
-        throw new Error(`Failed to create organization: ${response.status}`);
+        const text = await response.text();
+        throw new Error(`Failed to create organization: ${response.status} - ${text}`);
       }
       return response.json();
     },
@@ -178,9 +188,17 @@ export async function createOrganizationViaApi(
 export async function deleteOrganizationViaApi(page: Page, token: string, orgId: number): Promise<void> {
   await page.evaluate(
     async ({ token, orgId }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(`/api/v1/organizations/${orgId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
     },
     { token, orgId }
@@ -224,16 +242,24 @@ export async function createEmployeeViaApi(
   page: Page,
   token: string,
   orgId: number,
-  data: { first_name: string; last_name: string; email: string }
+  data: { first_name: string; last_name: string; gender: string; birthdate: string }
 ): Promise<{ id: number }> {
   return page.evaluate(
     async ({ token, orgId, data }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch(`/api/v1/organizations/${orgId}/employees`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -256,12 +282,20 @@ export async function createChildViaApi(
 ): Promise<{ id: number }> {
   return page.evaluate(
     async ({ token, orgId, data }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch(`/api/v1/organizations/${orgId}/children`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -278,4 +312,193 @@ export async function createChildViaApi(
  */
 export function uniqueName(prefix: string): string {
   return `${prefix} ${Date.now()}`;
+}
+
+/**
+ * Delete an employee via the API
+ */
+export async function deleteEmployeeViaApi(
+  page: Page,
+  token: string,
+  orgId: number,
+  employeeId: number
+): Promise<void> {
+  await page.evaluate(
+    async ({ token, orgId, employeeId }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      await fetch(`/api/v1/organizations/${orgId}/employees/${employeeId}`, {
+        method: 'DELETE',
+        headers,
+      });
+    },
+    { token, orgId, employeeId }
+  );
+}
+
+/**
+ * Delete a child via the API
+ */
+export async function deleteChildViaApi(
+  page: Page,
+  token: string,
+  orgId: number,
+  childId: number
+): Promise<void> {
+  await page.evaluate(
+    async ({ token, orgId, childId }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      await fetch(`/api/v1/organizations/${orgId}/children/${childId}`, {
+        method: 'DELETE',
+        headers,
+      });
+    },
+    { token, orgId, childId }
+  );
+}
+
+/**
+ * Create an employee contract via the API
+ */
+export async function createEmployeeContractViaApi(
+  page: Page,
+  token: string,
+  orgId: number,
+  employeeId: number,
+  data: {
+    from: string;
+    to?: string | null;
+    position: string;
+    grade: string;
+    step: number;
+    weekly_hours: number;
+  }
+): Promise<{ id: number }> {
+  return page.evaluate(
+    async ({ token, orgId, employeeId, data }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      const response = await fetch(
+        `/api/v1/organizations/${orgId}/employees/${employeeId}/contracts`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to create employee contract: ${response.status}`);
+      }
+      return response.json();
+    },
+    { token, orgId, employeeId, data }
+  );
+}
+
+/**
+ * Create a child contract via the API
+ */
+export async function createChildContractViaApi(
+  page: Page,
+  token: string,
+  orgId: number,
+  childId: number,
+  data: {
+    from: string;
+    to?: string | null;
+    attributes?: string[];
+  }
+): Promise<{ id: number }> {
+  return page.evaluate(
+    async ({ token, orgId, childId, data }) => {
+      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : null;
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      const response = await fetch(
+        `/api/v1/organizations/${orgId}/children/${childId}/contracts`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to create child contract: ${response.status}`);
+      }
+      return response.json();
+    },
+    { token, orgId, childId, data }
+  );
+}
+
+/**
+ * Get the first organization via API (assumes at least one exists from seeding)
+ */
+export async function getFirstOrganization(
+  page: Page,
+  token: string
+): Promise<{ id: number; name: string }> {
+  return page.evaluate(async ({ token }) => {
+    const response = await fetch('/api/v1/organizations?limit=1', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!data.data || data.data.length === 0) {
+      throw new Error('No organizations found');
+    }
+    return data.data[0];
+  }, { token });
+}
+
+/**
+ * Format a date for API submission (RFC3339)
+ */
+export function formatDateForApi(dateStr: string): string {
+  return `${dateStr}T00:00:00Z`;
+}
+
+/**
+ * Get today's date as YYYY-MM-DD
+ */
+export function getTodayStr(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Get a future date as YYYY-MM-DD
+ */
+export function getFutureDateStr(daysFromNow: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  return date.toISOString().split('T')[0];
 }

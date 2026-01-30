@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -45,11 +45,24 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
-import type { Child, ChildContract, ChildContractCreateRequest, Gender } from '@/lib/api/types';
+import type {
+  Child,
+  ChildContract,
+  ChildContractCreateRequest,
+  ChildContractUpdateRequest,
+  Gender,
+} from '@/lib/api/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { formatDate, calculateAge, formatDateForInput } from '@/lib/utils/formatting';
+import {
+  formatDate,
+  calculateAge,
+  formatDateForInput,
+  formatDateForApi,
+} from '@/lib/utils/formatting';
 import { Pagination } from '@/components/ui/pagination';
 
 const childSchema = z.object({
@@ -70,6 +83,7 @@ type ContractFormData = z.infer<typeof contractSchema>;
 
 export default function ChildrenPage() {
   const params = useParams();
+  const router = useRouter();
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { toast } = useToast();
@@ -81,6 +95,7 @@ export default function ChildrenPage() {
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [deletingChild, setDeletingChild] = useState<Child | null>(null);
   const [contractChild, setContractChild] = useState<Child | null>(null);
+  const [endCurrentContract, setEndCurrentContract] = useState(true);
   const [page, setPage] = useState(1);
 
   const { data: paginatedData, isLoading } = useQuery({
@@ -145,14 +160,58 @@ export default function ChildrenPage() {
     },
   });
 
-  const createContractMutation = useMutation({
-    mutationFn: ({ childId, data }: { childId: number; data: ChildContractCreateRequest }) =>
-      apiClient.createChildContract(orgId, childId, data),
+  const updateContractMutation = useMutation({
+    mutationFn: ({
+      childId,
+      contractId,
+      data,
+    }: {
+      childId: number;
+      contractId: number;
+      data: ChildContractUpdateRequest;
+    }) => apiClient.updateChildContract(orgId, childId, contractId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['children', orgId] });
-      toast({ title: t('contracts.createSuccess') });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common.error'),
+        description: getErrorMessage(error, t('common.failedToSave', { resource: 'contract' })),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const createContractMutation = useMutation({
+    mutationFn: async ({
+      childId,
+      data,
+    }: {
+      childId: number;
+      data: ChildContractCreateRequest;
+    }) => {
+      // If we need to end the current contract first
+      if (contractChild && endCurrentContract) {
+        const activeContract = getActiveContract(contractChild.contracts);
+        if (activeContract && data.from) {
+          const endDate = getDayBefore(data.from);
+          await apiClient.updateChildContract(orgId, childId, activeContract.id, {
+            to: formatDateForApi(endDate),
+          });
+        }
+      }
+      return apiClient.createChildContract(orgId, childId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      toast({
+        title: endCurrentContract
+          ? t('contracts.previousContractEnded')
+          : t('contracts.createSuccess'),
+      });
       setIsContractDialogOpen(false);
       setContractChild(null);
+      setEndCurrentContract(true);
       resetContract();
     },
     onError: (error) => {
@@ -185,6 +244,7 @@ export default function ChildrenPage() {
     register: registerContract,
     handleSubmit: handleSubmitContract,
     reset: resetContract,
+    watch: watchContract,
     formState: { errors: errorsContract },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
@@ -194,6 +254,26 @@ export default function ChildrenPage() {
       attributes: '',
     },
   });
+
+  const contractFromDate = watchContract('from');
+
+  // Helper to get a truly active contract (currently in effect, not ended)
+  const getActiveContract = (contracts?: ChildContract[]): ChildContract | null => {
+    if (!contracts || contracts.length === 0) return null;
+    const today = new Date().toISOString().split('T')[0];
+    return contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) || null;
+  };
+
+  // Helper to get day before a date string
+  const getDayBefore = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Calculate end date preview based on contract from date
+  const activeContract = contractChild ? getActiveContract(contractChild.contracts) : null;
+  const endDatePreview = contractFromDate ? getDayBefore(contractFromDate) : null;
 
   const handleCreateChild = () => {
     setEditingChild(null);
@@ -219,8 +299,29 @@ export default function ChildrenPage() {
 
   const handleAddContract = (child: Child) => {
     setContractChild(child);
-    resetContract({ from: '', to: '', attributes: '' });
+    setEndCurrentContract(true);
+
+    // Prefill from active contract if exists
+    const active = getActiveContract(child.contracts);
+    if (active) {
+      // Suggest start date as tomorrow
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      resetContract({
+        from: tomorrowStr,
+        to: '',
+        attributes: active.attributes?.join(', ') || '',
+      });
+    } else {
+      resetContract({ from: '', to: '', attributes: '' });
+    }
     setIsContractDialogOpen(true);
+  };
+
+  const handleViewContractHistory = (child: Child) => {
+    router.push(`/organizations/${orgId}/children/${child.id}/contracts`);
   };
 
   const onSubmitChild = (data: ChildFormData) => {
@@ -231,6 +332,14 @@ export default function ChildrenPage() {
     }
   };
 
+  // Helper to check if attributes have changed
+  const attributesChanged = (newAttrs: string[], oldAttrs: string[] | undefined): boolean => {
+    const oldSorted = [...(oldAttrs || [])].sort();
+    const newSorted = [...newAttrs].sort();
+    if (oldSorted.length !== newSorted.length) return true;
+    return oldSorted.some((attr, i) => attr !== newSorted[i]);
+  };
+
   const onSubmitContract = (data: ContractFormData) => {
     if (contractChild) {
       const attributes = data.attributes
@@ -239,11 +348,25 @@ export default function ChildrenPage() {
             .map((a) => a.trim())
             .filter(Boolean)
         : [];
+
+      // If there's an active contract and we're ending it, check if something actually changed
+      if (activeContract && endCurrentContract) {
+        const hasChanges = attributesChanged(attributes, activeContract.attributes);
+        if (!hasChanges) {
+          toast({
+            title: t('contracts.noChangesDetected'),
+            description: t('contracts.noChangesDescription'),
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       createContractMutation.mutate({
         childId: contractChild.id,
         data: {
-          from: data.from,
-          to: data.to || null,
+          from: formatDateForApi(data.from) || data.from,
+          to: formatDateForApi(data.to),
           attributes: attributes.length > 0 ? attributes : undefined,
         },
       });
@@ -362,18 +485,34 @@ export default function ChildrenPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => handleViewContractHistory(child)}
+                          title={t('children.contractHistory')}
+                          aria-label={t('children.contractHistory')}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleAddContract(child)}
                           title={t('children.addContract')}
+                          aria-label={t('children.addContract')}
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleEditChild(child)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditChild(child)}
+                          aria-label={t('common.edit')}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteChild(child)}
+                          aria-label={t('common.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -470,7 +609,7 @@ export default function ChildrenPage() {
 
       {/* Contract Create Dialog */}
       <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {t('contracts.newContractFor', {
@@ -479,6 +618,36 @@ export default function ChildrenPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitContract(onSubmitContract)} className="space-y-4">
+            {/* Show active contract info if exists */}
+            {activeContract && (
+              <Alert>
+                <AlertDescription className="space-y-3">
+                  <p className="font-medium">{t('contracts.hasActiveContract')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('contracts.activeSince', {
+                      date: formatDate(activeContract.from),
+                      attrs: activeContract.attributes?.join(', ') || t('contracts.noAttributes'),
+                    })}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="endCurrentContract"
+                      checked={endCurrentContract}
+                      onCheckedChange={(checked) => setEndCurrentContract(checked === true)}
+                    />
+                    <label
+                      htmlFor="endCurrentContract"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {endDatePreview
+                        ? t('contracts.endCurrentContract', { date: formatDate(endDatePreview) })
+                        : t('contracts.endCurrentContract', { date: '...' })}
+                    </label>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="from">{t('contracts.startDate')}</Label>
