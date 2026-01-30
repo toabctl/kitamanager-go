@@ -359,13 +359,18 @@ export interface SetSuperAdminRequest {
 }
 
 // Child funding calculation
+export interface ChildFundingMatchedProp {
+  key: string;
+  value: string;
+}
+
 export interface ChildFundingResponse {
   child_id: number;
   child_name: string;
   age: number;
   funding: number;
-  matched_attributes: string[];
-  unmatched_attributes: string[];
+  matched_properties: ChildFundingMatchedProp[];
+  unmatched_properties: ChildFundingMatchedProp[];
 }
 
 export interface ChildrenFundingResponse {

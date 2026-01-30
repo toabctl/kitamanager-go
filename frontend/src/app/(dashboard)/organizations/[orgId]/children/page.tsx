@@ -50,6 +50,7 @@ import type {
   ChildContract,
   ChildContractCreateRequest,
   ChildContractUpdateRequest,
+  ChildFundingResponse,
   ContractProperties,
   Gender,
 } from '@/lib/api/types';
@@ -65,6 +66,7 @@ import {
   calculateAge,
   formatDateForInput,
   formatDateForApi,
+  formatCurrency,
   propertiesToValues,
 } from '@/lib/utils/formatting';
 import { Pagination } from '@/components/ui/pagination';
@@ -109,6 +111,19 @@ export default function ChildrenPage() {
   });
 
   const children = paginatedData?.data;
+
+  // Fetch funding data for all children
+  const { data: fundingData } = useQuery({
+    queryKey: ['childrenFunding', orgId],
+    queryFn: () => apiClient.getChildrenFunding(orgId),
+    enabled: !!orgId,
+    staleTime: 60 * 1000, // 1 minute - funding doesn't change often
+  });
+
+  // Create a map for quick lookup of funding by child ID
+  const fundingByChildId = new Map<number, ChildFundingResponse>(
+    fundingData?.children?.map((f) => [f.child_id, f]) ?? []
+  );
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<ChildFormData, 'organization_id'>) =>
@@ -440,6 +455,7 @@ export default function ChildrenPage() {
                   <TableHead>{t('children.age')}</TableHead>
                   <TableHead>{t('children.currentContract')}</TableHead>
                   <TableHead>{t('children.properties')}</TableHead>
+                  <TableHead className="text-right">{t('children.funding')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -500,6 +516,17 @@ export default function ChildrenPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
+                        {(() => {
+                          const funding = fundingByChildId.get(child.id);
+                          if (!funding || funding.funding === 0) {
+                            return <span className="text-sm text-muted-foreground">-</span>;
+                          }
+                          return (
+                            <span className="font-medium">{formatCurrency(funding.funding)}</span>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -540,7 +567,7 @@ export default function ChildrenPage() {
                 })}
                 {children?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
                       {t('common.noResults')}
                     </TableCell>
                   </TableRow>
