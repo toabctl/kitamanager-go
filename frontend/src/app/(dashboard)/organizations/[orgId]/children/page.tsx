@@ -172,8 +172,9 @@ export default function ChildrenPage() {
       contractId: number;
       data: ChildContractUpdateRequest;
     }) => apiClient.updateChildContract(orgId, childId, contractId, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, variables.childId] });
     },
     onError: (error) => {
       toast({
@@ -204,8 +205,9 @@ export default function ChildrenPage() {
       }
       return apiClient.createChildContract(orgId, childId, data);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, variables.childId] });
       toast({
         title: endCurrentContract
           ? t('contracts.previousContractEnded')
