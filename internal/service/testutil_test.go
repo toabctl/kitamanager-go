@@ -177,7 +177,8 @@ func createTestEmployee(t *testing.T, db *gorm.DB, firstName, lastName string, o
 func createOrganizationService(db *gorm.DB) *OrganizationService {
 	orgStore := store.NewOrganizationStore(db)
 	groupStore := store.NewGroupStore(db)
-	return NewOrganizationService(orgStore, groupStore)
+	userStore := store.NewUserStore(db)
+	return NewOrganizationService(orgStore, groupStore, userStore)
 }
 
 func createUserService(db *gorm.DB) *UserService {

@@ -962,7 +962,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a paginated list of all organizations",
+                "description": "Get a paginated list of organizations the user has access to.\nSuperadmins see all organizations; other users see only organizations they belong to via group membership.",
                 "consumes": [
                     "application/json"
                 ],
@@ -972,7 +972,7 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
-                "summary": "List all organizations",
+                "summary": "List organizations",
                 "parameters": [
                     {
                         "type": "integer",

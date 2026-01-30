@@ -2150,7 +2150,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a paginated list of all organizations
+      description: |-
+        Get a paginated list of organizations the user has access to.
+        Superadmins see all organizations; other users see only organizations they belong to via group membership.
       parameters:
       - default: 1
         description: Page number
@@ -2180,7 +2182,7 @@ paths:
             $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List all organizations
+      summary: List organizations
       tags:
       - organizations
     post:

@@ -12,6 +12,9 @@ func TestOrganizationHandler_List(t *testing.T) {
 	orgService := createOrganizationService(db)
 	handler := NewOrganizationHandler(orgService, nil)
 
+	// Create superadmin user for the test (setupTestRouter sets userID=1)
+	createTestSuperAdmin(t, db)
+
 	createTestOrganization(t, db, "Org 1")
 	createTestOrganization(t, db, "Org 2")
 
@@ -21,7 +24,7 @@ func TestOrganizationHandler_List(t *testing.T) {
 	w := performRequest(r, "GET", "/organizations", nil)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
 	}
 
 	var response models.PaginatedResponse[models.Organization]
@@ -393,13 +396,16 @@ func TestOrganizationHandler_List_Empty(t *testing.T) {
 	orgService := createOrganizationService(db)
 	handler := NewOrganizationHandler(orgService, nil)
 
+	// Create superadmin user for the test (setupTestRouter sets userID=1)
+	createTestSuperAdmin(t, db)
+
 	r := setupTestRouter()
 	r.GET("/organizations", handler.List)
 
 	w := performRequest(r, "GET", "/organizations", nil)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
 	}
 
 	var response models.PaginatedResponse[models.Organization]

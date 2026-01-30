@@ -120,6 +120,25 @@ func createTestUser(t *testing.T, db *gorm.DB, name, email, password string) *mo
 	return user
 }
 
+// createTestSuperAdmin creates a superadmin user with ID 1 for testing.
+// This is used when tests need a user to exist for setupTestRouter's default userID.
+func createTestSuperAdmin(t *testing.T, db *gorm.DB) *models.User {
+	t.Helper()
+
+	user := &models.User{
+		Name:         "Test Admin",
+		Email:        "admin@test.com",
+		Password:     "password",
+		Active:       true,
+		IsSuperAdmin: true,
+	}
+	user.ID = 1 // Match the userID set in setupTestRouter
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to create test superadmin: %v", err)
+	}
+	return user
+}
+
 // createTestGroup creates a group for testing.
 // If orgID is 0, it will create a test organization first.
 func createTestGroup(t *testing.T, db *gorm.DB, name string) *models.Group {
@@ -195,7 +214,8 @@ func createGroupService(db *gorm.DB) *service.GroupService {
 func createOrganizationService(db *gorm.DB) *service.OrganizationService {
 	orgStore := store.NewOrganizationStore(db)
 	groupStore := store.NewGroupStore(db)
-	return service.NewOrganizationService(orgStore, groupStore)
+	userStore := store.NewUserStore(db)
+	return service.NewOrganizationService(orgStore, groupStore, userStore)
 }
 
 // createEmployeeService creates an employee service for testing.

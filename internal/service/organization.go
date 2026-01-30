@@ -14,14 +14,55 @@ import (
 type OrganizationService struct {
 	store      store.OrganizationStorer
 	groupStore store.GroupStorer
+	userStore  store.UserStorer
 }
 
 // NewOrganizationService creates a new organization service
-func NewOrganizationService(store store.OrganizationStorer, groupStore store.GroupStorer) *OrganizationService {
-	return &OrganizationService{store: store, groupStore: groupStore}
+func NewOrganizationService(store store.OrganizationStorer, groupStore store.GroupStorer, userStore store.UserStorer) *OrganizationService {
+	return &OrganizationService{store: store, groupStore: groupStore, userStore: userStore}
 }
 
-// List returns a paginated list of organizations
+// ListForUser returns a paginated list of organizations the user has access to.
+// Superadmins see all organizations; other users see only organizations they belong to.
+func (s *OrganizationService) ListForUser(ctx context.Context, userID uint, limit, offset int) ([]models.OrganizationResponse, int64, error) {
+	// Check if user is superadmin
+	user, err := s.userStore.FindByID(userID)
+	if err != nil {
+		return nil, 0, apperror.Internal("failed to fetch user")
+	}
+
+	if user.IsSuperAdmin {
+		// Superadmins see all organizations
+		return s.List(ctx, limit, offset)
+	}
+
+	// Regular users only see organizations they belong to via group membership
+	orgs, err := s.userStore.GetUserOrganizations(userID)
+	if err != nil {
+		return nil, 0, apperror.Internal("failed to fetch user organizations")
+	}
+
+	total := int64(len(orgs))
+
+	// Apply pagination manually
+	start := offset
+	if start > len(orgs) {
+		start = len(orgs)
+	}
+	end := start + limit
+	if end > len(orgs) {
+		end = len(orgs)
+	}
+	pagedOrgs := orgs[start:end]
+
+	responses := make([]models.OrganizationResponse, len(pagedOrgs))
+	for i, org := range pagedOrgs {
+		responses[i] = org.ToResponse()
+	}
+	return responses, total, nil
+}
+
+// List returns a paginated list of all organizations (for internal use)
 func (s *OrganizationService) List(ctx context.Context, limit, offset int) ([]models.OrganizationResponse, int64, error) {
 	orgs, total, err := s.store.FindAll(limit, offset)
 	if err != nil {

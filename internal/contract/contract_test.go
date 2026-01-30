@@ -117,6 +117,13 @@ func getEnv(key, defaultValue string) string {
 func setupRouter() *gin.Engine {
 	r := gin.New()
 
+	// Add middleware to set user context (simulating authenticated user)
+	r.Use(func(c *gin.Context) {
+		c.Set("userID", uint(1))
+		c.Set("userEmail", "admin@test.com")
+		c.Next()
+	})
+
 	// Setup stores
 	orgStore := store.NewOrganizationStore(testDB)
 	userStore := store.NewUserStore(testDB)
@@ -124,7 +131,7 @@ func setupRouter() *gin.Engine {
 	userGroupStore := store.NewUserGroupStore(testDB)
 
 	// Setup services
-	orgService := service.NewOrganizationService(orgStore, groupStore)
+	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
 	userService := service.NewUserService(userStore, groupStore)
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
@@ -178,6 +185,16 @@ func cleanupDatabase() {
 
 func cleanupBetweenTests() {
 	cleanupDatabase()
+	// Create superadmin user with ID 1 to match the userID set in middleware
+	user := &models.User{
+		Name:         "Test Admin",
+		Email:        "admin@test.com",
+		Password:     "password",
+		Active:       true,
+		IsSuperAdmin: true,
+	}
+	user.ID = 1
+	testDB.Create(user)
 }
 
 // validateResponse validates an HTTP response against the OpenAPI spec

@@ -23,8 +23,9 @@ func NewOrganizationHandler(service *service.OrganizationService, auditService *
 }
 
 // List godoc
-// @Summary List all organizations
-// @Description Get a paginated list of all organizations
+// @Summary List organizations
+// @Description Get a paginated list of organizations the user has access to.
+// @Description Superadmins see all organizations; other users see only organizations they belong to via group membership.
 // @Tags organizations
 // @Accept json
 // @Produce json
@@ -41,7 +42,8 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 		return
 	}
 
-	organizations, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	userID := getUserID(c)
+	organizations, total, err := h.service.ListForUser(c.Request.Context(), userID, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return

@@ -120,7 +120,7 @@ func main() {
 	auditService := service.NewAuditService(auditStore)
 	userService := service.NewUserService(userStore, groupStore)
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
-	orgService := service.NewOrganizationService(orgStore, groupStore)
+	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
 	groupService := service.NewGroupService(groupStore)
 	employeeService := service.NewEmployeeService(employeeStore)
 	childService := service.NewChildService(childStore, orgStore, governmentFundingStore)
