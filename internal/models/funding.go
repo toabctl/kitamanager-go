@@ -42,16 +42,18 @@ func (GovernmentFundingPeriod) TableName() string {
 // If MinAge and MaxAge are nil, the property applies to all ages.
 // If set, both MinAge and MaxAge are inclusive (e.g., MinAge=0, MaxAge=2 covers ages 0, 1, and 2).
 // Payment is stored in cents to avoid floating-point issues (e.g., 166847 = 1668.47 EUR).
+// ExclusiveGroup groups properties that are mutually exclusive (e.g., "care_type" for ganztag/halbtag).
 type GovernmentFundingProperty struct {
-	ID          uint      `gorm:"primaryKey" json:"id" example:"1"`
-	PeriodID    uint      `gorm:"not null;index" json:"period_id" example:"1"`
-	Name        string    `gorm:"size:255;not null" json:"name" example:"ganztag"`
-	Payment     int       `gorm:"not null" json:"payment" example:"166847"`
-	Requirement float64   `gorm:"not null" json:"requirement" example:"0.261"`
-	MinAge      *int      `json:"min_age,omitempty" example:"0"`
-	MaxAge      *int      `json:"max_age,omitempty" example:"3"`
-	Comment     string    `gorm:"size:500" json:"comment,omitempty" example:"Full-day care funding for U3"`
-	CreatedAt   time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	ID             uint      `gorm:"primaryKey" json:"id" example:"1"`
+	PeriodID       uint      `gorm:"not null;index" json:"period_id" example:"1"`
+	Name           string    `gorm:"size:255;not null" json:"name" example:"ganztag"`
+	Payment        int       `gorm:"not null" json:"payment" example:"166847"`
+	Requirement    float64   `gorm:"not null" json:"requirement" example:"0.261"`
+	MinAge         *int      `json:"min_age,omitempty" example:"0"`
+	MaxAge         *int      `json:"max_age,omitempty" example:"3"`
+	ExclusiveGroup *string   `gorm:"size:50" json:"exclusive_group,omitempty" example:"care_type"`
+	Comment        string    `gorm:"size:500" json:"comment,omitempty" example:"Full-day care funding for U3"`
+	CreatedAt      time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 }
 
 // TableName specifies the table name for GORM
@@ -105,22 +107,24 @@ type GovernmentFundingPeriodUpdateRequest struct {
 
 // GovernmentFundingPropertyCreateRequest represents the request body for creating a government funding property.
 type GovernmentFundingPropertyCreateRequest struct {
-	Name        string  `json:"name" binding:"required,max=255" example:"ganztag"`
-	Payment     int     `json:"payment" binding:"gte=0" example:"166847"`
-	Requirement float64 `json:"requirement" binding:"gte=0" example:"0.261"`
-	MinAge      *int    `json:"min_age" binding:"omitempty,gte=0" example:"0"`
-	MaxAge      *int    `json:"max_age" binding:"omitempty,gte=0" example:"3"`
-	Comment     string  `json:"comment" binding:"max=500" example:"Full-day care funding for U3"`
+	Name           string  `json:"name" binding:"required,max=255" example:"ganztag"`
+	Payment        int     `json:"payment" binding:"gte=0" example:"166847"`
+	Requirement    float64 `json:"requirement" binding:"gte=0" example:"0.261"`
+	MinAge         *int    `json:"min_age" binding:"omitempty,gte=0" example:"0"`
+	MaxAge         *int    `json:"max_age" binding:"omitempty,gte=0" example:"3"`
+	ExclusiveGroup *string `json:"exclusive_group" binding:"omitempty,max=50" example:"care_type"`
+	Comment        string  `json:"comment" binding:"max=500" example:"Full-day care funding for U3"`
 }
 
 // GovernmentFundingPropertyUpdateRequest represents the request body for updating a government funding property.
 type GovernmentFundingPropertyUpdateRequest struct {
-	Name        *string  `json:"name" binding:"omitempty,max=255" example:"ganztag"`
-	Payment     *int     `json:"payment" binding:"omitempty,gte=0" example:"166847"`
-	Requirement *float64 `json:"requirement" binding:"omitempty,gte=0" example:"0.261"`
-	MinAge      *int     `json:"min_age" binding:"omitempty,gte=0" example:"0"`
-	MaxAge      *int     `json:"max_age" binding:"omitempty,gte=0" example:"3"`
-	Comment     *string  `json:"comment" binding:"omitempty,max=500" example:"Updated comment"`
+	Name           *string  `json:"name" binding:"omitempty,max=255" example:"ganztag"`
+	Payment        *int     `json:"payment" binding:"omitempty,gte=0" example:"166847"`
+	Requirement    *float64 `json:"requirement" binding:"omitempty,gte=0" example:"0.261"`
+	MinAge         *int     `json:"min_age" binding:"omitempty,gte=0" example:"0"`
+	MaxAge         *int     `json:"max_age" binding:"omitempty,gte=0" example:"3"`
+	ExclusiveGroup *string  `json:"exclusive_group" binding:"omitempty,max=50" example:"care_type"`
+	Comment        *string  `json:"comment" binding:"omitempty,max=500" example:"Updated comment"`
 }
 
 // GovernmentFundingResponse represents the government funding response
@@ -165,28 +169,30 @@ func (p *GovernmentFundingPeriod) ToResponse() GovernmentFundingPeriodResponse {
 
 // GovernmentFundingPropertyResponse represents the government funding property response
 type GovernmentFundingPropertyResponse struct {
-	ID          uint      `json:"id" example:"1"`
-	PeriodID    uint      `json:"period_id" example:"1"`
-	Name        string    `json:"name" example:"ganztag"`
-	Payment     int       `json:"payment" example:"166847"`
-	Requirement float64   `json:"requirement" example:"0.261"`
-	MinAge      *int      `json:"min_age,omitempty" example:"0"`
-	MaxAge      *int      `json:"max_age,omitempty" example:"3"`
-	Comment     string    `json:"comment,omitempty" example:"Full-day care funding for U3"`
-	CreatedAt   time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	ID             uint      `json:"id" example:"1"`
+	PeriodID       uint      `json:"period_id" example:"1"`
+	Name           string    `json:"name" example:"ganztag"`
+	Payment        int       `json:"payment" example:"166847"`
+	Requirement    float64   `json:"requirement" example:"0.261"`
+	MinAge         *int      `json:"min_age,omitempty" example:"0"`
+	MaxAge         *int      `json:"max_age,omitempty" example:"3"`
+	ExclusiveGroup *string   `json:"exclusive_group,omitempty" example:"care_type"`
+	Comment        string    `json:"comment,omitempty" example:"Full-day care funding for U3"`
+	CreatedAt      time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 }
 
 func (p *GovernmentFundingProperty) ToResponse() GovernmentFundingPropertyResponse {
 	return GovernmentFundingPropertyResponse{
-		ID:          p.ID,
-		PeriodID:    p.PeriodID,
-		Name:        p.Name,
-		Payment:     p.Payment,
-		Requirement: p.Requirement,
-		MinAge:      p.MinAge,
-		MaxAge:      p.MaxAge,
-		Comment:     p.Comment,
-		CreatedAt:   p.CreatedAt,
+		ID:             p.ID,
+		PeriodID:       p.PeriodID,
+		Name:           p.Name,
+		Payment:        p.Payment,
+		Requirement:    p.Requirement,
+		MinAge:         p.MinAge,
+		MaxAge:         p.MaxAge,
+		ExclusiveGroup: p.ExclusiveGroup,
+		Comment:        p.Comment,
+		CreatedAt:      p.CreatedAt,
 	}
 }
 

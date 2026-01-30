@@ -145,14 +145,20 @@ func (i *GovernmentFundingImporter) importPropertiesFromEntry(tx *gorm.DB, perio
 
 	// Import properties with the age range from the entry
 	for name, yamlProp := range yamlEntry.Properties {
+		var exclusiveGroup *string
+		if yamlProp.ExclusiveGroup != "" {
+			exclusiveGroup = &yamlProp.ExclusiveGroup
+		}
+
 		property := &models.GovernmentFundingProperty{
-			PeriodID:    periodID,
-			Name:        name,
-			Payment:     euroToCents(yamlProp.Payment),
-			Requirement: yamlProp.Requirement,
-			MinAge:      &minAge,
-			MaxAge:      &maxAge,
-			Comment:     yamlProp.Comment,
+			PeriodID:       periodID,
+			Name:           name,
+			Payment:        euroToCents(yamlProp.Payment),
+			Requirement:    yamlProp.Requirement,
+			MinAge:         &minAge,
+			MaxAge:         &maxAge,
+			ExclusiveGroup: exclusiveGroup,
+			Comment:        yamlProp.Comment,
 		}
 
 		if err := tx.Create(property).Error; err != nil {

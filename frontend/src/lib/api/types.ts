@@ -60,6 +60,7 @@ export interface GovernmentFundingProperty {
   requirement: number;
   min_age?: number | null;
   max_age?: number | null;
+  exclusive_group?: string | null;
   comment?: string;
   created_at: string;
 }
@@ -91,6 +92,7 @@ export interface GovernmentFundingPropertyCreateRequest {
   requirement: number;
   min_age?: number | null;
   max_age?: number | null;
+  exclusive_group?: string | null;
   comment?: string;
 }
 
@@ -100,6 +102,7 @@ export interface GovernmentFundingPropertyUpdateRequest {
   requirement?: number;
   min_age?: number | null;
   max_age?: number | null;
+  exclusive_group?: string | null;
   comment?: string;
 }
 

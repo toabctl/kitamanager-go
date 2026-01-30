@@ -6456,6 +6456,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
                 },
+                "exclusive_group": {
+                    "type": "string",
+                    "example": "care_type"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -6497,6 +6501,11 @@ const docTemplate = `{
                     "maxLength": 500,
                     "example": "Full-day care funding for U3"
                 },
+                "exclusive_group": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "care_type"
+                },
                 "max_age": {
                     "type": "integer",
                     "minimum": 0,
@@ -6531,6 +6540,11 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500,
                     "example": "Updated comment"
+                },
+                "exclusive_group": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "care_type"
                 },
                 "max_age": {
                     "type": "integer",

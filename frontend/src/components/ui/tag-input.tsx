@@ -14,6 +14,8 @@ export interface TagInputProps {
   id?: string;
   suggestions?: string[];
   suggestionsLabel?: string;
+  /** Map of attribute name to its exclusive group. Tags in the same group are mutually exclusive. */
+  exclusiveGroupMap?: Record<string, string | null>;
 }
 
 export function TagInput({
@@ -25,15 +27,33 @@ export function TagInput({
   id,
   suggestions = [],
   suggestionsLabel,
+  exclusiveGroupMap = {},
 }: TagInputProps) {
   const [inputValue, setInputValue] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const addTag = (tag: string) => {
     const trimmed = tag.trim().toLowerCase();
-    if (trimmed && !value.includes(trimmed)) {
-      onChange([...value, trimmed]);
+    if (!trimmed || value.includes(trimmed)) {
+      setInputValue('');
+      return;
     }
+
+    // Check if the new tag has an exclusive group
+    const newTagGroup = exclusiveGroupMap[trimmed];
+
+    let newValue = [...value];
+
+    // If it has an exclusive group, remove other tags from the same group
+    if (newTagGroup) {
+      newValue = newValue.filter((existingTag) => {
+        const existingGroup = exclusiveGroupMap[existingTag];
+        return existingGroup !== newTagGroup;
+      });
+    }
+
+    newValue.push(trimmed);
+    onChange(newValue);
     setInputValue('');
   };
 
@@ -61,6 +81,11 @@ export function TagInput({
   // Filter suggestions to only show ones not already selected
   const availableSuggestions = suggestions.filter((s) => !value.includes(s.toLowerCase()));
 
+  // Get the exclusive group for a tag (for visual indication)
+  const getTagGroup = (tag: string): string | null => {
+    return exclusiveGroupMap[tag] || null;
+  };
+
   return (
     <div className="space-y-2">
       <div
@@ -72,7 +97,12 @@ export function TagInput({
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+          <Badge
+            key={tag}
+            variant={getTagGroup(tag) ? 'default' : 'secondary'}
+            className="gap-1 pr-1"
+            title={getTagGroup(tag) ? `Group: ${getTagGroup(tag)}` : undefined}
+          >
             {tag}
             {!disabled && (
               <button
@@ -110,17 +140,26 @@ export function TagInput({
               {suggestionsLabel}
             </span>
           )}
-          {availableSuggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => addTag(suggestion)}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-muted-foreground/50 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              <Plus className="h-3 w-3" />
-              {suggestion}
-            </button>
-          ))}
+          {availableSuggestions.map((suggestion) => {
+            const group = exclusiveGroupMap[suggestion];
+            return (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => addTag(suggestion)}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-xs transition-colors',
+                  group
+                    ? 'border-primary/50 text-primary/70 hover:border-primary hover:text-primary'
+                    : 'border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary'
+                )}
+                title={group ? `Group: ${group} (selecting replaces others in group)` : undefined}
+              >
+                <Plus className="h-3 w-3" />
+                {suggestion}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

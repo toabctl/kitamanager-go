@@ -165,7 +165,11 @@ export default function ChildContractsPage() {
   const watchedTo = watch('to');
 
   // Get suggested attributes from government funding
-  const { suggestedAttributes } = useFundingAttributes(orgId, watchedFrom, watchedTo);
+  const { suggestedAttributes, exclusiveGroupMap } = useFundingAttributes(
+    orgId,
+    watchedFrom,
+    watchedTo
+  );
 
   const handleCreate = () => {
     setEditingContract(null);
@@ -387,6 +391,7 @@ export default function ChildContractsPage() {
                     placeholder={t('contracts.attributesPlaceholder')}
                     suggestions={suggestedAttributes}
                     suggestionsLabel={t('contracts.suggestedAttributes')}
+                    exclusiveGroupMap={exclusiveGroupMap}
                   />
                 )}
               />

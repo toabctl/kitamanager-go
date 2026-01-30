@@ -16,7 +16,8 @@ type YAMLGovernmentFundingEntry struct {
 
 // YAMLGovernmentFundingProperty represents a property with payment and requirement.
 type YAMLGovernmentFundingProperty struct {
-	Payment     float64 `yaml:"payment"` // EUR amount (converted to cents on import)
-	Requirement float64 `yaml:"requirement"`
-	Comment     string  `yaml:"comment,omitempty"`
+	Payment        float64 `yaml:"payment"` // EUR amount (converted to cents on import)
+	Requirement    float64 `yaml:"requirement"`
+	Comment        string  `yaml:"comment,omitempty"`
+	ExclusiveGroup string  `yaml:"exclusive_group,omitempty"` // Properties in same group are mutually exclusive
 }

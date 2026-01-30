@@ -262,7 +262,11 @@ export default function ChildrenPage() {
   const contractToDate = watchContract('to');
 
   // Get suggested attributes from government funding
-  const { suggestedAttributes } = useFundingAttributes(orgId, contractFromDate, contractToDate);
+  const { suggestedAttributes, exclusiveGroupMap } = useFundingAttributes(
+    orgId,
+    contractFromDate,
+    contractToDate
+  );
 
   // Helper to get a truly active contract (currently in effect, not ended)
   const getActiveContract = (contracts?: ChildContract[]): ChildContract | null => {
@@ -677,6 +681,7 @@ export default function ChildrenPage() {
                     placeholder={t('contracts.attributesPlaceholder')}
                     suggestions={suggestedAttributes}
                     suggestionsLabel={t('contracts.suggestedAttributes')}
+                    exclusiveGroupMap={exclusiveGroupMap}
                   />
                 )}
               />

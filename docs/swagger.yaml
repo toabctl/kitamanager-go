@@ -649,6 +649,9 @@ definitions:
       created_at:
         example: "2024-01-15T10:30:00Z"
         type: string
+      exclusive_group:
+        example: care_type
+        type: string
       id:
         example: 1
         type: integer
@@ -676,6 +679,10 @@ definitions:
       comment:
         example: Full-day care funding for U3
         maxLength: 500
+        type: string
+      exclusive_group:
+        example: care_type
+        maxLength: 50
         type: string
       max_age:
         example: 3
@@ -705,6 +712,10 @@ definitions:
       comment:
         example: Updated comment
         maxLength: 500
+        type: string
+      exclusive_group:
+        example: care_type
+        maxLength: 50
         type: string
       max_age:
         example: 3
