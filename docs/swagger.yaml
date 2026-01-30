@@ -650,6 +650,7 @@ definitions:
         example: "2024-01-15T10:30:00Z"
         type: string
       exclusive_group:
+        description: UI hint only, not enforced
         example: care_type
         type: string
       id:
@@ -681,6 +682,7 @@ definitions:
         maxLength: 500
         type: string
       exclusive_group:
+        description: UI hint for mutually exclusive properties (not enforced)
         example: care_type
         maxLength: 50
         type: string
@@ -714,6 +716,7 @@ definitions:
         maxLength: 500
         type: string
       exclusive_group:
+        description: UI hint for mutually exclusive properties (not enforced)
         example: care_type
         maxLength: 50
         type: string

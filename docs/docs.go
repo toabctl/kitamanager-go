@@ -6457,6 +6457,7 @@ const docTemplate = `{
                     "example": "2024-01-15T10:30:00Z"
                 },
                 "exclusive_group": {
+                    "description": "UI hint only, not enforced",
                     "type": "string",
                     "example": "care_type"
                 },
@@ -6502,6 +6503,7 @@ const docTemplate = `{
                     "example": "Full-day care funding for U3"
                 },
                 "exclusive_group": {
+                    "description": "UI hint for mutually exclusive properties (not enforced)",
                     "type": "string",
                     "maxLength": 50,
                     "example": "care_type"
@@ -6542,6 +6544,7 @@ const docTemplate = `{
                     "example": "Updated comment"
                 },
                 "exclusive_group": {
+                    "description": "UI hint for mutually exclusive properties (not enforced)",
                     "type": "string",
                     "maxLength": 50,
                     "example": "care_type"
