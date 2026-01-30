@@ -55,6 +55,7 @@ import type {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TagInput } from '@/components/ui/tag-input';
+import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -258,6 +259,10 @@ export default function ChildrenPage() {
   });
 
   const contractFromDate = watchContract('from');
+  const contractToDate = watchContract('to');
+
+  // Get suggested attributes from government funding
+  const { suggestedAttributes } = useFundingAttributes(orgId, contractFromDate, contractToDate);
 
   // Helper to get a truly active contract (currently in effect, not ended)
   const getActiveContract = (contracts?: ChildContract[]): ChildContract | null => {
@@ -670,6 +675,8 @@ export default function ChildrenPage() {
                     value={field.value}
                     onChange={field.onChange}
                     placeholder={t('contracts.attributesPlaceholder')}
+                    suggestions={suggestedAttributes}
+                    suggestionsLabel={t('contracts.suggestedAttributes')}
                   />
                 )}
               />

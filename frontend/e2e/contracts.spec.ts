@@ -78,6 +78,62 @@ test.describe('Child Contracts - CRUD Operations', () => {
     }
   });
 
+  test('should show suggested attributes from government funding', async ({ page }) => {
+    // Create a child without contracts
+    const childName = uniqueName('SuggestAttr');
+    const child = await createChildViaApi(page, token, orgId, {
+      first_name: childName,
+      last_name: 'Test',
+      birthdate: formatDateForApi('2022-03-15'),
+      gender: 'male',
+    });
+
+    try {
+      await page.goto(`/organizations/${orgId}/children/${child.id}/contracts`);
+      await page.waitForLoadState('networkidle');
+
+      // Click new contract button
+      await page.getByRole('button', { name: /New Contract/i }).click();
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+
+      // Fill a date that overlaps with Berlin funding period (2025-02-01 onwards)
+      await page.getByLabel(/Start Date/i).fill('2025-03-01');
+
+      // Wait for suggestions to appear (Berlin funding has these attributes)
+      // The suggestions should show property names from the government funding
+      await expect(page.getByText(/Suggested:/i)).toBeVisible({ timeout: 10000 });
+
+      // Click on a suggested attribute - suggestions are buttons with icon + text
+      // Look within the suggestions area (after "Suggested:" label)
+      const suggestionsArea = page.locator('text=Suggested:').locator('..');
+      const gantzagSuggestion = suggestionsArea.locator('button', { hasText: 'ganztag' }).first();
+      await expect(gantzagSuggestion).toBeVisible({ timeout: 5000 });
+      await gantzagSuggestion.click();
+
+      // After clicking, the tag appears in the input and suggestion disappears
+      const dialog = page.getByRole('dialog');
+      // The selected tag now appears as a badge (not a button) in the input area
+      // We check that "ganztag" text exists but the suggestion button is gone
+      await expect(dialog.getByText('ganztag').first()).toBeVisible();
+
+      // Add "ndh" by clicking its suggestion
+      const ndhSuggestion = suggestionsArea.locator('button', { hasText: 'ndh' }).first();
+      if (await ndhSuggestion.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await ndhSuggestion.click();
+        await expect(dialog.getByText('ndh').first()).toBeVisible();
+      }
+
+      // Save the contract
+      await page.getByRole('button', { name: /Save/i }).click();
+      await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
+
+      // Verify attributes appear in the table
+      await expect(page.getByText(/ganztag/i)).toBeVisible({ timeout: 10000 });
+    } finally {
+      await deleteChildViaApi(page, token, orgId, child.id);
+    }
+  });
+
   test('should update a contract from history page', async ({ page }) => {
     // Create a child with a contract
     const childName = uniqueName('UpdateContract');

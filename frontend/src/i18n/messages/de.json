@@ -269,6 +269,7 @@
     "attributesLabel": "Attribute (Betreuungsart & Extras)",
     "attributesPlaceholder": "Eingeben und Enter drücken...",
     "attributesHelp": "Attribut eingeben und Enter drücken (z.B. ganztags, halbtags, ndh)",
+    "suggestedAttributes": "Vorschläge:",
     "noAttributes": "keine Attribute",
     "previousContractEnded": "Vorheriger Vertrag beendet und neuer Vertrag erfolgreich erstellt",
     "updateSuccess": "Vertrag erfolgreich aktualisiert",

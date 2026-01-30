@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TagInput } from '@/components/ui/tag-input';
 import { useToast } from '@/lib/hooks/use-toast';
+import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
 import type {
   ChildContract,
@@ -148,6 +149,7 @@ export default function ChildContractsPage() {
     handleSubmit,
     reset,
     control,
+    watch,
     formState: { errors },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
@@ -157,6 +159,13 @@ export default function ChildContractsPage() {
       attributes: [],
     },
   });
+
+  // Watch date fields for funding attribute suggestions
+  const watchedFrom = watch('from');
+  const watchedTo = watch('to');
+
+  // Get suggested attributes from government funding
+  const { suggestedAttributes } = useFundingAttributes(orgId, watchedFrom, watchedTo);
 
   const handleCreate = () => {
     setEditingContract(null);
@@ -376,6 +385,8 @@ export default function ChildContractsPage() {
                     value={field.value}
                     onChange={field.onChange}
                     placeholder={t('contracts.attributesPlaceholder')}
+                    suggestions={suggestedAttributes}
+                    suggestionsLabel={t('contracts.suggestedAttributes')}
                   />
                 )}
               />
