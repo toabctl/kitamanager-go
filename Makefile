@@ -18,7 +18,7 @@ test: web-test api-test-unit
 
 # Clean build artifacts
 clean:
-	rm -rf bin/ coverage.out coverage.html
+	rm -rf bin/ coverage.out coverage.html frontend/.next
 
 # Run all CI checks locally
 ci: lint test build
