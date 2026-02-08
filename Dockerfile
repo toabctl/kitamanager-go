@@ -39,7 +39,7 @@ COPY --from=web-builder /app/internal/web/dist ./internal/web/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
 
 # Stage 3: Final minimal image
-FROM alpine:3.19
+FROM alpine:3.23
 
 WORKDIR /app
 
