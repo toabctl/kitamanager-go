@@ -19,6 +19,9 @@ func Setup(
 	childHandler *handlers.ChildHandler,
 	governmentFundingHandler *handlers.GovernmentFundingHandler,
 	payPlanHandler *handlers.PayPlanHandler,
+	attendanceHandler *handlers.AttendanceHandler,
+	waitlistHandler *handlers.WaitlistHandler,
+	childNoteHandler *handlers.ChildNoteHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	authzMiddleware *middleware.AuthorizationMiddleware,
 	csrfMiddleware *middleware.CSRFMiddleware,
@@ -289,6 +292,85 @@ func Setup(
 					children.DELETE("/:id/contracts/:contractId",
 						authzMiddleware.RequirePermission(rbac.ResourceChildContracts, rbac.ActionDelete),
 						childHandler.DeleteContract)
+
+					// Child notes (documentation/observations)
+					children.GET("/:id/notes",
+						authzMiddleware.RequirePermission(rbac.ResourceChildNotes, rbac.ActionRead),
+						childNoteHandler.List)
+					children.GET("/:id/notes/:noteId",
+						authzMiddleware.RequirePermission(rbac.ResourceChildNotes, rbac.ActionRead),
+						childNoteHandler.Get)
+					children.POST("/:id/notes",
+						authzMiddleware.RequirePermission(rbac.ResourceChildNotes, rbac.ActionCreate),
+						childNoteHandler.Create)
+					children.PUT("/:id/notes/:noteId",
+						authzMiddleware.RequirePermission(rbac.ResourceChildNotes, rbac.ActionUpdate),
+						childNoteHandler.Update)
+					children.DELETE("/:id/notes/:noteId",
+						authzMiddleware.RequirePermission(rbac.ResourceChildNotes, rbac.ActionDelete),
+						childNoteHandler.Delete)
+				}
+
+				// ============================================================
+				// Attendance tracking (org-scoped)
+				// ============================================================
+				attendance := orgScoped.Group("/attendance")
+				{
+					// Summary must come before /:id to avoid conflict
+					attendance.GET("/summary",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionRead),
+						attendanceHandler.GetDailySummary)
+
+					// Check-in and absence must come before /:id to avoid conflict
+					attendance.POST("/check-in",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionCreate),
+						attendanceHandler.CheckIn)
+					attendance.POST("/absent",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionCreate),
+						attendanceHandler.MarkAbsent)
+
+					// Child-specific attendance
+					attendance.GET("/child/:childId",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionRead),
+						attendanceHandler.ListByChild)
+
+					attendance.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionRead),
+						attendanceHandler.ListByDate)
+					attendance.GET("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionRead),
+						attendanceHandler.Get)
+					attendance.PUT("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionUpdate),
+						attendanceHandler.Update)
+					attendance.PUT("/:id/check-out",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionUpdate),
+						attendanceHandler.CheckOut)
+					attendance.DELETE("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceAttendance, rbac.ActionDelete),
+						attendanceHandler.Delete)
+				}
+
+				// ============================================================
+				// Waitlist management (org-scoped)
+				// ============================================================
+				waitlist := orgScoped.Group("/waitlist")
+				{
+					waitlist.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceWaitlist, rbac.ActionRead),
+						waitlistHandler.List)
+					waitlist.GET("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceWaitlist, rbac.ActionRead),
+						waitlistHandler.Get)
+					waitlist.POST("",
+						authzMiddleware.RequirePermission(rbac.ResourceWaitlist, rbac.ActionCreate),
+						waitlistHandler.Create)
+					waitlist.PUT("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceWaitlist, rbac.ActionUpdate),
+						waitlistHandler.Update)
+					waitlist.DELETE("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceWaitlist, rbac.ActionDelete),
+						waitlistHandler.Delete)
 				}
 
 				// ============================================================
