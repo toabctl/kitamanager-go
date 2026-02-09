@@ -45,7 +45,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: '--config website/lychee.toml --offline --root-dir website/public website/public'
+          args: '--config website/lychee.toml --offline --root-dir ${{ github.workspace }}/website/public website/public'
           fail: true
 
   deploy:
