@@ -11,7 +11,7 @@ Ein Rundgang durch die KitaManager Go Benutzeroberfläche mit den wichtigsten Bi
 
 Der Anmeldebildschirm ist der Einstiegspunkt in KitaManager. Benutzer authentifizieren sich mit ihrer E-Mail-Adresse und ihrem Passwort. Nach erfolgreicher Anmeldung wird ein JWT-Token ausgestellt, der die Sitzung aktiv hält.
 
-{{< figure src="/images/screenshots/login.png" alt="Anmeldeseite" caption="Die Anmeldeseite — geben Sie E-Mail und Passwort ein, um auf das System zuzugreifen." >}}
+{{< screenshot src="/images/screenshots/login.png" alt="Anmeldeseite" caption="Die Anmeldeseite — geben Sie E-Mail und Passwort ein, um auf das System zuzugreifen." >}}
 
 ---
 
@@ -21,7 +21,7 @@ Nach der Anmeldung bietet das Dashboard einen Überblick über Ihre Kita auf ein
 
 Die linke Seitenleiste ist Ihre Hauptnavigation — sie ist unterteilt in systemweite Einträge (Dashboard, Organisationen, Landesförderungen) und organisationsbezogene Einträge (Benutzer, Gruppen, Mitarbeiter, Kinder, Statistiken, Vergütungspläne). Über das Dropdown in der Seitenleiste können Sie zwischen Organisationen wechseln.
 
-{{< figure src="/images/screenshots/dashboard.png" alt="Dashboard" caption="Das Dashboard mit Zusammenfassungskarten und organisationsbezogenen Schnellstatistiken." >}}
+{{< screenshot src="/images/screenshots/dashboard.png" alt="Dashboard" caption="Das Dashboard mit Zusammenfassungskarten und organisationsbezogenen Schnellstatistiken." >}}
 
 ---
 
@@ -31,7 +31,7 @@ Die Organisationsseite listet alle Kita-Einrichtungen auf, auf die Sie Zugriff h
 
 Wenn Sie mehrere Kitas verwalten, erhalten Sie hier das Gesamtbild über alle Ihre Einrichtungen.
 
-{{< figure src="/images/screenshots/organizations.png" alt="Organisationsliste" caption="Organisationsübersicht — verwalten Sie mehrere Kita-Einrichtungen an einem Ort." >}}
+{{< screenshot src="/images/screenshots/organizations.png" alt="Organisationsliste" caption="Organisationsübersicht — verwalten Sie mehrere Kita-Einrichtungen an einem Ort." >}}
 
 ---
 
@@ -41,7 +41,7 @@ Die Mitarbeiterliste zeigt alle Beschäftigten der ausgewählten Organisation. S
 
 Neue Mitarbeiter können über die Schaltfläche **+ New Employee** oben rechts hinzugefügt werden.
 
-{{< figure src="/images/screenshots/employees.png" alt="Mitarbeiterliste" caption="Mitarbeiterübersicht mit persönlichen Daten, Position, Entgeltgruppe und Wochenstunden." >}}
+{{< screenshot src="/images/screenshots/employees.png" alt="Mitarbeiterliste" caption="Mitarbeiterübersicht mit persönlichen Daten, Position, Entgeltgruppe und Wochenstunden." >}}
 
 ---
 
@@ -51,7 +51,7 @@ Die Kinderliste zeigt jedes angemeldete Kind in der ausgewählten Organisation. 
 
 Dies ist der Bildschirm, den Kita-Leitungen am häufigsten nutzen — er bietet auf einen Blick ein vollständiges Bild von Anmeldungen und Förderung.
 
-{{< figure src="/images/screenshots/children.png" alt="Kinderliste" caption="Kinderübersicht mit Anmeldestatus, Betreuungseigenschaften und berechneten Förderbeträgen." >}}
+{{< screenshot src="/images/screenshots/children.png" alt="Kinderliste" caption="Kinderübersicht mit Anmeldestatus, Betreuungseigenschaften und berechneten Förderbeträgen." >}}
 
 ---
 
@@ -61,4 +61,4 @@ Die Landesförderungsseite ermöglicht es Administratoren, die landesspezifische
 
 Wenn die Vertragseigenschaften eines Kindes mit einem Fördereintrag übereinstimmen, wird der entsprechende Monatsbetrag automatisch in der Kinderliste angezeigt.
 
-{{< figure src="/images/screenshots/government-fundings.png" alt="Landesförderung" caption="Landesförderungs-Konfigurationen — definieren Sie landesspezifische Regeln für automatische Förderberechnungen." >}}
+{{< screenshot src="/images/screenshots/government-fundings.png" alt="Landesförderung" caption="Landesförderungs-Konfigurationen — definieren Sie landesspezifische Regeln für automatische Förderberechnungen." >}}

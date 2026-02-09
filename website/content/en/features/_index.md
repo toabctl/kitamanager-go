@@ -11,11 +11,11 @@ A typical workflow in KitaManager looks like this:
 
 ```mermaid
 flowchart LR
-    A["Create\nOrganization"] --> B["Add\nEmployees"]
-    A --> C["Enroll\nChildren"]
-    B --> D["Assign\nContracts"]
-    C --> E["Create Child\nContracts"]
-    E --> F["Automatic Funding\nCalculation"]
+    A["Create<br/>Organization"] --> B["Add<br/>Employees"]
+    A --> C["Enroll<br/>Children"]
+    B --> D["Assign<br/>Contracts"]
+    C --> E["Create Child<br/>Contracts"]
+    E --> F["Automatic Funding<br/>Calculation"]
     style F fill:#22c55e,color:#fff
 ```
 
@@ -102,10 +102,10 @@ One of KitaManager's core features is the automatic calculation of government ch
 
 ```mermaid
 flowchart TD
-    A["Child Contract"] --> B["Contract Properties\n(e.g., ganztag + ndh)"]
-    B --> C["Match against\nFunding Rules"]
-    D["Government Funding Config\n(e.g., Berlin 2024)"] --> C
-    C --> E["Monthly Funding Amount\n(e.g., 1,633.64 EUR)"]
+    A["Child Contract"] --> B["Contract Properties<br/>(e.g., ganztag + ndh)"]
+    B --> C["Match against<br/>Funding Rules"]
+    D["Government Funding Config<br/>(e.g., Berlin 2024)"] --> C
+    C --> E["Monthly Funding Amount<br/>(e.g., 1,633.64 EUR)"]
     style E fill:#22c55e,color:#fff
 ```
 

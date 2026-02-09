@@ -11,7 +11,7 @@ A walkthrough of the KitaManager Go user interface, showing the key screens you 
 
 The login screen is the entry point to KitaManager. Users authenticate with their email address and password. After successful login, a JWT token is issued that keeps the session active.
 
-{{< figure src="/images/screenshots/login.png" alt="Login page" caption="The login page — enter your email and password to access the system." >}}
+{{< screenshot src="/images/screenshots/login.png" alt="Login page" caption="The login page — enter your email and password to access the system." >}}
 
 ---
 
@@ -21,7 +21,7 @@ Once logged in, the dashboard gives you an at-a-glance overview of your Kita. Th
 
 The left sidebar is your main navigation — it is divided into system-wide items (Dashboard, Organizations, Government Fundings) and organization-scoped items (Users, Groups, Employees, Children, Statistics, Pay Plans). You can switch between organizations using the dropdown in the sidebar.
 
-{{< figure src="/images/screenshots/dashboard.png" alt="Dashboard" caption="The dashboard with summary cards and organization-scoped quick stats." >}}
+{{< screenshot src="/images/screenshots/dashboard.png" alt="Dashboard" caption="The dashboard with summary cards and organization-scoped quick stats." >}}
 
 ---
 
@@ -31,7 +31,7 @@ The organizations page lists all Kita facilities you have access to. Each row sh
 
 If you manage multiple Kitas, this is where you get the full picture across all your facilities.
 
-{{< figure src="/images/screenshots/organizations.png" alt="Organizations list" caption="Organizations overview — manage multiple Kita facilities from one place." >}}
+{{< screenshot src="/images/screenshots/organizations.png" alt="Organizations list" caption="Organizations overview — manage multiple Kita facilities from one place." >}}
 
 ---
 
@@ -41,7 +41,7 @@ The employee list shows all staff members for the selected organization. You can
 
 New employees can be added using the **+ New Employee** button in the top right corner.
 
-{{< figure src="/images/screenshots/employees.png" alt="Employees list" caption="Employee overview with personal details, position, grade, and weekly hours." >}}
+{{< screenshot src="/images/screenshots/employees.png" alt="Employees list" caption="Employee overview with personal details, position, grade, and weekly hours." >}}
 
 ---
 
@@ -51,7 +51,7 @@ The children list shows every enrolled child in the selected organization. Each 
 
 This is the screen where Kita administrators spend most of their time — it gives a complete picture of enrollment and funding at a glance.
 
-{{< figure src="/images/screenshots/children.png" alt="Children list" caption="Children overview showing enrollment status, care properties, and calculated funding amounts." >}}
+{{< screenshot src="/images/screenshots/children.png" alt="Children list" caption="Children overview showing enrollment status, care properties, and calculated funding amounts." >}}
 
 ---
 
@@ -61,4 +61,4 @@ The government funding page lets administrators configure the state-level fundin
 
 When a child's contract properties match a funding entry, the corresponding monthly amount is automatically displayed in the children list.
 
-{{< figure src="/images/screenshots/government-fundings.png" alt="Government funding" caption="Government funding configurations — define state-level rules for automatic funding calculations." >}}
+{{< screenshot src="/images/screenshots/government-fundings.png" alt="Government funding" caption="Government funding configurations — define state-level rules for automatic funding calculations." >}}

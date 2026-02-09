@@ -1,0 +1,12 @@
+{{ $src := .Get "src" }}
+{{ $baseURL := .Page.Site.BaseURL }}
+{{ $basePath := urls.Parse $baseURL }}
+{{ $imgSrc := printf "%s%s" $basePath.Path (strings.TrimPrefix "/" $src) }}
+<figure>
+    <img src="{{ $imgSrc }}"
+         {{- with .Get "alt" }} alt="{{ . }}"{{ end -}}
+         loading="lazy" />
+    {{- with .Get "caption" }}
+    <figcaption><p>{{ . | markdownify }}</p></figcaption>
+    {{- end }}
+</figure>

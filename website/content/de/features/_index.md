@@ -11,11 +11,11 @@ Ein typischer Arbeitsablauf in KitaManager sieht so aus:
 
 ```mermaid
 flowchart LR
-    A["Organisation\nanlegen"] --> B["Mitarbeiter\nerfassen"]
-    A --> C["Kinder\nanmelden"]
-    B --> D["Verträge\nzuweisen"]
-    C --> E["Betreuungsverträge\nerstellen"]
-    E --> F["Automatische\nFörderberechnung"]
+    A["Organisation<br/>anlegen"] --> B["Mitarbeiter<br/>erfassen"]
+    A --> C["Kinder<br/>anmelden"]
+    B --> D["Verträge<br/>zuweisen"]
+    C --> E["Betreuungsverträge<br/>erstellen"]
+    E --> F["Automatische<br/>Förderberechnung"]
     style F fill:#22c55e,color:#fff
 ```
 
@@ -102,10 +102,10 @@ Eine der Kernfunktionen von KitaManager ist die automatische Berechnung der staa
 
 ```mermaid
 flowchart TD
-    A["Betreuungsvertrag"] --> B["Vertragseigenschaften\n(z.B. ganztag + ndh)"]
-    B --> C["Abgleich mit\nFörderregeln"]
-    D["Landesförderungs-Konfiguration\n(z.B. Berlin 2024)"] --> C
-    C --> E["Monatlicher Förderbetrag\n(z.B. 1.633,64 EUR)"]
+    A["Betreuungsvertrag"] --> B["Vertragseigenschaften<br/>(z.B. ganztag + ndh)"]
+    B --> C["Abgleich mit<br/>Förderregeln"]
+    D["Landesförderungs-Konfiguration<br/>(z.B. Berlin 2024)"] --> C
+    C --> E["Monatlicher Förderbetrag<br/>(z.B. 1.633,64 EUR)"]
     style E fill:#22c55e,color:#fff
 ```
 
