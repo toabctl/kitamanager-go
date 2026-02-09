@@ -20,5 +20,4 @@ KitaManager Go ist eine Enterprise-REST-API und Webanwendung zur Optimierung der
   {{< card link="getting-started" title="Erste Schritte" icon="play" >}}
   {{< card link="architecture" title="Architektur" icon="cube" >}}
   {{< card link="api" title="API-Referenz" icon="code" >}}
-  {{< card link="deployment" title="Bereitstellung" icon="cloud" >}}
 {{< /cards >}}

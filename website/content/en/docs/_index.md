@@ -20,5 +20,4 @@ KitaManager Go is an enterprise-grade REST API and web application designed to s
   {{< card link="getting-started" title="Getting Started" icon="play" >}}
   {{< card link="architecture" title="Architecture" icon="cube" >}}
   {{< card link="api" title="API Reference" icon="code" >}}
-  {{< card link="deployment" title="Deployment" icon="cloud" >}}
 {{< /cards >}}

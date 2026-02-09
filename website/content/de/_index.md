@@ -3,12 +3,6 @@ title: KitaManager Go
 layout: hextra-home
 ---
 
-{{< hextra/hero-badge >}}
-  <div class="hx-w-2 hx-h-2 hx-rounded-full hx-bg-primary-400"></div>
-  <span>Open Source</span>
-  {{< icon name="arrow-circle-right" attributes="height=14" >}}
-{{< /hextra/hero-badge >}}
-
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
   Moderne Kita-&nbsp;<br class="sm:hx-block hx-hidden" />Verwaltungssoftware
@@ -23,7 +17,6 @@ layout: hextra-home
 
 <div class="hx-mb-6">
 {{< hextra/hero-button text="Erste Schritte" link="docs/getting-started" >}}
-{{< hextra/hero-button text="Auf GitHub ansehen" link="https://github.com/toabctl/kitamanager-go" style="background: transparent; border: 1px solid #e5e7eb; color: inherit;" >}}
 </div>
 
 <div class="hx-mt-6"></div>
@@ -57,6 +50,6 @@ layout: hextra-home
   >}}
   {{< hextra/feature-card
     title="Moderne Technologie"
-    subtitle="Entwickelt mit Go 1.25, Next.js 14, PostgreSQL und Docker für hohe Leistung und einfache Bereitstellung."
+    subtitle="Entwickelt mit Go, Next.js, PostgreSQL und Docker für hohe Leistung und Zuverlässigkeit."
   >}}
 {{< /hextra/feature-grid >}}

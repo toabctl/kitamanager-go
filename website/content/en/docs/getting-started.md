@@ -16,10 +16,6 @@ This guide will help you get KitaManager Go up and running quickly.
 The fastest way to get started is using Docker Compose:
 
 ```bash
-# Clone the repository
-git clone https://github.com/toabctl/kitamanager-go.git
-cd kitamanager-go
-
 # Start all services
 docker compose up -d
 ```
@@ -83,4 +79,3 @@ The development environment includes seed data with:
 
 - [Architecture Overview](../architecture) - Understand the system design
 - [API Reference](../api) - Explore the REST API
-- [Deployment Guide](../deployment) - Production deployment options

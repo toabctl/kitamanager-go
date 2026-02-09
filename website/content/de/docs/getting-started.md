@@ -16,10 +16,6 @@ Diese Anleitung hilft Ihnen, KitaManager Go schnell zum Laufen zu bringen.
 Der schnellste Weg zum Starten ist mit Docker Compose:
 
 ```bash
-# Repository klonen
-git clone https://github.com/toabctl/kitamanager-go.git
-cd kitamanager-go
-
 # Alle Dienste starten
 docker compose up -d
 ```
@@ -83,4 +79,3 @@ Die Entwicklungsumgebung enthält Testdaten mit:
 
 - [Architektur-Übersicht](../architecture) - Systemdesign verstehen
 - [API-Referenz](../api) - Die REST-API erkunden
-- [Bereitstellungs-Anleitung](../deployment) - Produktions-Bereitstellungsoptionen
