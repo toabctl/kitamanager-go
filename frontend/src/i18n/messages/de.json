@@ -406,9 +406,11 @@
     "updateSuccess": "Bereich erfolgreich aktualisiert",
     "unassigned": "Nicht zugeordnet",
     "childCount": "{count} Kinder",
-    "dragHint": "Kinder zwischen Spalten ziehen, um sie Bereichen zuzuordnen",
+    "dragHint": "Kinder und Mitarbeiter zwischen Spalten ziehen, um sie Bereichen zuzuordnen",
     "movedSuccess": "Kind erfolgreich verschoben",
     "movedFailed": "Kind konnte nicht verschoben werden",
+    "employeeMovedSuccess": "Mitarbeiter erfolgreich verschoben",
+    "employeeMovedFailed": "Mitarbeiter konnte nicht verschoben werden",
     "defaultSection": "Standard"
   },
   "payPlans": {

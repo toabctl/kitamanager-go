@@ -14,7 +14,7 @@ export interface ChildCardProps {
 export function ChildCard({ child }: ChildCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `child-${child.id}`,
-    data: { child },
+    data: { child, type: 'child' },
   });
 
   const age = differenceInYears(new Date(), new Date(child.birthdate));

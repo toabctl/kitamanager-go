@@ -197,6 +197,8 @@ export interface Person {
 
 // Employee
 export interface Employee extends Person {
+  section_id?: number | null;
+  section?: Section | null;
   contracts?: EmployeeContract[];
 }
 
@@ -226,6 +228,7 @@ export interface EmployeeUpdateRequest {
   last_name?: string;
   gender?: Gender;
   birthdate?: string;
+  section_id?: number | null;
 }
 
 export interface EmployeeContractCreateRequest {

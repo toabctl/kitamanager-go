@@ -4,19 +4,23 @@ import { useDroppable } from '@dnd-kit/core';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Child } from '@/lib/api/types';
+import type { Child, Employee } from '@/lib/api/types';
 import { ChildCard } from './child-card';
+import { EmployeeCard } from './employee-card';
 
 export interface SectionColumnProps {
   id: string;
   title: string;
   items: Child[];
+  employees: Employee[];
   isDefault?: boolean;
 }
 
-export function SectionColumn({ id, title, items, isDefault }: SectionColumnProps) {
+export function SectionColumn({ id, title, items, employees, isDefault }: SectionColumnProps) {
   const t = useTranslations();
   const { setNodeRef, isOver } = useDroppable({ id });
+
+  const totalCount = employees.length + items.length;
 
   return (
     <div
@@ -36,14 +40,24 @@ export function SectionColumn({ id, title, items, isDefault }: SectionColumnProp
           )}
         </div>
         <Badge variant="outline" className="text-xs">
-          {items.length}
+          {totalCount}
         </Badge>
       </div>
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
-        {items.length === 0 ? (
+        {totalCount === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">{t('common.noResults')}</p>
         ) : (
-          items.map((child) => <ChildCard key={child.id} child={child} />)
+          <>
+            {employees.map((employee) => (
+              <EmployeeCard key={`emp-${employee.id}`} employee={employee} />
+            ))}
+            {employees.length > 0 && items.length > 0 && (
+              <div className="my-1 border-t border-dashed" />
+            )}
+            {items.map((child) => (
+              <ChildCard key={child.id} child={child} />
+            ))}
+          </>
         )}
       </div>
     </div>

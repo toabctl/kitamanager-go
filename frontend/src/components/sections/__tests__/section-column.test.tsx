@@ -44,38 +44,38 @@ const mockChildren: Child[] = [
 
 describe('SectionColumn', () => {
   it('renders section name', () => {
-    render(<SectionColumn id="1" title="Krippe" items={mockChildren} />);
+    render(<SectionColumn id="1" title="Krippe" items={mockChildren} employees={[]} />);
     expect(screen.getByText('Krippe')).toBeInTheDocument();
   });
 
   it('renders child count badge', () => {
-    render(<SectionColumn id="1" title="Krippe" items={mockChildren} />);
+    render(<SectionColumn id="1" title="Krippe" items={mockChildren} employees={[]} />);
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
   it('renders children cards', () => {
-    render(<SectionColumn id="1" title="Krippe" items={mockChildren} />);
+    render(<SectionColumn id="1" title="Krippe" items={mockChildren} employees={[]} />);
     expect(screen.getByText('Emma Schmidt')).toBeInTheDocument();
     expect(screen.getByText('Max Müller')).toBeInTheDocument();
   });
 
   it('renders empty state when no children', () => {
-    render(<SectionColumn id="1" title="Krippe" items={[]} />);
+    render(<SectionColumn id="1" title="Krippe" items={[]} employees={[]} />);
     expect(screen.getByText('common.noResults')).toBeInTheDocument();
   });
 
   it('renders zero count badge when empty', () => {
-    render(<SectionColumn id="1" title="Krippe" items={[]} />);
+    render(<SectionColumn id="1" title="Krippe" items={[]} employees={[]} />);
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
   it('renders default badge when isDefault is true', () => {
-    render(<SectionColumn id="1" title="Krippe" items={[]} isDefault={true} />);
+    render(<SectionColumn id="1" title="Krippe" items={[]} employees={[]} isDefault={true} />);
     expect(screen.getByText('sections.defaultSection')).toBeInTheDocument();
   });
 
   it('does not render default badge when isDefault is false', () => {
-    render(<SectionColumn id="1" title="Krippe" items={[]} isDefault={false} />);
+    render(<SectionColumn id="1" title="Krippe" items={[]} employees={[]} isDefault={false} />);
     expect(screen.queryByText('sections.defaultSection')).not.toBeInTheDocument();
   });
 });

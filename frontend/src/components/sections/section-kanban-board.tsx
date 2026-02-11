@@ -15,20 +15,24 @@ import { useTranslations } from 'next-intl';
 import { GripVertical } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { useToast } from '@/lib/hooks/use-toast';
-import type { Child } from '@/lib/api/types';
+import type { Child, Employee } from '@/lib/api/types';
+import { getActiveContract } from '@/lib/utils/contracts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SectionColumn } from './section-column';
 import { ChildCard } from './child-card';
+import { EmployeeCard } from './employee-card';
 
 interface SectionKanbanBoardProps {
   orgId: number;
 }
 
+type ActiveItem = { type: 'child'; item: Child } | { type: 'employee'; item: Employee };
+
 export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
   const t = useTranslations();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeChild, setActiveChild] = useState<Child | null>(null);
+  const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -48,10 +52,24 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     enabled: !!orgId,
   });
 
+  const { data: allEmployees, isLoading: employeesLoading } = useQuery({
+    queryKey: ['employees-all', orgId],
+    queryFn: () => apiClient.getEmployeesAll(orgId),
+    enabled: !!orgId,
+  });
+
+  const pedagogicalEmployees = useMemo(() => {
+    if (!allEmployees) return [];
+    return allEmployees.filter((e) => {
+      const c = getActiveContract(e.contracts);
+      return c && c.staff_category !== 'non_pedagogical';
+    });
+  }, [allEmployees]);
+
   const allSections = useMemo(() => sectionsData?.data ?? [], [sectionsData]);
   const defaultSection = useMemo(() => allSections.find((s) => s.is_default), [allSections]);
   const sections = useMemo(() => allSections.filter((s) => !s.is_default), [allSections]);
-  const isLoading = sectionsLoading || childrenLoading;
+  const isLoading = sectionsLoading || childrenLoading || employeesLoading;
 
   const childrenBySection = useMemo(() => {
     const map = new Map<string, Child[]>();
@@ -73,7 +91,27 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     return map;
   }, [sections, defaultSection, children]);
 
-  const moveMutation = useMutation({
+  const employeesBySection = useMemo(() => {
+    const map = new Map<string, Employee[]>();
+    map.set('unassigned', []);
+    for (const section of sections) {
+      map.set(String(section.id), []);
+    }
+    for (const emp of pedagogicalEmployees) {
+      const sectionId = emp.section_id ?? null;
+      const isUnassigned = !sectionId || (defaultSection && sectionId === defaultSection.id);
+      const key = isUnassigned ? 'unassigned' : String(sectionId);
+      const list = map.get(key);
+      if (list) {
+        list.push(emp);
+      } else {
+        map.get('unassigned')!.push(emp);
+      }
+    }
+    return map;
+  }, [sections, defaultSection, pedagogicalEmployees]);
+
+  const moveChildMutation = useMutation({
     mutationFn: ({ childId, sectionId }: { childId: number; sectionId: number | null }) =>
       apiClient.updateChild(orgId, childId, { section_id: sectionId }),
     onMutate: async ({ childId, sectionId }) => {
@@ -99,27 +137,62 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     },
   });
 
+  const moveEmployeeMutation = useMutation({
+    mutationFn: ({ employeeId, sectionId }: { employeeId: number; sectionId: number | null }) =>
+      apiClient.updateEmployee(orgId, employeeId, { section_id: sectionId }),
+    onMutate: async ({ employeeId, sectionId }) => {
+      await queryClient.cancelQueries({ queryKey: ['employees-all', orgId] });
+      const previous = queryClient.getQueryData<Employee[]>(['employees-all', orgId]);
+      queryClient.setQueryData<Employee[]>(['employees-all', orgId], (old) =>
+        old?.map((e) => (e.id === employeeId ? { ...e, section_id: sectionId } : e))
+      );
+      return { previous };
+    },
+    onSuccess: () => {
+      toast({ title: t('sections.employeeMovedSuccess') });
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['employees-all', orgId], context.previous);
+      }
+      toast({ title: t('sections.employeeMovedFailed'), variant: 'destructive' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees-all', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['employees', orgId] });
+    },
+  });
+
   function handleDragStart(event: DragStartEvent) {
-    const child = event.active.data.current?.child as Child | undefined;
-    if (child) setActiveChild(child);
+    const data = event.active.data.current;
+    if (data?.type === 'employee') {
+      setActiveItem({ type: 'employee', item: data.employee as Employee });
+    } else if (data?.child) {
+      setActiveItem({ type: 'child', item: data.child as Child });
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActiveChild(null);
-    const { active, over } = event;
-    if (!over) return;
-
-    const child = active.data.current?.child as Child | undefined;
-    if (!child) return;
+    const currentItem = activeItem;
+    setActiveItem(null);
+    const { over } = event;
+    if (!over || !currentItem) return;
 
     const targetColumnId = String(over.id);
     const newSectionId =
       targetColumnId === 'unassigned' ? (defaultSection?.id ?? null) : Number(targetColumnId);
-    const currentSectionId = child.section_id ?? null;
 
-    if (newSectionId === currentSectionId) return;
-
-    moveMutation.mutate({ childId: child.id, sectionId: newSectionId });
+    if (currentItem.type === 'child') {
+      const child = currentItem.item;
+      const currentSectionId = child.section_id ?? null;
+      if (newSectionId === currentSectionId) return;
+      moveChildMutation.mutate({ childId: child.id, sectionId: newSectionId });
+    } else {
+      const employee = currentItem.item;
+      const currentSectionId = employee.section_id ?? null;
+      if (newSectionId === currentSectionId) return;
+      moveEmployeeMutation.mutate({ employeeId: employee.id, sectionId: newSectionId });
+    }
   }
 
   if (isLoading) {
@@ -144,6 +217,7 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
             id="unassigned"
             title={t('sections.unassigned')}
             items={childrenBySection.get('unassigned') ?? []}
+            employees={employeesBySection.get('unassigned') ?? []}
           />
           {sections.map((section) => (
             <SectionColumn
@@ -151,11 +225,18 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
               id={String(section.id)}
               title={section.name}
               items={childrenBySection.get(String(section.id)) ?? []}
+              employees={employeesBySection.get(String(section.id)) ?? []}
               isDefault={section.is_default}
             />
           ))}
         </div>
-        <DragOverlay>{activeChild ? <ChildCard child={activeChild} /> : null}</DragOverlay>
+        <DragOverlay>
+          {activeItem?.type === 'child' ? (
+            <ChildCard child={activeItem.item} />
+          ) : activeItem?.type === 'employee' ? (
+            <EmployeeCard employee={activeItem.item} />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );

@@ -600,6 +600,15 @@ class ApiClient {
   updateSection = this._sections.update;
   deleteSection = this._sections.delete;
 
+  // Employees - fetch all with active contracts (for kanban board view)
+  async getEmployeesAll(orgId: number): Promise<Employee[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    const response = await this.client.get<PaginatedResponse<Employee>>(
+      `/organizations/${orgId}/employees?limit=100&active_on=${today}`
+    );
+    return response.data.data;
+  }
+
   // Children - fetch all with active contracts (for kanban board view)
   async getChildrenAll(orgId: number): Promise<Child[]> {
     const today = new Date().toISOString().slice(0, 10);
