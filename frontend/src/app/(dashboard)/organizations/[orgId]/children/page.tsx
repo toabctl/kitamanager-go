@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,39 +24,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
 import type {
   Child,
-  ChildContract,
   ChildContractCreateRequest,
   ChildContractUpdateRequest,
   ChildFundingResponse,
   ContractProperties,
-  Gender,
 } from '@/lib/api/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PropertyTagInput, type FundingAttribute } from '@/components/ui/tag-input';
+import { PropertyTagInput } from '@/components/ui/tag-input';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,8 +50,16 @@ import {
   formatCurrency,
   propertiesToValues,
 } from '@/lib/utils/formatting';
+import {
+  getActiveContract,
+  getCurrentContract,
+  getDayBefore,
+  getContractStatus,
+} from '@/lib/utils/contracts';
 import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
+import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
+import { PersonFormDialog } from '@/components/crud/person-form-dialog';
 
 const childSchema = z.object({
   first_name: z.string().min(1),
@@ -215,10 +204,10 @@ export default function ChildrenPage() {
     }) => {
       // If we need to end the current contract first
       if (contractChild && endCurrentContract) {
-        const activeContract = getActiveContract(contractChild.contracts);
-        if (activeContract && data.from) {
+        const active = getActiveContract(contractChild.contracts);
+        if (active && data.from) {
           const endDate = getDayBefore(data.from);
-          await apiClient.updateChildContract(orgId, childId, activeContract.id, {
+          await apiClient.updateChildContract(orgId, childId, active.id, {
             to: formatDateForApi(endDate),
           });
         }
@@ -290,80 +279,78 @@ export default function ChildrenPage() {
     contractToDate
   );
 
-  // Helper to get a truly active contract (currently in effect, not ended)
-  const getActiveContract = (contracts?: ChildContract[]): ChildContract | null => {
-    if (!contracts || contracts.length === 0) return null;
-    const today = new Date().toISOString().split('T')[0];
-    return contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) || null;
-  };
-
-  // Helper to get day before a date string
-  const getDayBefore = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    date.setDate(date.getDate() - 1);
-    return date.toISOString().split('T')[0];
-  };
-
   // Calculate end date preview based on contract from date
   const activeContract = contractChild ? getActiveContract(contractChild.contracts) : null;
   const endDatePreview = contractFromDate ? getDayBefore(contractFromDate) : null;
 
-  const handleCreateChild = () => {
+  const handleCreateChild = useCallback(() => {
     setEditingChild(null);
     resetChild({ first_name: '', last_name: '', gender: 'male', birthdate: '' });
     setIsChildDialogOpen(true);
-  };
+  }, [resetChild]);
 
-  const handleEditChild = (child: Child) => {
-    setEditingChild(child);
-    resetChild({
-      first_name: child.first_name,
-      last_name: child.last_name,
-      gender: child.gender,
-      birthdate: formatDateForInput(child.birthdate),
-    });
-    setIsChildDialogOpen(true);
-  };
+  const handleEditChild = useCallback(
+    (child: Child) => {
+      setEditingChild(child);
+      resetChild({
+        first_name: child.first_name,
+        last_name: child.last_name,
+        gender: child.gender,
+        birthdate: formatDateForInput(child.birthdate),
+      });
+      setIsChildDialogOpen(true);
+    },
+    [resetChild]
+  );
 
-  const handleDeleteChild = (child: Child) => {
+  const handleDeleteChild = useCallback((child: Child) => {
     setDeletingChild(child);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleAddContract = (child: Child) => {
-    setContractChild(child);
-    setEndCurrentContract(true);
+  const handleAddContract = useCallback(
+    (child: Child) => {
+      setContractChild(child);
+      setEndCurrentContract(true);
 
-    // Prefill from active contract if exists
-    const active = getActiveContract(child.contracts);
-    if (active) {
-      // Suggest start date as tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      // Prefill from active contract if exists
+      const active = getActiveContract(child.contracts);
+      if (active) {
+        // Suggest start date as tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-      resetContract({
-        from: tomorrowStr,
-        to: '',
-        properties: active.properties as Record<string, string> | undefined,
-      });
-    } else {
-      resetContract({ from: '', to: '', properties: undefined });
-    }
-    setIsContractDialogOpen(true);
-  };
+        resetContract({
+          from: tomorrowStr,
+          to: '',
+          properties: active.properties as Record<string, string> | undefined,
+        });
+      } else {
+        resetContract({ from: '', to: '', properties: undefined });
+      }
+      setIsContractDialogOpen(true);
+    },
+    [resetContract]
+  );
 
-  const handleViewContractHistory = (child: Child) => {
-    router.push(`/organizations/${orgId}/children/${child.id}/contracts`);
-  };
+  const handleViewContractHistory = useCallback(
+    (child: Child) => {
+      router.push(`/organizations/${orgId}/children/${child.id}/contracts`);
+    },
+    [router, orgId]
+  );
 
-  const onSubmitChild = (data: ChildFormData) => {
-    if (editingChild) {
-      updateMutation.mutate({ id: editingChild.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
+  const onSubmitChild = useCallback(
+    (data: ChildFormData) => {
+      if (editingChild) {
+        updateMutation.mutate({ id: editingChild.id, data });
+      } else {
+        createMutation.mutate(data);
+      }
+    },
+    [editingChild, updateMutation, createMutation]
+  );
 
   // Helper to check if properties have changed
   const propertiesChanged = (
@@ -377,53 +364,37 @@ export default function ChildrenPage() {
     return newKeys.some((key) => (newProps || {})[key] !== (oldProps || {})[key]);
   };
 
-  const onSubmitContract = (data: ContractFormData) => {
-    if (contractChild) {
-      // If there's an active contract and we're ending it, check if something actually changed
-      if (activeContract && endCurrentContract) {
-        const hasChanges = propertiesChanged(
-          data.properties,
-          activeContract.properties as ContractProperties | undefined
-        );
-        if (!hasChanges) {
-          toast({
-            title: t('contracts.noChangesDetected'),
-            description: t('contracts.noChangesDescription'),
-            variant: 'destructive',
-          });
-          return;
+  const onSubmitContract = useCallback(
+    (data: ContractFormData) => {
+      if (contractChild) {
+        // If there's an active contract and we're ending it, check if something actually changed
+        if (activeContract && endCurrentContract) {
+          const hasChanges = propertiesChanged(
+            data.properties,
+            activeContract.properties as ContractProperties | undefined
+          );
+          if (!hasChanges) {
+            toast({
+              title: t('contracts.noChangesDetected'),
+              description: t('contracts.noChangesDescription'),
+              variant: 'destructive',
+            });
+            return;
+          }
         }
+
+        createContractMutation.mutate({
+          childId: contractChild.id,
+          data: {
+            from: formatDateForApi(data.from) || data.from,
+            to: formatDateForApi(data.to),
+            properties: data.properties,
+          },
+        });
       }
-
-      createContractMutation.mutate({
-        childId: contractChild.id,
-        data: {
-          from: formatDateForApi(data.from) || data.from,
-          to: formatDateForApi(data.to),
-          properties: data.properties,
-        },
-      });
-    }
-  };
-
-  const getCurrentContract = (contracts?: ChildContract[]): ChildContract | null => {
-    if (!contracts || contracts.length === 0) return null;
-    const today = new Date().toISOString().split('T')[0];
-    return (
-      contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) ||
-      contracts.sort((a, b) => b.from.localeCompare(a.from))[0]
-    );
-  };
-
-  const getContractStatus = (
-    contract: ChildContract | null
-  ): 'active' | 'upcoming' | 'ended' | null => {
-    if (!contract) return null;
-    const today = new Date().toISOString().split('T')[0];
-    if (contract.from > today) return 'upcoming';
-    if (contract.to && contract.to < today) return 'ended';
-    return 'active';
-  };
+    },
+    [contractChild, activeContract, endCurrentContract, createContractMutation, toast, t]
+  );
 
   return (
     <div className="space-y-6">
@@ -439,7 +410,11 @@ export default function ChildrenPage() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <label htmlFor="search-children" className="sr-only">
+          {t('common.search')}
+        </label>
         <Input
+          id="search-children"
           placeholder={t('common.search')}
           value={searchInput}
           onChange={(e) => {
@@ -613,68 +588,18 @@ export default function ChildrenPage() {
       </Card>
 
       {/* Child Create/Edit Dialog */}
-      <Dialog open={isChildDialogOpen} onOpenChange={setIsChildDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingChild ? t('children.edit') : t('children.create')}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmitChild(onSubmitChild)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">{t('children.firstName')}</Label>
-                <Input id="first_name" {...registerChild('first_name')} />
-                {errorsChild.first_name && (
-                  <p className="text-sm text-destructive">{t('validation.firstNameRequired')}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">{t('children.lastName')}</Label>
-                <Input id="last_name" {...registerChild('last_name')} />
-                {errorsChild.last_name && (
-                  <p className="text-sm text-destructive">{t('validation.lastNameRequired')}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gender">{t('gender.label')}</Label>
-              <Select
-                value={watchChild('gender')}
-                onValueChange={(value: Gender) => setValueChild('gender', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('gender.selectGender')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">{t('gender.male')}</SelectItem>
-                  <SelectItem value="female">{t('gender.female')}</SelectItem>
-                  <SelectItem value="diverse">{t('gender.diverse')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {errorsChild.gender && (
-                <p className="text-sm text-destructive">{t('validation.genderRequired')}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="birthdate">{t('children.birthdate')}</Label>
-              <Input id="birthdate" type="date" {...registerChild('birthdate')} />
-              {errorsChild.birthdate && (
-                <p className="text-sm text-destructive">{t('validation.birthdateRequired')}</p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsChildDialogOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <PersonFormDialog
+        open={isChildDialogOpen}
+        onOpenChange={setIsChildDialogOpen}
+        isEditing={!!editingChild}
+        register={registerChild}
+        onSubmit={handleSubmitChild(onSubmitChild)}
+        errors={errorsChild}
+        watch={watchChild}
+        setValue={setValueChild}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        translationPrefix="children"
+      />
 
       {/* Contract Create Dialog */}
       <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
@@ -771,27 +696,16 @@ export default function ChildrenPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('children.confirmDeleteMessage', {
-                name: deletingChild ? `${deletingChild.first_name} ${deletingChild.last_name}` : '',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingChild && deleteMutation.mutate(deletingChild.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={() => deletingChild && deleteMutation.mutate(deletingChild.id)}
+        isLoading={deleteMutation.isPending}
+        resourceName="children"
+        description={t('children.confirmDeleteMessage', {
+          name: deletingChild ? `${deletingChild.first_name} ${deletingChild.last_name}` : '',
+        })}
+      />
     </div>
   );
 }

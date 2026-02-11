@@ -114,6 +114,22 @@ class ApiClient {
     this.onUnauthorized = callback;
   }
 
+  private topLevelCrud<T, TCreate, TUpdate>(resource: string) {
+    return {
+      list: (params: PaginationParams = {}) => {
+        const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
+        return this.client
+          .get<PaginatedResponse<T>>(`/${resource}?page=${page}&limit=${limit}`)
+          .then((r) => r.data);
+      },
+      get: (id: number) => this.client.get<T>(`/${resource}/${id}`).then((r) => r.data),
+      create: (data: TCreate) => this.client.post<T>(`/${resource}`, data).then((r) => r.data),
+      update: (id: number, data: TUpdate) =>
+        this.client.put<T>(`/${resource}/${id}`, data).then((r) => r.data),
+      delete: (id: number) => this.client.delete(`/${resource}/${id}`).then(() => {}),
+    };
+  }
+
   private orgScopedCrud<T, TCreate, TUpdate>(resource: string) {
     return {
       list: (orgId: number, params: PaginationParams & { search?: string } = {}) => {
@@ -151,13 +167,16 @@ class ApiClient {
   }
 
   // Organizations
-  async getOrganizations(params: PaginationParams = {}): Promise<PaginatedResponse<Organization>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<Organization>>(
-      `/organizations?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
+  private _organizations = this.topLevelCrud<
+    Organization,
+    OrganizationCreateRequest,
+    OrganizationUpdateRequest
+  >('organizations');
+  getOrganizations = this._organizations.list;
+  getOrganization = this._organizations.get;
+  createOrganization = this._organizations.create;
+  updateOrganization = this._organizations.update;
+  deleteOrganization = this._organizations.delete;
 
   async getOrganizationsAll(): Promise<Organization[]> {
     // Backend max limit is 100
@@ -167,52 +186,13 @@ class ApiClient {
     return response.data.data;
   }
 
-  async getOrganization(id: number): Promise<Organization> {
-    const response = await this.client.get<Organization>(`/organizations/${id}`);
-    return response.data;
-  }
-
-  async createOrganization(data: OrganizationCreateRequest): Promise<Organization> {
-    const response = await this.client.post<Organization>('/organizations', data);
-    return response.data;
-  }
-
-  async updateOrganization(id: number, data: OrganizationUpdateRequest): Promise<Organization> {
-    const response = await this.client.put<Organization>(`/organizations/${id}`, data);
-    return response.data;
-  }
-
-  async deleteOrganization(id: number): Promise<void> {
-    await this.client.delete(`/organizations/${id}`);
-  }
-
   // Users
-  async getUsers(params: PaginationParams = {}): Promise<PaginatedResponse<User>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<User>>(
-      `/users?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
-
-  async getUser(id: number): Promise<User> {
-    const response = await this.client.get<User>(`/users/${id}`);
-    return response.data;
-  }
-
-  async createUser(data: UserCreateRequest): Promise<User> {
-    const response = await this.client.post<User>('/users', data);
-    return response.data;
-  }
-
-  async updateUser(id: number, data: UserUpdateRequest): Promise<User> {
-    const response = await this.client.put<User>(`/users/${id}`, data);
-    return response.data;
-  }
-
-  async deleteUser(id: number): Promise<void> {
-    await this.client.delete(`/users/${id}`);
-  }
+  private _users = this.topLevelCrud<User, UserCreateRequest, UserUpdateRequest>('users');
+  getUsers = this._users.list;
+  getUser = this._users.get;
+  createUser = this._users.create;
+  updateUser = this._users.update;
+  deleteUser = this._users.delete;
 
   // User-Group assignments with roles
   async addUserToGroup(userId: number, groupId: number, role: Role): Promise<UserGroupResponse> {
@@ -418,39 +398,23 @@ class ApiClient {
   }
 
   // GovernmentFundings
-  async getGovernmentFundings(
-    params: PaginationParams = {}
-  ): Promise<PaginatedResponse<GovernmentFunding>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<GovernmentFunding>>(
-      `/government-fundings?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
+  private _governmentFundings = this.topLevelCrud<
+    GovernmentFunding,
+    GovernmentFundingCreateRequest,
+    GovernmentFundingUpdateRequest
+  >('government-fundings');
+  getGovernmentFundings = this._governmentFundings.list;
+  createGovernmentFunding = this._governmentFundings.create;
+  updateGovernmentFunding = this._governmentFundings.update;
+  deleteGovernmentFunding = this._governmentFundings.delete;
 
+  // Custom getGovernmentFunding with periodsLimit param
   async getGovernmentFunding(id: number, periodsLimit?: number): Promise<GovernmentFunding> {
     const params = periodsLimit !== undefined ? { periods_limit: periodsLimit } : {};
     const response = await this.client.get<GovernmentFunding>(`/government-fundings/${id}`, {
       params,
     });
     return response.data;
-  }
-
-  async createGovernmentFunding(data: GovernmentFundingCreateRequest): Promise<GovernmentFunding> {
-    const response = await this.client.post<GovernmentFunding>('/government-fundings', data);
-    return response.data;
-  }
-
-  async updateGovernmentFunding(
-    id: number,
-    data: GovernmentFundingUpdateRequest
-  ): Promise<GovernmentFunding> {
-    const response = await this.client.put<GovernmentFunding>(`/government-fundings/${id}`, data);
-    return response.data;
-  }
-
-  async deleteGovernmentFunding(id: number): Promise<void> {
-    await this.client.delete(`/government-fundings/${id}`);
   }
 
   // GovernmentFunding Periods

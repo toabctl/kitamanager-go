@@ -1,0 +1,124 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { UseFormRegister, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { Gender } from '@/lib/api/types';
+
+export interface PersonFormData {
+  first_name: string;
+  last_name: string;
+  gender: Gender;
+  birthdate: string;
+}
+
+export interface PersonFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isEditing: boolean;
+  register: UseFormRegister<PersonFormData>;
+  onSubmit: (e: React.FormEvent) => void;
+  errors: FieldErrors<PersonFormData>;
+  watch: UseFormWatch<PersonFormData>;
+  setValue: UseFormSetValue<PersonFormData>;
+  isSaving: boolean;
+  translationPrefix: 'children' | 'employees';
+}
+
+export function PersonFormDialog({
+  open,
+  onOpenChange,
+  isEditing,
+  register,
+  onSubmit,
+  errors,
+  watch,
+  setValue,
+  isSaving,
+  translationPrefix,
+}: PersonFormDialogProps) {
+  const t = useTranslations();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? t(`${translationPrefix}.edit`) : t(`${translationPrefix}.create`)}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="first_name">{t(`${translationPrefix}.firstName`)}</Label>
+              <Input id="first_name" {...register('first_name')} />
+              {errors.first_name && (
+                <p className="text-sm text-destructive">{t('validation.firstNameRequired')}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name">{t(`${translationPrefix}.lastName`)}</Label>
+              <Input id="last_name" {...register('last_name')} />
+              {errors.last_name && (
+                <p className="text-sm text-destructive">{t('validation.lastNameRequired')}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gender">{t('gender.label')}</Label>
+            <Select
+              value={watch('gender')}
+              onValueChange={(value: Gender) => setValue('gender', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('gender.selectGender')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">{t('gender.male')}</SelectItem>
+                <SelectItem value="female">{t('gender.female')}</SelectItem>
+                <SelectItem value="diverse">{t('gender.diverse')}</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.gender && (
+              <p className="text-sm text-destructive">{t('validation.genderRequired')}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birthdate">{t(`${translationPrefix}.birthdate`)}</Label>
+            <Input id="birthdate" type="date" {...register('birthdate')} />
+            {errors.birthdate && (
+              <p className="text-sm text-destructive">{t('validation.birthdateRequired')}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" disabled={isSaving}>
+              {t('common.save')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

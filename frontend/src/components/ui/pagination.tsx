@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
@@ -13,7 +14,7 @@ interface PaginationProps {
   isLoading?: boolean;
 }
 
-export function Pagination({
+function PaginationInner({
   page,
   totalPages,
   total,
@@ -31,7 +32,10 @@ export function Pagination({
   const endItem = Math.min(page * limit, total);
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <nav
+      aria-label={t('pagination.navigation')}
+      className="flex items-center justify-between px-2 py-4"
+    >
       <div className="text-sm text-muted-foreground">
         {t('pagination.showing', { start: startItem, end: endItem, total })}
       </div>
@@ -42,6 +46,7 @@ export function Pagination({
           onClick={() => onPageChange(1)}
           disabled={page <= 1 || isLoading}
           title={t('pagination.firstPage')}
+          aria-label={t('pagination.firstPage')}
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
@@ -51,6 +56,7 @@ export function Pagination({
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1 || isLoading}
           title={t('pagination.previousPage')}
+          aria-label={t('pagination.previousPage')}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -61,6 +67,7 @@ export function Pagination({
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages || isLoading}
           title={t('pagination.nextPage')}
+          aria-label={t('pagination.nextPage')}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -70,10 +77,13 @@ export function Pagination({
           onClick={() => onPageChange(totalPages)}
           disabled={page >= totalPages || isLoading}
           title={t('pagination.lastPage')}
+          aria-label={t('pagination.lastPage')}
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
       </div>
-    </div>
+    </nav>
   );
 }
+
+export const Pagination = React.memo(PaginationInner);

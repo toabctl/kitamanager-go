@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -24,34 +23,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
-import type {
-  Employee,
-  EmployeeContract,
-  EmployeeContractCreateRequest,
-  EmployeeContractUpdateRequest,
-  Gender,
-} from '@/lib/api/types';
+import type { Employee, EmployeeContract, EmployeeContractCreateRequest } from '@/lib/api/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
@@ -63,8 +39,11 @@ import {
   formatDateForInput,
   formatDateForApi,
 } from '@/lib/utils/formatting';
+import { getActiveContract, getCurrentContract, getDayBefore } from '@/lib/utils/contracts';
 import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
+import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
+import { PersonFormDialog } from '@/components/crud/person-form-dialog';
 
 const employeeSchema = z.object({
   first_name: z.string().min(1),
@@ -176,10 +155,10 @@ export default function EmployeesPage() {
     }) => {
       // If we need to end the current contract first
       if (contractEmployee && endCurrentContract) {
-        const activeContract = getActiveContract(contractEmployee.contracts);
-        if (activeContract && data.from) {
+        const active = getActiveContract(contractEmployee.contracts);
+        if (active && data.from) {
           const endDate = getDayBefore(data.from);
-          await apiClient.updateEmployeeContract(orgId, employeeId, activeContract.id, {
+          await apiClient.updateEmployeeContract(orgId, employeeId, active.id, {
             to: formatDateForApi(endDate),
           });
         }
@@ -228,7 +207,6 @@ export default function EmployeesPage() {
     register: registerContract,
     handleSubmit: handleSubmitContract,
     reset: resetContract,
-    setValue: setValueContract,
     watch: watchContract,
     formState: { errors: errorsContract },
   } = useForm<ContractFormData>({
@@ -245,83 +223,81 @@ export default function EmployeesPage() {
 
   const contractFromDate = watchContract('from');
 
-  // Helper to get a truly active contract (currently in effect, not ended)
-  const getActiveContract = (contracts?: EmployeeContract[]): EmployeeContract | null => {
-    if (!contracts || contracts.length === 0) return null;
-    const today = new Date().toISOString().split('T')[0];
-    return contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) || null;
-  };
-
-  // Helper to get day before a date string
-  const getDayBefore = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    date.setDate(date.getDate() - 1);
-    return date.toISOString().split('T')[0];
-  };
-
   // Calculate end date preview based on contract from date
   const activeContract = contractEmployee ? getActiveContract(contractEmployee.contracts) : null;
   const endDatePreview = contractFromDate ? getDayBefore(contractFromDate) : null;
 
-  const handleCreateEmployee = () => {
+  const handleCreateEmployee = useCallback(() => {
     setEditingEmployee(null);
     resetEmployee({ first_name: '', last_name: '', gender: 'male', birthdate: '' });
     setIsEmployeeDialogOpen(true);
-  };
+  }, [resetEmployee]);
 
-  const handleEditEmployee = (employee: Employee) => {
-    setEditingEmployee(employee);
-    resetEmployee({
-      first_name: employee.first_name,
-      last_name: employee.last_name,
-      gender: employee.gender,
-      birthdate: formatDateForInput(employee.birthdate),
-    });
-    setIsEmployeeDialogOpen(true);
-  };
+  const handleEditEmployee = useCallback(
+    (employee: Employee) => {
+      setEditingEmployee(employee);
+      resetEmployee({
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        gender: employee.gender,
+        birthdate: formatDateForInput(employee.birthdate),
+      });
+      setIsEmployeeDialogOpen(true);
+    },
+    [resetEmployee]
+  );
 
-  const handleDeleteEmployee = (employee: Employee) => {
+  const handleDeleteEmployee = useCallback((employee: Employee) => {
     setDeletingEmployee(employee);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleAddContract = (employee: Employee) => {
-    setContractEmployee(employee);
-    setEndCurrentContract(true);
+  const handleAddContract = useCallback(
+    (employee: Employee) => {
+      setContractEmployee(employee);
+      setEndCurrentContract(true);
 
-    // Prefill from active contract if exists
-    const active = getActiveContract(employee.contracts);
-    if (active) {
-      // Suggest start date as tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      // Prefill from active contract if exists
+      const active = getActiveContract(employee.contracts);
+      if (active) {
+        // Suggest start date as tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-      resetContract({
-        from: tomorrowStr,
-        to: '',
-        position: active.position,
-        grade: active.grade,
-        step: active.step,
-        weekly_hours: active.weekly_hours,
-      });
-    } else {
-      resetContract({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
-    }
-    setIsContractDialogOpen(true);
-  };
+        resetContract({
+          from: tomorrowStr,
+          to: '',
+          position: active.position,
+          grade: active.grade,
+          step: active.step,
+          weekly_hours: active.weekly_hours,
+        });
+      } else {
+        resetContract({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
+      }
+      setIsContractDialogOpen(true);
+    },
+    [resetContract]
+  );
 
-  const handleViewContractHistory = (employee: Employee) => {
-    router.push(`/organizations/${orgId}/employees/${employee.id}/contracts`);
-  };
+  const handleViewContractHistory = useCallback(
+    (employee: Employee) => {
+      router.push(`/organizations/${orgId}/employees/${employee.id}/contracts`);
+    },
+    [router, orgId]
+  );
 
-  const onSubmitEmployee = (data: EmployeeFormData) => {
-    if (editingEmployee) {
-      updateMutation.mutate({ id: editingEmployee.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
+  const onSubmitEmployee = useCallback(
+    (data: EmployeeFormData) => {
+      if (editingEmployee) {
+        updateMutation.mutate({ id: editingEmployee.id, data });
+      } else {
+        createMutation.mutate(data);
+      }
+    },
+    [editingEmployee, updateMutation, createMutation]
+  );
 
   // Helper to check if contract details have changed
   const contractDetailsChanged = (
@@ -336,51 +312,45 @@ export default function EmployeesPage() {
     );
   };
 
-  const onSubmitContract = (data: ContractFormData) => {
-    if (contractEmployee) {
-      // If there's an active contract and we're ending it, check if something actually changed
-      if (activeContract && endCurrentContract) {
-        const hasChanges = contractDetailsChanged(
-          {
+  const onSubmitContract = useCallback(
+    (data: ContractFormData) => {
+      if (contractEmployee) {
+        // If there's an active contract and we're ending it, check if something actually changed
+        if (activeContract && endCurrentContract) {
+          const hasChanges = contractDetailsChanged(
+            {
+              position: data.position,
+              grade: data.grade,
+              step: data.step,
+              weekly_hours: data.weekly_hours,
+            },
+            activeContract
+          );
+          if (!hasChanges) {
+            toast({
+              title: t('contracts.noChangesDetected'),
+              description: t('contracts.noChangesDescription'),
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
+
+        createContractMutation.mutate({
+          employeeId: contractEmployee.id,
+          data: {
+            from: formatDateForApi(data.from) || data.from,
+            to: formatDateForApi(data.to),
             position: data.position,
             grade: data.grade,
             step: data.step,
             weekly_hours: data.weekly_hours,
           },
-          activeContract
-        );
-        if (!hasChanges) {
-          toast({
-            title: t('contracts.noChangesDetected'),
-            description: t('contracts.noChangesDescription'),
-            variant: 'destructive',
-          });
-          return;
-        }
+        });
       }
-
-      createContractMutation.mutate({
-        employeeId: contractEmployee.id,
-        data: {
-          from: formatDateForApi(data.from) || data.from,
-          to: formatDateForApi(data.to),
-          position: data.position,
-          grade: data.grade,
-          step: data.step,
-          weekly_hours: data.weekly_hours,
-        },
-      });
-    }
-  };
-
-  const getCurrentContract = (contracts?: EmployeeContract[]): EmployeeContract | null => {
-    if (!contracts || contracts.length === 0) return null;
-    const today = new Date().toISOString().split('T')[0];
-    return (
-      contracts.find((c) => c.from <= today && (!c.to || c.to >= today)) ||
-      contracts.sort((a, b) => b.from.localeCompare(a.from))[0]
-    );
-  };
+    },
+    [contractEmployee, activeContract, endCurrentContract, createContractMutation, toast, t]
+  );
 
   return (
     <div className="space-y-6">
@@ -396,7 +366,11 @@ export default function EmployeesPage() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <label htmlFor="search-employees" className="sr-only">
+          {t('common.search')}
+        </label>
         <Input
+          id="search-employees"
           placeholder={t('common.search')}
           value={searchInput}
           onChange={(e) => {
@@ -517,74 +491,18 @@ export default function EmployeesPage() {
       </Card>
 
       {/* Employee Create/Edit Dialog */}
-      <Dialog open={isEmployeeDialogOpen} onOpenChange={setIsEmployeeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingEmployee ? t('employees.edit') : t('employees.create')}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmitEmployee(onSubmitEmployee)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">{t('employees.firstName')}</Label>
-                <Input id="first_name" {...registerEmployee('first_name')} />
-                {errorsEmployee.first_name && (
-                  <p className="text-sm text-destructive">{t('validation.firstNameRequired')}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">{t('employees.lastName')}</Label>
-                <Input id="last_name" {...registerEmployee('last_name')} />
-                {errorsEmployee.last_name && (
-                  <p className="text-sm text-destructive">{t('validation.lastNameRequired')}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gender">{t('gender.label')}</Label>
-              <Select
-                value={watchEmployee('gender')}
-                onValueChange={(value: Gender) => setValueEmployee('gender', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('gender.selectGender')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">{t('gender.male')}</SelectItem>
-                  <SelectItem value="female">{t('gender.female')}</SelectItem>
-                  <SelectItem value="diverse">{t('gender.diverse')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {errorsEmployee.gender && (
-                <p className="text-sm text-destructive">{t('validation.genderRequired')}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="birthdate">{t('employees.birthdate')}</Label>
-              <Input id="birthdate" type="date" {...registerEmployee('birthdate')} />
-              {errorsEmployee.birthdate && (
-                <p className="text-sm text-destructive">{t('validation.birthdateRequired')}</p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEmployeeDialogOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <PersonFormDialog
+        open={isEmployeeDialogOpen}
+        onOpenChange={setIsEmployeeDialogOpen}
+        isEditing={!!editingEmployee}
+        register={registerEmployee}
+        onSubmit={handleSubmitEmployee(onSubmitEmployee)}
+        errors={errorsEmployee}
+        watch={watchEmployee}
+        setValue={setValueEmployee}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        translationPrefix="employees"
+      />
 
       {/* Contract Create Dialog */}
       <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
@@ -708,29 +626,18 @@ export default function EmployeesPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('employees.confirmDeleteMessage', {
-                name: deletingEmployee
-                  ? `${deletingEmployee.first_name} ${deletingEmployee.last_name}`
-                  : '',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingEmployee && deleteMutation.mutate(deletingEmployee.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={() => deletingEmployee && deleteMutation.mutate(deletingEmployee.id)}
+        isLoading={deleteMutation.isPending}
+        resourceName="employees"
+        description={t('employees.confirmDeleteMessage', {
+          name: deletingEmployee
+            ? `${deletingEmployee.first_name} ${deletingEmployee.last_name}`
+            : '',
+        })}
+      />
     </div>
   );
 }

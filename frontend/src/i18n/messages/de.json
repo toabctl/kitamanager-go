@@ -47,9 +47,11 @@
     "confirmDeleteMessage": "Möchten Sie diese(n) {resource} wirklich löschen?",
     "updateSuccess": "{resource} erfolgreich aktualisiert",
     "createSuccess": "{resource} erfolgreich erstellt",
-    "deleteSuccess": "{resource} erfolgreich gelöscht"
+    "deleteSuccess": "{resource} erfolgreich gelöscht",
+    "retry": "Erneut versuchen"
   },
   "pagination": {
+    "navigation": "Seitennavigation",
     "showing": "{start} bis {end} von {total}",
     "pageOf": "Seite {page} von {totalPages}",
     "firstPage": "Erste Seite",
