@@ -380,8 +380,8 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	now := time.Now()
 	employeeContractCount := 0
 
-	// Employee 0: Single current contract (started 2 years ago)
-	if err := createEmployeeContract(db, employees[0].ID, "Kinderpfleger", "S4", 2, 30,
+	// Employee 0: Single current contract (started 2 years ago) - supplementary staff
+	if err := createEmployeeContract(db, employees[0].ID, "supplementary", "S4", 2, 30,
 		now.AddDate(-2, 0, 0), nil); err != nil {
 		return err
 	}
@@ -389,12 +389,12 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 
 	// Employee 1: Multiple contracts - past contract ended, current ongoing
 	pastEnd := now.AddDate(-1, 0, 0)
-	if err := createEmployeeContract(db, employees[1].ID, "Praktikant", "S4", 1, 20,
+	if err := createEmployeeContract(db, employees[1].ID, "supplementary", "S4", 1, 20,
 		now.AddDate(-3, 0, 0), &pastEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
-	if err := createEmployeeContract(db, employees[1].ID, "Erzieher", "S8a", 3, 39,
+	if err := createEmployeeContract(db, employees[1].ID, "qualified", "S8a", 3, 39,
 		now.AddDate(-1, 0, 1), nil); err != nil {
 		return err
 	}
@@ -402,18 +402,18 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 
 	// Employee 2: Three contracts showing career progression
 	end1 := now.AddDate(-4, 0, 0)
-	if err := createEmployeeContract(db, employees[2].ID, "Auszubildende", "S4", 1, 39,
+	if err := createEmployeeContract(db, employees[2].ID, "supplementary", "S4", 1, 39,
 		now.AddDate(-6, 0, 0), &end1); err != nil {
 		return err
 	}
 	employeeContractCount++
 	end2 := now.AddDate(-1, 0, 0)
-	if err := createEmployeeContract(db, employees[2].ID, "Erzieher", "S8a", 2, 39,
+	if err := createEmployeeContract(db, employees[2].ID, "qualified", "S8a", 2, 39,
 		now.AddDate(-4, 0, 1), &end2); err != nil {
 		return err
 	}
 	employeeContractCount++
-	if err := createEmployeeContract(db, employees[2].ID, "Erzieher", "S8a", 4, 39,
+	if err := createEmployeeContract(db, employees[2].ID, "qualified", "S8a", 4, 39,
 		now.AddDate(-1, 0, 1), nil); err != nil {
 		return err
 	}
@@ -421,44 +421,44 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 
 	// Employee 3: Only past contract (left the organization)
 	leftEnd := now.AddDate(0, -3, 0)
-	if err := createEmployeeContract(db, employees[3].ID, "Erzieher", "S8b", 2, 35,
+	if err := createEmployeeContract(db, employees[3].ID, "qualified", "S8b", 2, 35,
 		now.AddDate(-2, 0, 0), &leftEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 4: Current contract, senior position
-	if err := createEmployeeContract(db, employees[4].ID, "Gruppenleitung", "S8a", 5, 39,
+	// Employee 4: Current contract, senior qualified staff
+	if err := createEmployeeContract(db, employees[4].ID, "qualified", "S8a", 5, 39,
 		now.AddDate(-5, 0, 0), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 5: Part-time current contract
-	if err := createEmployeeContract(db, employees[5].ID, "Sozialarbeiter", "S9", 3, 30,
+	// Employee 5: Part-time current contract - qualified staff
+	if err := createEmployeeContract(db, employees[5].ID, "qualified", "S9", 3, 30,
 		now.AddDate(-3, 0, 0), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 6: Future contract (starts next month)
+	// Employee 6: Future contract (starts next month) - qualified staff
 	futureStart := now.AddDate(0, 1, 0)
-	if err := createEmployeeContract(db, employees[6].ID, "Erzieher", "S8a", 1, 39,
+	if err := createEmployeeContract(db, employees[6].ID, "qualified", "S8a", 1, 39,
 		futureStart, nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 7: Current contract with planned end (temporary)
+	// Employee 7: Current contract with planned end (temporary) - qualified staff
 	tempEnd := now.AddDate(0, 6, 0)
-	if err := createEmployeeContract(db, employees[7].ID, "Erzieher", "S8a", 6, 39,
+	if err := createEmployeeContract(db, employees[7].ID, "qualified", "S8a", 6, 39,
 		now.AddDate(-1, 0, 0), &tempEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 8: Mini-job (low hours)
-	if err := createEmployeeContract(db, employees[8].ID, "Kinderpfleger", "S4", 4, 20,
+	// Employee 8: Non-pedagogical staff (kitchen)
+	if err := createEmployeeContract(db, employees[8].ID, "non_pedagogical", "S4", 4, 20,
 		now.AddDate(-1, 6, 0), nil); err != nil {
 		return err
 	}
@@ -466,34 +466,34 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 
 	// Employee 9: Multiple past contracts, no current (on leave/gap)
 	oldEnd1 := now.AddDate(-2, 0, 0)
-	if err := createEmployeeContract(db, employees[9].ID, "Erzieher", "S8b", 1, 39,
+	if err := createEmployeeContract(db, employees[9].ID, "qualified", "S8b", 1, 39,
 		now.AddDate(-4, 0, 0), &oldEnd1); err != nil {
 		return err
 	}
 	employeeContractCount++
 	oldEnd2 := now.AddDate(0, -6, 0)
-	if err := createEmployeeContract(db, employees[9].ID, "Erzieher", "S8b", 3, 39,
+	if err := createEmployeeContract(db, employees[9].ID, "qualified", "S8b", 3, 39,
 		now.AddDate(-1, 6, 0), &oldEnd2); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 10: New hire, current contract
-	if err := createEmployeeContract(db, employees[10].ID, "Erzieher", "S8a", 1, 39,
+	// Employee 10: New hire, current contract - qualified staff
+	if err := createEmployeeContract(db, employees[10].ID, "qualified", "S8a", 1, 39,
 		now.AddDate(0, -3, 0), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 11: Long-term employee, single contract
-	if err := createEmployeeContract(db, employees[11].ID, "Erzieher", "S8a", 6, 39,
+	// Employee 11: Long-term employee, single contract - qualified staff
+	if err := createEmployeeContract(db, employees[11].ID, "qualified", "S8a", 6, 39,
 		now.AddDate(-8, 0, 0), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 12: Part-time, current contract
-	if err := createEmployeeContract(db, employees[12].ID, "Kinderpfleger", "S4", 3, 25,
+	// Employee 12: Part-time, current contract - supplementary staff
+	if err := createEmployeeContract(db, employees[12].ID, "supplementary", "S4", 3, 25,
 		now.AddDate(-2, 0, 0), nil); err != nil {
 		return err
 	}
@@ -501,69 +501,69 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 
 	// Employee 13: Recently promoted (2 contracts)
 	promoEnd := now.AddDate(0, -2, 0)
-	if err := createEmployeeContract(db, employees[13].ID, "Erzieher", "S8a", 3, 39,
+	if err := createEmployeeContract(db, employees[13].ID, "qualified", "S8a", 3, 39,
 		now.AddDate(-3, 0, 0), &promoEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
-	if err := createEmployeeContract(db, employees[13].ID, "Gruppenleitung", "S9", 1, 39,
+	if err := createEmployeeContract(db, employees[13].ID, "qualified", "S9", 1, 39,
 		now.AddDate(0, -2, 1), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 14: Retired last year
+	// Employee 14: Retired last year - qualified staff
 	retiredEnd := now.AddDate(-1, 0, 0)
-	if err := createEmployeeContract(db, employees[14].ID, "Erzieher", "S8a", 6, 39,
+	if err := createEmployeeContract(db, employees[14].ID, "qualified", "S8a", 6, 39,
 		now.AddDate(-15, 0, 0), &retiredEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 15: Current contract, standard
-	if err := createEmployeeContract(db, employees[15].ID, "Erzieher", "S8b", 2, 39,
+	// Employee 15: Current contract, standard - qualified staff
+	if err := createEmployeeContract(db, employees[15].ID, "qualified", "S8b", 2, 39,
 		now.AddDate(-1, 6, 0), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 16: Maternity cover (temporary, ends in 3 months)
+	// Employee 16: Maternity cover (temporary, ends in 3 months) - qualified staff
 	maternityEnd := now.AddDate(0, 3, 0)
-	if err := createEmployeeContract(db, employees[16].ID, "Erzieher", "S8a", 2, 39,
+	if err := createEmployeeContract(db, employees[16].ID, "qualified", "S8a", 2, 39,
 		now.AddDate(0, -9, 0), &maternityEnd); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 17: No contract yet (just hired, starts in 2 weeks)
+	// Employee 17: No contract yet (just hired, starts in 2 weeks) - supplementary staff
 	futureStart2 := now.AddDate(0, 0, 14)
-	if err := createEmployeeContract(db, employees[17].ID, "Praktikant", "S4", 1, 39,
+	if err := createEmployeeContract(db, employees[17].ID, "supplementary", "S4", 1, 39,
 		futureStart2, nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 18: Multiple contracts with step increases
+	// Employee 18: Multiple contracts with step increases - qualified staff
 	step1End := now.AddDate(-3, 0, 0)
-	if err := createEmployeeContract(db, employees[18].ID, "Erzieher", "S8a", 1, 39,
+	if err := createEmployeeContract(db, employees[18].ID, "qualified", "S8a", 1, 39,
 		now.AddDate(-5, 0, 0), &step1End); err != nil {
 		return err
 	}
 	employeeContractCount++
 	step2End := now.AddDate(-1, 0, 0)
-	if err := createEmployeeContract(db, employees[18].ID, "Erzieher", "S8a", 2, 39,
+	if err := createEmployeeContract(db, employees[18].ID, "qualified", "S8a", 2, 39,
 		now.AddDate(-3, 0, 1), &step2End); err != nil {
 		return err
 	}
 	employeeContractCount++
-	if err := createEmployeeContract(db, employees[18].ID, "Erzieher", "S8a", 3, 39,
+	if err := createEmployeeContract(db, employees[18].ID, "qualified", "S8a", 3, 39,
 		now.AddDate(-1, 0, 1), nil); err != nil {
 		return err
 	}
 	employeeContractCount++
 
-	// Employee 19: Current full-time
-	if err := createEmployeeContract(db, employees[19].ID, "Sozialarbeiter", "S9", 4, 39,
+	// Employee 19: Current full-time - qualified staff
+	if err := createEmployeeContract(db, employees[19].ID, "qualified", "S9", 4, 39,
 		now.AddDate(-4, 0, 0), nil); err != nil {
 		return err
 	}
@@ -836,16 +836,16 @@ func createTestEmployees(orgID uint, sectionID uint, count int) []models.Employe
 }
 
 // createEmployeeContract is a helper to create an employee contract
-func createEmployeeContract(db *gorm.DB, employeeID uint, position, grade string, step int, weeklyHours float64, from time.Time, to *time.Time) error {
+func createEmployeeContract(db *gorm.DB, employeeID uint, staffCategory, grade string, step int, weeklyHours float64, from time.Time, to *time.Time) error {
 	contract := models.EmployeeContract{
 		EmployeeID: employeeID,
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: from, To: to},
 		},
-		Position:    position,
-		Grade:       grade,
-		Step:        step,
-		WeeklyHours: weeklyHours,
+		StaffCategory: staffCategory,
+		Grade:         grade,
+		Step:          step,
+		WeeklyHours:   weeklyHours,
 	}
 	return db.Create(&contract).Error
 }

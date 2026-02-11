@@ -48,7 +48,8 @@
     "updateSuccess": "{resource} updated successfully",
     "createSuccess": "{resource} created successfully",
     "deleteSuccess": "{resource} deleted successfully",
-    "retry": "Retry"
+    "retry": "Retry",
+    "all": "All"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -152,13 +153,17 @@
     "editEmployee": "Edit Employee",
     "deleteEmployee": "Delete Employee",
     "confirmDeleteMessage": "Are you sure you want to delete {name}?",
-    "currentPosition": "Current Position",
+    "staffCategory": {
+      "label": "Staff Category",
+      "qualified": "Qualified Staff",
+      "supplementary": "Supplementary Staff",
+      "non_pedagogical": "Non-pedagogical"
+    },
+    "filterByCategory": "Filter by category",
     "weeklyHours": "Weekly Hours",
     "grade": "Grade",
     "step": "Step",
     "birthdate": "Birthdate",
-    "position": "Position",
-    "positionRequired": "Position is required",
     "weeklyHoursRequired": "Weekly hours must be greater than 0",
     "noContractsFound": "No contracts found for this employee."
   },
@@ -285,7 +290,7 @@
     "hasActiveContract": "This child has an active contract:",
     "hasActiveContractEmployee": "This employee has an active contract:",
     "activeSince": "Active since {date} ({attrs})",
-    "activeSinceEmployee": "Active since {date}: {position} ({grade}/{step})",
+    "activeSinceEmployee": "Active since {date}: {staffCategory} ({grade}/{step})",
     "endCurrentContract": "End current contract on {date} (day before new contract starts)",
     "contractStartPlaceholder": "Contract start date",
     "contractEndPlaceholder": "Contract end date",
@@ -317,7 +322,7 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "stateRequired": "State is required",
     "toDateMustBeAfterFromDate": "End date must be after start date",
-    "positionRequired": "Position is required",
+    "staffCategoryRequired": "Staff category is required",
     "weeklyHoursRequired": "Weekly hours is required",
     "weeklyHoursMin": "Weekly hours must be at least 0",
     "weeklyHoursMax": "Weekly hours cannot exceed 168"

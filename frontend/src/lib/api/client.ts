@@ -132,10 +132,14 @@ class ApiClient {
 
   private orgScopedCrud<T, TCreate, TUpdate>(resource: string) {
     return {
-      list: (orgId: number, params: PaginationParams & { search?: string } = {}) => {
-        const { page = 1, limit = DEFAULT_PAGE_SIZE, search } = params;
+      list: (
+        orgId: number,
+        params: PaginationParams & { search?: string; staff_category?: string } = {}
+      ) => {
+        const { page = 1, limit = DEFAULT_PAGE_SIZE, search, staff_category } = params;
         const qp = new URLSearchParams({ page: String(page), limit: String(limit) });
         if (search) qp.set('search', search);
+        if (staff_category) qp.set('staff_category', staff_category);
         return this.client
           .get<PaginatedResponse<T>>(`/organizations/${orgId}/${resource}?${qp}`)
           .then((r) => r.data);

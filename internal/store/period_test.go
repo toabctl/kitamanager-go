@@ -35,9 +35,9 @@ func TestPeriodStore_GetCurrentContract(t *testing.T) {
 				To:   nil,
 			},
 		},
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 	db.Create(contract)
 
@@ -106,9 +106,9 @@ func TestPeriodStore_GetContractOn(t *testing.T) {
 				To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 			},
 		},
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 	db.Create(contract)
 
@@ -192,7 +192,7 @@ func TestPeriodStore_GetHistory(t *testing.T) {
 				To:   nil,
 			},
 		},
-		Position: "Senior Developer",
+		StaffCategory: "supplementary",
 	}
 	db.Create(contract2)
 
@@ -204,7 +204,7 @@ func TestPeriodStore_GetHistory(t *testing.T) {
 				To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 			},
 		},
-		Position: "Junior Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract1)
 
@@ -218,11 +218,11 @@ func TestPeriodStore_GetHistory(t *testing.T) {
 	}
 
 	// Should be sorted by from_date ASC
-	if history[0].Position != "Junior Developer" {
-		t.Errorf("expected first contract to be 'Junior Developer', got '%s'", history[0].Position)
+	if history[0].StaffCategory != "qualified" {
+		t.Errorf("expected first contract to be 'qualified', got '%s'", history[0].StaffCategory)
 	}
-	if history[1].Position != "Senior Developer" {
-		t.Errorf("expected second contract to be 'Senior Developer', got '%s'", history[1].Position)
+	if history[1].StaffCategory != "supplementary" {
+		t.Errorf("expected second contract to be 'supplementary', got '%s'", history[1].StaffCategory)
 	}
 }
 
@@ -277,7 +277,7 @@ func TestPeriodStore_ValidateNoOverlap_Overlapping(t *testing.T) {
 				To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 			},
 		},
-		Position: "Existing",
+		StaffCategory: "qualified",
 	}
 	db.Create(existing)
 
@@ -391,7 +391,7 @@ func TestPeriodStore_ValidateNoOverlap_ExcludeID(t *testing.T) {
 				To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 			},
 		},
-		Position: "Existing",
+		StaffCategory: "qualified",
 	}
 	db.Create(existing)
 
@@ -433,7 +433,7 @@ func TestPeriodStore_ValidateNoOverlap_OngoingContracts(t *testing.T) {
 				To:   nil, // ongoing
 			},
 		},
-		Position: "Existing Ongoing",
+		StaffCategory: "qualified",
 	}
 	db.Create(existing)
 
@@ -508,7 +508,7 @@ func TestPeriodStore_HasActiveContract(t *testing.T) {
 				To:   datePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 			},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract)
 
@@ -573,7 +573,7 @@ func TestPeriodStore_CloseCurrentContract(t *testing.T) {
 				To:   nil, // ongoing
 			},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract)
 

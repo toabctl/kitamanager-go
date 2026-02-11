@@ -48,7 +48,8 @@
     "updateSuccess": "{resource} erfolgreich aktualisiert",
     "createSuccess": "{resource} erfolgreich erstellt",
     "deleteSuccess": "{resource} erfolgreich gelöscht",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "all": "Alle"
   },
   "pagination": {
     "navigation": "Seitennavigation",
@@ -152,13 +153,17 @@
     "editEmployee": "Mitarbeiter bearbeiten",
     "deleteEmployee": "Mitarbeiter löschen",
     "confirmDeleteMessage": "Möchten Sie {name} wirklich löschen?",
-    "currentPosition": "Aktuelle Position",
+    "staffCategory": {
+      "label": "Personalkategorie",
+      "qualified": "Fachkraft",
+      "supplementary": "Ergänzungskraft",
+      "non_pedagogical": "Nicht-pädagogisch"
+    },
+    "filterByCategory": "Nach Kategorie filtern",
     "weeklyHours": "Wochenstunden",
     "grade": "Entgeltgruppe",
     "step": "Stufe",
     "birthdate": "Geburtsdatum",
-    "position": "Position",
-    "positionRequired": "Position ist erforderlich",
     "weeklyHoursRequired": "Wochenstunden müssen größer als 0 sein",
     "noContractsFound": "Keine Verträge für diesen Mitarbeiter gefunden."
   },
@@ -285,7 +290,7 @@
     "hasActiveContract": "Dieses Kind hat einen aktiven Vertrag:",
     "hasActiveContractEmployee": "Dieser Mitarbeiter hat einen aktiven Vertrag:",
     "activeSince": "Aktiv seit {date} ({attrs})",
-    "activeSinceEmployee": "Aktiv seit {date}: {position} ({grade}/{step})",
+    "activeSinceEmployee": "Aktiv seit {date}: {staffCategory} ({grade}/{step})",
     "endCurrentContract": "Aktuellen Vertrag am {date} beenden (Tag vor Beginn des neuen Vertrags)",
     "contractStartPlaceholder": "Vertragsbeginn",
     "contractEndPlaceholder": "Vertragsende",
@@ -317,7 +322,7 @@
     "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein",
     "stateRequired": "Bundesland ist erforderlich",
     "toDateMustBeAfterFromDate": "Enddatum muss nach Startdatum liegen",
-    "positionRequired": "Position ist erforderlich",
+    "staffCategoryRequired": "Personalkategorie ist erforderlich",
     "weeklyHoursRequired": "Wochenstunden sind erforderlich",
     "weeklyHoursMin": "Wochenstunden müssen mindestens 0 sein",
     "weeklyHoursMax": "Wochenstunden können 168 nicht überschreiten"

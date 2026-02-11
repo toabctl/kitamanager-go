@@ -2867,6 +2867,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Filter by staff category (qualified, supplementary, non_pedagogical)",
+                        "name": "staff_category",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "default": 1,
                         "description": "Page number",
@@ -6941,11 +6947,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "position": {
-                    "description": "Employee-specific typed fields",
-                    "type": "string",
-                    "example": "Erzieher"
-                },
                 "properties": {
                     "description": "Properties stores flexible key-value data as JSON.\nFor children: {\"care_type\": \"ganztag\", \"supplements\": [\"ndh\", \"mss\"]}\nFor employees: {\"benefits\": [\"christmas_bonus\"], \"employer_type\": \"normal\"}",
                     "allOf": [
@@ -6953,6 +6954,11 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
                         }
                     ]
+                },
+                "staff_category": {
+                    "description": "Employee-specific typed fields",
+                    "type": "string",
+                    "example": "qualified"
                 },
                 "step": {
                     "type": "integer",
@@ -6974,7 +6980,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "from",
-                "position",
+                "staff_category",
                 "weekly_hours"
             ],
             "properties": {
@@ -6987,13 +6993,12 @@ const docTemplate = `{
                     "maxLength": 20,
                     "example": "S8a"
                 },
-                "position": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "Erzieher"
-                },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
+                },
+                "staff_category": {
+                    "type": "string",
+                    "example": "qualified"
                 },
                 "step": {
                     "type": "integer",
@@ -7035,12 +7040,12 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "position": {
-                    "type": "string",
-                    "example": "Erzieher"
-                },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
+                },
+                "staff_category": {
+                    "type": "string",
+                    "example": "qualified"
                 },
                 "step": {
                     "type": "integer",
@@ -7071,13 +7076,12 @@ const docTemplate = `{
                     "maxLength": 20,
                     "example": "S8a"
                 },
-                "position": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "Erzieher"
-                },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
+                },
+                "staff_category": {
+                    "type": "string",
+                    "example": "qualified"
                 },
                 "step": {
                     "type": "integer",

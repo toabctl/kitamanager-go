@@ -203,9 +203,9 @@ func TestEmployeeStore_CreateContract(t *testing.T) {
 				To:   nil,
 			},
 		},
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	err := store.CreateContract(contract)
@@ -240,9 +240,9 @@ func TestEmployeeStore_DeleteContract(t *testing.T) {
 				From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 	db.Create(contract)
 
@@ -270,10 +270,10 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 	db.Create(empActive)
 	db.Create(&models.EmployeeContract{
-		EmployeeID:   empActive.ID,
-		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		Position:     "Teacher",
-		WeeklyHours:  40,
+		EmployeeID:    empActive.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	})
 
 	// Employee with expired contract
@@ -283,10 +283,10 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	db.Create(empExpired)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	db.Create(&models.EmployeeContract{
-		EmployeeID:   empExpired.ID,
-		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), To: &to}},
-		Position:     "Teacher",
-		WeeklyHours:  40,
+		EmployeeID:    empExpired.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), To: &to}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	})
 
 	// Employee with future contract
@@ -295,10 +295,10 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 	db.Create(empFuture)
 	db.Create(&models.EmployeeContract{
-		EmployeeID:   empFuture.ID,
-		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)}},
-		Position:     "Teacher",
-		WeeklyHours:  40,
+		EmployeeID:    empFuture.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	})
 
 	// Employee with no contract
@@ -308,7 +308,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	db.Create(empNoContract)
 
 	// Query with activeOn filter
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -324,7 +324,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 
 	// Query without activeOn (should return all 4 employees)
-	allEmployees, allTotal, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "", 100, 0)
+	allEmployees, allTotal, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -347,7 +347,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Lisa", LastName: "Maier", Birthdate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search by first name prefix (case-insensitive)
-	_, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "ma", 100, 0)
+	_, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "ma", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -357,7 +357,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search by last name
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "mustermann", 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "mustermann", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -369,7 +369,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search with no results
-	employees, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "zzz", 100, 0)
+	employees, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "zzz", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -381,7 +381,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Empty search returns all
-	_, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "", 100, 0)
+	_, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -403,7 +403,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Anna", LastName: "Weber", Birthdate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Page 1 of search results (limit=2)
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "max", 2, 0)
+	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -415,7 +415,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	}
 
 	// Page 2
-	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", 2, 2)
+	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -424,7 +424,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	}
 
 	// Page 3 (last)
-	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", 2, 4)
+	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 4)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -443,13 +443,13 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithActiveOn(t *testin
 	// Max with active contract
 	max := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Max", LastName: "Mustermann", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
 	db.Create(max)
-	db.Create(&models.EmployeeContract{EmployeeID: max.ID, BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}}, Position: "Teacher", WeeklyHours: 40})
+	db.Create(&models.EmployeeContract{EmployeeID: max.ID, BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 40})
 
 	// Maria without contract
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Maria", LastName: "Mueller", Birthdate: time.Date(1985, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search "m" + activeOn: only Max has an active contract
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "m", 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "m", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -483,9 +483,9 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 				From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 	db.Create(contract)
 	contractID := contract.ID

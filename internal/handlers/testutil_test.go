@@ -214,10 +214,10 @@ func createActiveChildContract(t *testing.T, db *gorm.DB, childID uint) {
 func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 	t.Helper()
 	db.Create(&models.EmployeeContract{
-		EmployeeID:   employeeID,
-		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		Position:     "Teacher",
-		WeeklyHours:  40,
+		EmployeeID:    employeeID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	})
 }
 

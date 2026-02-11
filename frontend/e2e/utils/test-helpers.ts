@@ -381,7 +381,7 @@ export async function createEmployeeContractViaApi(
   data: {
     from: string;
     to?: string | null;
-    position: string;
+    staff_category: string;
     grade: string;
     step: number;
     weekly_hours: number;

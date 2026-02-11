@@ -270,7 +270,7 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -310,7 +310,7 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -341,7 +341,7 @@ func TestEmployeeHandler_GetCurrentContract(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -356,8 +356,8 @@ func TestEmployeeHandler_GetCurrentContract(t *testing.T) {
 	var contract models.EmployeeContract
 	parseResponse(t, w, &contract)
 
-	if contract.Position != "Developer" {
-		t.Errorf("expected position 'Developer', got '%s'", contract.Position)
+	if contract.StaffCategory != "qualified" {
+		t.Errorf("expected staff_category 'qualified', got '%s'", contract.StaffCategory)
 	}
 }
 
@@ -381,7 +381,7 @@ func TestEmployeeHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -431,11 +431,11 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		To:          nil,
-		Position:    "Senior Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		To:            nil,
+		StaffCategory: "supplementary",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -447,8 +447,8 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	var contract models.EmployeeContract
 	parseResponse(t, w, &contract)
 
-	if contract.Position != "Senior Developer" {
-		t.Errorf("expected position 'Senior Developer', got '%s'", contract.Position)
+	if contract.StaffCategory != "supplementary" {
+		t.Errorf("expected staff_category 'supplementary', got '%s'", contract.StaffCategory)
 	}
 }
 
@@ -469,11 +469,11 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	// Create a same-day contract (from == to)
 	sameDay := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
 	body := models.EmployeeContractCreateRequest{
-		From:        sameDay,
-		To:          &sameDay,
-		Position:    "One-Day Consultant",
-		WeeklyHours: 8,
-		Grade:       "S8a", Step: 3,
+		From:          sameDay,
+		To:            &sameDay,
+		StaffCategory: "qualified",
+		WeeklyHours:   8,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -491,8 +491,8 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	if contract.To == nil || !contract.To.Equal(sameDay) {
 		t.Errorf("expected to %v, got %v", sameDay, contract.To)
 	}
-	if contract.Position != "One-Day Consultant" {
-		t.Errorf("expected position 'One-Day Consultant', got '%s'", contract.Position)
+	if contract.StaffCategory != "qualified" {
+		t.Errorf("expected staff_category 'qualified', got '%s'", contract.StaffCategory)
 	}
 }
 
@@ -514,11 +514,11 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		To:          nil,
-		Position:    "Malicious Contract",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		To:            nil,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	// Try to create contract from org2 (should fail with 404)
@@ -553,7 +553,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -561,11 +561,11 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 
 	// Try to create overlapping contract
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
-		To:          nil,
-		Position:    "Senior Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		To:            nil,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -591,7 +591,7 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract)
 
@@ -624,7 +624,7 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract)
 
@@ -669,7 +669,7 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	}
 	db.Create(contract)
 
@@ -1095,10 +1095,10 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/999/contracts", org.ID), body)
@@ -1119,10 +1119,10 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/invalid/contracts", org.ID), body)
@@ -1132,7 +1132,7 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 	}
 }
 
-func TestEmployeeHandler_CreateContract_MissingPosition(t *testing.T) {
+func TestEmployeeHandler_CreateContract_MissingStaffCategory(t *testing.T) {
 	db := setupTestDB(t)
 	employeeService := createEmployeeService(db)
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
@@ -1149,14 +1149,13 @@ func TestEmployeeHandler_CreateContract_MissingPosition(t *testing.T) {
 	body := map[string]interface{}{
 		"from":         "2025-01-01T00:00:00Z",
 		"weekly_hours": 40,
-		"salary":       600000,
-		// Missing position
+		// Missing staff_category
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for missing position, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d for missing staff_category, got %d", http.StatusBadRequest, w.Code)
 	}
 }
 
@@ -1175,10 +1174,10 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: 0,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   0,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1207,7 +1206,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -1215,10 +1214,10 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 	// Create contract starting Jan 1, 2025 (day after previous ends) - should succeed
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Senior Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1250,7 +1249,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
-		Position: "Developer",
+		StaffCategory: "qualified",
 	})
 
 	r := setupTestRouter()
@@ -1258,10 +1257,10 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 
 	// Try to create contract starting Jan 31, 2025 (same day as previous ends) - should fail
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC),
-		Position:    "Senior Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1422,11 +1421,11 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 
 	toDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
-		To:          &toDate,
-		Position:    "Developer",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
+		To:            &toDate,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1451,10 +1450,10 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: -1,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   -1,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1479,10 +1478,10 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "Developer",
-		WeeklyHours: 169,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		WeeklyHours:   169,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1492,7 +1491,7 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	}
 }
 
-func TestEmployeeHandler_CreateContract_WhitespacePosition(t *testing.T) {
+func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 	db := setupTestDB(t)
 	employeeService := createEmployeeService(db)
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
@@ -1507,16 +1506,16 @@ func TestEmployeeHandler_CreateContract_WhitespacePosition(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
-		From:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Position:    "   ",
-		WeeklyHours: 40,
-		Grade:       "S8a", Step: 3,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "invalid_value",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d for whitespace-only position, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+		t.Errorf("expected status %d for invalid staff_category, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }
 
@@ -1654,8 +1653,8 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position:    "Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	}
 	db.Create(contract)
 
@@ -1674,8 +1673,8 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 	if result.EmployeeID != employee.ID {
 		t.Errorf("expected employee_id %d, got %d", employee.ID, result.EmployeeID)
 	}
-	if result.Position != "Teacher" {
-		t.Errorf("expected position 'Teacher', got '%s'", result.Position)
+	if result.StaffCategory != "qualified" {
+		t.Errorf("expected staff_category 'qualified', got '%s'", result.StaffCategory)
 	}
 }
 
@@ -1743,8 +1742,8 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position:    "Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	}
 	db.Create(contract)
 
@@ -1779,17 +1778,17 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position:    "Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	}
 	db.Create(contract)
 
 	r := setupTestRouter()
 	r.PUT("/organizations/:orgId/employees/:id/contracts/:contractId", handler.UpdateContract)
 
-	newPosition := "Senior Teacher"
+	newStaffCategory := "non_pedagogical"
 	body := models.EmployeeContractUpdateRequest{
-		Position: &newPosition,
+		StaffCategory: &newStaffCategory,
 	}
 
 	w := performRequest(r, "PUT", fmt.Sprintf("/organizations/%d/employees/%d/contracts/%d", org.ID, employee.ID, contract.ID), body)
@@ -1801,8 +1800,8 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 	var result models.EmployeeContractResponse
 	parseResponse(t, w, &result)
 
-	if result.Position != "Senior Teacher" {
-		t.Errorf("expected position 'Senior Teacher', got '%s'", result.Position)
+	if result.StaffCategory != "non_pedagogical" {
+		t.Errorf("expected staff_category 'non_pedagogical', got '%s'", result.StaffCategory)
 	}
 }
 
@@ -1820,9 +1819,9 @@ func TestEmployeeHandler_UpdateContract_NotFound(t *testing.T) {
 	r := setupTestRouter()
 	r.PUT("/organizations/:orgId/employees/:id/contracts/:contractId", handler.UpdateContract)
 
-	newPosition := "Senior Teacher"
+	newStaffCategory := "non_pedagogical"
 	body := models.EmployeeContractUpdateRequest{
-		Position: &newPosition,
+		StaffCategory: &newStaffCategory,
 	}
 
 	w := performRequest(r, "PUT", fmt.Sprintf("/organizations/%d/employees/%d/contracts/999", org.ID, employee.ID), body)
@@ -1850,8 +1849,8 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1},
 		},
-		Position:    "Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	})
 
 	contract2 := &models.EmployeeContract{
@@ -1859,8 +1858,8 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position:    "Senior Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "non_pedagogical",
+		WeeklyHours:   40,
 	}
 	db.Create(contract2)
 
@@ -1896,8 +1895,8 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 		BaseContract: models.BaseContract{
 			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
-		Position:    "Teacher",
-		WeeklyHours: 40,
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
 	}
 	db.Create(contract)
 
@@ -1912,5 +1911,93 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+// =========================================
+// Staff Category Filter Tests
+// =========================================
+
+func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	// Create employee with qualified contract
+	emp1 := &models.Employee{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Fach", LastName: "Kraft", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(emp1)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp1.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+	})
+
+	// Create employee with supplementary contract
+	emp2 := &models.Employee{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Ergaenz", LastName: "Kraft", Gender: "female", Birthdate: time.Now()},
+	}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp2.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "supplementary",
+		WeeklyHours:   40,
+	})
+
+	// Create employee with non_pedagogical contract
+	emp3 := &models.Employee{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Non", LastName: "Ped", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(emp3)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp3.ID,
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "non_pedagogical",
+		WeeklyHours:   40,
+	})
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/employees", handler.List)
+
+	// Filter by qualified
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/employees?staff_category=qualified", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var response models.PaginatedResponse[models.Employee]
+	parseResponse(t, w, &response)
+
+	if response.Total != 1 {
+		t.Errorf("expected total 1 for staff_category=qualified, got %d", response.Total)
+	}
+	if len(response.Data) != 1 {
+		t.Errorf("expected 1 employee, got %d", len(response.Data))
+	}
+	if len(response.Data) == 1 && response.Data[0].FirstName != "Fach" {
+		t.Errorf("expected Fach, got %s", response.Data[0].FirstName)
+	}
+}
+
+func TestEmployeeHandler_ListByStaffCategory_Invalid(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/employees", handler.List)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/employees?staff_category=invalid", org.ID), nil)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for invalid staff_category, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }

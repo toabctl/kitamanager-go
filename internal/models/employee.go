@@ -18,10 +18,10 @@ type EmployeeContract struct {
 	BaseContract
 
 	// Employee-specific typed fields
-	Position    string  `gorm:"size:255" json:"position" example:"Erzieher"`
-	Grade       string  `gorm:"size:20" json:"grade" example:"S8a"`
-	Step        int     `json:"step" example:"3"`
-	WeeklyHours float64 `json:"weekly_hours" example:"40"`
+	StaffCategory string  `gorm:"size:50;not null;default:'qualified'" json:"staff_category" example:"qualified"`
+	Grade         string  `gorm:"size:20" json:"grade" example:"S8a"`
+	Step          int     `json:"step" example:"3"`
+	WeeklyHours   float64 `json:"weekly_hours" example:"40"`
 }
 
 // GetPersonID returns the employee ID for the HasPeriod interface.
@@ -31,24 +31,24 @@ func (c EmployeeContract) GetPersonID() uint {
 
 // EmployeeContractCreateRequest represents the request body for creating an employee contract.
 type EmployeeContractCreateRequest struct {
-	From        time.Time          `json:"from" binding:"required" example:"2025-01-01"`
-	To          *time.Time         `json:"to" example:"2025-12-31"`
-	Position    string             `json:"position" binding:"required,max=255" example:"Erzieher"`
-	Grade       string             `json:"grade" binding:"max=20" example:"S8a"`
-	Step        int                `json:"step" binding:"gte=0,lte=10" example:"3"`
-	WeeklyHours float64            `json:"weekly_hours" binding:"required,gte=0,lte=168" example:"40"`
-	Properties  ContractProperties `json:"properties,omitempty"`
+	From          time.Time          `json:"from" binding:"required" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	StaffCategory string             `json:"staff_category" binding:"required" example:"qualified"`
+	Grade         string             `json:"grade" binding:"max=20" example:"S8a"`
+	Step          int                `json:"step" binding:"gte=0,lte=10" example:"3"`
+	WeeklyHours   float64            `json:"weekly_hours" binding:"required,gte=0,lte=168" example:"40"`
+	Properties    ContractProperties `json:"properties,omitempty"`
 }
 
 // EmployeeContractUpdateRequest represents the request body for updating an employee contract.
 type EmployeeContractUpdateRequest struct {
-	From        *time.Time         `json:"from" example:"2025-01-01"`
-	To          *time.Time         `json:"to" example:"2025-12-31"`
-	Position    *string            `json:"position" binding:"omitempty,max=255" example:"Erzieher"`
-	Grade       *string            `json:"grade" binding:"omitempty,max=20" example:"S8a"`
-	Step        *int               `json:"step" binding:"omitempty,gte=0,lte=10" example:"3"`
-	WeeklyHours *float64           `json:"weekly_hours" binding:"omitempty,gte=0,lte=168" example:"40"`
-	Properties  ContractProperties `json:"properties,omitempty"`
+	From          *time.Time         `json:"from" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	StaffCategory *string            `json:"staff_category" binding:"omitempty" example:"qualified"`
+	Grade         *string            `json:"grade" binding:"omitempty,max=20" example:"S8a"`
+	Step          *int               `json:"step" binding:"omitempty,gte=0,lte=10" example:"3"`
+	WeeklyHours   *float64           `json:"weekly_hours" binding:"omitempty,gte=0,lte=168" example:"40"`
+	Properties    ContractProperties `json:"properties,omitempty"`
 }
 
 // EmployeeCreateRequest represents the request body for creating an employee.
@@ -115,31 +115,31 @@ func (e *Employee) ToResponse() EmployeeResponse {
 
 // EmployeeContractResponse represents the employee contract response
 type EmployeeContractResponse struct {
-	ID          uint               `json:"id" example:"1"`
-	EmployeeID  uint               `json:"employee_id" example:"1"`
-	From        time.Time          `json:"from" example:"2025-01-01"`
-	To          *time.Time         `json:"to" example:"2025-12-31"`
-	Position    string             `json:"position" example:"Erzieher"`
-	Grade       string             `json:"grade" example:"S8a"`
-	Step        int                `json:"step" example:"3"`
-	WeeklyHours float64            `json:"weekly_hours" example:"40"`
-	Properties  ContractProperties `json:"properties,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID            uint               `json:"id" example:"1"`
+	EmployeeID    uint               `json:"employee_id" example:"1"`
+	From          time.Time          `json:"from" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	StaffCategory string             `json:"staff_category" example:"qualified"`
+	Grade         string             `json:"grade" example:"S8a"`
+	Step          int                `json:"step" example:"3"`
+	WeeklyHours   float64            `json:"weekly_hours" example:"40"`
+	Properties    ContractProperties `json:"properties,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
 func (c *EmployeeContract) ToResponse() EmployeeContractResponse {
 	return EmployeeContractResponse{
-		ID:          c.ID,
-		EmployeeID:  c.EmployeeID,
-		From:        c.From,
-		To:          c.To,
-		Position:    c.Position,
-		Grade:       c.Grade,
-		Step:        c.Step,
-		WeeklyHours: c.WeeklyHours,
-		Properties:  c.Properties,
-		CreatedAt:   c.CreatedAt,
-		UpdatedAt:   c.UpdatedAt,
+		ID:            c.ID,
+		EmployeeID:    c.EmployeeID,
+		From:          c.From,
+		To:            c.To,
+		StaffCategory: c.StaffCategory,
+		Grade:         c.Grade,
+		Step:          c.Step,
+		WeeklyHours:   c.WeeklyHours,
+		Properties:    c.Properties,
+		CreatedAt:     c.CreatedAt,
+		UpdatedAt:     c.UpdatedAt,
 	}
 }

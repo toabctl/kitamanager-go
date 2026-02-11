@@ -33,6 +33,7 @@ func NewEmployeeHandler(service *service.EmployeeService, auditService *service.
 // @Param section_id query int false "Filter by section ID"
 // @Param active_on query string false "Filter by active contract date (YYYY-MM-DD, defaults to today)"
 // @Param search query string false "Search by first or last name (case-insensitive)"
+// @Param staff_category query string false "Filter by staff category (qualified, supplementary, non_pedagogical)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.Employee]
@@ -73,7 +74,17 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 	// Parse optional search filter
 	search := c.Query("search")
 
-	employees, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, sectionID, activeOn, search, params.Limit, params.Offset())
+	// Parse optional staff_category filter
+	var staffCategory *string
+	if sc := c.Query("staff_category"); sc != "" {
+		if !models.IsValidStaffCategory(sc) {
+			respondError(c, apperror.BadRequest("staff_category must be one of: qualified, supplementary, non_pedagogical"))
+			return
+		}
+		staffCategory = &sc
+	}
+
+	employees, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, sectionID, activeOn, search, staffCategory, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return

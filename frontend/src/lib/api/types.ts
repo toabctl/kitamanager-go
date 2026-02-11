@@ -205,7 +205,7 @@ export interface EmployeeContract {
   employee_id: number;
   from: string;
   to?: string | null;
-  position: string;
+  staff_category: string;
   grade: string;
   step: number;
   weekly_hours: number;
@@ -231,7 +231,7 @@ export interface EmployeeUpdateRequest {
 export interface EmployeeContractCreateRequest {
   from: string;
   to?: string | null;
-  position: string;
+  staff_category: string;
   grade: string;
   step: number;
   weekly_hours: number;
@@ -240,7 +240,7 @@ export interface EmployeeContractCreateRequest {
 export interface EmployeeContractUpdateRequest {
   from?: string;
   to?: string | null;
-  position?: string;
+  staff_category?: string;
   grade?: string;
   step?: number;
   weekly_hours?: number;

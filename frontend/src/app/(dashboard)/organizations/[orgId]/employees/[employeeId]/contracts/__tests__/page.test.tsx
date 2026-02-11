@@ -47,7 +47,7 @@ const mockContracts = [
     employee_id: 1,
     from: '2020-01-01T00:00:00Z',
     to: null,
-    position: 'Teacher',
+    staff_category: 'qualified',
     grade: 'S8a',
     step: 3,
     weekly_hours: 39,
@@ -96,7 +96,7 @@ describe('EmployeeContractsPage', () => {
     renderWithProviders(<EmployeeContractsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Teacher')).toBeInTheDocument();
+      expect(screen.getByText('employees.staffCategory.qualified')).toBeInTheDocument();
     });
 
     expect(screen.getByText('S8a / 3')).toBeInTheDocument();

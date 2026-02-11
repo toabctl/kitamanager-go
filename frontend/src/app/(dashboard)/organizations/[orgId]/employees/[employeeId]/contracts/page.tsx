@@ -51,7 +51,7 @@ import { formatDate, formatDateForInput, formatDateForApi } from '@/lib/utils/fo
 const contractSchema = z.object({
   from: z.string().min(1),
   to: z.string().optional(),
-  position: z.string().min(1),
+  staff_category: z.enum(['qualified', 'supplementary', 'non_pedagogical']),
   grade: z.string().min(1),
   step: z.number().min(1).max(6),
   weekly_hours: z.number().min(0).max(168),
@@ -161,7 +161,7 @@ export default function EmployeeContractsPage() {
     defaultValues: {
       from: '',
       to: '',
-      position: '',
+      staff_category: 'qualified',
       grade: '',
       step: 1,
       weekly_hours: 39,
@@ -170,7 +170,7 @@ export default function EmployeeContractsPage() {
 
   const handleCreate = () => {
     setEditingContract(null);
-    reset({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
+    reset({ from: '', to: '', staff_category: 'qualified', grade: '', step: 1, weekly_hours: 39 });
     setIsContractDialogOpen(true);
   };
 
@@ -179,7 +179,7 @@ export default function EmployeeContractsPage() {
     reset({
       from: formatDateForInput(contract.from),
       to: contract.to ? formatDateForInput(contract.to) : '',
-      position: contract.position,
+      staff_category: contract.staff_category as 'qualified' | 'supplementary' | 'non_pedagogical',
       grade: contract.grade,
       step: contract.step,
       weekly_hours: contract.weekly_hours,
@@ -199,7 +199,7 @@ export default function EmployeeContractsPage() {
         data: {
           from: formatDateForApi(data.from) || undefined,
           to: formatDateForApi(data.to) || undefined,
-          position: data.position,
+          staff_category: data.staff_category,
           grade: data.grade,
           step: data.step,
           weekly_hours: data.weekly_hours,
@@ -209,7 +209,7 @@ export default function EmployeeContractsPage() {
       createMutation.mutate({
         from: formatDateForApi(data.from) || data.from,
         to: formatDateForApi(data.to),
-        position: data.position,
+        staff_category: data.staff_category,
         grade: data.grade,
         step: data.step,
         weekly_hours: data.weekly_hours,
@@ -280,7 +280,7 @@ export default function EmployeeContractsPage() {
                   <TableHead>{t('common.status')}</TableHead>
                   <TableHead>{t('contracts.from')}</TableHead>
                   <TableHead>{t('contracts.to')}</TableHead>
-                  <TableHead>{t('employees.position')}</TableHead>
+                  <TableHead>{t('employees.staffCategory.label')}</TableHead>
                   <TableHead>{t('employees.grade')}</TableHead>
                   <TableHead>{t('employees.weeklyHours')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
@@ -312,7 +312,9 @@ export default function EmployeeContractsPage() {
                       <TableCell>
                         {contract.to ? formatDate(contract.to) : t('common.ongoing')}
                       </TableCell>
-                      <TableCell>{contract.position}</TableCell>
+                      <TableCell>
+                        {t(`employees.staffCategory.${contract.staff_category}`)}
+                      </TableCell>
                       <TableCell>
                         {contract.grade} / {contract.step}
                       </TableCell>
@@ -375,10 +377,20 @@ export default function EmployeeContractsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="position">{t('employees.position')}</Label>
-              <Input id="position" {...register('position')} />
-              {errors.position && (
-                <p className="text-sm text-destructive">{t('validation.positionRequired')}</p>
+              <Label htmlFor="staff_category">{t('employees.staffCategory.label')}</Label>
+              <select
+                id="staff_category"
+                {...register('staff_category')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="qualified">{t('employees.staffCategory.qualified')}</option>
+                <option value="supplementary">{t('employees.staffCategory.supplementary')}</option>
+                <option value="non_pedagogical">
+                  {t('employees.staffCategory.non_pedagogical')}
+                </option>
+              </select>
+              {errors.staff_category && (
+                <p className="text-sm text-destructive">{t('validation.staffCategoryRequired')}</p>
               )}
             </div>
 

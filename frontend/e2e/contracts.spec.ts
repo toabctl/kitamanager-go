@@ -284,7 +284,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
 
       // Fill the form - use a past date
       await page.getByLabel(/Start Date/i).fill('2024-01-01');
-      await page.getByLabel(/Position/i).fill('Educator');
+      await page.locator('#staff_category').selectOption('qualified');
       await page.getByLabel(/Grade/i).fill('S8a');
       await page.getByLabel(/Step/i).fill('3');
       await page.getByLabel(/Weekly Hours/i).fill('39');
@@ -296,7 +296,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
 
       // Contract should appear in table
-      await expect(page.getByText('Educator')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Qualified Staff/i)).toBeVisible({ timeout: 10000 });
       await expect(page.getByText('S8a')).toBeVisible();
     } finally {
       await deleteEmployeeViaApi(page, token, orgId, employee.id);
@@ -315,7 +315,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
 
     await createEmployeeContractViaApi(page, token, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
-      position: 'Educator',
+      staff_category: 'qualified',
       grade: 'S8a',
       step: 2,
       weekly_hours: 39,
@@ -328,17 +328,15 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       // Find the contract row and click edit
       const contractRow = page.locator('tbody tr').first();
       await expect(contractRow).toBeVisible({ timeout: 10000 });
-      await expect(contractRow.getByText('Educator')).toBeVisible();
+      await expect(contractRow.getByText(/Qualified Staff/i)).toBeVisible();
 
       await contractRow.getByRole('button', { name: /Edit/i }).click();
 
       // Dialog should open
       await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
 
-      // Update position and step
-      const positionInput = page.getByLabel(/Position/i);
-      await positionInput.clear();
-      await positionInput.fill('Deputy Manager');
+      // Update staff category and step
+      await page.locator('#staff_category').selectOption('non_pedagogical');
 
       const stepInput = page.getByLabel(/Step/i);
       await stepInput.clear();
@@ -351,7 +349,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
 
       // Should show updated values
-      await expect(page.getByText('Deputy Manager')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Non-pedagogical/i)).toBeVisible({ timeout: 10000 });
     } finally {
       await deleteEmployeeViaApi(page, token, orgId, employee.id);
     }
@@ -369,7 +367,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
 
     await createEmployeeContractViaApi(page, token, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
-      position: 'Intern',
+      staff_category: 'supplementary',
       grade: 'S2',
       step: 1,
       weekly_hours: 20,
@@ -380,7 +378,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify contract exists
-      await expect(page.getByText('Intern')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Supplementary Staff/i)).toBeVisible({ timeout: 10000 });
 
       // Find the contract row and click delete
       const contractRow = page.locator('tbody tr').first();
@@ -393,7 +391,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await page.getByRole('alertdialog').getByRole('button', { name: /Delete|Confirm|Yes/i }).click();
 
       // Contract should be removed
-      await expect(page.getByText('Intern')).not.toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Supplementary Staff/i)).not.toBeVisible({ timeout: 10000 });
       await expect(page.getByText(/No contracts found/i).first()).toBeVisible();
     } finally {
       await deleteEmployeeViaApi(page, token, orgId, employee.id);

@@ -66,7 +66,7 @@ type GroupStorer interface {
 type EmployeeStorer interface {
 	FindAll(limit, offset int) ([]models.Employee, int64, error)
 	FindByOrganization(orgID uint, limit, offset int) ([]models.Employee, int64, error)
-	FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.Employee, int64, error)
+	FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error)
 	FindByID(id uint) (*models.Employee, error)
 	FindByIDMinimal(id uint) (*models.Employee, error) // Without preloads, for org checks
 	Create(emp *models.Employee) error

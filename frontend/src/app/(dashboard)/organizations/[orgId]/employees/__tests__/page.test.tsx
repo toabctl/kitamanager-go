@@ -46,7 +46,7 @@ const mockEmployees = [
         id: 1,
         employee_id: 1,
         from: '2020-01-01',
-        position: 'Teacher',
+        staff_category: 'qualified',
         grade: 'S8a',
         step: 3,
         weekly_hours: 39,
@@ -147,7 +147,7 @@ describe('EmployeesPage', () => {
     expect(screen.getByText('gender.label')).toBeInTheDocument();
     expect(screen.getByText('employees.birthdate')).toBeInTheDocument();
     expect(screen.getByText('employees.age')).toBeInTheDocument();
-    expect(screen.getByText('employees.currentPosition')).toBeInTheDocument();
+    expect(screen.getByText('employees.staffCategory.label')).toBeInTheDocument();
     expect(screen.getByText('employees.grade')).toBeInTheDocument();
     expect(screen.getByText('employees.weeklyHours')).toBeInTheDocument();
     expect(screen.getByText('common.actions')).toBeInTheDocument();

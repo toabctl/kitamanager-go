@@ -38,12 +38,12 @@ func (s *EmployeeService) List(ctx context.Context, limit, offset int) ([]models
 
 // ListByOrganization returns a paginated list of employees for an organization
 func (s *EmployeeService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	return s.ListByOrganizationAndSection(ctx, orgID, nil, nil, "", limit, offset)
+	return s.ListByOrganizationAndSection(ctx, orgID, nil, nil, "", nil, limit, offset)
 }
 
-// ListByOrganizationAndSection returns a paginated list of employees for an organization, optionally filtered by section, active contract date, and/or name search
-func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	employees, total, err := s.store.FindByOrganizationAndSection(orgID, sectionID, activeOn, search, limit, offset)
+// ListByOrganizationAndSection returns a paginated list of employees for an organization, optionally filtered by section, active contract date, name search, and/or staff category
+func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.EmployeeResponse, int64, error) {
+	employees, total, err := s.store.FindByOrganizationAndSection(orgID, sectionID, activeOn, search, staffCategory, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.Internal("failed to fetch employees")
 	}
@@ -237,11 +237,9 @@ func (s *EmployeeService) GetCurrentContract(ctx context.Context, employeeID, or
 
 // CreateContract creates a new contract for an employee, validating it belongs to the specified organization
 func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID uint, req *models.EmployeeContractCreateRequest) (*models.EmployeeContractResponse, error) {
-	// Trim and validate input
-	req.Position = strings.TrimSpace(req.Position)
-
-	if validation.IsWhitespaceOnly(req.Position) {
-		return nil, apperror.BadRequest("position cannot be empty or whitespace only")
+	// Validate staff category
+	if !models.IsValidStaffCategory(req.StaffCategory) {
+		return nil, apperror.BadRequest("staff_category must be one of: qualified, supplementary, non_pedagogical")
 	}
 	if err := validation.ValidatePeriod(req.From, req.To); err != nil {
 		return nil, apperror.BadRequest(err.Error())
@@ -278,10 +276,10 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 			},
 			Properties: req.Properties,
 		},
-		Position:    req.Position,
-		Grade:       req.Grade,
-		Step:        req.Step,
-		WeeklyHours: req.WeeklyHours,
+		StaffCategory: req.StaffCategory,
+		Grade:         req.Grade,
+		Step:          req.Step,
+		WeeklyHours:   req.WeeklyHours,
 	}
 
 	if err := s.store.CreateContract(contract); err != nil {
@@ -363,12 +361,11 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 	}
 
 	// Update fields if provided
-	if req.Position != nil {
-		trimmed := strings.TrimSpace(*req.Position)
-		if validation.IsWhitespaceOnly(trimmed) {
-			return nil, apperror.BadRequest("position cannot be empty or whitespace only")
+	if req.StaffCategory != nil {
+		if !models.IsValidStaffCategory(*req.StaffCategory) {
+			return nil, apperror.BadRequest("staff_category must be one of: qualified, supplementary, non_pedagogical")
 		}
-		contract.Position = trimmed
+		contract.StaffCategory = *req.StaffCategory
 	}
 	if req.WeeklyHours != nil {
 		if err := validation.ValidateWeeklyHours(*req.WeeklyHours, "weekly_hours"); err != nil {

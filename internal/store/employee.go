@@ -36,10 +36,10 @@ func (s *EmployeeStore) FindAll(limit, offset int) ([]models.Employee, int64, er
 }
 
 func (s *EmployeeStore) FindByOrganization(orgID uint, limit, offset int) ([]models.Employee, int64, error) {
-	return s.FindByOrganizationAndSection(orgID, nil, nil, "", limit, offset)
+	return s.FindByOrganizationAndSection(orgID, nil, nil, "", nil, limit, offset)
 }
 
-func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.Employee, int64, error) {
+func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error) {
 	var employees []models.Employee
 	var total int64
 
@@ -51,7 +51,15 @@ func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint
 	if search != "" {
 		countQuery = countQuery.Scopes(PersonNameSearch("employees", search))
 	}
-	if activeOn != nil {
+	if staffCategory != nil {
+		countQuery = countQuery.
+			Joins("JOIN employee_contracts ec_cat ON ec_cat.employee_id = employees.id").
+			Where("ec_cat.staff_category = ?", *staffCategory)
+		if activeOn != nil {
+			countQuery = countQuery.Scopes(PeriodActiveOn("ec_cat.from_date", "ec_cat.to_date", *activeOn))
+		}
+		countQuery = countQuery.Distinct("employees.id")
+	} else if activeOn != nil {
 		countQuery = countQuery.
 			Joins("JOIN employee_contracts ON employee_contracts.employee_id = employees.id").
 			Scopes(PeriodActiveOn("employee_contracts.from_date", "employee_contracts.to_date", *activeOn)).
@@ -69,7 +77,15 @@ func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint
 	if search != "" {
 		dataQuery = dataQuery.Scopes(PersonNameSearch("employees", search))
 	}
-	if activeOn != nil {
+	if staffCategory != nil {
+		dataQuery = dataQuery.
+			Joins("JOIN employee_contracts ec_cat ON ec_cat.employee_id = employees.id").
+			Where("ec_cat.staff_category = ?", *staffCategory)
+		if activeOn != nil {
+			dataQuery = dataQuery.Scopes(PeriodActiveOn("ec_cat.from_date", "ec_cat.to_date", *activeOn))
+		}
+		dataQuery = dataQuery.Distinct()
+	} else if activeOn != nil {
 		dataQuery = dataQuery.
 			Joins("JOIN employee_contracts ON employee_contracts.employee_id = employees.id").
 			Scopes(PeriodActiveOn("employee_contracts.from_date", "employee_contracts.to_date", *activeOn)).

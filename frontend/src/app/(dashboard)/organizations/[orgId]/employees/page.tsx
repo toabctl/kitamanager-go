@@ -25,6 +25,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
 import type { Employee, EmployeeContract, EmployeeContractCreateRequest } from '@/lib/api/types';
@@ -55,7 +62,7 @@ const employeeSchema = z.object({
 const contractSchema = z.object({
   from: z.string().min(1),
   to: z.string().optional(),
-  position: z.string().min(1),
+  staff_category: z.enum(['qualified', 'supplementary', 'non_pedagogical']),
   grade: z.string().min(1),
   step: z.number().min(1).max(6),
   weekly_hours: z.number().min(0).max(168),
@@ -82,10 +89,16 @@ export default function EmployeesPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 300);
+  const [staffCategoryFilter, setStaffCategoryFilter] = useState<string>('');
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['employees', orgId, page, search],
-    queryFn: () => apiClient.getEmployees(orgId, { page, search: search || undefined }),
+    queryKey: ['employees', orgId, page, search, staffCategoryFilter],
+    queryFn: () =>
+      apiClient.getEmployees(orgId, {
+        page,
+        search: search || undefined,
+        staff_category: staffCategoryFilter || undefined,
+      }),
     enabled: !!orgId,
   });
 
@@ -214,7 +227,7 @@ export default function EmployeesPage() {
     defaultValues: {
       from: '',
       to: '',
-      position: '',
+      staff_category: 'qualified',
       grade: '',
       step: 1,
       weekly_hours: 39,
@@ -268,13 +281,23 @@ export default function EmployeesPage() {
         resetContract({
           from: tomorrowStr,
           to: '',
-          position: active.position,
+          staff_category: active.staff_category as
+            | 'qualified'
+            | 'supplementary'
+            | 'non_pedagogical',
           grade: active.grade,
           step: active.step,
           weekly_hours: active.weekly_hours,
         });
       } else {
-        resetContract({ from: '', to: '', position: '', grade: '', step: 1, weekly_hours: 39 });
+        resetContract({
+          from: '',
+          to: '',
+          staff_category: 'qualified',
+          grade: '',
+          step: 1,
+          weekly_hours: 39,
+        });
       }
       setIsContractDialogOpen(true);
     },
@@ -301,11 +324,11 @@ export default function EmployeesPage() {
 
   // Helper to check if contract details have changed
   const contractDetailsChanged = (
-    newData: { position: string; grade: string; step: number; weekly_hours: number },
+    newData: { staff_category: string; grade: string; step: number; weekly_hours: number },
     oldContract: EmployeeContract
   ): boolean => {
     return (
-      newData.position !== oldContract.position ||
+      newData.staff_category !== oldContract.staff_category ||
       newData.grade !== oldContract.grade ||
       newData.step !== oldContract.step ||
       newData.weekly_hours !== oldContract.weekly_hours
@@ -319,7 +342,7 @@ export default function EmployeesPage() {
         if (activeContract && endCurrentContract) {
           const hasChanges = contractDetailsChanged(
             {
-              position: data.position,
+              staff_category: data.staff_category,
               grade: data.grade,
               step: data.step,
               weekly_hours: data.weekly_hours,
@@ -341,7 +364,7 @@ export default function EmployeesPage() {
           data: {
             from: formatDateForApi(data.from) || data.from,
             to: formatDateForApi(data.to),
-            position: data.position,
+            staff_category: data.staff_category,
             grade: data.grade,
             step: data.step,
             weekly_hours: data.weekly_hours,
@@ -364,21 +387,44 @@ export default function EmployeesPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <label htmlFor="search-employees" className="sr-only">
-          {t('common.search')}
-        </label>
-        <Input
-          id="search-employees"
-          placeholder={t('common.search')}
-          value={searchInput}
-          onChange={(e) => {
-            setSearchInput(e.target.value);
+      <div className="flex items-center gap-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <label htmlFor="search-employees" className="sr-only">
+            {t('common.search')}
+          </label>
+          <Input
+            id="search-employees"
+            placeholder={t('common.search')}
+            value={searchInput}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+          />
+        </div>
+        <Select
+          value={staffCategoryFilter}
+          onValueChange={(value) => {
+            setStaffCategoryFilter(value === 'all' ? '' : value);
             setPage(1);
           }}
-          className="pl-9"
-        />
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={t('employees.filterByCategory')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('common.all')}</SelectItem>
+            <SelectItem value="qualified">{t('employees.staffCategory.qualified')}</SelectItem>
+            <SelectItem value="supplementary">
+              {t('employees.staffCategory.supplementary')}
+            </SelectItem>
+            <SelectItem value="non_pedagogical">
+              {t('employees.staffCategory.non_pedagogical')}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -400,7 +446,7 @@ export default function EmployeesPage() {
                   <TableHead>{t('gender.label')}</TableHead>
                   <TableHead>{t('employees.birthdate')}</TableHead>
                   <TableHead>{t('employees.age')}</TableHead>
-                  <TableHead>{t('employees.currentPosition')}</TableHead>
+                  <TableHead>{t('employees.staffCategory.label')}</TableHead>
                   <TableHead>{t('employees.grade')}</TableHead>
                   <TableHead>{t('employees.weeklyHours')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
@@ -418,7 +464,9 @@ export default function EmployeesPage() {
                       <TableCell>{formatDate(employee.birthdate)}</TableCell>
                       <TableCell>{calculateAge(employee.birthdate)}</TableCell>
                       <TableCell>
-                        {currentContract?.position || (
+                        {currentContract ? (
+                          t(`employees.staffCategory.${currentContract.staff_category}`)
+                        ) : (
                           <span className="text-muted-foreground">{t('employees.noContract')}</span>
                         )}
                       </TableCell>
@@ -525,7 +573,7 @@ export default function EmployeesPage() {
                   <p className="text-sm text-muted-foreground">
                     {t('contracts.activeSinceEmployee', {
                       date: formatDate(activeContract.from),
-                      position: activeContract.position,
+                      staffCategory: t(`employees.staffCategory.${activeContract.staff_category}`),
                       grade: activeContract.grade,
                       step: activeContract.step,
                     })}
@@ -564,10 +612,20 @@ export default function EmployeesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="position">{t('employees.position')}</Label>
-              <Input id="position" {...registerContract('position')} />
-              {errorsContract.position && (
-                <p className="text-sm text-destructive">{t('validation.positionRequired')}</p>
+              <Label htmlFor="staff_category">{t('employees.staffCategory.label')}</Label>
+              <select
+                id="staff_category"
+                {...registerContract('staff_category')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="qualified">{t('employees.staffCategory.qualified')}</option>
+                <option value="supplementary">{t('employees.staffCategory.supplementary')}</option>
+                <option value="non_pedagogical">
+                  {t('employees.staffCategory.non_pedagogical')}
+                </option>
+              </select>
+              {errorsContract.staff_category && (
+                <p className="text-sm text-destructive">{t('validation.staffCategoryRequired')}</p>
               )}
             </div>
 
