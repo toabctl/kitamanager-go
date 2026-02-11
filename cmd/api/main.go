@@ -26,7 +26,6 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/service"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 	"github.com/eenemeene/kitamanager-go/internal/version"
-	"github.com/eenemeene/kitamanager-go/internal/web"
 )
 
 // @title KitaManager API
@@ -184,12 +183,6 @@ func main() {
 
 	// Setup API routes
 	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter)
-
-	// Register embedded web UI
-	if err := web.RegisterHandlers(r); err != nil {
-		slog.Error("Failed to register web handlers", "error", err)
-		os.Exit(1)
-	}
 
 	// Create HTTP server
 	srv := &http.Server{

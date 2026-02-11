@@ -15,8 +15,8 @@ LDFLAGS := -ldflags "-X $(VERSION_PKG).GitCommit=$(GIT_COMMIT) -X $(VERSION_PKG)
 # Combined targets (web + api)
 # =============================================================================
 
-# Build both web and api (web first)
-build: web-build api-build
+# Build both web and api (installs deps, then builds)
+build: web-install web-build api-build
 
 # Run linter for both web and api
 lint: web-lint api-lint
@@ -36,7 +36,7 @@ ci: lint test build
 # Prerequisites: Docker for database, Go and Node.js installed
 # Web UI will be available at http://localhost:3000 with hot reload
 # API will be available at http://localhost:8080
-dev:
+dev: api-build web-install
 	@echo "Starting development environment..."
 	@echo "1. Starting database..."
 	@docker compose up -d db
