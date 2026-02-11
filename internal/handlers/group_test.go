@@ -11,7 +11,7 @@ import (
 func TestGroupHandler_List(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	createTestGroupWithOrg(t, db, "Group 1", org.ID)
@@ -37,7 +37,7 @@ func TestGroupHandler_List(t *testing.T) {
 func TestGroupHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	group := createTestGroupWithOrg(t, db, "Test Group", org.ID)
@@ -62,7 +62,7 @@ func TestGroupHandler_Get(t *testing.T) {
 func TestGroupHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -79,7 +79,7 @@ func TestGroupHandler_Get_NotFound(t *testing.T) {
 func TestGroupHandler_Get_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -99,7 +99,7 @@ func TestGroupHandler_Get_WrongOrg(t *testing.T) {
 func TestGroupHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -134,7 +134,7 @@ func TestGroupHandler_Create(t *testing.T) {
 func TestGroupHandler_Create_BadRequest(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -156,7 +156,7 @@ func TestGroupHandler_Create_BadRequest(t *testing.T) {
 func TestGroupHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	group := createTestGroupWithOrg(t, db, "Original Name", org.ID)
@@ -185,7 +185,7 @@ func TestGroupHandler_Update(t *testing.T) {
 func TestGroupHandler_Update_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -209,7 +209,7 @@ func TestGroupHandler_Update_WrongOrg(t *testing.T) {
 func TestGroupHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	group := createTestGroupWithOrg(t, db, "To Delete", org.ID)
@@ -234,7 +234,7 @@ func TestGroupHandler_Delete(t *testing.T) {
 func TestGroupHandler_Delete_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -261,7 +261,7 @@ func TestGroupHandler_Delete_WrongOrg(t *testing.T) {
 func TestGroupHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -278,7 +278,7 @@ func TestGroupHandler_Get_InvalidID(t *testing.T) {
 func TestGroupHandler_Update_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -299,7 +299,7 @@ func TestGroupHandler_Update_InvalidID(t *testing.T) {
 func TestGroupHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -320,7 +320,7 @@ func TestGroupHandler_Update_NotFound(t *testing.T) {
 func TestGroupHandler_Update_ActiveFlag(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	group := createTestGroupWithOrg(t, db, "Test Group", org.ID)
@@ -350,7 +350,7 @@ func TestGroupHandler_Update_ActiveFlag(t *testing.T) {
 func TestGroupHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -367,7 +367,7 @@ func TestGroupHandler_Delete_InvalidID(t *testing.T) {
 func TestGroupHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -391,7 +391,7 @@ func TestGroupHandler_List_Empty(t *testing.T) {
 func TestGroupHandler_List_OnlyShowsOrgGroups(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -431,7 +431,7 @@ func TestGroupHandler_List_OnlyShowsOrgGroups(t *testing.T) {
 func TestGroupHandler_Create_WhitespaceOnlyName(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -453,7 +453,7 @@ func TestGroupHandler_Create_WhitespaceOnlyName(t *testing.T) {
 func TestGroupHandler_Create_NameTooLong(t *testing.T) {
 	db := setupTestDB(t)
 	groupService := createGroupService(db)
-	handler := NewGroupHandler(groupService)
+	handler := NewGroupHandler(groupService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -475,5 +475,41 @@ func TestGroupHandler_Create_NameTooLong(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d for name too long, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestGroupHandler_List_Search(t *testing.T) {
+	db := setupTestDB(t)
+	groupService := createGroupService(db)
+	handler := NewGroupHandler(groupService, nil)
+
+	org := createTestOrganization(t, db, "Test Org")
+	createTestGroupWithOrg(t, db, "Administrators", org.ID)
+	createTestGroupWithOrg(t, db, "Admin Staff", org.ID)
+	createTestGroupWithOrg(t, db, "Members", org.ID)
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/groups", handler.List)
+
+	// Search for "admin" (case-insensitive)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/groups?search=admin", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.GroupResponse]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 groups matching 'admin', got %d", len(response.Data))
+	}
+
+	// Empty search returns all
+	w = performRequest(r, "GET", fmt.Sprintf("/organizations/%d/groups", org.ID), nil)
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 3 {
+		t.Errorf("expected 3 groups without search, got %d", len(response.Data))
 	}
 }

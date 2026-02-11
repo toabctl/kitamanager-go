@@ -114,7 +114,7 @@ func (h *PayPlanHandler) Create(c *gin.Context) {
 
 	var req models.PayPlanCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
@@ -151,7 +151,7 @@ func (h *PayPlanHandler) Update(c *gin.Context) {
 
 	var req models.PayPlanUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *PayPlanHandler) CreatePeriod(c *gin.Context) {
 
 	var req models.PayPlanPeriodCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
@@ -301,7 +301,7 @@ func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
 
 	var req models.PayPlanPeriodUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
@@ -384,7 +384,7 @@ func (h *PayPlanHandler) CreateEntry(c *gin.Context) {
 
 	var req models.PayPlanEntryCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
@@ -479,7 +479,7 @@ func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
 
 	var req models.PayPlanEntryUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest("Invalid request body"))
+		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 

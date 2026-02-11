@@ -45,15 +45,25 @@ func (s *GroupStore) FindByOrganization(orgID uint) ([]models.Group, error) {
 	return groups, nil
 }
 
-func (s *GroupStore) FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Group, int64, error) {
+func (s *GroupStore) FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Group, int64, error) {
 	var groups []models.Group
 	var total int64
 
-	if err := s.db.Model(&models.Group{}).Where("organization_id = ?", orgID).Count(&total).Error; err != nil {
+	query := s.db.Model(&models.Group{}).Where("organization_id = ?", orgID)
+	if search != "" {
+		query = query.Scopes(NameSearch("groups", "name", search))
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Preload("Organization").Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&groups).Error; err != nil {
+	dataQuery := s.db.Preload("Organization").Where("organization_id = ?", orgID)
+	if search != "" {
+		dataQuery = dataQuery.Scopes(NameSearch("groups", "name", search))
+	}
+
+	if err := dataQuery.Limit(limit).Offset(offset).Find(&groups).Error; err != nil {
 		return nil, 0, err
 	}
 

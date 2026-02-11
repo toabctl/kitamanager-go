@@ -19,7 +19,7 @@ func TestUserService_List(t *testing.T) {
 	createTestUser(t, db, "User 1", "user1@example.com", "password")
 	createTestUser(t, db, "User 2", "user2@example.com", "password")
 
-	users, total, err := svc.List(ctx, 10, 0)
+	users, total, err := svc.List(ctx, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -39,7 +39,7 @@ func TestUserService_List_ReturnsUserResponse(t *testing.T) {
 
 	createTestUser(t, db, "Test User", "test@example.com", "password123")
 
-	users, _, err := svc.List(ctx, 10, 0)
+	users, _, err := svc.List(ctx, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -491,7 +491,7 @@ func TestUserService_ListByOrganization(t *testing.T) {
 	_ = svc.AddToGroup(ctx, user1.ID, group.ID)
 	_ = svc.AddToGroup(ctx, user2.ID, group.ID)
 
-	users, total, err := svc.ListByOrganization(ctx, org.ID, 10, 0)
+	users, total, err := svc.ListByOrganization(ctx, org.ID, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

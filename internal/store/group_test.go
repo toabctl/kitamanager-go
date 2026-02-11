@@ -205,6 +205,45 @@ func TestGroupStore_FindDefaultGroup_NotFound(t *testing.T) {
 	}
 }
 
+func TestGroupStore_FindByOrganizationPaginated_Search(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewGroupStore(db)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	createTestGroupWithOrg(t, db, "Administrators", org.ID)
+	createTestGroupWithOrg(t, db, "Admin Staff", org.ID)
+	createTestGroupWithOrg(t, db, "Members", org.ID)
+
+	// Search for "admin" (case-insensitive)
+	groups, total, err := store.FindByOrganizationPaginated(org.ID, "admin", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
+	}
+
+	if len(groups) != 2 {
+		t.Errorf("expected 2 groups, got %d", len(groups))
+	}
+
+	// Empty search returns all
+	groups2, total2, err := store.FindByOrganizationPaginated(org.ID, "", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total2 != 3 {
+		t.Errorf("expected total 3, got %d", total2)
+	}
+
+	if len(groups2) != 3 {
+		t.Errorf("expected 3 groups, got %d", len(groups2))
+	}
+}
+
 // TestGroup_IsDefaultField verifies the IsDefault field works correctly
 func TestGroup_IsDefaultField(t *testing.T) {
 	db := setupTestDB(t)

@@ -24,8 +24,8 @@ func NewUserService(store store.UserStorer, groupStore store.GroupStorer) *UserS
 }
 
 // List returns a paginated list of users
-func (s *UserService) List(ctx context.Context, limit, offset int) ([]models.UserResponse, int64, error) {
-	users, total, err := s.store.FindAll(limit, offset)
+func (s *UserService) List(ctx context.Context, search string, limit, offset int) ([]models.UserResponse, int64, error) {
+	users, total, err := s.store.FindAll(search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.Internal("failed to fetch users")
 	}
@@ -38,8 +38,8 @@ func (s *UserService) List(ctx context.Context, limit, offset int) ([]models.Use
 }
 
 // ListByOrganization returns a paginated list of users in a specific organization
-func (s *UserService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.UserResponse, int64, error) {
-	users, total, err := s.store.FindByOrganization(orgID, limit, offset)
+func (s *UserService) ListByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.UserResponse, int64, error) {
+	users, total, err := s.store.FindByOrganization(orgID, search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.Internal("failed to fetch users")
 	}

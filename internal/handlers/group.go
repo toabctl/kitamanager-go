@@ -11,11 +11,12 @@ import (
 )
 
 type GroupHandler struct {
-	service *service.GroupService
+	service      *service.GroupService
+	auditService *service.AuditService
 }
 
-func NewGroupHandler(service *service.GroupService) *GroupHandler {
-	return &GroupHandler{service: service}
+func NewGroupHandler(service *service.GroupService, auditService *service.AuditService) *GroupHandler {
+	return &GroupHandler{service: service, auditService: auditService}
 }
 
 // List godoc
@@ -26,6 +27,7 @@ func NewGroupHandler(service *service.GroupService) *GroupHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
+// @Param search query string false "Search by name (case-insensitive)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.GroupResponse]
@@ -44,7 +46,9 @@ func (h *GroupHandler) List(c *gin.Context) {
 		return
 	}
 
-	groups, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
+	search := c.Query("search")
+
+	groups, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, search, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -194,10 +198,21 @@ func (h *GroupHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	// Get group info before deletion for audit log
+	group, err := h.service.GetByIDAndOrg(c.Request.Context(), groupID, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	if err := h.service.DeleteByIDAndOrg(c.Request.Context(), groupID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}
+
+	// Audit log group deletion
+	actorID := getUserID(c)
+	h.auditService.LogResourceDelete(actorID, "group", groupID, group.Name, c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }

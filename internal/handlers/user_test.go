@@ -1404,3 +1404,47 @@ func TestUserHandler_RemoveFromOrganization_UserNotFound(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
 	}
 }
+
+func TestUserHandler_List_Search(t *testing.T) {
+	db := setupTestDB(t)
+	userService := createUserService(db)
+	userGroupService := createUserGroupService(db)
+	handler := NewUserHandler(userService, userGroupService, nil)
+
+	createTestUser(t, db, "Alice Smith", "alice@example.com", "password")
+	createTestUser(t, db, "Bob Jones", "bob@example.com", "password")
+	createTestUser(t, db, "Charlie Admin", "admin@company.com", "password")
+
+	r := setupTestRouter()
+	r.GET("/users", handler.List)
+
+	// Search by name
+	w := performRequest(r, "GET", "/users?search=alice", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.UserResponse]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 1 {
+		t.Errorf("expected 1 user matching 'alice', got %d", len(response.Data))
+	}
+
+	// Search by email
+	w = performRequest(r, "GET", "/users?search=admin", nil)
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 1 {
+		t.Errorf("expected 1 user matching 'admin', got %d", len(response.Data))
+	}
+
+	// Empty search returns all
+	w = performRequest(r, "GET", "/users", nil)
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 3 {
+		t.Errorf("expected 3 users without search, got %d", len(response.Data))
+	}
+}

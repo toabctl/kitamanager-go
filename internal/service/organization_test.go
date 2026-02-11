@@ -167,7 +167,7 @@ func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
 	}
 
 	// Check that default "Members" group was created
-	groups, total, _ := groupSvc.ListByOrganization(ctx, org.ID, 10, 0)
+	groups, total, _ := groupSvc.ListByOrganization(ctx, org.ID, "", 10, 0)
 	if total != 1 {
 		t.Fatalf("expected 1 group (default), got %d", total)
 	}

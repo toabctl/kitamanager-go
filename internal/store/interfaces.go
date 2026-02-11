@@ -25,8 +25,8 @@ type UserGroupStorer interface {
 
 // UserStorer defines the interface for user storage operations
 type UserStorer interface {
-	FindAll(limit, offset int) ([]models.User, int64, error)
-	FindByOrganization(orgID uint, limit, offset int) ([]models.User, int64, error)
+	FindAll(search string, limit, offset int) ([]models.User, int64, error)
+	FindByOrganization(orgID uint, search string, limit, offset int) ([]models.User, int64, error)
 	FindByID(id uint) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	EmailExistsForOtherUser(email string, excludeUserID uint) (bool, error)
@@ -55,7 +55,7 @@ type GroupStorer interface {
 	FindAll(limit, offset int) ([]models.Group, int64, error)
 	FindByID(id uint) (*models.Group, error)
 	FindByOrganization(orgID uint) ([]models.Group, error)
-	FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Group, int64, error)
+	FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Group, int64, error)
 	FindDefaultGroup(orgID uint) (*models.Group, error)
 	Create(group *models.Group) error
 	Update(group *models.Group) error
@@ -113,7 +113,7 @@ type ContractStorer[T models.HasPeriod] interface {
 type SectionStorer interface {
 	FindByID(id uint) (*models.Section, error)
 	FindByOrganization(orgID uint) ([]models.Section, error)
-	FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Section, int64, error)
+	FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Section, int64, error)
 	FindDefaultSection(orgID uint) (*models.Section, error)
 	FindByNameAndOrg(name string, orgID uint) (*models.Section, error)
 	Create(section *models.Section) error

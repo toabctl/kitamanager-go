@@ -33,7 +33,7 @@ func createTestSectionWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint
 func TestSectionHandler_List(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	createTestSectionWithOrg(t, db, "Section 1", org.ID)
@@ -59,7 +59,7 @@ func TestSectionHandler_List(t *testing.T) {
 func TestSectionHandler_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -83,7 +83,7 @@ func TestSectionHandler_List_Empty(t *testing.T) {
 func TestSectionHandler_Get(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "Test Section", org.ID)
@@ -108,7 +108,7 @@ func TestSectionHandler_Get(t *testing.T) {
 func TestSectionHandler_Get_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -125,7 +125,7 @@ func TestSectionHandler_Get_NotFound(t *testing.T) {
 func TestSectionHandler_Get_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -145,7 +145,7 @@ func TestSectionHandler_Get_WrongOrg(t *testing.T) {
 func TestSectionHandler_Create(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -179,7 +179,7 @@ func TestSectionHandler_Create(t *testing.T) {
 func TestSectionHandler_Create_BadRequest(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -199,7 +199,7 @@ func TestSectionHandler_Create_BadRequest(t *testing.T) {
 func TestSectionHandler_Create_WhitespaceOnlyName(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -220,7 +220,7 @@ func TestSectionHandler_Create_WhitespaceOnlyName(t *testing.T) {
 func TestSectionHandler_Update(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "Original Name", org.ID)
@@ -250,7 +250,7 @@ func TestSectionHandler_Update(t *testing.T) {
 func TestSectionHandler_Update_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -275,7 +275,7 @@ func TestSectionHandler_Update_WrongOrg(t *testing.T) {
 func TestSectionHandler_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -297,7 +297,7 @@ func TestSectionHandler_Update_NotFound(t *testing.T) {
 func TestSectionHandler_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "To Delete", org.ID)
@@ -322,7 +322,7 @@ func TestSectionHandler_Delete(t *testing.T) {
 func TestSectionHandler_Delete_WrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -349,7 +349,7 @@ func TestSectionHandler_Delete_WrongOrg(t *testing.T) {
 func TestSectionHandler_Delete_WithChildren(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "Section With Children", org.ID)
@@ -387,7 +387,7 @@ func TestSectionHandler_Delete_WithChildren(t *testing.T) {
 func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "Section With Employees", org.ID)
@@ -425,7 +425,7 @@ func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 func TestSectionHandler_Get_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -442,7 +442,7 @@ func TestSectionHandler_Get_InvalidID(t *testing.T) {
 func TestSectionHandler_Delete_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org := createTestOrganization(t, db, "Test Org")
 
@@ -459,7 +459,7 @@ func TestSectionHandler_Delete_InvalidID(t *testing.T) {
 func TestSectionHandler_List_OnlyShowsOrgSections(t *testing.T) {
 	db := setupTestDB(t)
 	sectionService := createSectionService(db)
-	handler := NewSectionHandler(sectionService)
+	handler := NewSectionHandler(sectionService, nil)
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
@@ -491,5 +491,41 @@ func TestSectionHandler_List_OnlyShowsOrgSections(t *testing.T) {
 
 	if len(response.Data) != 1 {
 		t.Errorf("expected 1 section for org2, got %d", len(response.Data))
+	}
+}
+
+func TestSectionHandler_List_Search(t *testing.T) {
+	db := setupTestDB(t)
+	sectionService := createSectionService(db)
+	handler := NewSectionHandler(sectionService, nil)
+
+	org := createTestOrganization(t, db, "Test Org")
+	createTestSectionWithOrg(t, db, "Krippe Alpha", org.ID)
+	createTestSectionWithOrg(t, db, "Krippe Beta", org.ID)
+	createTestSectionWithOrg(t, db, "Elementar", org.ID)
+
+	r := setupTestRouter()
+	r.GET("/organizations/:orgId/sections", handler.List)
+
+	// Search for "krippe" (case-insensitive)
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/sections?search=krippe", org.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response models.PaginatedResponse[models.SectionResponse]
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 2 {
+		t.Errorf("expected 2 sections matching 'krippe', got %d", len(response.Data))
+	}
+
+	// Empty search returns all
+	w = performRequest(r, "GET", fmt.Sprintf("/organizations/%d/sections", org.ID), nil)
+	parseResponse(t, w, &response)
+
+	if len(response.Data) != 3 {
+		t.Errorf("expected 3 sections without search, got %d", len(response.Data))
 	}
 }

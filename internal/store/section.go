@@ -30,15 +30,25 @@ func (s *SectionStore) FindByOrganization(orgID uint) ([]models.Section, error) 
 	return sections, nil
 }
 
-func (s *SectionStore) FindByOrganizationPaginated(orgID uint, limit, offset int) ([]models.Section, int64, error) {
+func (s *SectionStore) FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Section, int64, error) {
 	var sections []models.Section
 	var total int64
 
-	if err := s.db.Model(&models.Section{}).Where("organization_id = ?", orgID).Count(&total).Error; err != nil {
+	query := s.db.Model(&models.Section{}).Where("organization_id = ?", orgID)
+	if search != "" {
+		query = query.Scopes(NameSearch("sections", "name", search))
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Preload("Organization").Where("organization_id = ?", orgID).Limit(limit).Offset(offset).Find(&sections).Error; err != nil {
+	dataQuery := s.db.Preload("Organization").Where("organization_id = ?", orgID)
+	if search != "" {
+		dataQuery = dataQuery.Scopes(NameSearch("sections", "name", search))
+	}
+
+	if err := dataQuery.Limit(limit).Offset(offset).Find(&sections).Error; err != nil {
 		return nil, 0, err
 	}
 

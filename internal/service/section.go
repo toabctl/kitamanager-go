@@ -24,8 +24,8 @@ func NewSectionService(store store.SectionStorer) *SectionService {
 }
 
 // ListByOrganization returns a paginated list of sections for a specific organization
-func (s *SectionService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.SectionResponse, int64, error) {
-	sections, total, err := s.store.FindByOrganizationPaginated(orgID, limit, offset)
+func (s *SectionService) ListByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.SectionResponse, int64, error) {
+	sections, total, err := s.store.FindByOrganizationPaginated(orgID, search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.Internal("failed to fetch sections")
 	}

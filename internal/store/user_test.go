@@ -34,7 +34,7 @@ func TestUserStore_FindAll(t *testing.T) {
 	createTestUser(t, db, "User 1", "user1@example.com")
 	createTestUser(t, db, "User 2", "user2@example.com")
 
-	users, total, err := store.FindAll(100, 0)
+	users, total, err := store.FindAll("", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -352,7 +352,7 @@ func TestUserStore_FindAll_PreloadsGroups(t *testing.T) {
 	// Add user to group
 	_ = userStore.AddToGroup(user.ID, group.ID)
 
-	users, _, err := userStore.FindAll(100, 0)
+	users, _, err := userStore.FindAll("", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -368,5 +368,50 @@ func TestUserStore_FindAll_PreloadsGroups(t *testing.T) {
 	// Verify that group's organization ID is set correctly
 	if users[0].Groups[0].OrganizationID != org.ID {
 		t.Errorf("expected group organization_id %d, got %d", org.ID, users[0].Groups[0].OrganizationID)
+	}
+}
+
+func TestUserStore_FindAll_Search(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewUserStore(db)
+
+	createTestUser(t, db, "Alice Smith", "alice@example.com")
+	createTestUser(t, db, "Bob Jones", "bob@example.com")
+	createTestUser(t, db, "Charlie Admin", "admin@company.com")
+
+	// Search by name
+	users, total, err := store.FindAll("alice", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if total != 1 {
+		t.Errorf("expected total 1 for name search, got %d", total)
+	}
+	if len(users) != 1 {
+		t.Errorf("expected 1 user, got %d", len(users))
+	}
+
+	// Search by email
+	users2, total2, err := store.FindAll("admin", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if total2 != 1 {
+		t.Errorf("expected total 1 for email search, got %d", total2)
+	}
+	if len(users2) != 1 {
+		t.Errorf("expected 1 user, got %d", len(users2))
+	}
+
+	// Empty search returns all
+	users3, total3, err := store.FindAll("", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if total3 != 3 {
+		t.Errorf("expected total 3, got %d", total3)
+	}
+	if len(users3) != 3 {
+		t.Errorf("expected 3 users, got %d", len(users3))
 	}
 }

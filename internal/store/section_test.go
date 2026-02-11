@@ -146,7 +146,7 @@ func TestSectionStore_FindByOrganizationPaginated(t *testing.T) {
 	}
 
 	// Test pagination
-	sections, total, err := store.FindByOrganizationPaginated(org.ID, 2, 0)
+	sections, total, err := store.FindByOrganizationPaginated(org.ID, "", 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -160,13 +160,52 @@ func TestSectionStore_FindByOrganizationPaginated(t *testing.T) {
 	}
 
 	// Test second page
-	sections2, _, err := store.FindByOrganizationPaginated(org.ID, 2, 2)
+	sections2, _, err := store.FindByOrganizationPaginated(org.ID, "", 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(sections2) != 2 {
 		t.Errorf("expected 2 sections on second page, got %d", len(sections2))
+	}
+}
+
+func TestSectionStore_FindByOrganizationPaginated_Search(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewSectionStore(db)
+
+	org := createTestOrganization(t, db, "Test Org")
+
+	createTestSectionWithOrg(t, db, "Krippe Alpha", org.ID)
+	createTestSectionWithOrg(t, db, "Krippe Beta", org.ID)
+	createTestSectionWithOrg(t, db, "Elementar", org.ID)
+
+	// Search for "krippe" (case-insensitive)
+	sections, total, err := store.FindByOrganizationPaginated(org.ID, "krippe", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2, got %d", total)
+	}
+
+	if len(sections) != 2 {
+		t.Errorf("expected 2 sections, got %d", len(sections))
+	}
+
+	// Search for non-matching term
+	sections2, total2, err := store.FindByOrganizationPaginated(org.ID, "nonexistent", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total2 != 0 {
+		t.Errorf("expected total 0, got %d", total2)
+	}
+
+	if len(sections2) != 0 {
+		t.Errorf("expected 0 sections, got %d", len(sections2))
 	}
 }
 

@@ -129,7 +129,7 @@ func setupRouter() *gin.Engine {
 	// Setup handlers (passing nil for auditService in tests)
 	orgHandler := handlers.NewOrganizationHandler(orgService, nil)
 	userHandler := handlers.NewUserHandler(userService, userGroupService, nil)
-	groupHandler := handlers.NewGroupHandler(groupService)
+	groupHandler := handlers.NewGroupHandler(groupService, nil)
 	employeeHandler := handlers.NewEmployeeHandler(employeeService, nil)
 	childHandler := handlers.NewChildHandler(childService, nil)
 

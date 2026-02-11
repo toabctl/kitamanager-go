@@ -337,7 +337,7 @@ func TestGroupService_ListByOrganization(t *testing.T) {
 	createTestGroupWithOrg(t, db, "Group 1B", org1.ID)
 	createTestGroupWithOrg(t, db, "Group 2A", org2.ID)
 
-	groups, total, err := svc.ListByOrganization(ctx, org1.ID, 10, 0)
+	groups, total, err := svc.ListByOrganization(ctx, org1.ID, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

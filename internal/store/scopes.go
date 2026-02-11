@@ -17,6 +17,16 @@ func PeriodActiveOn(fromCol, toCol string, date time.Time) func(*gorm.DB) *gorm.
 	}
 }
 
+// NameSearch returns a GORM scope filtering records by a single column (e.g., name, email).
+// The search term is matched case-insensitively using LOWER()+LIKE for portability.
+// The tablePrefix should be the table name (e.g., "sections", "groups").
+func NameSearch(tablePrefix, column, search string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		pattern := "%" + strings.ToLower(search) + "%"
+		return db.Where("LOWER("+tablePrefix+"."+column+") LIKE ?", pattern)
+	}
+}
+
 // PersonNameSearch returns a GORM scope filtering person-based records by first/last name.
 // The search term is matched case-insensitively against both first_name and last_name.
 // Uses LOWER()+LIKE for portability across PostgreSQL and SQLite.

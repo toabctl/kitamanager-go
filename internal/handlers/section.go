@@ -11,11 +11,12 @@ import (
 )
 
 type SectionHandler struct {
-	service *service.SectionService
+	service      *service.SectionService
+	auditService *service.AuditService
 }
 
-func NewSectionHandler(service *service.SectionService) *SectionHandler {
-	return &SectionHandler{service: service}
+func NewSectionHandler(service *service.SectionService, auditService *service.AuditService) *SectionHandler {
+	return &SectionHandler{service: service, auditService: auditService}
 }
 
 // List godoc
@@ -26,6 +27,7 @@ func NewSectionHandler(service *service.SectionService) *SectionHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
+// @Param search query string false "Search by name (case-insensitive)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.SectionResponse]
@@ -44,7 +46,9 @@ func (h *SectionHandler) List(c *gin.Context) {
 		return
 	}
 
-	sections, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
+	search := c.Query("search")
+
+	sections, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, search, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -175,10 +179,21 @@ func (h *SectionHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	// Get section info before deletion for audit log
+	section, err := h.service.GetByIDAndOrg(c.Request.Context(), sectionID, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
 	if err := h.service.DeleteByIDAndOrg(c.Request.Context(), sectionID, orgID); err != nil {
 		respondError(c, err)
 		return
 	}
+
+	// Audit log section deletion
+	actorID := getUserID(c)
+	h.auditService.LogResourceDelete(actorID, "section", sectionID, section.Name, c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }

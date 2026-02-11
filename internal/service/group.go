@@ -35,8 +35,8 @@ func (s *GroupService) List(ctx context.Context, limit, offset int) ([]models.Gr
 }
 
 // ListByOrganization returns a paginated list of groups for a specific organization
-func (s *GroupService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.GroupResponse, int64, error) {
-	groups, total, err := s.store.FindByOrganizationPaginated(orgID, limit, offset)
+func (s *GroupService) ListByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.GroupResponse, int64, error) {
+	groups, total, err := s.store.FindByOrganizationPaginated(orgID, search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.Internal("failed to fetch groups")
 	}

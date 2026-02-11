@@ -140,7 +140,7 @@ func setupRouter() *gin.Engine {
 	// Setup handlers (nil audit service for contract tests - audit has nil-safety)
 	orgHandler := handlers.NewOrganizationHandler(orgService, nil)
 	userHandler := handlers.NewUserHandler(userService, userGroupService, nil)
-	groupHandler := handlers.NewGroupHandler(groupService)
+	groupHandler := handlers.NewGroupHandler(groupService, nil)
 
 	// Routes - matching the actual API structure
 	api := r.Group("/api/v1")

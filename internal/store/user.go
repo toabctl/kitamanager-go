@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -16,45 +17,63 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	return &UserStore{db: db}
 }
 
-func (s *UserStore) FindAll(limit, offset int) ([]models.User, int64, error) {
+func (s *UserStore) FindAll(search string, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
-	if err := s.db.Model(&models.User{}).Count(&total).Error; err != nil {
+	query := s.db.Model(&models.User{})
+	if search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		query = query.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Preload("Groups").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	dataQuery := s.db.Preload("Groups")
+	if search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		dataQuery = dataQuery.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
+	}
+
+	if err := dataQuery.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
 	return users, total, nil
 }
 
-func (s *UserStore) FindByOrganization(orgID uint, limit, offset int) ([]models.User, int64, error) {
+func (s *UserStore) FindByOrganization(orgID uint, search string, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
 	// Count distinct users in the organization
-	if err := s.db.Model(&models.User{}).
+	countQuery := s.db.Model(&models.User{}).
 		Distinct().
 		Joins("JOIN user_groups ON user_groups.user_id = users.id").
 		Joins("JOIN groups ON groups.id = user_groups.group_id").
-		Where("groups.organization_id = ?", orgID).
-		Count(&total).Error; err != nil {
+		Where("groups.organization_id = ?", orgID)
+	if search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		countQuery = countQuery.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
+	}
+	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// Get users with their groups (filtered to this org's groups)
-	if err := s.db.
+	dataQuery := s.db.
 		Distinct().
 		Joins("JOIN user_groups ON user_groups.user_id = users.id").
 		Joins("JOIN groups ON groups.id = user_groups.group_id").
 		Where("groups.organization_id = ?", orgID).
-		Preload("Groups", "organization_id = ?", orgID).
-		Limit(limit).
-		Offset(offset).
-		Find(&users).Error; err != nil {
+		Preload("Groups", "organization_id = ?", orgID)
+	if search != "" {
+		pattern := "%" + strings.ToLower(search) + "%"
+		dataQuery = dataQuery.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
+	}
+	if err := dataQuery.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 

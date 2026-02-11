@@ -31,6 +31,7 @@ func NewUserHandler(service *service.UserService, userGroupService *service.User
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param search query string false "Search by name or email (case-insensitive)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.UserResponse]
@@ -43,7 +44,9 @@ func (h *UserHandler) List(c *gin.Context) {
 		return
 	}
 
-	users, total, err := h.service.List(c.Request.Context(), params.Limit, params.Offset())
+	search := c.Query("search")
+
+	users, total, err := h.service.List(c.Request.Context(), search, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -60,6 +63,7 @@ func (h *UserHandler) List(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
+// @Param search query string false "Search by name or email (case-insensitive)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {object} models.PaginatedResponse[models.UserResponse]
@@ -78,7 +82,9 @@ func (h *UserHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	users, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, params.Limit, params.Offset())
+	search := c.Query("search")
+
+	users, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, search, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
