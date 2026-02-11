@@ -114,6 +114,27 @@ class ApiClient {
     this.onUnauthorized = callback;
   }
 
+  private orgScopedCrud<T, TCreate, TUpdate>(resource: string) {
+    return {
+      list: (orgId: number, params: PaginationParams & { search?: string } = {}) => {
+        const { page = 1, limit = DEFAULT_PAGE_SIZE, search } = params;
+        const qp = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (search) qp.set('search', search);
+        return this.client
+          .get<PaginatedResponse<T>>(`/organizations/${orgId}/${resource}?${qp}`)
+          .then((r) => r.data);
+      },
+      get: (orgId: number, id: number) =>
+        this.client.get<T>(`/organizations/${orgId}/${resource}/${id}`).then((r) => r.data),
+      create: (orgId: number, data: TCreate) =>
+        this.client.post<T>(`/organizations/${orgId}/${resource}`, data).then((r) => r.data),
+      update: (orgId: number, id: number, data: TUpdate) =>
+        this.client.put<T>(`/organizations/${orgId}/${resource}/${id}`, data).then((r) => r.data),
+      delete: (orgId: number, id: number) =>
+        this.client.delete(`/organizations/${orgId}/${resource}/${id}`).then(() => {}),
+    };
+  }
+
   // Auth
   async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await this.client.post<LoginResponse>('/login', request);
@@ -240,35 +261,12 @@ class ApiClient {
   }
 
   // Groups (organization-scoped)
-  async getGroups(orgId: number, params: PaginationParams = {}): Promise<PaginatedResponse<Group>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<Group>>(
-      `/organizations/${orgId}/groups?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
-
-  async getGroup(orgId: number, groupId: number): Promise<Group> {
-    const response = await this.client.get<Group>(`/organizations/${orgId}/groups/${groupId}`);
-    return response.data;
-  }
-
-  async createGroup(orgId: number, data: GroupCreateRequest): Promise<Group> {
-    const response = await this.client.post<Group>(`/organizations/${orgId}/groups`, data);
-    return response.data;
-  }
-
-  async updateGroup(orgId: number, groupId: number, data: GroupUpdateRequest): Promise<Group> {
-    const response = await this.client.put<Group>(
-      `/organizations/${orgId}/groups/${groupId}`,
-      data
-    );
-    return response.data;
-  }
-
-  async deleteGroup(orgId: number, groupId: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/groups/${groupId}`);
-  }
+  private _groups = this.orgScopedCrud<Group, GroupCreateRequest, GroupUpdateRequest>('groups');
+  getGroups = this._groups.list;
+  getGroup = this._groups.get;
+  createGroup = this._groups.create;
+  updateGroup = this._groups.update;
+  deleteGroup = this._groups.delete;
 
   // Organization users
   async getOrganizationUsers(
@@ -283,43 +281,16 @@ class ApiClient {
   }
 
   // Employees (organization-scoped)
-  async getEmployees(
-    orgId: number,
-    params: PaginationParams & { search?: string } = {}
-  ): Promise<PaginatedResponse<Employee>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE, search } = params;
-    const queryParams = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search) queryParams.set('search', search);
-    const response = await this.client.get<PaginatedResponse<Employee>>(
-      `/organizations/${orgId}/employees?${queryParams}`
-    );
-    return response.data;
-  }
-
-  async getEmployee(orgId: number, id: number): Promise<Employee> {
-    const response = await this.client.get<Employee>(`/organizations/${orgId}/employees/${id}`);
-    return response.data;
-  }
-
-  async createEmployee(
-    orgId: number,
-    data: Omit<EmployeeCreateRequest, 'organization_id'>
-  ): Promise<Employee> {
-    const response = await this.client.post<Employee>(`/organizations/${orgId}/employees`, data);
-    return response.data;
-  }
-
-  async updateEmployee(orgId: number, id: number, data: EmployeeUpdateRequest): Promise<Employee> {
-    const response = await this.client.put<Employee>(
-      `/organizations/${orgId}/employees/${id}`,
-      data
-    );
-    return response.data;
-  }
-
-  async deleteEmployee(orgId: number, id: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/employees/${id}`);
-  }
+  private _employees = this.orgScopedCrud<
+    Employee,
+    Omit<EmployeeCreateRequest, 'organization_id'>,
+    EmployeeUpdateRequest
+  >('employees');
+  getEmployees = this._employees.list;
+  getEmployee = this._employees.get;
+  createEmployee = this._employees.create;
+  updateEmployee = this._employees.update;
+  deleteEmployee = this._employees.delete;
 
   // Employee Contracts
   async getEmployeeContracts(orgId: number, employeeId: number): Promise<EmployeeContract[]> {
@@ -365,40 +336,16 @@ class ApiClient {
   }
 
   // Children (organization-scoped)
-  async getChildren(
-    orgId: number,
-    params: PaginationParams & { search?: string } = {}
-  ): Promise<PaginatedResponse<Child>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE, search } = params;
-    const queryParams = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search) queryParams.set('search', search);
-    const response = await this.client.get<PaginatedResponse<Child>>(
-      `/organizations/${orgId}/children?${queryParams}`
-    );
-    return response.data;
-  }
-
-  async getChild(orgId: number, id: number): Promise<Child> {
-    const response = await this.client.get<Child>(`/organizations/${orgId}/children/${id}`);
-    return response.data;
-  }
-
-  async createChild(
-    orgId: number,
-    data: Omit<ChildCreateRequest, 'organization_id'>
-  ): Promise<Child> {
-    const response = await this.client.post<Child>(`/organizations/${orgId}/children`, data);
-    return response.data;
-  }
-
-  async updateChild(orgId: number, id: number, data: ChildUpdateRequest): Promise<Child> {
-    const response = await this.client.put<Child>(`/organizations/${orgId}/children/${id}`, data);
-    return response.data;
-  }
-
-  async deleteChild(orgId: number, id: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/children/${id}`);
-  }
+  private _children = this.orgScopedCrud<
+    Child,
+    Omit<ChildCreateRequest, 'organization_id'>,
+    ChildUpdateRequest
+  >('children');
+  getChildren = this._children.list;
+  getChild = this._children.get;
+  createChild = this._children.create;
+  updateChild = this._children.update;
+  deleteChild = this._children.delete;
 
   // Child Contracts
   async getChildContracts(orgId: number, childId: number): Promise<ChildContract[]> {
@@ -574,35 +521,14 @@ class ApiClient {
   }
 
   // PayPlans (organization-scoped)
-  async getPayPlans(
-    orgId: number,
-    params: PaginationParams = {}
-  ): Promise<PaginatedResponse<PayPlan>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<PayPlan>>(
-      `/organizations/${orgId}/payplans?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
-
-  async getPayPlan(orgId: number, id: number): Promise<PayPlan> {
-    const response = await this.client.get<PayPlan>(`/organizations/${orgId}/payplans/${id}`);
-    return response.data;
-  }
-
-  async createPayPlan(orgId: number, data: PayPlanCreateRequest): Promise<PayPlan> {
-    const response = await this.client.post<PayPlan>(`/organizations/${orgId}/payplans`, data);
-    return response.data;
-  }
-
-  async updatePayPlan(orgId: number, id: number, data: PayPlanUpdateRequest): Promise<PayPlan> {
-    const response = await this.client.put<PayPlan>(`/organizations/${orgId}/payplans/${id}`, data);
-    return response.data;
-  }
-
-  async deletePayPlan(orgId: number, id: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/payplans/${id}`);
-  }
+  private _payPlans = this.orgScopedCrud<PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest>(
+    'payplans'
+  );
+  getPayPlans = this._payPlans.list;
+  getPayPlan = this._payPlans.get;
+  createPayPlan = this._payPlans.create;
+  updatePayPlan = this._payPlans.update;
+  deletePayPlan = this._payPlans.delete;
 
   // PayPlan Periods
   async createPayPlanPeriod(
@@ -697,44 +623,14 @@ class ApiClient {
   }
 
   // Sections (organization-scoped)
-  async getSections(
-    orgId: number,
-    params: PaginationParams = {}
-  ): Promise<PaginatedResponse<Section>> {
-    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
-    const response = await this.client.get<PaginatedResponse<Section>>(
-      `/organizations/${orgId}/sections?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  }
-
-  async getSection(orgId: number, sectionId: number): Promise<Section> {
-    const response = await this.client.get<Section>(
-      `/organizations/${orgId}/sections/${sectionId}`
-    );
-    return response.data;
-  }
-
-  async createSection(orgId: number, data: SectionCreateRequest): Promise<Section> {
-    const response = await this.client.post<Section>(`/organizations/${orgId}/sections`, data);
-    return response.data;
-  }
-
-  async updateSection(
-    orgId: number,
-    sectionId: number,
-    data: SectionUpdateRequest
-  ): Promise<Section> {
-    const response = await this.client.put<Section>(
-      `/organizations/${orgId}/sections/${sectionId}`,
-      data
-    );
-    return response.data;
-  }
-
-  async deleteSection(orgId: number, sectionId: number): Promise<void> {
-    await this.client.delete(`/organizations/${orgId}/sections/${sectionId}`);
-  }
+  private _sections = this.orgScopedCrud<Section, SectionCreateRequest, SectionUpdateRequest>(
+    'sections'
+  );
+  getSections = this._sections.list;
+  getSection = this._sections.get;
+  createSection = this._sections.create;
+  updateSection = this._sections.update;
+  deleteSection = this._sections.delete;
 
   // Children - fetch all with active contracts (for kanban board view)
   async getChildrenAll(orgId: number): Promise<Child[]> {

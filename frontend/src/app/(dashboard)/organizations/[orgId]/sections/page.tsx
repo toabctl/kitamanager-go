@@ -1,9 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -19,11 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
 import type { Section, SectionCreateRequest, SectionUpdateRequest } from '@/lib/api/types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
-import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { SectionKanbanBoard } from '@/components/sections/section-kanban-board';
@@ -39,52 +34,17 @@ const defaultValues: SectionFormData = {
 };
 
 export default function SectionsPage() {
-  const params = useParams();
-  const orgId = Number(params.orgId);
   const t = useTranslations();
-  const [page, setPage] = useState(1);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<SectionFormData>({
-    resolver: zodResolver(sectionSchema),
-    defaultValues,
-  });
-
-  const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['sections', orgId, page],
-    queryFn: () => apiClient.getSections(orgId, { page }),
-    enabled: !!orgId,
-  });
-
-  const sections = paginatedData?.data;
-
-  const dialogs = useCrudDialogs<Section, SectionFormData>({
-    reset,
-    itemToFormData: (section) => ({ name: section.name }),
-    defaultValues,
-  });
-
-  const mutations = useCrudMutations<Section, SectionCreateRequest, SectionUpdateRequest>({
+  const crud = useCrudPage<Section, SectionFormData, SectionCreateRequest, SectionUpdateRequest>({
     resourceName: 'sections',
-    queryKey: ['sections', orgId],
-    createFn: (data) => apiClient.createSection(orgId, data),
-    updateFn: (id, data) => apiClient.updateSection(orgId, id, data),
-    deleteFn: (id) => apiClient.deleteSection(orgId, id),
-    onSuccess: dialogs.closeDialog,
-    onDeleteSuccess: dialogs.closeDeleteDialog,
+    schema: sectionSchema,
+    defaultValues,
+    itemToFormData: (section) => ({ name: section.name }),
+    listFn: (orgId, params) => apiClient.getSections(orgId, params),
+    createFn: (orgId, data) => apiClient.createSection(orgId, data),
+    updateFn: (orgId, id, data) => apiClient.updateSection(orgId, id, data),
+    deleteFn: (orgId, id) => apiClient.deleteSection(orgId, id),
   });
-
-  const onSubmit = (data: SectionFormData) => {
-    if (dialogs.editingItem) {
-      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data });
-    } else {
-      mutations.createMutation.mutate(data);
-    }
-  };
 
   const columns = useMemo<Column<Section>[]>(
     () => [
@@ -118,13 +78,13 @@ export default function SectionsPage() {
         </TabsList>
 
         <TabsContent value="board" className="mt-4">
-          <SectionKanbanBoard orgId={orgId} />
+          <SectionKanbanBoard orgId={crud.orgId} />
         </TabsContent>
 
         <TabsContent value="manage" className="mt-4 space-y-6">
           <CrudPageHeader
             title="sections.manage"
-            onNew={dialogs.handleCreate}
+            onNew={crud.dialogs.handleCreate}
             newButtonText="sections.newSection"
           />
 
@@ -134,38 +94,38 @@ export default function SectionsPage() {
             </CardHeader>
             <CardContent>
               <ResourceTable
-                items={sections}
+                items={crud.items}
                 columns={columns}
                 getItemKey={(section) => section.id}
-                isLoading={isLoading}
-                onEdit={dialogs.handleEdit}
-                onDelete={dialogs.handleDelete}
+                isLoading={crud.isLoading}
+                onEdit={crud.dialogs.handleEdit}
+                onDelete={crud.dialogs.handleDelete}
               />
-              {paginatedData && (
+              {crud.paginatedData && (
                 <Pagination
-                  page={paginatedData.page}
-                  totalPages={paginatedData.total_pages}
-                  total={paginatedData.total}
-                  limit={paginatedData.limit}
-                  onPageChange={setPage}
-                  isLoading={isLoading}
+                  page={crud.paginatedData.page}
+                  totalPages={crud.paginatedData.total_pages}
+                  total={crud.paginatedData.total}
+                  limit={crud.paginatedData.limit}
+                  onPageChange={crud.setPage}
+                  isLoading={crud.isLoading}
                 />
               )}
             </CardContent>
           </Card>
 
-          <Dialog open={dialogs.isDialogOpen} onOpenChange={dialogs.setIsDialogOpen}>
+          <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {dialogs.isEditing ? t('sections.edit') : t('sections.create')}
+                  {crud.dialogs.isEditing ? t('sections.edit') : t('sections.create')}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">{t('common.name')}</Label>
-                  <Input id="name" {...register('name')} />
-                  {errors.name && (
+                  <Input id="name" {...crud.register('name')} />
+                  {crud.errors.name && (
                     <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
                   )}
                 </div>
@@ -174,11 +134,11 @@ export default function SectionsPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => dialogs.setIsDialogOpen(false)}
+                    onClick={() => crud.dialogs.setIsDialogOpen(false)}
                   >
                     {t('common.cancel')}
                   </Button>
-                  <Button type="submit" disabled={mutations.isMutating}>
+                  <Button type="submit" disabled={crud.mutations.isMutating}>
                     {t('common.save')}
                   </Button>
                 </DialogFooter>
@@ -187,12 +147,13 @@ export default function SectionsPage() {
           </Dialog>
 
           <DeleteConfirmDialog
-            open={dialogs.isDeleteDialogOpen}
-            onOpenChange={dialogs.setIsDeleteDialogOpen}
+            open={crud.dialogs.isDeleteDialogOpen}
+            onOpenChange={crud.dialogs.setIsDeleteDialogOpen}
             onConfirm={() =>
-              dialogs.deletingItem && mutations.deleteMutation.mutate(dialogs.deletingItem.id)
+              crud.dialogs.deletingItem &&
+              crud.mutations.deleteMutation.mutate(crud.dialogs.deletingItem.id)
             }
-            isLoading={mutations.deleteMutation.isPending}
+            isLoading={crud.mutations.deleteMutation.isPending}
             resourceName="sections"
           />
         </TabsContent>

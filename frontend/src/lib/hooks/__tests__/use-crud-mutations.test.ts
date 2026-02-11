@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useCrudMutations } from '../use-crud-mutations';
-import React from 'react';
+import { createTestQueryClient, createHookWrapper } from '@/test-utils';
 
 // Mock the toast hook
 const mockToast = jest.fn();
@@ -34,17 +34,11 @@ interface TestUpdateData {
 
 describe('useCrudMutations', () => {
   let queryClient: QueryClient;
-
-  const wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  let wrapper: ReturnType<typeof createHookWrapper>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
+    queryClient = createTestQueryClient();
+    wrapper = createHookWrapper(queryClient);
     mockToast.mockClear();
     jest.spyOn(queryClient, 'invalidateQueries');
   });

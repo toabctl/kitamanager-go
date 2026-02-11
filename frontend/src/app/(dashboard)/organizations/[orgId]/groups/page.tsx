@@ -1,9 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -19,11 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
 import type { Group, GroupCreateRequest, GroupUpdateRequest } from '@/lib/api/types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
-import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 
@@ -40,54 +35,17 @@ const defaultValues: GroupFormData = {
 };
 
 export default function GroupsPage() {
-  const params = useParams();
-  const orgId = Number(params.orgId);
   const t = useTranslations();
-  const [page, setPage] = useState(1);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<GroupFormData>({
-    resolver: zodResolver(groupSchema),
-    defaultValues,
-  });
-
-  const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['groups', orgId, page],
-    queryFn: () => apiClient.getGroups(orgId, { page }),
-    enabled: !!orgId,
-  });
-
-  const groups = paginatedData?.data;
-
-  const dialogs = useCrudDialogs<Group, GroupFormData>({
-    reset,
-    itemToFormData: (group) => ({ name: group.name, active: group.active }),
-    defaultValues,
-  });
-
-  const mutations = useCrudMutations<Group, GroupCreateRequest, GroupUpdateRequest>({
+  const crud = useCrudPage<Group, GroupFormData, GroupCreateRequest, GroupUpdateRequest>({
     resourceName: 'groups',
-    queryKey: ['groups', orgId],
-    createFn: (data) => apiClient.createGroup(orgId, data),
-    updateFn: (id, data) => apiClient.updateGroup(orgId, id, data),
-    deleteFn: (id) => apiClient.deleteGroup(orgId, id),
-    onSuccess: dialogs.closeDialog,
-    onDeleteSuccess: dialogs.closeDeleteDialog,
+    schema: groupSchema,
+    defaultValues,
+    itemToFormData: (group) => ({ name: group.name, active: group.active }),
+    listFn: (orgId, params) => apiClient.getGroups(orgId, params),
+    createFn: (orgId, data) => apiClient.createGroup(orgId, data),
+    updateFn: (orgId, id, data) => apiClient.updateGroup(orgId, id, data),
+    deleteFn: (orgId, id) => apiClient.deleteGroup(orgId, id),
   });
-
-  const onSubmit = (data: GroupFormData) => {
-    if (dialogs.editingItem) {
-      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data });
-    } else {
-      mutations.createMutation.mutate(data);
-    }
-  };
 
   const columns = useMemo<Column<Group>[]>(
     () => [
@@ -111,13 +69,13 @@ export default function GroupsPage() {
     [t]
   );
 
-  const activeValue = watch('active');
+  const activeValue = crud.watch('active');
 
   return (
     <div className="space-y-6">
       <CrudPageHeader
         title="groups.title"
-        onNew={dialogs.handleCreate}
+        onNew={crud.dialogs.handleCreate}
         newButtonText="groups.newGroup"
       />
 
@@ -127,36 +85,38 @@ export default function GroupsPage() {
         </CardHeader>
         <CardContent>
           <ResourceTable
-            items={groups}
+            items={crud.items}
             columns={columns}
             getItemKey={(group) => group.id}
-            isLoading={isLoading}
-            onEdit={dialogs.handleEdit}
-            onDelete={dialogs.handleDelete}
+            isLoading={crud.isLoading}
+            onEdit={crud.dialogs.handleEdit}
+            onDelete={crud.dialogs.handleDelete}
           />
-          {paginatedData && (
+          {crud.paginatedData && (
             <Pagination
-              page={paginatedData.page}
-              totalPages={paginatedData.total_pages}
-              total={paginatedData.total}
-              limit={paginatedData.limit}
-              onPageChange={setPage}
-              isLoading={isLoading}
+              page={crud.paginatedData.page}
+              totalPages={crud.paginatedData.total_pages}
+              total={crud.paginatedData.total}
+              limit={crud.paginatedData.limit}
+              onPageChange={crud.setPage}
+              isLoading={crud.isLoading}
             />
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={dialogs.isDialogOpen} onOpenChange={dialogs.setIsDialogOpen}>
+      <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialogs.isEditing ? t('groups.edit') : t('groups.create')}</DialogTitle>
+            <DialogTitle>
+              {crud.dialogs.isEditing ? t('groups.edit') : t('groups.create')}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && (
+              <Input id="name" {...crud.register('name')} />
+              {crud.errors.name && (
                 <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
               )}
             </div>
@@ -165,7 +125,7 @@ export default function GroupsPage() {
               <Switch
                 id="active"
                 checked={activeValue}
-                onCheckedChange={(checked) => setValue('active', checked)}
+                onCheckedChange={(checked) => crud.setValue('active', checked)}
               />
               <Label htmlFor="active">{t('common.active')}</Label>
             </div>
@@ -174,11 +134,11 @@ export default function GroupsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => dialogs.setIsDialogOpen(false)}
+                onClick={() => crud.dialogs.setIsDialogOpen(false)}
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={mutations.isMutating}>
+              <Button type="submit" disabled={crud.mutations.isMutating}>
                 {t('common.save')}
               </Button>
             </DialogFooter>
@@ -187,12 +147,13 @@ export default function GroupsPage() {
       </Dialog>
 
       <DeleteConfirmDialog
-        open={dialogs.isDeleteDialogOpen}
-        onOpenChange={dialogs.setIsDeleteDialogOpen}
+        open={crud.dialogs.isDeleteDialogOpen}
+        onOpenChange={crud.dialogs.setIsDeleteDialogOpen}
         onConfirm={() =>
-          dialogs.deletingItem && mutations.deleteMutation.mutate(dialogs.deletingItem.id)
+          crud.dialogs.deletingItem &&
+          crud.mutations.deleteMutation.mutate(crud.dialogs.deletingItem.id)
         }
-        isLoading={mutations.deleteMutation.isPending}
+        isLoading={crud.mutations.deleteMutation.isPending}
         resourceName="groups"
       />
     </div>

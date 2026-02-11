@@ -1,0 +1,137 @@
+'use client';
+
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type {
+  FieldValues,
+  UseFormRegister,
+  UseFormHandleSubmit,
+  FieldErrors,
+  UseFormSetValue,
+  UseFormWatch,
+  DefaultValues,
+} from 'react-hook-form';
+import type { z } from 'zod';
+import type { PaginatedResponse, PaginationParams } from '@/lib/api/types';
+import { useCrudDialogs, type UseCrudDialogsResult } from './use-crud-dialogs';
+import { useCrudMutations, type UseCrudMutationsResult } from './use-crud-mutations';
+
+interface UseCrudPageConfig<
+  TItem extends { id: number },
+  TFormData extends FieldValues,
+  TCreate,
+  TUpdate,
+> {
+  resourceName: string;
+  schema: z.ZodType<TFormData, z.ZodTypeDef, unknown>;
+  defaultValues: TFormData;
+  itemToFormData: (item: TItem) => TFormData;
+  listFn: (orgId: number, params: PaginationParams) => Promise<PaginatedResponse<TItem>>;
+  createFn: (orgId: number, data: TCreate) => Promise<TItem>;
+  updateFn: (orgId: number, id: number, data: TUpdate) => Promise<TItem>;
+  deleteFn: (orgId: number, id: number) => Promise<void>;
+}
+
+interface UseCrudPageResult<
+  TItem extends { id: number },
+  TFormData extends FieldValues,
+  TCreate,
+  TUpdate,
+> {
+  orgId: number;
+  items: TItem[] | undefined;
+  paginatedData: PaginatedResponse<TItem> | undefined;
+  isLoading: boolean;
+  page: number;
+  setPage: (page: number) => void;
+  register: UseFormRegister<TFormData>;
+  handleSubmit: UseFormHandleSubmit<TFormData>;
+  errors: FieldErrors<TFormData>;
+  setValue: UseFormSetValue<TFormData>;
+  watch: UseFormWatch<TFormData>;
+  dialogs: UseCrudDialogsResult<TItem>;
+  mutations: UseCrudMutationsResult<TItem, TCreate, TUpdate>;
+  onSubmit: (data: TFormData) => void;
+}
+
+export function useCrudPage<
+  TItem extends { id: number },
+  TFormData extends FieldValues,
+  TCreate,
+  TUpdate,
+>(
+  config: UseCrudPageConfig<TItem, TFormData, TCreate, TUpdate>
+): UseCrudPageResult<TItem, TFormData, TCreate, TUpdate> {
+  const params = useParams();
+  const orgId = Number(params.orgId);
+  const [page, setPage] = useState(1);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<TFormData>({
+    resolver: zodResolver(config.schema),
+    defaultValues: config.defaultValues as DefaultValues<TFormData>,
+  });
+
+  const queryKey: (string | number | undefined)[] = [config.resourceName, orgId];
+
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: [...queryKey, page],
+    queryFn: () => config.listFn(orgId, { page }),
+    enabled: !!orgId,
+  });
+
+  const items = paginatedData?.data;
+
+  const dialogs = useCrudDialogs<TItem, TFormData>({
+    reset,
+    itemToFormData: config.itemToFormData,
+    defaultValues: config.defaultValues,
+  });
+
+  const mutations = useCrudMutations<TItem, TCreate, TUpdate>({
+    resourceName: config.resourceName,
+    queryKey,
+    createFn: (data) => config.createFn(orgId, data),
+    updateFn: (id, data) => config.updateFn(orgId, id, data),
+    deleteFn: (id) => config.deleteFn(orgId, id),
+    onSuccess: dialogs.closeDialog,
+    onDeleteSuccess: dialogs.closeDeleteDialog,
+  });
+
+  const onSubmit = (data: TFormData) => {
+    if (dialogs.editingItem) {
+      mutations.updateMutation.mutate({
+        id: dialogs.editingItem.id,
+        data: data as unknown as TUpdate,
+      });
+    } else {
+      mutations.createMutation.mutate(data as unknown as TCreate);
+    }
+  };
+
+  return {
+    orgId,
+    items,
+    paginatedData,
+    isLoading,
+    page,
+    setPage,
+    register,
+    handleSubmit,
+    errors,
+    setValue,
+    watch,
+    dialogs,
+    mutations,
+    onSubmit,
+  };
+}

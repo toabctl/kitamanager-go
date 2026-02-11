@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import OrganizationsPage from '../page';
 import { apiClient } from '@/lib/api/client';
+import { renderWithProviders } from '@/test-utils';
 
 // Mock API client
 jest.mock('@/lib/api/client', () => ({
@@ -42,17 +42,6 @@ const mockEmptyResponse = {
   limit: 30,
   total_pages: 0,
 };
-
-function renderWithProviders(ui: React.ReactNode) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
-}
 
 describe('OrganizationsPage', () => {
   beforeEach(() => {
