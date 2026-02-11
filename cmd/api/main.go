@@ -164,14 +164,20 @@ func main() {
 	r.Use(middleware.RequestTimeout(middleware.DefaultRequestTimeout))
 
 	// Configure CORS
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.CORSAllowOrigins,
+	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: cfg.CORSAllowCredentials,
 		MaxAge:           12 * time.Hour,
-	}))
+	}
+	if len(cfg.CORSAllowOrigins) == 1 && cfg.CORSAllowOrigins[0] == "*" {
+		// Wildcard with credentials requires AllowOriginFunc instead of AllowOrigins
+		corsConfig.AllowOriginFunc = func(origin string) bool { return true }
+	} else {
+		corsConfig.AllowOrigins = cfg.CORSAllowOrigins
+	}
+	r.Use(cors.New(corsConfig))
 
 	// Health check endpoints (no auth required)
 	r.GET("/api/v1/health", healthHandler.Check)
