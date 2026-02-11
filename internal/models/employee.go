@@ -54,20 +54,20 @@ type EmployeeContractUpdateRequest struct {
 // EmployeeCreateRequest represents the request body for creating an employee.
 // OrganizationID is derived from the URL path parameter.
 type EmployeeCreateRequest struct {
-	FirstName string    `json:"first_name" binding:"required,max=255" example:"Max"`
-	LastName  string    `json:"last_name" binding:"required,max=255" example:"Mustermann"`
-	Gender    string    `json:"gender" binding:"required" example:"male"`
-	Birthdate time.Time `json:"birthdate" binding:"required" example:"1990-05-15"`
-	SectionID *uint     `json:"section_id,omitempty" example:"1"`
+	FirstName string `json:"first_name" binding:"required,max=255" example:"Max"`
+	LastName  string `json:"last_name" binding:"required,max=255" example:"Mustermann"`
+	Gender    string `json:"gender" binding:"required" example:"male"`
+	Birthdate string `json:"birthdate" binding:"required" example:"1990-05-15"`
+	SectionID *uint  `json:"section_id,omitempty" example:"1"`
 }
 
 // EmployeeUpdateRequest represents the request body for updating an employee.
 type EmployeeUpdateRequest struct {
-	FirstName *string    `json:"first_name" binding:"omitempty,max=255" example:"Max"`
-	LastName  *string    `json:"last_name" binding:"omitempty,max=255" example:"Mustermann"`
-	Gender    *string    `json:"gender" binding:"omitempty" example:"male"`
-	Birthdate *time.Time `json:"birthdate" example:"1990-05-15"`
-	SectionID *uint      `json:"section_id,omitempty" example:"1"`
+	FirstName *string `json:"first_name" binding:"omitempty,max=255" example:"Max"`
+	LastName  *string `json:"last_name" binding:"omitempty,max=255" example:"Mustermann"`
+	Gender    *string `json:"gender" binding:"omitempty" example:"male"`
+	Birthdate *string `json:"birthdate" example:"1990-05-15"`
+	SectionID *uint   `json:"section_id,omitempty" example:"1"`
 }
 
 // EmployeeResponse represents the employee response

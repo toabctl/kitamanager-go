@@ -10,7 +10,9 @@ import (
 func setupChildAttendanceTestDB(t *testing.T) *ChildAttendanceStore {
 	t.Helper()
 	db := setupTestDB(t)
-	db.AutoMigrate(&models.ChildAttendance{})
+	if err := db.AutoMigrate(&models.ChildAttendance{}); err != nil {
+		t.Fatalf("failed to migrate: %v", err)
+	}
 	return NewChildAttendanceStore(db)
 }
 
@@ -107,7 +109,9 @@ func TestChildAttendanceStore_FindByID(t *testing.T) {
 		Status:         models.ChildAttendanceStatusPresent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	found, err := s.FindByID(attendance.ID)
 	if err != nil {
@@ -145,7 +149,9 @@ func TestChildAttendanceStore_FindByID_PreloadsChild(t *testing.T) {
 		Status:         models.ChildAttendanceStatusPresent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	found, err := s.FindByID(attendance.ID)
 	if err != nil {
@@ -175,7 +181,9 @@ func TestChildAttendanceStore_FindByChildAndDate(t *testing.T) {
 		Status:         models.ChildAttendanceStatusPresent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	found, err := s.FindByChildAndDate(child.ID, today)
 	if err != nil {
@@ -205,8 +213,12 @@ func TestChildAttendanceStore_FindByChildAndDate_DifferentDates(t *testing.T) {
 	day1 := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	day2 := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 
-	s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
-	s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	found, _ := s.FindByChildAndDate(child.ID, day1)
 	if found.Status != models.ChildAttendanceStatusPresent {
@@ -228,8 +240,12 @@ func TestChildAttendanceStore_FindByOrganizationAndDate(t *testing.T) {
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
-	s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	records, total, err := s.FindByOrganizationAndDate(org.ID, today, 10, 0)
 	if err != nil {
@@ -252,8 +268,12 @@ func TestChildAttendanceStore_FindByOrganizationAndDate_CrossOrgIsolation(t *tes
 
 	today := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 
-	s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org1.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
-	s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org1.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	records, total, err := s.FindByOrganizationAndDate(org1.ID, today, 10, 0)
 	if err != nil {
@@ -291,7 +311,9 @@ func TestChildAttendanceStore_FindByOrganizationAndDate_Pagination(t *testing.T)
 
 	for i := 0; i < 5; i++ {
 		child := createChildAttendanceTestChild(t, s, org.ID)
-		s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
+		if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+			t.Fatalf("failed to create: %v", err)
+		}
 	}
 
 	// Page 1: limit 2
@@ -335,9 +357,15 @@ func TestChildAttendanceStore_FindByChildAndDateRange(t *testing.T) {
 	day2 := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 	day3 := time.Date(2025, 1, 3, 0, 0, 0, 0, time.UTC)
 
-	s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
-	s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day3, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
+	if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day3, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	records, total, err := s.FindByChildAndDateRange(child.ID, day1, day3, 10, 0)
 	if err != nil {
@@ -351,7 +379,7 @@ func TestChildAttendanceStore_FindByChildAndDateRange(t *testing.T) {
 	}
 
 	// Subset: only days 1-2
-	records, total, err = s.FindByChildAndDateRange(child.ID, day1, day2, 10, 0)
+	_, total, err = s.FindByChildAndDateRange(child.ID, day1, day2, 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -387,7 +415,9 @@ func TestChildAttendanceStore_FindByChildAndDateRange_Pagination(t *testing.T) {
 
 	for i := 1; i <= 5; i++ {
 		day := time.Date(2025, 1, i, 0, 0, 0, 0, time.UTC)
-		s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
+		if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+			t.Fatalf("failed to create: %v", err)
+		}
 	}
 
 	from := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -421,7 +451,9 @@ func TestChildAttendanceStore_Update(t *testing.T) {
 		Status:         models.ChildAttendanceStatusPresent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	checkOut := time.Now()
 	attendance.CheckOutTime = &checkOut
@@ -452,7 +484,9 @@ func TestChildAttendanceStore_Update_StatusChange(t *testing.T) {
 		Status:         models.ChildAttendanceStatusPresent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	attendance.Status = models.ChildAttendanceStatusSick
 	if err := s.Update(attendance); err != nil {
@@ -478,7 +512,9 @@ func TestChildAttendanceStore_Delete(t *testing.T) {
 		Status:         models.ChildAttendanceStatusAbsent,
 		RecordedBy:     1,
 	}
-	s.Create(attendance)
+	if err := s.Create(attendance); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	if err := s.Delete(attendance.ID); err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -510,14 +546,22 @@ func TestChildAttendanceStore_GetDailySummary(t *testing.T) {
 	// 3 present, 1 absent, 1 sick, 1 vacation
 	for i := 0; i < 3; i++ {
 		child := createChildAttendanceTestChild(t, s, org.ID)
-		s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
+		if err := s.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+			t.Fatalf("failed to create: %v", err)
+		}
 	}
 	childAbsent := createChildAttendanceTestChild(t, s, org.ID)
-	s.Create(&models.ChildAttendance{ChildID: childAbsent.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusAbsent, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: childAbsent.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusAbsent, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 	childSick := createChildAttendanceTestChild(t, s, org.ID)
-	s.Create(&models.ChildAttendance{ChildID: childSick.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: childSick.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 	childVac := createChildAttendanceTestChild(t, s, org.ID)
-	s.Create(&models.ChildAttendance{ChildID: childVac.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusVacation, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: childVac.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusVacation, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	summary, err := s.GetDailySummary(org.ID, today)
 	if err != nil {
@@ -572,9 +616,15 @@ func TestChildAttendanceStore_GetDailySummary_CrossOrgIsolation(t *testing.T) {
 	child2 := createChildAttendanceTestChild(t, s, org2.ID)
 	child3 := createChildAttendanceTestChild(t, s, org2.ID)
 
-	s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org1.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	s.Create(&models.ChildAttendance{ChildID: child3.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := s.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org1.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if err := s.Create(&models.ChildAttendance{ChildID: child3.ID, OrganizationID: org2.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
 
 	summary1, _ := s.GetDailySummary(org1.ID, today)
 	if summary1.TotalChildren != 1 {

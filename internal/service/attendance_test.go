@@ -14,7 +14,9 @@ import (
 func setupChildAttendanceTest(t *testing.T) (*ChildAttendanceService, *store.ChildAttendanceStore, *store.ChildStore, *models.Organization, *models.Child) {
 	t.Helper()
 	db := setupTestDB(t)
-	db.AutoMigrate(&models.ChildAttendance{})
+	if err := db.AutoMigrate(&models.ChildAttendance{}); err != nil {
+		t.Fatalf("failed to migrate: %v", err)
+	}
 
 	attendanceStore := store.NewChildAttendanceStore(db)
 	childStore := store.NewChildStore(db)
@@ -671,8 +673,12 @@ func TestChildAttendanceService_ListByChild(t *testing.T) {
 	day1 := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	day2 := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 
-	attendanceStore.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1})
-	attendanceStore.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := attendanceStore.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day1, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create attendance: %v", err)
+	}
+	if err := attendanceStore.Create(&models.ChildAttendance{ChildID: child.ID, OrganizationID: org.ID, Date: day2, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create attendance: %v", err)
+	}
 
 	records, total, err := svc.ListByChild(ctx, child.ID, org.ID, day1, day2, 10, 0)
 	if err != nil {
@@ -728,9 +734,15 @@ func TestChildAttendanceService_GetDailySummary(t *testing.T) {
 	child2 := &models.Child{Person: models.Person{FirstName: "C2", LastName: "L", OrganizationID: org.ID, Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}}
 	child3 := &models.Child{Person: models.Person{FirstName: "C3", LastName: "L", OrganizationID: org.ID, Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}}
 
-	db.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	db.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now})
-	db.Create(&models.ChildAttendance{ChildID: child3.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1})
+	if err := db.Create(&models.ChildAttendance{ChildID: child1.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create attendance: %v", err)
+	}
+	if err := db.Create(&models.ChildAttendance{ChildID: child2.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusPresent, RecordedBy: 1, CheckInTime: &now}); err != nil {
+		t.Fatalf("failed to create attendance: %v", err)
+	}
+	if err := db.Create(&models.ChildAttendance{ChildID: child3.ID, OrganizationID: org.ID, Date: today, Status: models.ChildAttendanceStatusSick, RecordedBy: 1}); err != nil {
+		t.Fatalf("failed to create attendance: %v", err)
+	}
 
 	summary, err := svc.GetDailySummary(ctx, org.ID, today)
 	if err != nil {

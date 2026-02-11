@@ -40,20 +40,20 @@ type ChildContractUpdateRequest struct {
 // ChildCreateRequest represents the request body for creating a child.
 // OrganizationID is derived from the URL path parameter.
 type ChildCreateRequest struct {
-	FirstName string    `json:"first_name" binding:"required,max=255" example:"Emma"`
-	LastName  string    `json:"last_name" binding:"required,max=255" example:"Schmidt"`
-	Gender    string    `json:"gender" binding:"required" example:"female"`
-	Birthdate time.Time `json:"birthdate" binding:"required" example:"2020-03-10"`
-	SectionID *uint     `json:"section_id,omitempty" example:"1"`
+	FirstName string `json:"first_name" binding:"required,max=255" example:"Emma"`
+	LastName  string `json:"last_name" binding:"required,max=255" example:"Schmidt"`
+	Gender    string `json:"gender" binding:"required" example:"female"`
+	Birthdate string `json:"birthdate" binding:"required" example:"2020-03-10"`
+	SectionID *uint  `json:"section_id,omitempty" example:"1"`
 }
 
 // ChildUpdateRequest represents the request body for updating a child.
 type ChildUpdateRequest struct {
-	FirstName *string    `json:"first_name" binding:"omitempty,max=255" example:"Emma"`
-	LastName  *string    `json:"last_name" binding:"omitempty,max=255" example:"Schmidt"`
-	Gender    *string    `json:"gender" binding:"omitempty" example:"female"`
-	Birthdate *time.Time `json:"birthdate" example:"2020-03-10"`
-	SectionID *uint      `json:"section_id,omitempty" example:"1"`
+	FirstName *string `json:"first_name" binding:"omitempty,max=255" example:"Emma"`
+	LastName  *string `json:"last_name" binding:"omitempty,max=255" example:"Schmidt"`
+	Gender    *string `json:"gender" binding:"omitempty" example:"female"`
+	Birthdate *string `json:"birthdate" example:"2020-03-10"`
+	SectionID *uint   `json:"section_id,omitempty" example:"1"`
 }
 
 // ChildResponse represents the child response

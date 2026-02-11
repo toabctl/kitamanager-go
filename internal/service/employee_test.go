@@ -110,7 +110,7 @@ func TestEmployeeService_Create(t *testing.T) {
 		FirstName: "John",
 		LastName:  "Doe",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	employee, err := svc.Create(ctx, org.ID, req)
@@ -143,10 +143,10 @@ func TestEmployeeService_Create_WhitespaceOnlyNames(t *testing.T) {
 		name string
 		req  *models.EmployeeCreateRequest
 	}{
-		{"empty first name", &models.EmployeeCreateRequest{FirstName: "", LastName: "Doe", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"whitespace first name", &models.EmployeeCreateRequest{FirstName: "   ", LastName: "Doe", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"empty last name", &models.EmployeeCreateRequest{FirstName: "John", LastName: "", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"whitespace last name", &models.EmployeeCreateRequest{FirstName: "John", LastName: "   ", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		{"empty first name", &models.EmployeeCreateRequest{FirstName: "", LastName: "Doe", Birthdate: "1990-01-01"}},
+		{"whitespace first name", &models.EmployeeCreateRequest{FirstName: "   ", LastName: "Doe", Birthdate: "1990-01-01"}},
+		{"empty last name", &models.EmployeeCreateRequest{FirstName: "John", LastName: "", Birthdate: "1990-01-01"}},
+		{"whitespace last name", &models.EmployeeCreateRequest{FirstName: "John", LastName: "   ", Birthdate: "1990-01-01"}},
 	}
 
 	for _, tt := range tests {
@@ -178,7 +178,7 @@ func TestEmployeeService_Create_TrimmedNames(t *testing.T) {
 		FirstName: "  John  ",
 		LastName:  "  Doe  ",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	employee, err := svc.Create(ctx, org.ID, req)
@@ -204,7 +204,7 @@ func TestEmployeeService_Create_FutureBirthdate(t *testing.T) {
 	req := &models.EmployeeCreateRequest{
 		FirstName: "John",
 		LastName:  "Doe",
-		Birthdate: time.Now().AddDate(1, 0, 0), // 1 year in future
+		Birthdate: time.Now().AddDate(1, 0, 0).Format("2006-01-02"), // 1 year in future
 	}
 
 	_, err := svc.Create(ctx, org.ID, req)
@@ -1220,7 +1220,7 @@ func TestEmployeeService_Update_FutureBirthdate(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
 
-	futureBirthdate := time.Now().AddDate(1, 0, 0)
+	futureBirthdate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
 	req := &models.EmployeeUpdateRequest{
 		Birthdate: &futureBirthdate,
 	}

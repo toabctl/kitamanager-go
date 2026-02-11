@@ -85,7 +85,7 @@ func TestChildHandler_Create(t *testing.T) {
 		FirstName: "New",
 		LastName:  "Child",
 		Gender:    "female",
-		Birthdate: time.Date(2020, 3, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-03-15",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)
@@ -475,7 +475,7 @@ func TestChildHandler_Create_EmptyFirstName(t *testing.T) {
 		FirstName: "",
 		LastName:  "Child",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)
@@ -499,7 +499,7 @@ func TestChildHandler_Create_EmptyLastName(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)
@@ -851,7 +851,7 @@ func TestChildHandler_Create_FutureBirthdate(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "Child",
 		Gender:    "male",
-		Birthdate: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2099-01-01",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)
@@ -875,7 +875,7 @@ func TestChildHandler_Create_WhitespaceOnlyFirstName(t *testing.T) {
 		FirstName: "   ",
 		LastName:  "Child",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)
@@ -899,7 +899,7 @@ func TestChildHandler_Create_WhitespaceOnlyLastName(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "   ",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children", body)

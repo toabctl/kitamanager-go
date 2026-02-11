@@ -360,7 +360,7 @@ func TestEmployeeWithContracts(t *testing.T) {
 		"first_name": "John",
 		"last_name":  "Doe",
 		"gender":     "male",
-		"birthdate":  "1990-01-15T00:00:00Z",
+		"birthdate":  "1990-01-15",
 	})
 	if empResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", empResp.Code, empResp.Body.String())
@@ -395,7 +395,7 @@ func TestChildWithContracts(t *testing.T) {
 		"first_name": "Emma",
 		"last_name":  "Smith",
 		"gender":     "female",
-		"birthdate":  "2020-06-15T00:00:00Z",
+		"birthdate":  "2020-06-15",
 	})
 	if childResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", childResp.Code, childResp.Body.String())

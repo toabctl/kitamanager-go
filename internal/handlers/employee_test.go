@@ -111,7 +111,7 @@ func TestEmployeeHandler_Create(t *testing.T) {
 		FirstName: "New",
 		LastName:  "Employee",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)
@@ -807,7 +807,7 @@ func TestEmployeeHandler_Create_EmptyFirstName(t *testing.T) {
 		FirstName: "",
 		LastName:  "Employee",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)
@@ -831,7 +831,7 @@ func TestEmployeeHandler_Create_EmptyLastName(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)
@@ -1348,7 +1348,7 @@ func TestEmployeeHandler_Create_FutureBirthdate(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "Employee",
 		Gender:    "male",
-		Birthdate: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2099-01-01",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)
@@ -1372,7 +1372,7 @@ func TestEmployeeHandler_Create_WhitespaceOnlyFirstName(t *testing.T) {
 		FirstName: "   ",
 		LastName:  "Employee",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)
@@ -1396,7 +1396,7 @@ func TestEmployeeHandler_Create_WhitespaceOnlyLastName(t *testing.T) {
 		FirstName: "Test",
 		LastName:  "   ",
 		Gender:    "male",
-		Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "1990-05-15",
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees", org.ID), body)

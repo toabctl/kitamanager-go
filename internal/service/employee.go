@@ -84,7 +84,11 @@ func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.Em
 	if !models.IsValidGender(req.Gender) {
 		return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
 	}
-	if err := validation.ValidateBirthdate(req.Birthdate); err != nil {
+	birthdate, err := time.Parse("2006-01-02", req.Birthdate)
+	if err != nil {
+		return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
+	}
+	if err := validation.ValidateBirthdate(birthdate); err != nil {
 		return nil, apperror.BadRequest(err.Error())
 	}
 
@@ -95,7 +99,7 @@ func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.Em
 			FirstName:      req.FirstName,
 			LastName:       req.LastName,
 			Gender:         req.Gender,
-			Birthdate:      req.Birthdate,
+			Birthdate:      birthdate,
 		},
 	}
 
@@ -139,10 +143,14 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 		employee.Gender = *req.Gender
 	}
 	if req.Birthdate != nil {
-		if err := validation.ValidateBirthdate(*req.Birthdate); err != nil {
+		bd, err := time.Parse("2006-01-02", *req.Birthdate)
+		if err != nil {
+			return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
+		}
+		if err := validation.ValidateBirthdate(bd); err != nil {
 			return nil, apperror.BadRequest(err.Error())
 		}
-		employee.Birthdate = *req.Birthdate
+		employee.Birthdate = bd
 	}
 	if req.SectionID != nil {
 		employee.SectionID = req.SectionID

@@ -102,7 +102,7 @@ func TestChildService_Create(t *testing.T) {
 		FirstName: "John",
 		LastName:  "Doe",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	child, err := svc.Create(ctx, org.ID, req)
@@ -135,10 +135,10 @@ func TestChildService_Create_WhitespaceOnlyNames(t *testing.T) {
 		name string
 		req  *models.ChildCreateRequest
 	}{
-		{"empty first name", &models.ChildCreateRequest{FirstName: "", LastName: "Doe", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"whitespace first name", &models.ChildCreateRequest{FirstName: "   ", LastName: "Doe", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"empty last name", &models.ChildCreateRequest{FirstName: "John", LastName: "", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
-		{"whitespace last name", &models.ChildCreateRequest{FirstName: "John", LastName: "   ", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		{"empty first name", &models.ChildCreateRequest{FirstName: "", LastName: "Doe", Birthdate: "2020-01-01"}},
+		{"whitespace first name", &models.ChildCreateRequest{FirstName: "   ", LastName: "Doe", Birthdate: "2020-01-01"}},
+		{"empty last name", &models.ChildCreateRequest{FirstName: "John", LastName: "", Birthdate: "2020-01-01"}},
+		{"whitespace last name", &models.ChildCreateRequest{FirstName: "John", LastName: "   ", Birthdate: "2020-01-01"}},
 	}
 
 	for _, tt := range tests {
@@ -166,7 +166,7 @@ func TestChildService_Create_TrimmedNames(t *testing.T) {
 		FirstName: "  John  ",
 		LastName:  "  Doe  ",
 		Gender:    "male",
-		Birthdate: time.Date(2020, 5, 15, 0, 0, 0, 0, time.UTC),
+		Birthdate: "2020-05-15",
 	}
 
 	child, err := svc.Create(ctx, org.ID, req)
@@ -192,7 +192,7 @@ func TestChildService_Create_FutureBirthdate(t *testing.T) {
 	req := &models.ChildCreateRequest{
 		FirstName: "John",
 		LastName:  "Doe",
-		Birthdate: time.Now().AddDate(1, 0, 0), // 1 year in future
+		Birthdate: time.Now().AddDate(1, 0, 0).Format("2006-01-02"), // 1 year in future
 	}
 
 	_, err := svc.Create(ctx, org.ID, req)
