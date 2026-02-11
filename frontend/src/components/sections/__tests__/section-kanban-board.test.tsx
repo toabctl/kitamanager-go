@@ -105,6 +105,16 @@ describe('SectionKanbanBoard', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         section_id: 1,
+        contracts: [
+          {
+            id: 1,
+            child_id: 1,
+            from: '2024-01-01T00:00:00Z',
+            to: null,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          },
+        ],
       },
       {
         id: 2,
@@ -116,6 +126,16 @@ describe('SectionKanbanBoard', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         section_id: null,
+        contracts: [
+          {
+            id: 2,
+            child_id: 2,
+            from: '2024-01-01T00:00:00Z',
+            to: null,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          },
+        ],
       },
     ]);
 
@@ -157,6 +177,16 @@ describe('SectionKanbanBoard', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         section_id: 1,
+        contracts: [
+          {
+            id: 1,
+            child_id: 1,
+            from: '2024-01-01T00:00:00Z',
+            to: null,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          },
+        ],
       },
       {
         id: 2,
@@ -168,6 +198,16 @@ describe('SectionKanbanBoard', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
         section_id: null,
+        contracts: [
+          {
+            id: 2,
+            child_id: 2,
+            from: '2024-01-01T00:00:00Z',
+            to: null,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          },
+        ],
       },
     ]);
 
@@ -176,6 +216,25 @@ describe('SectionKanbanBoard', () => {
     // Wait for children to appear
     expect(await screen.findByText('Emma Schmidt')).toBeInTheDocument();
     expect(screen.getByText('Max Müller')).toBeInTheDocument();
+  });
+
+  it('calls getChildrenAll with contract_on filter (server-side filtering)', async () => {
+    mockApiClient.getSections.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 100,
+      total_pages: 0,
+    });
+    mockApiClient.getChildrenAll.mockResolvedValue([]);
+
+    render(<SectionKanbanBoard orgId={1} />, { wrapper: TestWrapper });
+
+    // Wait for loading to finish
+    await screen.findByText('sections.dragHint');
+
+    // Verify getChildrenAll was called (API does the contract filtering)
+    expect(mockApiClient.getChildrenAll).toHaveBeenCalledWith(1);
   });
 
   it('renders drag hint text', async () => {

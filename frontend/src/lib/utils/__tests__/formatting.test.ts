@@ -1,6 +1,7 @@
 import {
   formatDate,
   formatDateForInput,
+  formatDateForApi,
   calculateAge,
   formatCurrency,
   eurosToCents,
@@ -8,149 +9,266 @@ import {
   formatPeriod,
   formatFte,
   formatAgeRange,
+  propertiesToValues,
+  getPropertyValue,
+  getScalarPropertyValue,
+  setProperty,
+  removePropertyByValue,
+  hasPropertyValue,
+  getKeyForValue,
+  type ContractProperties,
 } from '../formatting';
 
+// ---------------------------------------------------------------------------
+// formatDate
+// ---------------------------------------------------------------------------
 describe('formatDate', () => {
-  it('returns dash for null or undefined', () => {
+  it('returns dash for null', () => {
     expect(formatDate(null)).toBe('-');
+  });
+
+  it('returns dash for undefined', () => {
     expect(formatDate(undefined)).toBe('-');
   });
 
-  it('formats a valid ISO date string', () => {
+  it('formats a valid ISO date string in English locale', () => {
     const result = formatDate('2024-03-15', 'en');
     expect(result).toContain('Mar');
     expect(result).toContain('15');
     expect(result).toContain('2024');
   });
 
-  it('formats date in German locale', () => {
+  it('formats a valid ISO date string in German locale', () => {
     const result = formatDate('2024-03-15', 'de');
     expect(result).toContain('März');
     expect(result).toContain('15');
     expect(result).toContain('2024');
   });
 
-  it('returns original string for invalid date', () => {
+  it('returns the raw string for an invalid date', () => {
     expect(formatDate('not-a-date')).toBe('not-a-date');
+  });
+
+  it('defaults to English locale when none is specified', () => {
+    const result = formatDate('2024-06-01');
+    expect(result).toContain('Jun');
+    expect(result).toContain('1');
+    expect(result).toContain('2024');
   });
 });
 
+// ---------------------------------------------------------------------------
+// formatDateForInput
+// ---------------------------------------------------------------------------
 describe('formatDateForInput', () => {
-  it('returns empty string for null or undefined', () => {
+  it('returns empty string for null', () => {
     expect(formatDateForInput(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
     expect(formatDateForInput(undefined)).toBe('');
   });
 
-  it('formats date as YYYY-MM-DD', () => {
+  it('formats a full ISO datetime to yyyy-MM-dd', () => {
     expect(formatDateForInput('2024-03-15T10:30:00Z')).toBe('2024-03-15');
   });
 
-  it('returns empty string for invalid date', () => {
+  it('formats a date-only string to yyyy-MM-dd', () => {
+    expect(formatDateForInput('2024-07-04')).toBe('2024-07-04');
+  });
+
+  it('returns empty string for an invalid date', () => {
     expect(formatDateForInput('invalid')).toBe('');
   });
 });
 
-describe('calculateAge', () => {
-  it('calculates age correctly', () => {
-    const tenYearsAgo = new Date();
-    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
-    const birthdate = tenYearsAgo.toISOString().split('T')[0];
-
-    expect(calculateAge(birthdate)).toBe(10);
+// ---------------------------------------------------------------------------
+// formatDateForApi
+// ---------------------------------------------------------------------------
+describe('formatDateForApi', () => {
+  it('returns null for null', () => {
+    expect(formatDateForApi(null)).toBeNull();
   });
 
-  it('returns 0 for invalid date', () => {
-    expect(calculateAge('invalid')).toBe(0);
+  it('returns null for undefined', () => {
+    expect(formatDateForApi(undefined)).toBeNull();
+  });
+
+  it('returns the string as-is when it already contains T (RFC3339)', () => {
+    const rfc = '2025-01-15T12:00:00Z';
+    expect(formatDateForApi(rfc)).toBe(rfc);
+  });
+
+  it('appends T00:00:00Z to a YYYY-MM-DD string', () => {
+    expect(formatDateForApi('2025-01-15')).toBe('2025-01-15T00:00:00Z');
+  });
+
+  it('returns null for empty string', () => {
+    expect(formatDateForApi('')).toBeNull();
   });
 });
 
+// ---------------------------------------------------------------------------
+// calculateAge
+// ---------------------------------------------------------------------------
+describe('calculateAge', () => {
+  it('calculates age for a valid birthdate', () => {
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+    const birthdate = tenYearsAgo.toISOString().split('T')[0];
+    expect(calculateAge(birthdate)).toBe(10);
+  });
+
+  it('returns 0 for an invalid date string', () => {
+    expect(calculateAge('invalid')).toBe(0);
+  });
+
+  it('returns 0 for an empty string', () => {
+    expect(calculateAge('')).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatCurrency
+// ---------------------------------------------------------------------------
 describe('formatCurrency', () => {
-  it('returns dash for null or undefined', () => {
+  it('returns dash for null', () => {
     expect(formatCurrency(null)).toBe('-');
+  });
+
+  it('returns dash for undefined', () => {
     expect(formatCurrency(undefined)).toBe('-');
   });
 
-  it('formats cents as EUR in German locale', () => {
+  it('formats zero cents correctly', () => {
+    const result = formatCurrency(0, 'en');
+    expect(result).toContain('0.00');
+    expect(result).toContain('€');
+  });
+
+  it('formats 166847 cents as 1,668.47 EUR in German locale', () => {
     const result = formatCurrency(166847, 'de');
     expect(result).toContain('1.668,47');
     expect(result).toContain('€');
   });
 
-  it('formats cents as EUR in English locale', () => {
+  it('formats 166847 cents as 1,668.47 EUR in English locale', () => {
     const result = formatCurrency(166847, 'en');
     expect(result).toContain('1,668.47');
     expect(result).toContain('€');
   });
 
-  it('handles zero correctly', () => {
-    const result = formatCurrency(0, 'de');
-    expect(result).toContain('0,00');
+  it('defaults to German locale', () => {
+    const result = formatCurrency(100);
+    expect(result).toContain('1,00');
     expect(result).toContain('€');
   });
 });
 
+// ---------------------------------------------------------------------------
+// eurosToCents
+// ---------------------------------------------------------------------------
 describe('eurosToCents', () => {
-  it('converts euros to cents', () => {
-    expect(eurosToCents(10.5)).toBe(1050);
-    expect(eurosToCents(1668.47)).toBe(166847);
+  it('converts 1.50 euros to 150 cents', () => {
+    expect(eurosToCents(1.5)).toBe(150);
+  });
+
+  it('converts 0 euros to 0 cents', () => {
     expect(eurosToCents(0)).toBe(0);
   });
 
-  it('rounds correctly', () => {
-    expect(eurosToCents(10.999)).toBe(1100);
-    expect(eurosToCents(10.001)).toBe(1000);
+  it('rounds 1.555 to 156 cents', () => {
+    expect(eurosToCents(1.555)).toBe(156);
+  });
+
+  it('handles large amounts', () => {
+    expect(eurosToCents(1668.47)).toBe(166847);
   });
 });
 
+// ---------------------------------------------------------------------------
+// centsToEuros
+// ---------------------------------------------------------------------------
 describe('centsToEuros', () => {
-  it('converts cents to euros', () => {
-    expect(centsToEuros(1050)).toBe(10.5);
-    expect(centsToEuros(166847)).toBe(1668.47);
+  it('converts 150 cents to 1.50 euros', () => {
+    expect(centsToEuros(150)).toBe(1.5);
+  });
+
+  it('converts 0 cents to 0 euros', () => {
     expect(centsToEuros(0)).toBe(0);
   });
+
+  it('handles large amounts', () => {
+    expect(centsToEuros(166847)).toBe(1668.47);
+  });
 });
 
+// ---------------------------------------------------------------------------
+// formatPeriod
+// ---------------------------------------------------------------------------
 describe('formatPeriod', () => {
   it('formats a period with both dates', () => {
     const result = formatPeriod('2024-01-01', '2024-12-31', 'en');
     expect(result).toContain('Jan');
     expect(result).toContain('Dec');
-    expect(result).toContain('-');
+    expect(result).toContain(' - ');
   });
 
-  it('formats ongoing period with custom text', () => {
-    const result = formatPeriod('2024-01-01', null, 'en', 'present');
-    expect(result).toContain('Jan');
-    expect(result).toContain('present');
+  it('shows ongoing text when end date is null', () => {
+    const result = formatPeriod('2024-01-01', null, 'en');
+    expect(result).toContain('ongoing');
   });
 
-  it('uses default ongoing text', () => {
+  it('shows ongoing text when end date is undefined', () => {
     const result = formatPeriod('2024-01-01', undefined, 'en');
     expect(result).toContain('ongoing');
   });
+
+  it('uses custom ongoing text', () => {
+    const result = formatPeriod('2024-01-01', null, 'en', 'present');
+    expect(result).toContain('present');
+  });
 });
 
+// ---------------------------------------------------------------------------
+// formatFte
+// ---------------------------------------------------------------------------
 describe('formatFte', () => {
-  it('formats FTE with two decimal places', () => {
+  it('formats integer ratio to two decimals', () => {
     expect(formatFte(1)).toBe('1.00');
+  });
+
+  it('formats fractional ratio to two decimals', () => {
     expect(formatFte(0.5)).toBe('0.50');
     expect(formatFte(0.75)).toBe('0.75');
+  });
+
+  it('truncates beyond two decimals', () => {
     expect(formatFte(0.333)).toBe('0.33');
   });
 });
 
+// ---------------------------------------------------------------------------
+// formatAgeRange
+// ---------------------------------------------------------------------------
 describe('formatAgeRange', () => {
   it('returns dash when both values are null', () => {
     expect(formatAgeRange(null, null)).toBe('-');
   });
 
-  it('formats max-only range', () => {
+  it('formats max-only range with null min', () => {
     expect(formatAgeRange(null, 3, 'en')).toBe('< 3 years');
+  });
+
+  it('formats max-only range with undefined min', () => {
     expect(formatAgeRange(undefined, 3, 'en')).toBe('< 3 years');
   });
 
-  it('formats min-only range', () => {
+  it('formats min-only range with null max', () => {
     expect(formatAgeRange(3, null, 'en')).toBe('3+ years');
+  });
+
+  it('formats min-only range with undefined max', () => {
     expect(formatAgeRange(3, undefined, 'en')).toBe('3+ years');
   });
 
@@ -158,9 +276,198 @@ describe('formatAgeRange', () => {
     expect(formatAgeRange(3, 6, 'en')).toBe('3-6 years');
   });
 
-  it('formats in German', () => {
+  it('uses German locale text', () => {
     expect(formatAgeRange(3, 6, 'de')).toBe('3-6 Jahre');
     expect(formatAgeRange(null, 3, 'de')).toBe('< 3 Jahre');
     expect(formatAgeRange(3, null, 'de')).toBe('3+ Jahre');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// propertiesToValues
+// ---------------------------------------------------------------------------
+describe('propertiesToValues', () => {
+  it('returns empty array for undefined', () => {
+    expect(propertiesToValues(undefined)).toEqual([]);
+  });
+
+  it('returns empty array for empty object', () => {
+    expect(propertiesToValues({})).toEqual([]);
+  });
+
+  it('extracts scalar string values', () => {
+    const props: ContractProperties = { care_type: 'fulltime', meal: 'lunch' };
+    const result = propertiesToValues(props);
+    expect(result).toEqual(expect.arrayContaining(['fulltime', 'lunch']));
+    expect(result).toHaveLength(2);
+  });
+
+  it('extracts array values by spreading them', () => {
+    const props: ContractProperties = { extras: ['music', 'sports'] };
+    const result = propertiesToValues(props);
+    expect(result).toEqual(expect.arrayContaining(['music', 'sports']));
+    expect(result).toHaveLength(2);
+  });
+
+  it('handles mixed scalar and array values', () => {
+    const props: ContractProperties = {
+      care_type: 'fulltime',
+      extras: ['music', 'sports'],
+    };
+    const result = propertiesToValues(props);
+    expect(result).toEqual(expect.arrayContaining(['fulltime', 'music', 'sports']));
+    expect(result).toHaveLength(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPropertyValue
+// ---------------------------------------------------------------------------
+describe('getPropertyValue', () => {
+  it('returns the value for an existing key', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(getPropertyValue(props, 'care_type')).toBe('fulltime');
+  });
+
+  it('returns undefined for a missing key', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(getPropertyValue(props, 'missing')).toBeUndefined();
+  });
+
+  it('returns undefined for undefined properties', () => {
+    expect(getPropertyValue(undefined, 'care_type')).toBeUndefined();
+  });
+
+  it('returns array values as-is', () => {
+    const props: ContractProperties = { extras: ['music', 'sports'] };
+    expect(getPropertyValue(props, 'extras')).toEqual(['music', 'sports']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getScalarPropertyValue
+// ---------------------------------------------------------------------------
+describe('getScalarPropertyValue', () => {
+  it('returns string value for a scalar property', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(getScalarPropertyValue(props, 'care_type')).toBe('fulltime');
+  });
+
+  it('returns undefined when value is an array', () => {
+    const props: ContractProperties = { extras: ['music', 'sports'] };
+    expect(getScalarPropertyValue(props, 'extras')).toBeUndefined();
+  });
+
+  it('returns undefined for undefined properties', () => {
+    expect(getScalarPropertyValue(undefined, 'care_type')).toBeUndefined();
+  });
+
+  it('returns undefined for a missing key', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(getScalarPropertyValue(props, 'missing')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setProperty
+// ---------------------------------------------------------------------------
+describe('setProperty', () => {
+  it('sets a new key on undefined properties', () => {
+    const result = setProperty(undefined, 'care_type', 'fulltime');
+    expect(result).toEqual({ care_type: 'fulltime' });
+  });
+
+  it('sets a new key on existing properties', () => {
+    const props: ContractProperties = { meal: 'lunch' };
+    const result = setProperty(props, 'care_type', 'fulltime');
+    expect(result).toEqual({ meal: 'lunch', care_type: 'fulltime' });
+  });
+
+  it('overwrites an existing key', () => {
+    const props: ContractProperties = { care_type: 'parttime' };
+    const result = setProperty(props, 'care_type', 'fulltime');
+    expect(result).toEqual({ care_type: 'fulltime' });
+  });
+
+  it('does not mutate the original properties', () => {
+    const props: ContractProperties = { meal: 'lunch' };
+    setProperty(props, 'care_type', 'fulltime');
+    expect(props).toEqual({ meal: 'lunch' });
+  });
+
+  it('supports array values', () => {
+    const result = setProperty(undefined, 'extras', ['music', 'sports']);
+    expect(result).toEqual({ extras: ['music', 'sports'] });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removePropertyByValue
+// ---------------------------------------------------------------------------
+describe('removePropertyByValue', () => {
+  it('returns undefined for undefined properties', () => {
+    expect(removePropertyByValue(undefined, 'fulltime')).toBeUndefined();
+  });
+
+  it('removes the entry with matching value', () => {
+    const props: ContractProperties = { care_type: 'fulltime', meal: 'lunch' };
+    const result = removePropertyByValue(props, 'fulltime');
+    expect(result).toEqual({ meal: 'lunch' });
+  });
+
+  it('returns undefined when removing the last property', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    const result = removePropertyByValue(props, 'fulltime');
+    expect(result).toBeUndefined();
+  });
+
+  it('returns all properties unchanged when value is not found', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    const result = removePropertyByValue(props, 'parttime');
+    expect(result).toEqual({ care_type: 'fulltime' });
+  });
+
+  it('does not mutate the original properties', () => {
+    const props: ContractProperties = { care_type: 'fulltime', meal: 'lunch' };
+    removePropertyByValue(props, 'fulltime');
+    expect(props).toEqual({ care_type: 'fulltime', meal: 'lunch' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hasPropertyValue
+// ---------------------------------------------------------------------------
+describe('hasPropertyValue', () => {
+  it('returns true when value exists', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(hasPropertyValue(props, 'fulltime')).toBe(true);
+  });
+
+  it('returns false when value does not exist', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(hasPropertyValue(props, 'parttime')).toBe(false);
+  });
+
+  it('returns false for undefined properties', () => {
+    expect(hasPropertyValue(undefined, 'fulltime')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getKeyForValue
+// ---------------------------------------------------------------------------
+describe('getKeyForValue', () => {
+  it('returns the key when value is found', () => {
+    const props: ContractProperties = { care_type: 'fulltime', meal: 'lunch' };
+    expect(getKeyForValue(props, 'fulltime')).toBe('care_type');
+  });
+
+  it('returns undefined when value is not found', () => {
+    const props: ContractProperties = { care_type: 'fulltime' };
+    expect(getKeyForValue(props, 'parttime')).toBeUndefined();
+  });
+
+  it('returns undefined for undefined properties', () => {
+    expect(getKeyForValue(undefined, 'fulltime')).toBeUndefined();
   });
 });
