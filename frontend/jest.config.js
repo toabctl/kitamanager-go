@@ -20,6 +20,14 @@ const customJestConfig = {
     '!src/app/**/layout.tsx',
     '!src/components/ui/**', // shadcn components
   ],
+  coverageThreshold: {
+    global: {
+      statements: 55,
+      branches: 40,
+      functions: 35,
+      lines: 55,
+    },
+  },
 };
 
 module.exports = createJestConfig(customJestConfig);
