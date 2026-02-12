@@ -175,6 +175,7 @@ describe('ChildrenPage', () => {
     expect(screen.getByText('children.currentContract')).toBeInTheDocument();
     expect(screen.getByText('children.properties')).toBeInTheDocument();
     expect(screen.getByText('children.funding')).toBeInTheDocument();
+    expect(screen.getByText('children.requirement')).toBeInTheDocument();
     expect(screen.getByText('common.actions')).toBeInTheDocument();
   });
 });

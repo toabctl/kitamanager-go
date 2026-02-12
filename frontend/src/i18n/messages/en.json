@@ -205,6 +205,7 @@
     "birthdate": "Birthdate",
     "noContractsFound": "No contracts found for this child.",
     "funding": "Funding",
+    "requirement": "FTE",
     "fundingDataUnavailable": "Funding data could not be loaded"
   },
   "users": {

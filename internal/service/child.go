@@ -476,6 +476,7 @@ func (s *ChildService) calculateChildFunding(age int, properties models.Contract
 	matchedSet := make(map[string]bool) // key:value -> matched
 
 	totalFunding := 0
+	totalRequirement := 0.0
 	for _, fundingProp := range period.Properties {
 		// Check if age matches
 		if !fundingProp.MatchesAge(age) {
@@ -485,6 +486,7 @@ func (s *ChildService) calculateChildFunding(age int, properties models.Contract
 		// Check if contract has this key:value
 		if properties.HasValue(fundingProp.Key, fundingProp.Value) {
 			totalFunding += fundingProp.Payment
+			totalRequirement += fundingProp.Requirement
 			kvKey := fundingProp.Key + ":" + fundingProp.Value
 			if !matchedSet[kvKey] {
 				matchedSet[kvKey] = true
@@ -505,6 +507,7 @@ func (s *ChildService) calculateChildFunding(age int, properties models.Contract
 	}
 
 	result.Funding = totalFunding
+	result.Requirement = totalRequirement
 	return result
 }
 

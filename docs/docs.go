@@ -6833,6 +6833,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingMatchedProp"
                     }
                 },
+                "requirement": {
+                    "type": "number",
+                    "example": 0.261
+                },
                 "unmatched_properties": {
                     "type": "array",
                     "items": {

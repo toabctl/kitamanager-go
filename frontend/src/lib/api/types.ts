@@ -398,6 +398,7 @@ export interface ChildFundingResponse {
   child_name: string;
   age: number;
   funding: number;
+  requirement: number;
   matched_properties: ChildFundingMatchedProp[];
   unmatched_properties: ChildFundingMatchedProp[];
 }

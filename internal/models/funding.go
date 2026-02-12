@@ -210,6 +210,7 @@ type ChildFundingResponse struct {
 	ChildName           string                    `json:"child_name" example:"Max Mustermann"`
 	Age                 int                       `json:"age" example:"3"`
 	Funding             int                       `json:"funding" example:"166847"`
+	Requirement         float64                   `json:"requirement" example:"0.261"`
 	MatchedProperties   []ChildFundingMatchedProp `json:"matched_properties"`
 	UnmatchedProperties []ChildFundingMatchedProp `json:"unmatched_properties"`
 }

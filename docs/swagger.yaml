@@ -307,6 +307,9 @@ definitions:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingMatchedProp'
         type: array
+      requirement:
+        example: 0.261
+        type: number
       unmatched_properties:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingMatchedProp'

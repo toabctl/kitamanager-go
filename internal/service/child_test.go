@@ -892,6 +892,9 @@ func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
 	if cf.Funding != 150000 { // 1000.00 + 500.00 = 1500.00 EUR = 150000 cents
 		t.Errorf("Funding = %d, want 150000 (cents)", cf.Funding)
 	}
+	if cf.Requirement != 0.2 { // 0.1 + 0.1 = 0.2 (two matched properties with Requirement=0.1 each)
+		t.Errorf("Requirement = %f, want 0.2", cf.Requirement)
+	}
 	if len(cf.MatchedProperties) != 2 {
 		t.Errorf("MatchedProperties = %v, want 2 items", cf.MatchedProperties)
 	}

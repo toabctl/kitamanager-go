@@ -48,6 +48,7 @@ import {
   formatDateForInput,
   formatDateForApi,
   formatCurrency,
+  formatFte,
   propertiesToValues,
 } from '@/lib/utils/formatting';
 import {
@@ -442,6 +443,7 @@ export default function ChildrenPage() {
                   <TableHead>{t('children.currentContract')}</TableHead>
                   <TableHead>{t('children.properties')}</TableHead>
                   <TableHead className="text-right">{t('children.funding')}</TableHead>
+                  <TableHead className="text-right">{t('children.requirement')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -520,6 +522,17 @@ export default function ChildrenPage() {
                         })()}
                       </TableCell>
                       <TableCell className="text-right">
+                        {(() => {
+                          const funding = fundingByChildId.get(child.id);
+                          if (!funding || funding.requirement === 0) {
+                            return <span className="text-sm text-muted-foreground">-</span>;
+                          }
+                          return (
+                            <span className="font-medium">{formatFte(funding.requirement)}</span>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -560,7 +573,7 @@ export default function ChildrenPage() {
                 })}
                 {children?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
                       {t('common.noResults')}
                     </TableCell>
                   </TableRow>
