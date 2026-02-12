@@ -89,6 +89,7 @@ type ChildStorer interface {
 	FindByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, contractAfter *time.Time, search string, limit, offset int) ([]models.Child, int64, error)
 	FindByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) ([]models.Child, error)
 	CountByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) (int64, error)
+	FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time) ([]models.ChildContract, error)
 	FindByID(ctx context.Context, id uint) (*models.Child, error)
 	FindByIDMinimal(ctx context.Context, id uint) (*models.Child, error) // Without preloads, for org checks
 	Create(ctx context.Context, child *models.Child) error

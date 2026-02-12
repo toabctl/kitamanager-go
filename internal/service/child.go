@@ -680,7 +680,6 @@ func intPtr(i int) *int {
 
 // GetContractCountByMonth returns children contract counts per month for the specified year range
 func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, minYear, maxYear int) (*models.ChildrenContractCountByMonthResponse, error) {
-	// Calculate number of years in range
 	numYears := maxYear - minYear + 1
 
 	startDate := time.Date(minYear, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -694,7 +693,6 @@ func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, 
 		Years: make([]models.ContractCountByMonthYear, numYears),
 	}
 
-	// Initialize yearly data
 	for i := 0; i < numYears; i++ {
 		response.Years[i] = models.ContractCountByMonthYear{
 			Year:   minYear + i,
@@ -702,18 +700,25 @@ func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, 
 		}
 	}
 
-	// Loop through each month and count children with active contracts
+	// Single query: fetch all contracts overlapping with the date range
+	contracts, err := s.store.FindContractsByOrganizationInDateRange(ctx, orgID, startDate, endDate)
+	if err != nil {
+		return nil, apperror.InternalWrap(err, "failed to fetch contracts for date range")
+	}
+
+	// Compute per-month counts in memory
 	for yearIdx := 0; yearIdx < numYears; yearIdx++ {
 		year := minYear + yearIdx
-
 		for month := 1; month <= 12; month++ {
-			// Use 15th of the month as sample date
 			sampleDate := time.Date(year, time.Month(month), 15, 0, 0, 0, 0, time.UTC)
-			count, err := s.store.CountByOrganizationWithActiveOn(ctx, orgID, sampleDate)
-			if err != nil {
-				return nil, apperror.InternalWrap(err, "failed to count children for month")
+			uniqueChildren := make(map[uint]struct{})
+			for i := range contracts {
+				c := &contracts[i]
+				if !c.From.After(sampleDate) && (c.To == nil || !c.To.Before(sampleDate)) {
+					uniqueChildren[c.ChildID] = struct{}{}
+				}
 			}
-			response.Years[yearIdx].Counts[month-1] = int(count)
+			response.Years[yearIdx].Counts[month-1] = len(uniqueChildren)
 		}
 	}
 

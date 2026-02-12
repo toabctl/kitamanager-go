@@ -192,6 +192,22 @@ func (s *ChildStore) FindByOrganizationWithActiveOn(ctx context.Context, orgID u
 	return children, nil
 }
 
+// FindContractsByOrganizationInDateRange returns all child contracts for an organization
+// where the contract overlaps with the given date range.
+// This is useful for batch processing to avoid N+1 queries.
+func (s *ChildStore) FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time) ([]models.ChildContract, error) {
+	var contracts []models.ChildContract
+	if err := DBFromContext(ctx, s.db).
+		Joins("JOIN children ON children.id = child_contracts.child_id").
+		Where("children.organization_id = ?", orgID).
+		Where("child_contracts.from_date <= ?", rangeEnd).
+		Where("child_contracts.to_date IS NULL OR child_contracts.to_date >= ?", rangeStart).
+		Find(&contracts).Error; err != nil {
+		return nil, err
+	}
+	return contracts, nil
+}
+
 // CountByOrganizationWithActiveOn counts children with active contracts on the given date.
 // A contract is active if: from_date <= date AND (to_date IS NULL OR to_date >= date)
 func (s *ChildStore) CountByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) (int64, error) {
