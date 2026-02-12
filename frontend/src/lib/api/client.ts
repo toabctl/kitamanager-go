@@ -70,6 +70,12 @@ function getCSRFToken(): string | null {
 class ApiClient {
   private client: AxiosInstance;
   private onUnauthorized?: () => void;
+  private refreshToken: string | null = null;
+  private isRefreshing = false;
+  private refreshQueue: Array<{
+    resolve: (value?: unknown) => void;
+    reject: (reason?: unknown) => void;
+  }> = [];
 
   constructor() {
     this.client = axios.create({
@@ -97,11 +103,59 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor for error handling
+    // Response interceptor with token refresh on 401
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
-        if (error.response?.status === 401) {
+      async (error: AxiosError) => {
+        const originalRequest = error.config as typeof error.config & { _retry?: boolean };
+
+        // Skip refresh for login/refresh/logout endpoints or already-retried requests
+        const url = originalRequest?.url || '';
+        const isAuthEndpoint =
+          url.includes('/login') || url.includes('/refresh') || url.includes('/logout');
+
+        if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest?._retry) {
+          if (this.refreshToken) {
+            if (this.isRefreshing) {
+              // Queue this request while refresh is in progress
+              return new Promise((resolve, reject) => {
+                this.refreshQueue.push({ resolve, reject });
+              }).then(() => {
+                return this.client(originalRequest!);
+              });
+            }
+
+            this.isRefreshing = true;
+            originalRequest!._retry = true;
+
+            try {
+              const response = await this.client.post<LoginResponse>('/refresh', {
+                refresh_token: this.refreshToken,
+              });
+              this.refreshToken = response.data.refresh_token || null;
+
+              // Resolve all queued requests
+              this.refreshQueue.forEach((pending) => pending.resolve());
+              this.refreshQueue = [];
+
+              // Retry the original request
+              return this.client(originalRequest!);
+            } catch {
+              // Refresh failed - clear queue and log out
+              this.refreshQueue.forEach((pending) => pending.reject(error));
+              this.refreshQueue = [];
+              this.refreshToken = null;
+
+              if (this.onUnauthorized) {
+                this.onUnauthorized();
+              }
+              return Promise.reject(error);
+            } finally {
+              this.isRefreshing = false;
+            }
+          }
+
+          // No refresh token available - log out
           if (this.onUnauthorized) {
             this.onUnauthorized();
           }
@@ -113,6 +167,10 @@ class ApiClient {
 
   setOnUnauthorized(callback: () => void) {
     this.onUnauthorized = callback;
+  }
+
+  setRefreshToken(token: string | null) {
+    this.refreshToken = token;
   }
 
   private topLevelCrud<T, TCreate, TUpdate>(resource: string) {
@@ -159,10 +217,13 @@ class ApiClient {
   // Auth
   async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await this.client.post<LoginResponse>('/login', request);
+    // Store refresh token for automatic token refresh on 401
+    this.refreshToken = response.data.refresh_token || null;
     return response.data;
   }
 
   async logout(): Promise<void> {
+    this.refreshToken = null;
     await this.client.post('/logout');
   }
 
