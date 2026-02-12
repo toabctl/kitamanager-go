@@ -244,3 +244,133 @@ func TestRateLimiter_ZeroRemaining(t *testing.T) {
 		t.Errorf("expected 0 remaining, got %d", remaining)
 	}
 }
+
+func TestAPIRateLimiter(t *testing.T) {
+	rl := APIRateLimiter(3)
+	if rl == nil {
+		t.Fatal("APIRateLimiter(3) should not return nil")
+	}
+
+	for i := 0; i < 3; i++ {
+		if !rl.Allow("192.168.1.1") {
+			t.Errorf("request %d should be allowed", i+1)
+		}
+	}
+
+	if rl.Allow("192.168.1.1") {
+		t.Error("4th request should be blocked")
+	}
+}
+
+func TestAPIRateLimiter_Disabled(t *testing.T) {
+	rl := APIRateLimiter(0)
+	if rl != nil {
+		t.Error("APIRateLimiter(0) should return nil")
+	}
+
+	rl = APIRateLimiter(-1)
+	if rl != nil {
+		t.Error("APIRateLimiter(-1) should return nil")
+	}
+}
+
+func TestRateLimitMutations_GETPassesThrough(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rl := NewRateLimiter(1, time.Minute)
+
+	r := gin.New()
+	r.Use(rl.RateLimitMutations())
+	r.GET("/api/resource", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
+	})
+
+	// Multiple GET requests should all pass through (not rate-limited)
+	for i := 0; i < 5; i++ {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/api/resource", nil)
+		req.RemoteAddr = "192.168.1.1:12345"
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("GET request %d: expected status %d, got %d", i+1, http.StatusOK, w.Code)
+		}
+	}
+}
+
+func TestRateLimitMutations_POSTIsRateLimited(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rl := NewRateLimiter(2, time.Minute)
+
+	r := gin.New()
+	r.Use(rl.RateLimitMutations())
+	r.POST("/api/resource", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
+	})
+
+	// First 2 POST requests should succeed
+	for i := 0; i < 2; i++ {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/resource", nil)
+		req.RemoteAddr = "192.168.1.1:12345"
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("POST request %d: expected status %d, got %d", i+1, http.StatusOK, w.Code)
+		}
+	}
+
+	// 3rd POST should be rate-limited
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/resource", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("3rd POST request: expected status %d, got %d", http.StatusTooManyRequests, w.Code)
+	}
+}
+
+func TestRateLimitMutations_MixedMethods(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rl := NewRateLimiter(1, time.Minute)
+
+	r := gin.New()
+	r.Use(rl.RateLimitMutations())
+	handler := func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
+	}
+	r.GET("/api/resource", handler)
+	r.POST("/api/resource", handler)
+	r.PUT("/api/resource/:id", handler)
+	r.DELETE("/api/resource/:id", handler)
+
+	// POST uses up the single allowed mutation
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/resource", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("POST: expected %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// PUT should be blocked (same IP, mutation limit exhausted)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PUT", "/api/resource/1", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("PUT: expected %d, got %d", http.StatusTooManyRequests, w.Code)
+	}
+
+	// GET should still pass through
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/resource", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("GET after limit: expected %d, got %d", http.StatusOK, w.Code)
+	}
+}

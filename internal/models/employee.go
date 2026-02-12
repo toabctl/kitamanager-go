@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -139,6 +140,22 @@ type EmployeeContractResponse struct {
 	Properties    ContractProperties `json:"properties,omitempty"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
+// EmployeeListFilter represents filter options for listing employees.
+type EmployeeListFilter struct {
+	SectionID     *uint
+	ActiveOn      *time.Time
+	Search        string
+	StaffCategory *string
+}
+
+// Validate checks the filter for invalid values.
+func (f *EmployeeListFilter) Validate() error {
+	if f.StaffCategory != nil && !IsValidStaffCategory(*f.StaffCategory) {
+		return fmt.Errorf("staff_category must be one of: qualified, supplementary, non_pedagogical")
+	}
+	return nil
 }
 
 func (c *EmployeeContract) ToResponse() EmployeeContractResponse {

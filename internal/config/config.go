@@ -64,6 +64,7 @@ type Config struct {
 
 	// Rate Limiting
 	LoginRateLimitPerMinute int // 0 = disabled, default = 5
+	APIRateLimitPerMinute   int // 0 = disabled, default = 60
 }
 
 // IsProduction returns true if running in production mode
@@ -203,6 +204,7 @@ func Load() (*Config, error) {
 
 		// Rate Limiting
 		LoginRateLimitPerMinute: getEnvInt("LOGIN_RATE_LIMIT_PER_MINUTE", 5),
+		APIRateLimitPerMinute:   getEnvInt("API_RATE_LIMIT_PER_MINUTE", 60),
 	}
 
 	if err := cfg.Validate(); err != nil {

@@ -25,6 +25,7 @@ func Setup(
 	authzMiddleware *middleware.AuthorizationMiddleware,
 	csrfMiddleware *middleware.CSRFMiddleware,
 	loginRateLimiter *middleware.RateLimiter,
+	apiRateLimiter *middleware.RateLimiter,
 ) {
 	api := r.Group("/api/v1")
 	{
@@ -44,6 +45,9 @@ func Setup(
 		protected := api.Group("")
 		protected.Use(authMiddleware.RequireAuth())
 		protected.Use(csrfMiddleware.ValidateCSRF())
+		if apiRateLimiter != nil {
+			protected.Use(apiRateLimiter.RateLimitMutations())
+		}
 
 		// Current user endpoint (auth required, but no CSRF needed for GET)
 		protected.GET("/me", authHandler.Me)

@@ -731,7 +731,7 @@ func TestChildService_ListByOrganizationAndSection_ActiveOn(t *testing.T) {
 	refDate := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 
 	// With activeOn filter: only the active child should be returned
-	children, total, err := svc.ListByOrganizationAndSection(ctx, org.ID, nil, &refDate, nil, "", 100, 0)
+	children, total, err := svc.ListByOrganizationAndSection(ctx, org.ID, models.ChildListFilter{ActiveOn: &refDate}, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -747,7 +747,7 @@ func TestChildService_ListByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 
 	// Without activeOn filter: all 3 children should be returned
-	allChildren, allTotal, err := svc.ListByOrganizationAndSection(ctx, org.ID, nil, nil, nil, "", 100, 0)
+	allChildren, allTotal, err := svc.ListByOrganizationAndSection(ctx, org.ID, models.ChildListFilter{}, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

@@ -159,6 +159,7 @@ func main() {
 	authzMiddleware := middleware.NewAuthorizationMiddleware(permissionService)
 	csrfMiddleware := middleware.NewCSRFMiddleware()
 	loginRateLimiter := middleware.LoginRateLimiter(cfg.LoginRateLimitPerMinute)
+	apiRateLimiter := middleware.APIRateLimiter(cfg.APIRateLimitPerMinute)
 
 	// Create Gin router
 	r := gin.New()
@@ -193,7 +194,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Setup API routes
-	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, stepPromotionHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter)
+	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, stepPromotionHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter, apiRateLimiter)
 
 	// Create HTTP server
 	srv := &http.Server{

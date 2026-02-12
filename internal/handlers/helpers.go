@@ -9,6 +9,7 @@ import (
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
+	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
 // parseID extracts and validates ID from URL parameter
@@ -168,6 +169,32 @@ func parseOrgResourceAndContractID(c *gin.Context) (uint, uint, uint, bool) {
 	}
 
 	return orgID, resourceID, contractID, true
+}
+
+// bindJSON binds JSON request body to the given type.
+// Returns (request, ok). If ok is false, error response has been sent.
+func bindJSON[T any](c *gin.Context) (*T, bool) {
+	var req T
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, apperror.BadRequest(err.Error()))
+		return nil, false
+	}
+	return &req, true
+}
+
+// auditCreate logs a resource creation audit event.
+func auditCreate(c *gin.Context, svc *service.AuditService, resourceType string, id uint, name string) {
+	svc.LogResourceCreate(getUserID(c), resourceType, id, name, c.ClientIP())
+}
+
+// auditUpdate logs a resource update audit event.
+func auditUpdate(c *gin.Context, svc *service.AuditService, resourceType string, id uint, name string) {
+	svc.LogResourceUpdate(getUserID(c), resourceType, id, name, c.ClientIP())
+}
+
+// auditDelete logs a resource deletion audit event.
+func auditDelete(c *gin.Context, svc *service.AuditService, resourceType string, id uint, name string) {
+	svc.LogResourceDelete(getUserID(c), resourceType, id, name, c.ClientIP())
 }
 
 // respondError sends consistent structured error response

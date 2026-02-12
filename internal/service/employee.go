@@ -40,12 +40,17 @@ func (s *EmployeeService) List(ctx context.Context, limit, offset int) ([]models
 
 // ListByOrganization returns a paginated list of employees for an organization
 func (s *EmployeeService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	return s.ListByOrganizationAndSection(ctx, orgID, nil, nil, "", nil, limit, offset)
+	return s.ListByOrganizationAndSection(ctx, orgID, models.EmployeeListFilter{}, limit, offset)
 }
 
-// ListByOrganizationAndSection returns a paginated list of employees for an organization, optionally filtered by section, active contract date, name search, and/or staff category
-func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	employees, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, sectionID, activeOn, search, staffCategory, limit, offset)
+// ListByOrganizationAndSection returns a paginated list of employees for an organization,
+// optionally filtered by section, active contract date, name search, and/or staff category.
+func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgID uint, filter models.EmployeeListFilter, limit, offset int) ([]models.EmployeeResponse, int64, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, 0, apperror.BadRequest(err.Error())
+	}
+
+	employees, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, filter.SectionID, filter.ActiveOn, filter.Search, filter.StaffCategory, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to fetch employees")
 	}

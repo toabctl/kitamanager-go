@@ -47,13 +47,17 @@ func (s *ChildService) List(ctx context.Context, limit, offset int) ([]models.Ch
 
 // ListByOrganization returns a paginated list of children for an organization
 func (s *ChildService) ListByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.ChildResponse, int64, error) {
-	return s.ListByOrganizationAndSection(ctx, orgID, nil, nil, nil, "", limit, offset)
+	return s.ListByOrganizationAndSection(ctx, orgID, models.ChildListFilter{}, limit, offset)
 }
 
-// ListByOrganizationAndSection returns a paginated list of children for an organization, optionally filtered by section, active contract date, contract-after date, and/or name search.
-// activeOn and contractAfter are mutually exclusive.
-func (s *ChildService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, contractAfter *time.Time, search string, limit, offset int) ([]models.ChildResponse, int64, error) {
-	children, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, sectionID, activeOn, contractAfter, search, limit, offset)
+// ListByOrganizationAndSection returns a paginated list of children for an organization,
+// optionally filtered by section, active contract date, contract-after date, and/or name search.
+func (s *ChildService) ListByOrganizationAndSection(ctx context.Context, orgID uint, filter models.ChildListFilter, limit, offset int) ([]models.ChildResponse, int64, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, 0, apperror.BadRequest(err.Error())
+	}
+
+	children, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, filter.SectionID, filter.ActiveOn, filter.ContractAfter, filter.Search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to fetch children")
 	}

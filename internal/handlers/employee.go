@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/service"
 )
@@ -20,6 +18,14 @@ func NewEmployeeHandler(service *service.EmployeeService, auditService *service.
 	return &EmployeeHandler{
 		service:      service,
 		auditService: auditService,
+	}
+}
+
+func (h *EmployeeHandler) contractAudit() contractAuditConfig {
+	return contractAuditConfig{
+		auditService: h.auditService,
+		resourceType: "employee_contract",
+		parentName:   "employee",
 	}
 }
 
@@ -54,15 +60,9 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 	}
 
 	// Parse optional section_id filter
-	var sectionID *uint
-	if sectionIDStr := c.Query("section_id"); sectionIDStr != "" {
-		id, ok := parseOptionalUint(c, "section_id")
-		if !ok {
-			return
-		}
-		if id != nil {
-			sectionID = id
-		}
+	sectionID, ok := parseOptionalUint(c, "section_id")
+	if !ok {
+		return
 	}
 
 	// Parse optional active_on filter (defaults to today)
@@ -72,20 +72,20 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 	}
 	activeOn := &activeOnDate
 
-	// Parse optional search filter
-	search := c.Query("search")
-
 	// Parse optional staff_category filter
 	var staffCategory *string
 	if sc := c.Query("staff_category"); sc != "" {
-		if !models.IsValidStaffCategory(sc) {
-			respondError(c, apperror.BadRequest("staff_category must be one of: qualified, supplementary, non_pedagogical"))
-			return
-		}
 		staffCategory = &sc
 	}
 
-	employees, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, sectionID, activeOn, search, staffCategory, params.Limit, params.Offset())
+	filter := models.EmployeeListFilter{
+		SectionID:     sectionID,
+		ActiveOn:      activeOn,
+		Search:        c.Query("search"),
+		StaffCategory: staffCategory,
+	}
+
+	employees, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, filter, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -144,20 +144,18 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 		return
 	}
 
-	var req models.EmployeeCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
+	req, ok := bindJSON[models.EmployeeCreateRequest](c)
+	if !ok {
 		return
 	}
 
-	employee, err := h.service.Create(c.Request.Context(), orgID, &req)
+	employee, err := h.service.Create(c.Request.Context(), orgID, req)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	actorID := getUserID(c)
-	h.auditService.LogResourceCreate(actorID, "employee", employee.ID, employee.FullName(), c.ClientIP())
+	auditCreate(c, h.auditService, "employee", employee.ID, employee.FullName())
 
 	c.JSON(http.StatusCreated, employee)
 }
@@ -186,20 +184,18 @@ func (h *EmployeeHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req models.EmployeeUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
+	req, ok := bindJSON[models.EmployeeUpdateRequest](c)
+	if !ok {
 		return
 	}
 
-	employee, err := h.service.Update(c.Request.Context(), id, orgID, &req)
+	employee, err := h.service.Update(c.Request.Context(), id, orgID, req)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	actorID := getUserID(c)
-	h.auditService.LogResourceUpdate(actorID, "employee", employee.ID, employee.FullName(), c.ClientIP())
+	auditUpdate(c, h.auditService, "employee", employee.ID, employee.FullName())
 
 	c.JSON(http.StatusOK, employee)
 }
@@ -237,9 +233,7 @@ func (h *EmployeeHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Audit log employee deletion
-	actorID := getUserID(c)
-	h.auditService.LogResourceDelete(actorID, "employee", id, employee.FullName(), c.ClientIP())
+	auditDelete(c, h.auditService, "employee", id, employee.FullName())
 
 	c.Status(http.StatusNoContent)
 }
@@ -262,23 +256,7 @@ func (h *EmployeeHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts [get]
 func (h *EmployeeHandler) ListContracts(c *gin.Context) {
-	orgID, id, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	params, ok := parsePagination(c)
-	if !ok {
-		return
-	}
-
-	contracts, total, err := h.service.ListContracts(c.Request.Context(), id, orgID, params.Limit, params.Offset())
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, models.NewPaginatedResponseWithLinks(contracts, params.Page, params.Limit, total, c.Request.URL.Path))
+	handleListContracts(c, h.service.ListContracts)
 }
 
 // GetCurrentContract godoc
@@ -297,18 +275,7 @@ func (h *EmployeeHandler) ListContracts(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/current [get]
 func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
-	orgID, id, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	contract, err := h.service.GetCurrentContract(c.Request.Context(), id, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, contract)
+	handleGetCurrentContract(c, h.service.GetCurrentContract)
 }
 
 // CreateContract godoc
@@ -338,27 +305,8 @@ func (h *EmployeeHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts [post]
 func (h *EmployeeHandler) CreateContract(c *gin.Context) {
-	orgID, employeeID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	var req models.EmployeeContractCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	contract, err := h.service.CreateContract(c.Request.Context(), employeeID, orgID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceCreate(actorID, "employee_contract", contract.ID, fmt.Sprintf("employee=%d", contract.EmployeeID), c.ClientIP())
-
-	c.JSON(http.StatusCreated, contract)
+	handleCreateContract(c, h.contractAudit(), h.service.CreateContract,
+		func(r *models.EmployeeContractResponse) (uint, uint) { return r.ID, r.EmployeeID })
 }
 
 // GetContract godoc
@@ -378,18 +326,7 @@ func (h *EmployeeHandler) CreateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [get]
 func (h *EmployeeHandler) GetContract(c *gin.Context) {
-	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	contract, err := h.service.GetContractByID(c.Request.Context(), contractID, employeeID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, contract)
+	handleGetContract(c, h.service.GetContractByID)
 }
 
 // UpdateContract godoc
@@ -412,27 +349,8 @@ func (h *EmployeeHandler) GetContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [put]
 func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
-	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	var req models.EmployeeContractUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, employeeID, orgID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceUpdate(actorID, "employee_contract", contract.ID, fmt.Sprintf("employee=%d", contract.EmployeeID), c.ClientIP())
-
-	c.JSON(http.StatusOK, contract)
+	handleUpdateContract(c, h.contractAudit(), h.service.UpdateContract,
+		func(r *models.EmployeeContractResponse) (uint, uint) { return r.ID, r.EmployeeID })
 }
 
 // DeleteContract godoc
@@ -452,18 +370,5 @@ func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{id}/contracts/{contractId} [delete]
 func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
-	orgID, employeeID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	if err := h.service.DeleteContract(c.Request.Context(), contractID, employeeID, orgID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceDelete(actorID, "employee_contract", contractID, fmt.Sprintf("employee=%d", employeeID), c.ClientIP())
-
-	c.Status(http.StatusNoContent)
+	handleDeleteContract(c, h.contractAudit(), h.service.DeleteContract)
 }

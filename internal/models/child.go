@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -130,6 +131,22 @@ func (c *ChildContract) ToResponse() ChildContractResponse {
 		resp.SectionName = &c.Section.Name
 	}
 	return resp
+}
+
+// ChildListFilter represents filter options for listing children.
+type ChildListFilter struct {
+	SectionID     *uint
+	ActiveOn      *time.Time
+	ContractAfter *time.Time
+	Search        string
+}
+
+// Validate checks the filter for conflicting options.
+func (f *ChildListFilter) Validate() error {
+	if f.ActiveOn != nil && f.ContractAfter != nil {
+		return fmt.Errorf("active_on and contract_after are mutually exclusive")
+	}
+	return nil
 }
 
 // ChildrenContractCountByMonthResponse represents contract counts per month over multiple years

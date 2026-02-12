@@ -140,3 +140,36 @@ func LoginRateLimiter(limit int) *RateLimiter {
 	}
 	return NewRateLimiter(limit, time.Minute)
 }
+
+// APIRateLimiter creates a rate limiter for API mutation endpoints.
+// If limit is 0 or negative, returns nil (disabled).
+func APIRateLimiter(limit int) *RateLimiter {
+	if limit <= 0 {
+		return nil
+	}
+	return NewRateLimiter(limit, time.Minute)
+}
+
+// RateLimitMutations returns a Gin middleware that rate-limits mutating requests
+// (POST, PUT, PATCH, DELETE) while allowing read-only methods (GET, HEAD, OPTIONS) through.
+func (rl *RateLimiter) RateLimitMutations() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		switch c.Request.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			c.Next()
+			return
+		}
+
+		ip := c.ClientIP()
+		if !rl.Allow(ip) {
+			c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+				Code:    "rate_limit_exceeded",
+				Message: "rate limit exceeded, please try again later",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

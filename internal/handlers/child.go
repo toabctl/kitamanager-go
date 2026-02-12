@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -21,6 +20,14 @@ func NewChildHandler(service *service.ChildService, auditService *service.AuditS
 	return &ChildHandler{
 		service:      service,
 		auditService: auditService,
+	}
+}
+
+func (h *ChildHandler) contractAudit() contractAuditConfig {
+	return contractAuditConfig{
+		auditService: h.auditService,
+		resourceType: "child_contract",
+		parentName:   "child",
 	}
 }
 
@@ -55,48 +62,45 @@ func (h *ChildHandler) List(c *gin.Context) {
 	}
 
 	// Parse optional section_id filter
-	var sectionID *uint
-	if sectionIDStr := c.Query("section_id"); sectionIDStr != "" {
-		id, ok := parseOptionalUint(c, "section_id")
-		if !ok {
-			return
-		}
-		if id != nil {
-			sectionID = id
-		}
-	}
-
-	// active_on and contract_after are mutually exclusive
-	activeOnStr := c.Query("active_on")
-	contractAfterStr := c.Query("contract_after")
-	if activeOnStr != "" && contractAfterStr != "" {
-		respondError(c, apperror.BadRequest("active_on and contract_after are mutually exclusive"))
+	sectionID, ok := parseOptionalUint(c, "section_id")
+	if !ok {
 		return
 	}
 
+	// Parse optional date filters
 	var activeOn *time.Time
 	var contractAfter *time.Time
 
-	if contractAfterStr != "" {
+	if contractAfterStr := c.Query("contract_after"); contractAfterStr != "" {
 		date, err := time.Parse("2006-01-02", contractAfterStr)
 		if err != nil {
 			respondError(c, apperror.BadRequest("invalid contract_after date format, expected YYYY-MM-DD"))
 			return
 		}
 		contractAfter = &date
-	} else {
-		// Default: filter by active_on (defaults to today)
-		activeOnDate, ok := parseOptionalDate(c, "active_on")
-		if !ok {
-			return
-		}
-		activeOn = &activeOnDate
 	}
 
-	// Parse optional search filter
-	search := c.Query("search")
+	if activeOnStr := c.Query("active_on"); activeOnStr != "" {
+		date, err := time.Parse("2006-01-02", activeOnStr)
+		if err != nil {
+			respondError(c, apperror.BadRequest("invalid date format, expected YYYY-MM-DD"))
+			return
+		}
+		activeOn = &date
+	} else if contractAfter == nil {
+		// Default active_on to today when neither filter is specified
+		now := time.Now()
+		activeOn = &now
+	}
 
-	children, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, sectionID, activeOn, contractAfter, search, params.Limit, params.Offset())
+	filter := models.ChildListFilter{
+		SectionID:     sectionID,
+		ActiveOn:      activeOn,
+		ContractAfter: contractAfter,
+		Search:        c.Query("search"),
+	}
+
+	children, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, filter, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -155,20 +159,18 @@ func (h *ChildHandler) Create(c *gin.Context) {
 		return
 	}
 
-	var req models.ChildCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
+	req, ok := bindJSON[models.ChildCreateRequest](c)
+	if !ok {
 		return
 	}
 
-	child, err := h.service.Create(c.Request.Context(), orgID, &req)
+	child, err := h.service.Create(c.Request.Context(), orgID, req)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	actorID := getUserID(c)
-	h.auditService.LogResourceCreate(actorID, "child", child.ID, child.FullName(), c.ClientIP())
+	auditCreate(c, h.auditService, "child", child.ID, child.FullName())
 
 	c.JSON(http.StatusCreated, child)
 }
@@ -197,20 +199,18 @@ func (h *ChildHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req models.ChildUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
+	req, ok := bindJSON[models.ChildUpdateRequest](c)
+	if !ok {
 		return
 	}
 
-	child, err := h.service.Update(c.Request.Context(), id, orgID, &req)
+	child, err := h.service.Update(c.Request.Context(), id, orgID, req)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	actorID := getUserID(c)
-	h.auditService.LogResourceUpdate(actorID, "child", child.ID, child.FullName(), c.ClientIP())
+	auditUpdate(c, h.auditService, "child", child.ID, child.FullName())
 
 	c.JSON(http.StatusOK, child)
 }
@@ -248,9 +248,7 @@ func (h *ChildHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Audit log child deletion
-	actorID := getUserID(c)
-	h.auditService.LogResourceDelete(actorID, "child", id, child.FullName(), c.ClientIP())
+	auditDelete(c, h.auditService, "child", id, child.FullName())
 
 	c.Status(http.StatusNoContent)
 }
@@ -273,23 +271,7 @@ func (h *ChildHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts [get]
 func (h *ChildHandler) ListContracts(c *gin.Context) {
-	orgID, id, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	params, ok := parsePagination(c)
-	if !ok {
-		return
-	}
-
-	contracts, total, err := h.service.ListContracts(c.Request.Context(), id, orgID, params.Limit, params.Offset())
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, models.NewPaginatedResponseWithLinks(contracts, params.Page, params.Limit, total, c.Request.URL.Path))
+	handleListContracts(c, h.service.ListContracts)
 }
 
 // GetCurrentContract godoc
@@ -308,18 +290,7 @@ func (h *ChildHandler) ListContracts(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/current [get]
 func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
-	orgID, id, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	contract, err := h.service.GetCurrentContract(c.Request.Context(), id, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, contract)
+	handleGetCurrentContract(c, h.service.GetCurrentContract)
 }
 
 // GetContract godoc
@@ -339,18 +310,7 @@ func (h *ChildHandler) GetCurrentContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/{contractId} [get]
 func (h *ChildHandler) GetContract(c *gin.Context) {
-	orgID, childID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	contract, err := h.service.GetContractByID(c.Request.Context(), contractID, childID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, contract)
+	handleGetContract(c, h.service.GetContractByID)
 }
 
 // CreateContract godoc
@@ -380,27 +340,8 @@ func (h *ChildHandler) GetContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts [post]
 func (h *ChildHandler) CreateContract(c *gin.Context) {
-	orgID, childID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	var req models.ChildContractCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	contract, err := h.service.CreateContract(c.Request.Context(), childID, orgID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceCreate(actorID, "child_contract", contract.ID, fmt.Sprintf("child=%d", contract.ChildID), c.ClientIP())
-
-	c.JSON(http.StatusCreated, contract)
+	handleCreateContract(c, h.contractAudit(), h.service.CreateContract,
+		func(r *models.ChildContractResponse) (uint, uint) { return r.ID, r.ChildID })
 }
 
 // UpdateContract godoc
@@ -423,27 +364,8 @@ func (h *ChildHandler) CreateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/{contractId} [put]
 func (h *ChildHandler) UpdateContract(c *gin.Context) {
-	orgID, childID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	var req models.ChildContractUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
-		return
-	}
-
-	contract, err := h.service.UpdateContract(c.Request.Context(), contractID, childID, orgID, &req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceUpdate(actorID, "child_contract", contract.ID, fmt.Sprintf("child=%d", contract.ChildID), c.ClientIP())
-
-	c.JSON(http.StatusOK, contract)
+	handleUpdateContract(c, h.contractAudit(), h.service.UpdateContract,
+		func(r *models.ChildContractResponse) (uint, uint) { return r.ID, r.ChildID })
 }
 
 // DeleteContract godoc
@@ -463,20 +385,7 @@ func (h *ChildHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/contracts/{contractId} [delete]
 func (h *ChildHandler) DeleteContract(c *gin.Context) {
-	orgID, childID, contractID, ok := parseOrgResourceAndContractID(c)
-	if !ok {
-		return
-	}
-
-	if err := h.service.DeleteContract(c.Request.Context(), contractID, childID, orgID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	actorID := getUserID(c)
-	h.auditService.LogResourceDelete(actorID, "child_contract", contractID, fmt.Sprintf("child=%d", childID), c.ClientIP())
-
-	c.Status(http.StatusNoContent)
+	handleDeleteContract(c, h.contractAudit(), h.service.DeleteContract)
 }
 
 // =============================================================================
