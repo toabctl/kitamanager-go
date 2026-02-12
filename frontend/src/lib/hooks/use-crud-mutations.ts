@@ -111,17 +111,54 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
       }
       return deleteFn(id);
     },
+    onMutate: async (id: number) => {
+      // Cancel outgoing refetches so they don't overwrite the optimistic update
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot previous data for rollback
+      const previousQueries = queryClient.getQueriesData<unknown>({ queryKey });
+
+      // Optimistically remove the item from all matching cached queries
+      queryClient.setQueriesData<unknown>({ queryKey }, (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        // PaginatedResponse shape: { data: T[], total, ... }
+        if ('data' in old && Array.isArray((old as { data: unknown[] }).data)) {
+          const paginated = old as { data: Array<{ id: number }>; total: number };
+          return {
+            ...paginated,
+            data: paginated.data.filter((item) => item.id !== id),
+            total: paginated.total - 1,
+          };
+        }
+        // Plain array shape
+        if (Array.isArray(old)) {
+          return (old as Array<{ id: number }>).filter((item) => item.id !== id);
+        }
+        return old;
+      });
+
+      return { previousQueries };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
       toast({ title: t(`${resourceName}.deleteSuccess`) });
       onDeleteSuccess?.();
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _id, context) => {
+      // Roll back to previous data on failure
+      if (context?.previousQueries) {
+        for (const [key, data] of context.previousQueries) {
+          queryClient.setQueryData(key, data);
+        }
+      }
       toast({
         title: t('common.error'),
         description: getErrorMessage(error, t('common.failedToDelete', { resource: resourceName })),
         variant: 'destructive',
       });
+    },
+    onSettled: () => {
+      // Always refetch after delete to ensure server state consistency
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 
