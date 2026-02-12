@@ -383,6 +383,11 @@ export default function ChildrenPage() {
       setContractChild(child);
       setEndCurrentContract(true);
 
+      // Auto-fill end date based on birthdate + org state
+      const birthdate = formatDateForInput(child.birthdate);
+      const suggestedTo =
+        birthdate && orgState ? calculateContractEndDate(birthdate, orgState) || '' : '';
+
       // Prefill from active contract if exists
       const active = getActiveContract(child.contracts);
       if (active) {
@@ -393,15 +398,15 @@ export default function ChildrenPage() {
 
         resetContract({
           from: tomorrowStr,
-          to: '',
+          to: suggestedTo,
           properties: active.properties as Record<string, string> | undefined,
         });
       } else {
-        resetContract({ from: '', to: '', properties: undefined });
+        resetContract({ from: '', to: suggestedTo, properties: undefined });
       }
       setIsContractDialogOpen(true);
     },
-    [resetContract]
+    [resetContract, orgState]
   );
 
   const handleViewContractHistory = useCallback(
@@ -872,6 +877,9 @@ export default function ChildrenPage() {
               <div className="space-y-2">
                 <Label htmlFor="to">{t('contracts.endDateOptional')}</Label>
                 <Input id="to" type="date" {...registerContract('to')} />
+                {contractChild && orgState && (
+                  <p className="text-xs text-muted-foreground">{t('children.contractEndHint')}</p>
+                )}
               </div>
             </div>
 

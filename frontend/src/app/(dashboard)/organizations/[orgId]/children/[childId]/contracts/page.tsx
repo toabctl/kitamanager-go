@@ -55,7 +55,9 @@ import {
   formatDateForApi,
   propertiesToValues,
 } from '@/lib/utils/formatting';
+import { calculateContractEndDate } from '@/lib/utils/school-enrollment';
 import { childContractSchema, type ChildContractFormData } from '@/lib/schemas';
+import { useUiStore } from '@/stores/ui-store';
 
 export default function ChildContractsPage() {
   const params = useParams();
@@ -159,6 +161,9 @@ export default function ChildContractsPage() {
     },
   });
 
+  // Get org state for school enrollment date calculation
+  const orgState = useUiStore((state) => state.organizations.find((o) => o.id === orgId)?.state);
+
   // Watch date fields for funding attribute suggestions
   const watchedFrom = watch('from');
   const watchedTo = watch('to');
@@ -172,7 +177,15 @@ export default function ChildContractsPage() {
 
   const handleCreate = () => {
     setEditingContract(null);
-    reset({ from: '', to: '', properties: undefined });
+    // Auto-fill end date based on birthdate + org state
+    let suggestedTo = '';
+    if (child && orgState) {
+      const birthdate = formatDateForInput(child.birthdate);
+      if (birthdate) {
+        suggestedTo = calculateContractEndDate(birthdate, orgState) || '';
+      }
+    }
+    reset({ from: '', to: suggestedTo, properties: undefined });
     setIsContractDialogOpen(true);
   };
 
@@ -374,6 +387,9 @@ export default function ChildContractsPage() {
               <div className="space-y-2">
                 <Label htmlFor="to">{t('contracts.endDateOptional')}</Label>
                 <Input id="to" type="date" {...register('to')} />
+                {!editingContract && child && orgState && (
+                  <p className="text-xs text-muted-foreground">{t('children.contractEndHint')}</p>
+                )}
               </div>
             </div>
 
