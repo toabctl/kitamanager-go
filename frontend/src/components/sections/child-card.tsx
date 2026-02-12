@@ -1,10 +1,10 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { differenceInYears } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { calculateAge } from '@/lib/utils/formatting';
 import type { Child } from '@/lib/api/types';
 
 export interface ChildCardProps {
@@ -17,7 +17,7 @@ export function ChildCard({ child }: ChildCardProps) {
     data: { child, type: 'child' },
   });
 
-  const age = differenceInYears(new Date(), new Date(child.birthdate));
+  const age = calculateAge(child.birthdate);
   const fullName = `${child.first_name} ${child.last_name}`;
 
   return (
