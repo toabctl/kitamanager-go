@@ -234,6 +234,30 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created default section", "name", section.Name, "id", section.ID)
 
+	// Create named sections for typical German Kita age groups
+	namedSections := []string{
+		"Marienkäfer (Krippe)",
+		"Schmetterlinge (Kindergarten)",
+		"Sonnenkäfer (Hort)",
+	}
+	// allSections includes default + named sections; used for employee distribution
+	allSections := []*models.Section{section}
+	// namedSectionList is used for child assignment by age bracket
+	var namedSectionList []*models.Section
+	for _, name := range namedSections {
+		sec := &models.Section{
+			Name:           name,
+			OrganizationID: org.ID,
+			CreatedBy:      "seed",
+		}
+		if err := db.Create(sec).Error; err != nil {
+			return err
+		}
+		slog.Info("Created section", "name", sec.Name, "id", sec.ID)
+		allSections = append(allSections, sec)
+		namedSectionList = append(namedSectionList, sec)
+	}
+
 	// Hash password for all test users
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("supersecret"), bcrypt.DefaultCost)
 	if err != nil {
@@ -289,7 +313,7 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 
 	// Create 200 children distributed over the last 4 years
-	children := createTestChildren(org.ID, section.ID, 200)
+	children := createTestChildren(org.ID, namedSectionList, 200)
 	for i := range children {
 		if err := db.Create(&children[i]).Error; err != nil {
 			return err
@@ -370,8 +394,8 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created PayPlan entries", "count", len(payEntries))
 
-	// Create employees
-	employees := createTestEmployees(org.ID, section.ID, 20)
+	// Create employees distributed across all sections (including default)
+	employees := createTestEmployees(org.ID, allSections, 20)
 	for i := range employees {
 		if err := db.Create(&employees[i]).Error; err != nil {
 			return err
@@ -590,8 +614,23 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	return nil
 }
 
+// sectionForAge returns the appropriate section based on child age in months:
+// - Under 36 months → Krippe (sections[0])
+// - 36-72 months → Kindergarten (sections[1])
+// - Over 72 months → Hort (sections[2])
+func sectionForAge(ageMonths int, sections []*models.Section) uint {
+	switch {
+	case ageMonths < 36:
+		return sections[0].ID
+	case ageMonths < 72:
+		return sections[1].ID
+	default:
+		return sections[2].ID
+	}
+}
+
 //nolint:gosec // G404: math/rand is fine for test data generation
-func createTestChildren(orgID uint, sectionID uint, count int) []models.Child {
+func createTestChildren(orgID uint, sections []*models.Section, count int) []models.Child {
 	children := make([]models.Child, count)
 	now := time.Now()
 
@@ -621,11 +660,12 @@ func createTestChildren(orgID uint, sectionID uint, count int) []models.Child {
 		for i := 0; i < childrenInGroup && idx < count; i++ {
 			ageMonths := dist.minMonths + randInt(dist.maxMonths-dist.minMonths)
 			birthdate := now.AddDate(0, -ageMonths, -randInt(28))
+			secID := sectionForAge(ageMonths, sections)
 
 			children[idx] = models.Child{
 				Person: models.Person{
 					OrganizationID: orgID,
-					SectionID:      &sectionID,
+					SectionID:      &secID,
 					FirstName:      firstNames[randInt(len(firstNames))],
 					LastName:       lastNames[randInt(len(lastNames))],
 					Gender:         randomGender(),
@@ -640,11 +680,12 @@ func createTestChildren(orgID uint, sectionID uint, count int) []models.Child {
 	for idx < count {
 		ageMonths := 24 + randInt(60)
 		birthdate := now.AddDate(0, -ageMonths, -randInt(28))
+		secID := sectionForAge(ageMonths, sections)
 
 		children[idx] = models.Child{
 			Person: models.Person{
 				OrganizationID: orgID,
-				SectionID:      &sectionID,
+				SectionID:      &secID,
 				FirstName:      firstNames[randInt(len(firstNames))],
 				LastName:       lastNames[randInt(len(lastNames))],
 				Gender:         randomGender(),
@@ -809,8 +850,9 @@ func intPtr(v int) *int {
 	return &v
 }
 
-// createTestEmployees creates test employees with realistic German names
-func createTestEmployees(orgID uint, sectionID uint, count int) []models.Employee {
+// createTestEmployees creates test employees with realistic German names,
+// distributed across sections via round-robin.
+func createTestEmployees(orgID uint, sections []*models.Section, count int) []models.Employee {
 	employeeFirstNames := []string{
 		"Anna", "Thomas", "Maria", "Michael", "Julia",
 		"Stefan", "Sabine", "Martin", "Petra", "Andreas",
@@ -832,10 +874,11 @@ func createTestEmployees(orgID uint, sectionID uint, count int) []models.Employe
 		ageYears := 25 + randInt(30)
 		birthdate := now.AddDate(-ageYears, -randInt(12), -randInt(28))
 
+		secID := sections[i%len(sections)].ID
 		employees[i] = models.Employee{
 			Person: models.Person{
 				OrganizationID: orgID,
-				SectionID:      &sectionID,
+				SectionID:      &secID,
 				FirstName:      employeeFirstNames[i%len(employeeFirstNames)],
 				LastName:       employeeLastNames[i%len(employeeLastNames)],
 				Gender:         randomGender(),
