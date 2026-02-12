@@ -517,3 +517,144 @@ func TestOrganizationService_GetByID_IncludesState(t *testing.T) {
 		t.Errorf("State = %v, want berlin", found.State)
 	}
 }
+
+// =========================================
+// ListForUser Tests
+// =========================================
+
+func TestOrganizationService_ListForUser(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	// Create 3 organizations
+	org1 := createTestOrganization(t, db, "Alpha Org")
+	org2 := createTestOrganization(t, db, "Beta Org")
+	org3 := createTestOrganization(t, db, "Gamma Org")
+
+	// Create a regular user
+	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
+
+	// Create groups for org1 and org2
+	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
+	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
+
+	// Assign user to group1 and group2
+	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
+	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
+
+	// Regular user should see only orgs they belong to (org1 and org2)
+	orgs, total, err := svc.ListForUser(ctx, user.ID, "", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2 for regular user, got %d", total)
+	}
+	if len(orgs) != 2 {
+		t.Errorf("expected 2 orgs for regular user, got %d", len(orgs))
+	}
+
+	// Verify org3 is not in the results
+	for _, org := range orgs {
+		if org.ID == org3.ID {
+			t.Error("regular user should not see org3 (not a member)")
+		}
+	}
+
+	// Superadmin should see ALL organizations
+	user.IsSuperAdmin = true
+	db.Save(user)
+
+	orgs, total, err = svc.ListForUser(ctx, user.ID, "", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error for superadmin, got %v", err)
+	}
+
+	if total != 3 {
+		t.Errorf("expected total 3 for superadmin, got %d", total)
+	}
+	if len(orgs) != 3 {
+		t.Errorf("expected 3 orgs for superadmin, got %d", len(orgs))
+	}
+}
+
+func TestOrganizationService_ListForUser_SearchFilter(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Alpha Kindergarten")
+	org2 := createTestOrganization(t, db, "Beta Kindergarten")
+	createTestOrganization(t, db, "Gamma Daycare")
+
+	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
+
+	// User belongs to all 3 orgs
+	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
+	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
+	group3 := createTestGroupWithOrg(t, db, "Group 3", createTestOrganization(t, db, "Another").ID)
+	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
+	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
+	createTestUserGroup(t, db, user.ID, group3.ID, models.RoleAdmin)
+
+	// Search for "Kindergarten" should return only matching orgs
+	orgs, total, err := svc.ListForUser(ctx, user.ID, "Kindergarten", 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 2 {
+		t.Errorf("expected total 2 for search 'Kindergarten', got %d", total)
+	}
+	if len(orgs) != 2 {
+		t.Errorf("expected 2 orgs for search 'Kindergarten', got %d", len(orgs))
+	}
+}
+
+func TestOrganizationService_ListForUser_Pagination(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	// Create 3 orgs and assign user to all 3
+	org1 := createTestOrganization(t, db, "Org A")
+	org2 := createTestOrganization(t, db, "Org B")
+	org3 := createTestOrganization(t, db, "Org C")
+
+	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
+
+	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
+	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
+	group3 := createTestGroupWithOrg(t, db, "Group 3", org3.ID)
+	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
+	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
+	createTestUserGroup(t, db, user.ID, group3.ID, models.RoleAdmin)
+
+	// First page (limit 2)
+	orgs, total, err := svc.ListForUser(ctx, user.ID, "", 2, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
+	}
+	if len(orgs) != 2 {
+		t.Errorf("page 1: expected 2 orgs, got %d", len(orgs))
+	}
+
+	// Second page
+	orgs, total, err = svc.ListForUser(ctx, user.ID, "", 2, 2)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
+	}
+	if len(orgs) != 1 {
+		t.Errorf("page 2: expected 1 org, got %d", len(orgs))
+	}
+}

@@ -2019,3 +2019,406 @@ func TestChildService_GetAgeDistribution_HistoricalDate(t *testing.T) {
 		}
 	}
 }
+
+// =========================================
+// GetContractByID Tests
+// =========================================
+
+func TestChildService_GetContractByID(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	req := &models.ChildContractCreateRequest{
+		From:       from,
+		To:         &to,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	}
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, req)
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	found, err := svc.GetContractByID(ctx, contract.ID, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if found.ID != contract.ID {
+		t.Errorf("ID = %d, want %d", found.ID, contract.ID)
+	}
+	if found.ChildID != child.ID {
+		t.Errorf("ChildID = %d, want %d", found.ChildID, child.ID)
+	}
+	if found.Properties["care_type"] != "ganztag" {
+		t.Errorf("Properties = %v, want care_type=ganztag", found.Properties)
+	}
+}
+
+func TestChildService_GetContractByID_WrongChild(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child1 := createTestChild(t, db, "John", "Doe", org.ID)
+	child2 := createTestChild(t, db, "Jane", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{From: from})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Try to access contract via wrong child
+	_, err = svc.GetContractByID(ctx, contract.ID, child2.ID, org.ID)
+	if err == nil {
+		t.Fatal("expected error when accessing contract via wrong child, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// SECURITY TEST: Cross-organization GetContractByID
+func TestChildService_GetContractByID_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	child := createTestChild(t, db, "John", "Doe", org1.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{From: from})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Try to access contract via wrong organization
+	_, err = svc.GetContractByID(ctx, contract.ID, child.ID, org2.ID)
+	if err == nil {
+		t.Fatal("expected error when accessing contract from wrong org, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestChildService_GetContractByID_NonexistentContract(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	_, err := svc.GetContractByID(ctx, 999, child.ID, org.ID)
+	if err == nil {
+		t.Fatal("expected error for non-existent contract, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// =========================================
+// GetCurrentContract Tests
+// =========================================
+
+func TestChildService_GetCurrentContract(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create ongoing contract (no end date)
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       from,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	current, err := svc.GetCurrentContract(ctx, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if current.ID != contract.ID {
+		t.Errorf("ID = %d, want %d", current.ID, contract.ID)
+	}
+	if current.ChildID != child.ID {
+		t.Errorf("ChildID = %d, want %d", current.ChildID, child.ID)
+	}
+	if current.Properties["care_type"] != "ganztag" {
+		t.Errorf("Properties = %v, want care_type=ganztag", current.Properties)
+	}
+}
+
+func TestChildService_GetCurrentContract_NoActiveContract(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create only an expired contract
+	from := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From: from,
+		To:   &to,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	_, err = svc.GetCurrentContract(ctx, child.ID, org.ID)
+	if err == nil {
+		t.Fatal("expected error for no active contract, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// =========================================
+// UpdateContract Tests
+// =========================================
+
+func TestChildService_UpdateContract(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       from,
+		To:         &to,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Update dates and properties
+	newFrom := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	newTo := time.Date(2025, 6, 30, 0, 0, 0, 0, time.UTC)
+	updateReq := &models.ChildContractUpdateRequest{
+		From:       &newFrom,
+		To:         &newTo,
+		Properties: models.ContractProperties{"care_type": "halbtag"},
+	}
+
+	updated, err := svc.UpdateContract(ctx, contract.ID, child.ID, org.ID, updateReq)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !updated.From.Equal(newFrom) {
+		t.Errorf("From = %v, want %v", updated.From, newFrom)
+	}
+	if updated.To == nil || !updated.To.Equal(newTo) {
+		t.Errorf("To = %v, want %v", updated.To, newTo)
+	}
+	if updated.Properties["care_type"] != "halbtag" {
+		t.Errorf("Properties = %v, want care_type=halbtag", updated.Properties)
+	}
+}
+
+func TestChildService_UpdateContract_InvalidPeriod(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From: from,
+		To:   &to,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Try to update with 'to' before 'from'
+	invalidTo := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updateReq := &models.ChildContractUpdateRequest{
+		To: &invalidTo,
+	}
+
+	_, err = svc.UpdateContract(ctx, contract.ID, child.ID, org.ID, updateReq)
+	if err == nil {
+		t.Fatal("expected error for invalid period (to before from), got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestChildService_UpdateContract_OverlapConflict(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create first contract: Jan-Jun 2024
+	from1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to1 := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From: from1,
+		To:   &to1,
+	})
+	if err != nil {
+		t.Fatalf("failed to create first contract: %v", err)
+	}
+
+	// Create second contract: Aug-Dec 2024
+	from2 := time.Date(2024, 8, 1, 0, 0, 0, 0, time.UTC)
+	to2 := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract2, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From: from2,
+		To:   &to2,
+	})
+	if err != nil {
+		t.Fatalf("failed to create second contract: %v", err)
+	}
+
+	// Try to update second contract to overlap with first
+	overlapFrom := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	updateReq := &models.ChildContractUpdateRequest{
+		From: &overlapFrom,
+	}
+
+	_, err = svc.UpdateContract(ctx, contract2.ID, child.ID, org.ID, updateReq)
+	if err == nil {
+		t.Fatal("expected error for overlapping contract, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrConflict) {
+		t.Errorf("expected ErrConflict, got %v", err)
+	}
+}
+
+// SECURITY TEST: Cross-organization UpdateContract
+func TestChildService_UpdateContract_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	child := createTestChild(t, db, "John", "Doe", org1.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{From: from})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	newFrom := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	updateReq := &models.ChildContractUpdateRequest{
+		From: &newFrom,
+	}
+
+	_, err = svc.UpdateContract(ctx, contract.ID, child.ID, org2.ID, updateReq)
+	if err == nil {
+		t.Fatal("expected error when updating contract from wrong org, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound (not forbidden - security), got %v", err)
+	}
+}
+
+func TestChildService_UpdateContract_WrongChild(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child1 := createTestChild(t, db, "John", "Doe", org.ID)
+	child2 := createTestChild(t, db, "Jane", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{From: from})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	newFrom := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	updateReq := &models.ChildContractUpdateRequest{
+		From: &newFrom,
+	}
+
+	_, err = svc.UpdateContract(ctx, contract.ID, child2.ID, org.ID, updateReq)
+	if err == nil {
+		t.Fatal("expected error when updating contract via wrong child, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// =========================================
+// DeleteContract Tests
+// =========================================
+
+func TestChildService_DeleteContract(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       from,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	err = svc.DeleteContract(ctx, contract.ID, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify it's gone
+	contracts, _, err := svc.ListContracts(ctx, child.ID, org.ID, 100, 0)
+	if err != nil {
+		t.Fatalf("expected no error listing contracts, got %v", err)
+	}
+	if len(contracts) != 0 {
+		t.Errorf("expected 0 contracts after delete, got %d", len(contracts))
+	}
+}

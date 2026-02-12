@@ -194,6 +194,17 @@ func createTestEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint, payp
 	return contract
 }
 
+func createSectionService(db *gorm.DB) *SectionService {
+	sectionStore := store.NewSectionStore(db)
+	return NewSectionService(sectionStore)
+}
+
+// createPayPlanService creates a PayPlanService for testing.
+func createPayPlanService(db *gorm.DB) *PayPlanService {
+	payPlanStore := store.NewPayPlanStore(db)
+	return NewPayPlanService(payPlanStore)
+}
+
 // createStepPromotionService creates a StepPromotionService for testing.
 func createStepPromotionService(db *gorm.DB) *StepPromotionService {
 	payPlanStore := store.NewPayPlanStore(db)
