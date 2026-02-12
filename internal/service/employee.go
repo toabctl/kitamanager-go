@@ -176,55 +176,33 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 
 // handleEmployeeSectionTransfer creates a contract transition when an employee moves between sections.
 func (s *EmployeeService) handleEmployeeSectionTransfer(ctx context.Context, employeeID uint, newSectionID *uint) error {
-	contract, err := s.store.Contracts().GetCurrentContract(ctx, employeeID)
-	if err != nil {
-		return apperror.InternalWrap(err, "failed to fetch current contract")
-	}
-	if contract == nil {
-		return nil // no active contract, nothing to transition
-	}
-
-	// If the contract already has the same section, nothing to do
-	if sameSectionID(contract.SectionID, newSectionID) {
-		return nil
-	}
-
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-
-	switch decideSectionTransfer(contract.From) {
-	case transferUpdate:
-		// Same-day: just update the section on the existing contract
-		contract.SectionID = newSectionID
-		contract.Section = nil
-		return s.store.UpdateContract(ctx, contract)
-	case transferReplace:
-		// Close old contract (end = yesterday) and create a new one starting today
-		yesterday := today.AddDate(0, 0, -1)
-		contract.To = &yesterday
-		contract.Section = nil
-		if err := s.store.UpdateContract(ctx, contract); err != nil {
-			return apperror.InternalWrap(err, "failed to close existing contract")
-		}
-
-		newContract := &models.EmployeeContract{
-			EmployeeID: employeeID,
-			BaseContract: models.BaseContract{
-				Period: models.Period{
-					From: today,
-					To:   nil,
+	return handleSectionTransfer(
+		ctx,
+		s.store.Contracts(),
+		s.store.UpdateContract,
+		s.store.CreateContract,
+		func(c *models.EmployeeContract) *models.BaseContract { return &c.BaseContract },
+		employeeID,
+		newSectionID,
+		func(old *models.EmployeeContract, today time.Time) *models.EmployeeContract {
+			return &models.EmployeeContract{
+				EmployeeID: employeeID,
+				BaseContract: models.BaseContract{
+					Period: models.Period{
+						From: today,
+						To:   nil,
+					},
+					SectionID:  newSectionID,
+					Properties: old.Properties,
 				},
-				SectionID:  newSectionID,
-				Properties: contract.Properties,
-			},
-			StaffCategory: contract.StaffCategory,
-			Grade:         contract.Grade,
-			Step:          contract.Step,
-			WeeklyHours:   contract.WeeklyHours,
-			PayPlanID:     contract.PayPlanID,
-		}
-		return s.store.CreateContract(ctx, newContract)
-	}
-	return nil
+				StaffCategory: old.StaffCategory,
+				Grade:         old.Grade,
+				Step:          old.Step,
+				WeeklyHours:   old.WeeklyHours,
+				PayPlanID:     old.PayPlanID,
+			}
+		},
+	)
 }
 
 // Delete deletes an employee and its contracts, validating it belongs to the specified organization.

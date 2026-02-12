@@ -184,50 +184,28 @@ func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.C
 
 // handleChildSectionTransfer creates a contract transition when a child moves between sections.
 func (s *ChildService) handleChildSectionTransfer(ctx context.Context, childID uint, newSectionID *uint) error {
-	contract, err := s.store.Contracts().GetCurrentContract(ctx, childID)
-	if err != nil {
-		return apperror.InternalWrap(err, "failed to fetch current contract")
-	}
-	if contract == nil {
-		return nil // no active contract, nothing to transition
-	}
-
-	// If the contract already has the same section, nothing to do
-	if sameSectionID(contract.SectionID, newSectionID) {
-		return nil
-	}
-
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-
-	switch decideSectionTransfer(contract.From) {
-	case transferUpdate:
-		// Same-day: just update the section on the existing contract
-		contract.SectionID = newSectionID
-		contract.Section = nil
-		return s.store.UpdateContract(ctx, contract)
-	case transferReplace:
-		// Close old contract (end = yesterday) and create a new one starting today
-		yesterday := today.AddDate(0, 0, -1)
-		contract.To = &yesterday
-		contract.Section = nil
-		if err := s.store.UpdateContract(ctx, contract); err != nil {
-			return apperror.InternalWrap(err, "failed to close existing contract")
-		}
-
-		newContract := &models.ChildContract{
-			ChildID: childID,
-			BaseContract: models.BaseContract{
-				Period: models.Period{
-					From: today,
-					To:   nil,
+	return handleSectionTransfer(
+		ctx,
+		s.store.Contracts(),
+		s.store.UpdateContract,
+		s.store.CreateContract,
+		func(c *models.ChildContract) *models.BaseContract { return &c.BaseContract },
+		childID,
+		newSectionID,
+		func(old *models.ChildContract, today time.Time) *models.ChildContract {
+			return &models.ChildContract{
+				ChildID: childID,
+				BaseContract: models.BaseContract{
+					Period: models.Period{
+						From: today,
+						To:   nil,
+					},
+					SectionID:  newSectionID,
+					Properties: old.Properties,
 				},
-				SectionID:  newSectionID,
-				Properties: contract.Properties,
-			},
-		}
-		return s.store.CreateContract(ctx, newContract)
-	}
-	return nil
+			}
+		},
+	)
 }
 
 // Delete deletes a child and its contracts, validating it belongs to the specified organization.
