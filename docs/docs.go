@@ -2978,6 +2978,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/employees/step-promotions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns employees eligible for step promotions based on years of service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "employees"
+                ],
+                "summary": "Get pending step promotions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date for calculation (YYYY-MM-DD, defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StepPromotionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/employees/{id}": {
             "get": {
                 "security": [
@@ -6947,6 +7002,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "payplan_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "properties": {
                     "description": "Properties stores flexible key-value data as JSON.\nFor children: {\"care_type\": \"ganztag\", \"supplements\": [\"ndh\", \"mss\"]}\nFor employees: {\"benefits\": [\"christmas_bonus\"], \"employer_type\": \"normal\"}",
                     "allOf": [
@@ -6980,6 +7039,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "from",
+                "payplan_id",
                 "staff_category",
                 "weekly_hours"
             ],
@@ -6992,6 +7052,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 20,
                     "example": "S8a"
+                },
+                "payplan_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
@@ -7040,6 +7104,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "payplan_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
                 },
@@ -7075,6 +7143,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 20,
                     "example": "S8a"
+                },
+                "payplan_id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "properties": {
                     "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
@@ -8160,6 +8232,11 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 1,
                     "example": 3
+                },
+                "step_min_years": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 3
                 }
             }
         },
@@ -8189,6 +8266,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 3
                 },
+                "step_min_years": {
+                    "type": "integer",
+                    "example": 3
+                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -8214,6 +8295,11 @@ const docTemplate = `{
                 "step": {
                     "type": "integer",
                     "minimum": 1,
+                    "example": 3
+                },
+                "step_min_years": {
+                    "type": "integer",
+                    "minimum": 0,
                     "example": 3
                 }
             }
@@ -8455,6 +8541,78 @@ const docTemplate = `{
                 "is_superadmin": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.StepPromotionResponse": {
+            "type": "object",
+            "properties": {
+                "current_amount": {
+                    "type": "integer",
+                    "example": 329947
+                },
+                "current_step": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "eligible_step": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "employee_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "employee_name": {
+                    "type": "string",
+                    "example": "Anna Müller"
+                },
+                "grade": {
+                    "type": "string",
+                    "example": "S8a"
+                },
+                "monthly_cost_delta": {
+                    "type": "integer",
+                    "example": 20142
+                },
+                "new_amount": {
+                    "type": "integer",
+                    "example": 350089
+                },
+                "payplan_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "payplan_name": {
+                    "type": "string",
+                    "example": "TVöD-SuE 2024"
+                },
+                "service_start": {
+                    "type": "string",
+                    "example": "2022-01-01"
+                },
+                "years_of_service": {
+                    "type": "number",
+                    "example": 3.5
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.StepPromotionsResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-06-15"
+                },
+                "promotions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StepPromotionResponse"
+                    }
+                },
+                "total_monthly_cost_delta": {
+                    "type": "integer",
+                    "example": 40284
                 }
             }
         },

@@ -157,3 +157,22 @@ func (s *EmployeeStore) UpdateContract(contract *models.EmployeeContract) error 
 func (s *EmployeeStore) DeleteContract(id uint) error {
 	return s.db.Delete(&models.EmployeeContract{}, id).Error
 }
+
+// FindByOrganizationWithContracts fetches employees in an org who have an
+// active contract on `date`, with ALL their contracts preloaded (for seniority calculation).
+func (s *EmployeeStore) FindByOrganizationWithContracts(orgID uint, date time.Time) ([]models.Employee, error) {
+	var employees []models.Employee
+	err := s.db.
+		Preload("Contracts", func(db *gorm.DB) *gorm.DB {
+			return db.Order("employee_contracts.from_date ASC")
+		}).
+		Joins("JOIN employee_contracts ON employee_contracts.employee_id = employees.id").
+		Where("employees.organization_id = ?", orgID).
+		Scopes(PeriodActiveOn("employee_contracts.from_date", "employee_contracts.to_date", date)).
+		Distinct().
+		Find(&employees).Error
+	if err != nil {
+		return nil, err
+	}
+	return employees, nil
+}

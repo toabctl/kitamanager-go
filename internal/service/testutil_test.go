@@ -33,6 +33,9 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&models.GovernmentFunding{},
 		&models.GovernmentFundingPeriod{},
 		&models.GovernmentFundingProperty{},
+		&models.PayPlan{},
+		&models.PayPlanPeriod{},
+		&models.PayPlanEntry{},
 	)
 	if err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
@@ -244,7 +247,83 @@ func createChildService(db *gorm.DB) *ChildService {
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
-	return NewEmployeeService(employeeStore)
+	payPlanStore := store.NewPayPlanStore(db)
+	return NewEmployeeService(employeeStore, payPlanStore)
+}
+
+// createTestPayPlan creates a pay plan for testing.
+func createTestPayPlan(t *testing.T, db *gorm.DB, name string, orgID uint) *models.PayPlan {
+	t.Helper()
+
+	payPlan := &models.PayPlan{
+		OrganizationID: orgID,
+		Name:           name,
+	}
+	if err := db.Create(payPlan).Error; err != nil {
+		t.Fatalf("failed to create test pay plan: %v", err)
+	}
+	return payPlan
+}
+
+// createTestPayPlanPeriod creates a pay plan period for testing.
+func createTestPayPlanPeriod(t *testing.T, db *gorm.DB, payplanID uint, from time.Time, to *time.Time, weeklyHours float64) *models.PayPlanPeriod {
+	t.Helper()
+
+	period := &models.PayPlanPeriod{
+		PayPlanID:   payplanID,
+		From:        from,
+		To:          to,
+		WeeklyHours: weeklyHours,
+	}
+	if err := db.Create(period).Error; err != nil {
+		t.Fatalf("failed to create test pay plan period: %v", err)
+	}
+	return period
+}
+
+// createTestPayPlanEntry creates a pay plan entry for testing.
+func createTestPayPlanEntry(t *testing.T, db *gorm.DB, periodID uint, grade string, step int, monthlyAmount int, stepMinYears *int) *models.PayPlanEntry {
+	t.Helper()
+
+	entry := &models.PayPlanEntry{
+		PeriodID:      periodID,
+		Grade:         grade,
+		Step:          step,
+		MonthlyAmount: monthlyAmount,
+		StepMinYears:  stepMinYears,
+	}
+	if err := db.Create(entry).Error; err != nil {
+		t.Fatalf("failed to create test pay plan entry: %v", err)
+	}
+	return entry
+}
+
+// createTestEmployeeContract creates an employee contract for testing.
+func createTestEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint, payplanID uint, from time.Time, to *time.Time, grade string, step int, weeklyHours float64) *models.EmployeeContract {
+	t.Helper()
+
+	contract := &models.EmployeeContract{
+		EmployeeID: employeeID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{From: from, To: to},
+		},
+		StaffCategory: "qualified",
+		Grade:         grade,
+		Step:          step,
+		WeeklyHours:   weeklyHours,
+		PayPlanID:     payplanID,
+	}
+	if err := db.Create(contract).Error; err != nil {
+		t.Fatalf("failed to create test employee contract: %v", err)
+	}
+	return contract
+}
+
+// createStepPromotionService creates a StepPromotionService for testing.
+func createStepPromotionService(db *gorm.DB) *StepPromotionService {
+	payPlanStore := store.NewPayPlanStore(db)
+	employeeStore := store.NewEmployeeStore(db)
+	return NewStepPromotionService(payPlanStore, employeeStore)
 }
 
 // createTestGovernmentFunding creates a government funding plan with periods, entries, and properties for testing.

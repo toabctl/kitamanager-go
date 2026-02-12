@@ -427,6 +427,9 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -436,6 +439,7 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 		StaffCategory: "supplementary",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -463,6 +467,9 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -474,6 +481,7 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   8,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -510,6 +518,10 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 	}
 	db.Create(employee)
 
+	// PayPlan belongs to org2 (the org being used in the request URL)
+	payPlan := &models.PayPlan{OrganizationID: org2.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -519,6 +531,7 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	// Try to create contract from org2 (should fail with 404)
@@ -547,6 +560,9 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	// Create existing contract
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
@@ -566,6 +582,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1091,6 +1108,9 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1099,6 +1119,7 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/999/contracts", org.ID), body)
@@ -1115,6 +1136,9 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1123,6 +1147,7 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/invalid/contracts", org.ID), body)
@@ -1170,6 +1195,9 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1178,6 +1206,7 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   0,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1199,6 +1228,9 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	// Create contract ending on Dec 31, 2024
 	endDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	db.Create(&models.EmployeeContract{
@@ -1218,6 +1250,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1242,6 +1275,9 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	// Create contract ending on Jan 31, 2025
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
 	db.Create(&models.EmployeeContract{
@@ -1261,6 +1297,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1416,6 +1453,9 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1426,6 +1466,7 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1446,6 +1487,9 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1454,6 +1498,7 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   -1,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1474,6 +1519,9 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1482,6 +1530,7 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   169,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
@@ -1502,6 +1551,9 @@ func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 	}
 	db.Create(employee)
 
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
@@ -1510,6 +1562,7 @@ func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 		StaffCategory: "invalid_value",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)

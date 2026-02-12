@@ -77,6 +77,7 @@ type EmployeeStorer interface {
 	UpdateContract(contract *models.EmployeeContract) error
 	DeleteContract(id uint) error
 	Contracts() ContractStorer[models.EmployeeContract]
+	FindByOrganizationWithContracts(orgID uint, date time.Time) ([]models.Employee, error)
 }
 
 // ChildStorer defines the interface for child storage operations

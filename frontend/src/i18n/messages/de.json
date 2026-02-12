@@ -165,7 +165,12 @@
     "step": "Stufe",
     "birthdate": "Geburtsdatum",
     "weeklyHoursRequired": "Wochenstunden müssen größer als 0 sein",
-    "noContractsFound": "Keine Verträge für diesen Mitarbeiter gefunden."
+    "noContractsFound": "Keine Verträge für diesen Mitarbeiter gefunden.",
+    "salary": "Gehalt",
+    "yearsOfService": "Dienstjahre",
+    "monthlyGross": "Monatlich (brutto)",
+    "payPlan": "Entgelttabelle",
+    "selectPayPlan": "Entgelttabelle auswählen"
   },
   "gender": {
     "label": "Geschlecht",
@@ -466,6 +471,19 @@
     "stepMin": "Stufe muss mindestens 1 sein",
     "stepMax": "Stufe kann 6 nicht überschreiten",
     "monthlyAmountRequired": "Monatsbetrag ist erforderlich",
-    "monthlyAmountMin": "Monatsbetrag muss mindestens 0 sein"
+    "monthlyAmountMin": "Monatsbetrag muss mindestens 0 sein",
+    "stepMinYears": "Mind. Jahre",
+    "stepMinYearsLabel": "Mind. Dienstjahre (optional)"
+  },
+  "stepPromotions": {
+    "title": "Ausstehende Stufensteigerungen",
+    "employee": "Mitarbeiter/in",
+    "grade": "Entgeltgruppe",
+    "currentStep": "Aktuelle Stufe",
+    "eligibleStep": "Berechtigte Stufe",
+    "serviceStart": "Seit",
+    "yearsOfService": "Dienstjahre",
+    "monthlyCostDelta": "Monatliche Differenz",
+    "totalCost": "Gesamt-Mehrkosten: {amount}/Monat"
   }
 }

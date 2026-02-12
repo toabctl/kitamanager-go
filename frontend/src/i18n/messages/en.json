@@ -165,7 +165,12 @@
     "step": "Step",
     "birthdate": "Birthdate",
     "weeklyHoursRequired": "Weekly hours must be greater than 0",
-    "noContractsFound": "No contracts found for this employee."
+    "noContractsFound": "No contracts found for this employee.",
+    "salary": "Salary",
+    "yearsOfService": "Years of Service",
+    "monthlyGross": "Monthly (gross)",
+    "payPlan": "Pay Plan",
+    "selectPayPlan": "Select Pay Plan"
   },
   "gender": {
     "label": "Gender",
@@ -466,6 +471,19 @@
     "stepMin": "Step must be at least 1",
     "stepMax": "Step cannot exceed 6",
     "monthlyAmountRequired": "Monthly amount is required",
-    "monthlyAmountMin": "Monthly amount must be at least 0"
+    "monthlyAmountMin": "Monthly amount must be at least 0",
+    "stepMinYears": "Min. Years",
+    "stepMinYearsLabel": "Min. years of service (optional)"
+  },
+  "stepPromotions": {
+    "title": "Pending Step Promotions",
+    "employee": "Employee",
+    "grade": "Grade",
+    "currentStep": "Current Step",
+    "eligibleStep": "Eligible Step",
+    "serviceStart": "Since",
+    "yearsOfService": "Years of Service",
+    "monthlyCostDelta": "Monthly Delta",
+    "totalCost": "Total extra: {amount}/mo"
   }
 }

@@ -14,12 +14,13 @@ import (
 
 // EmployeeService handles business logic for employee operations
 type EmployeeService struct {
-	store store.EmployeeStorer
+	store        store.EmployeeStorer
+	payPlanStore *store.PayPlanStore
 }
 
 // NewEmployeeService creates a new employee service
-func NewEmployeeService(store store.EmployeeStorer) *EmployeeService {
-	return &EmployeeService{store: store}
+func NewEmployeeService(store store.EmployeeStorer, payPlanStore *store.PayPlanStore) *EmployeeService {
+	return &EmployeeService{store: store, payPlanStore: payPlanStore}
 }
 
 // List returns a paginated list of employees
@@ -259,6 +260,15 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 		return nil, apperror.NotFound("employee")
 	}
 
+	// Validate pay plan exists and belongs to same organization
+	payPlan, err := s.payPlanStore.GetByID(ctx, req.PayPlanID)
+	if err != nil {
+		return nil, apperror.BadRequest("payplan_id not found")
+	}
+	if payPlan.OrganizationID != orgID {
+		return nil, apperror.BadRequest("payplan does not belong to this organization")
+	}
+
 	// Validate no overlap
 	if err := s.store.Contracts().ValidateNoOverlap(employeeID, req.From, req.To, nil); err != nil {
 		if errors.Is(err, store.ErrContractOverlap) {
@@ -280,6 +290,7 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 		Grade:         req.Grade,
 		Step:          req.Step,
 		WeeklyHours:   req.WeeklyHours,
+		PayPlanID:     req.PayPlanID,
 	}
 
 	if err := s.store.CreateContract(contract); err != nil {
@@ -358,6 +369,18 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 	}
 	if contract.EmployeeID != employeeID {
 		return nil, apperror.NotFound("contract")
+	}
+
+	// Validate and update pay plan if provided
+	if req.PayPlanID != nil {
+		payPlan, err := s.payPlanStore.GetByID(ctx, *req.PayPlanID)
+		if err != nil {
+			return nil, apperror.BadRequest("payplan_id not found")
+		}
+		if payPlan.OrganizationID != orgID {
+			return nil, apperror.BadRequest("payplan does not belong to this organization")
+		}
+		contract.PayPlanID = *req.PayPlanID
 	}
 
 	// Update fields if provided

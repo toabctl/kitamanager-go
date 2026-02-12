@@ -37,6 +37,7 @@ type PayPlanEntry struct {
 	Grade         string         `gorm:"not null" json:"grade" example:"S8a"`
 	Step          int            `gorm:"not null" json:"step" example:"3"`
 	MonthlyAmount int            `gorm:"not null" json:"monthly_amount" example:"350000"` // cents
+	StepMinYears  *int           `json:"step_min_years,omitempty" example:"3"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 }
@@ -101,6 +102,7 @@ type PayPlanEntryCreateRequest struct {
 	Grade         string `json:"grade" binding:"required" example:"S8a"`
 	Step          int    `json:"step" binding:"required,min=1" example:"3"`
 	MonthlyAmount int    `json:"monthly_amount" binding:"required,min=0" example:"350000"`
+	StepMinYears  *int   `json:"step_min_years,omitempty" binding:"omitempty,min=0" example:"3"`
 }
 
 // PayPlanEntryUpdateRequest is the request body for updating an entry.
@@ -108,6 +110,7 @@ type PayPlanEntryUpdateRequest struct {
 	Grade         string `json:"grade" binding:"required" example:"S8a"`
 	Step          int    `json:"step" binding:"required,min=1" example:"3"`
 	MonthlyAmount int    `json:"monthly_amount" binding:"required,min=0" example:"350000"`
+	StepMinYears  *int   `json:"step_min_years,omitempty" binding:"omitempty,min=0" example:"3"`
 }
 
 // PayPlanEntryResponse is the response for an entry.
@@ -117,6 +120,7 @@ type PayPlanEntryResponse struct {
 	Grade         string    `json:"grade" example:"S8a"`
 	Step          int       `json:"step" example:"3"`
 	MonthlyAmount int       `json:"monthly_amount" example:"350000"`
+	StepMinYears  *int      `json:"step_min_years,omitempty" example:"3"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -179,6 +183,7 @@ func (e *PayPlanEntry) ToResponse() PayPlanEntryResponse {
 		Grade:         e.Grade,
 		Step:          e.Step,
 		MonthlyAmount: e.MonthlyAmount,
+		StepMinYears:  e.StepMinYears,
 		CreatedAt:     e.CreatedAt,
 		UpdatedAt:     e.UpdatedAt,
 	}

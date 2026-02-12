@@ -425,6 +425,9 @@ definitions:
       id:
         example: 1
         type: integer
+      payplan_id:
+        example: 1
+        type: integer
       properties:
         allOf:
         - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties'
@@ -456,6 +459,9 @@ definitions:
         example: S8a
         maxLength: 20
         type: string
+      payplan_id:
+        example: 1
+        type: integer
       properties:
         $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties'
       staff_category:
@@ -476,6 +482,7 @@ definitions:
         type: number
     required:
     - from
+    - payplan_id
     - staff_category
     - weekly_hours
     type: object
@@ -493,6 +500,9 @@ definitions:
         example: S8a
         type: string
       id:
+        example: 1
+        type: integer
+      payplan_id:
         example: 1
         type: integer
       properties:
@@ -521,6 +531,9 @@ definitions:
         example: S8a
         maxLength: 20
         type: string
+      payplan_id:
+        example: 1
+        type: integer
       properties:
         $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties'
       staff_category:
@@ -1297,6 +1310,10 @@ definitions:
         example: 3
         minimum: 1
         type: integer
+      step_min_years:
+        example: 3
+        minimum: 0
+        type: integer
     required:
     - grade
     - monthly_amount
@@ -1321,6 +1338,9 @@ definitions:
       step:
         example: 3
         type: integer
+      step_min_years:
+        example: 3
+        type: integer
       updated_at:
         type: string
     type: object
@@ -1336,6 +1356,10 @@ definitions:
       step:
         example: 3
         minimum: 1
+        type: integer
+      step_min_years:
+        example: 3
+        minimum: 0
         type: integer
     required:
     - grade
@@ -1511,6 +1535,58 @@ definitions:
       is_superadmin:
         example: true
         type: boolean
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.StepPromotionResponse:
+    properties:
+      current_amount:
+        example: 329947
+        type: integer
+      current_step:
+        example: 2
+        type: integer
+      eligible_step:
+        example: 3
+        type: integer
+      employee_id:
+        example: 1
+        type: integer
+      employee_name:
+        example: Anna Müller
+        type: string
+      grade:
+        example: S8a
+        type: string
+      monthly_cost_delta:
+        example: 20142
+        type: integer
+      new_amount:
+        example: 350089
+        type: integer
+      payplan_id:
+        example: 1
+        type: integer
+      payplan_name:
+        example: TVöD-SuE 2024
+        type: string
+      service_start:
+        example: "2022-01-01"
+        type: string
+      years_of_service:
+        example: 3.5
+        type: number
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.StepPromotionsResponse:
+    properties:
+      date:
+        example: "2025-06-15"
+        type: string
+      promotions:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StepPromotionResponse'
+        type: array
+      total_monthly_cost_delta:
+        example: 40284
+        type: integer
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.UpdateUserGroupRoleRequest:
     properties:
@@ -4121,6 +4197,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current employee contract
+      tags:
+      - employees
+  /api/v1/organizations/{orgId}/employees/step-promotions:
+    get:
+      consumes:
+      - application/json
+      description: Returns employees eligible for step promotions based on years of
+        service
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Date for calculation (YYYY-MM-DD, defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StepPromotionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pending step promotions
       tags:
       - employees
   /api/v1/organizations/{orgId}/groups:

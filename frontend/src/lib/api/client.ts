@@ -47,6 +47,7 @@ import type {
   PayPlanEntry,
   PayPlanEntryCreateRequest,
   PayPlanEntryUpdateRequest,
+  StepPromotionsResponse,
   Section,
   SectionCreateRequest,
   SectionUpdateRequest,
@@ -607,6 +608,15 @@ class ApiClient {
       `/organizations/${orgId}/employees?limit=100&active_on=${today}`
     );
     return response.data.data;
+  }
+
+  async getStepPromotions(orgId: number, date?: string): Promise<StepPromotionsResponse> {
+    const params = date ? { date } : {};
+    const response = await this.client.get<StepPromotionsResponse>(
+      `/organizations/${orgId}/employees/step-promotions`,
+      { params }
+    );
+    return response.data;
   }
 
   // Children - fetch all with active contracts (for kanban board view)

@@ -211,6 +211,7 @@ export interface EmployeeContract {
   grade: string;
   step: number;
   weekly_hours: number;
+  payplan_id: number;
   created_at: string;
   updated_at: string;
 }
@@ -238,6 +239,7 @@ export interface EmployeeContractCreateRequest {
   grade: string;
   step: number;
   weekly_hours: number;
+  payplan_id: number;
 }
 
 export interface EmployeeContractUpdateRequest {
@@ -247,6 +249,7 @@ export interface EmployeeContractUpdateRequest {
   grade?: string;
   step?: number;
   weekly_hours?: number;
+  payplan_id?: number;
 }
 
 // Section
@@ -463,6 +466,7 @@ export interface PayPlanEntry {
   grade: string;
   step: number;
   monthly_amount: number; // cents
+  step_min_years?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -491,10 +495,34 @@ export interface PayPlanEntryCreateRequest {
   grade: string;
   step: number;
   monthly_amount: number;
+  step_min_years?: number | null;
 }
 
 export interface PayPlanEntryUpdateRequest {
   grade?: string;
   step?: number;
   monthly_amount?: number;
+  step_min_years?: number | null;
+}
+
+// Step Promotions
+export interface StepPromotion {
+  employee_id: number;
+  employee_name: string;
+  current_step: number;
+  eligible_step: number;
+  years_of_service: number;
+  service_start: string;
+  grade: string;
+  current_amount: number;
+  new_amount: number;
+  monthly_cost_delta: number;
+  payplan_id: number;
+  payplan_name: string;
+}
+
+export interface StepPromotionsResponse {
+  date: string;
+  total_monthly_cost_delta: number;
+  promotions: StepPromotion[];
 }

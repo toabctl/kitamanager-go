@@ -307,6 +307,7 @@ func (s *PayPlanService) CreateEntry(ctx context.Context, entryReq models.PayPla
 		Grade:         entryReq.Grade,
 		Step:          entryReq.Step,
 		MonthlyAmount: entryReq.MonthlyAmount,
+		StepMinYears:  entryReq.StepMinYears,
 	}
 
 	if err := s.store.CreateEntry(ctx, entry); err != nil {
@@ -400,6 +401,7 @@ func (s *PayPlanService) UpdateEntry(ctx context.Context, entryID, periodID, pay
 	entry.Grade = req.Grade
 	entry.Step = req.Step
 	entry.MonthlyAmount = req.MonthlyAmount
+	entry.StepMinYears = req.StepMinYears
 
 	if err := s.store.UpdateEntry(ctx, entry); err != nil {
 		return nil, apperror.Internal("failed to update entry")

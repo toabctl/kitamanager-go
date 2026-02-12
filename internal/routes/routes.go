@@ -20,6 +20,7 @@ func Setup(
 	governmentFundingHandler *handlers.GovernmentFundingHandler,
 	payPlanHandler *handlers.PayPlanHandler,
 	childAttendanceHandler *handlers.ChildAttendanceHandler,
+	stepPromotionHandler *handlers.StepPromotionHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	authzMiddleware *middleware.AuthorizationMiddleware,
 	csrfMiddleware *middleware.CSRFMiddleware,
@@ -201,6 +202,11 @@ func Setup(
 				// Employees
 				employees := orgScoped.Group("/employees")
 				{
+					// Step promotions (must be before /:id to avoid route conflict)
+					employees.GET("/step-promotions",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+						stepPromotionHandler.GetStepPromotions)
+
 					employees.GET("",
 						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
 						employeeHandler.List)

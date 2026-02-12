@@ -130,11 +130,12 @@ func main() {
 	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
 	groupService := service.NewGroupService(groupStore)
 	sectionService := service.NewSectionService(sectionStore)
-	employeeService := service.NewEmployeeService(employeeStore)
+	employeeService := service.NewEmployeeService(employeeStore, payPlanStore)
 	childService := service.NewChildService(childStore, orgStore, governmentFundingStore)
 	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore)
 	payPlanService := service.NewPayPlanService(payPlanStore)
 	childAttendanceService := service.NewChildAttendanceService(childAttendanceStore, childStore)
+	stepPromotionService := service.NewStepPromotionService(payPlanStore, employeeStore)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret, auditService)
@@ -147,6 +148,7 @@ func main() {
 	governmentFundingHandler := handlers.NewGovernmentFundingHandler(governmentFundingService, auditService)
 	payPlanHandler := handlers.NewPayPlanHandler(payPlanService, auditService)
 	childAttendanceHandler := handlers.NewChildAttendanceHandler(childAttendanceService, auditService)
+	stepPromotionHandler := handlers.NewStepPromotionHandler(stepPromotionService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware
@@ -188,7 +190,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Setup API routes
-	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter)
+	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, stepPromotionHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter)
 
 	// Create HTTP server
 	srv := &http.Server{

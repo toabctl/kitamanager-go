@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -34,7 +34,12 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
-import type { Employee, EmployeeContract, EmployeeContractCreateRequest } from '@/lib/api/types';
+import type {
+  Employee,
+  EmployeeContract,
+  EmployeeContractCreateRequest,
+  PayPlan,
+} from '@/lib/api/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
@@ -47,6 +52,9 @@ import {
   formatDateForApi,
 } from '@/lib/utils/formatting';
 import { getActiveContract, getCurrentContract, getDayBefore } from '@/lib/utils/contracts';
+import { calculateMonthlySalary } from '@/lib/utils/salary';
+import { calculateYearsOfService } from '@/lib/utils/step-promotions';
+import { formatCurrency } from '@/lib/utils/formatting';
 import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
@@ -62,6 +70,7 @@ const employeeSchema = z.object({
 const contractSchema = z.object({
   from: z.string().min(1),
   to: z.string().optional(),
+  payplan_id: z.number().min(1),
   staff_category: z.enum(['qualified', 'supplementary', 'non_pedagogical']),
   grade: z.string().min(1),
   step: z.number().min(1).max(6),
@@ -103,6 +112,37 @@ export default function EmployeesPage() {
   });
 
   const employees = paginatedData?.data;
+
+  const { data: payPlansData } = useQuery({
+    queryKey: ['payplans', orgId],
+    queryFn: () => apiClient.getPayPlans(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+  const payPlans = useMemo(() => payPlansData?.data ?? [], [payPlansData?.data]);
+
+  // Collect unique payplan IDs from employee contracts to fetch details for salary calc
+  const payPlanIds = Array.from(
+    new Set(
+      (employees ?? [])
+        .flatMap((e) => e.contracts ?? [])
+        .map((c) => c.payplan_id)
+        .filter((id) => id > 0)
+    )
+  );
+
+  const payPlanDetailsQueries = useQuery({
+    queryKey: ['payplanDetails', orgId, payPlanIds],
+    queryFn: async () => {
+      const results = await Promise.all(payPlanIds.map((id) => apiClient.getPayPlan(orgId, id)));
+      const map = new Map<number, PayPlan>();
+      for (const pp of results) {
+        map.set(pp.id, pp);
+      }
+      return map;
+    },
+    enabled: payPlanIds.length > 0,
+  });
+  const payPlanMap = payPlanDetailsQueries.data ?? new Map<number, PayPlan>();
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<EmployeeFormData, 'organization_id'>) =>
@@ -221,12 +261,14 @@ export default function EmployeesPage() {
     handleSubmit: handleSubmitContract,
     reset: resetContract,
     watch: watchContract,
+    setValue: setValueContract,
     formState: { errors: errorsContract },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
     defaultValues: {
       from: '',
       to: '',
+      payplan_id: 0,
       staff_category: 'qualified',
       grade: '',
       step: 1,
@@ -270,6 +312,8 @@ export default function EmployeesPage() {
       setContractEmployee(employee);
       setEndCurrentContract(true);
 
+      const defaultPayPlanId = payPlans.length === 1 ? payPlans[0].id : 0;
+
       // Prefill from active contract if exists
       const active = getActiveContract(employee.contracts);
       if (active) {
@@ -281,6 +325,7 @@ export default function EmployeesPage() {
         resetContract({
           from: tomorrowStr,
           to: '',
+          payplan_id: active.payplan_id || defaultPayPlanId,
           staff_category: active.staff_category as
             | 'qualified'
             | 'supplementary'
@@ -293,6 +338,7 @@ export default function EmployeesPage() {
         resetContract({
           from: '',
           to: '',
+          payplan_id: defaultPayPlanId,
           staff_category: 'qualified',
           grade: '',
           step: 1,
@@ -301,7 +347,7 @@ export default function EmployeesPage() {
       }
       setIsContractDialogOpen(true);
     },
-    [resetContract]
+    [resetContract, payPlans]
   );
 
   const handleViewContractHistory = useCallback(
@@ -324,14 +370,21 @@ export default function EmployeesPage() {
 
   // Helper to check if contract details have changed
   const contractDetailsChanged = (
-    newData: { staff_category: string; grade: string; step: number; weekly_hours: number },
+    newData: {
+      staff_category: string;
+      grade: string;
+      step: number;
+      weekly_hours: number;
+      payplan_id: number;
+    },
     oldContract: EmployeeContract
   ): boolean => {
     return (
       newData.staff_category !== oldContract.staff_category ||
       newData.grade !== oldContract.grade ||
       newData.step !== oldContract.step ||
-      newData.weekly_hours !== oldContract.weekly_hours
+      newData.weekly_hours !== oldContract.weekly_hours ||
+      newData.payplan_id !== oldContract.payplan_id
     );
   };
 
@@ -346,6 +399,7 @@ export default function EmployeesPage() {
               grade: data.grade,
               step: data.step,
               weekly_hours: data.weekly_hours,
+              payplan_id: data.payplan_id,
             },
             activeContract
           );
@@ -368,6 +422,7 @@ export default function EmployeesPage() {
             grade: data.grade,
             step: data.step,
             weekly_hours: data.weekly_hours,
+            payplan_id: data.payplan_id,
           },
         });
       }
@@ -449,12 +504,24 @@ export default function EmployeesPage() {
                   <TableHead>{t('employees.staffCategory.label')}</TableHead>
                   <TableHead>{t('employees.grade')}</TableHead>
                   <TableHead>{t('employees.weeklyHours')}</TableHead>
+                  <TableHead>{t('employees.salary')}</TableHead>
+                  <TableHead>{t('employees.yearsOfService')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees?.map((employee) => {
                   const currentContract = getCurrentContract(employee.contracts);
+                  const payPlanForSalary = currentContract?.payplan_id
+                    ? payPlanMap.get(currentContract.payplan_id)
+                    : undefined;
+                  const salary =
+                    currentContract && payPlanForSalary
+                      ? calculateMonthlySalary(currentContract, payPlanForSalary)
+                      : null;
+                  const yearsOfService = employee.contracts?.length
+                    ? calculateYearsOfService(employee.contracts)
+                    : null;
                   return (
                     <TableRow key={employee.id}>
                       <TableCell className="font-medium">
@@ -476,6 +543,10 @@ export default function EmployeesPage() {
                           : '-'}
                       </TableCell>
                       <TableCell>{currentContract?.weekly_hours || '-'}</TableCell>
+                      <TableCell>{salary !== null ? formatCurrency(salary) : '-'}</TableCell>
+                      <TableCell>
+                        {yearsOfService !== null ? yearsOfService.toFixed(1) : '-'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -517,7 +588,7 @@ export default function EmployeesPage() {
                 })}
                 {employees?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
                       {t('common.noResults')}
                     </TableCell>
                   </TableRow>
@@ -609,6 +680,28 @@ export default function EmployeesPage() {
                 <Label htmlFor="to">{t('contracts.endDateOptional')}</Label>
                 <Input id="to" type="date" {...registerContract('to')} />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payplan_id">{t('employees.payPlan')}</Label>
+              <Select
+                value={String(watchContract('payplan_id') || '')}
+                onValueChange={(val) => setValueContract('payplan_id', Number(val))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('employees.selectPayPlan')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {payPlans.map((pp) => (
+                    <SelectItem key={pp.id} value={String(pp.id)}>
+                      {pp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errorsContract.payplan_id && (
+                <p className="text-sm text-destructive">{t('employees.selectPayPlan')}</p>
+              )}
             </div>
 
             <div className="space-y-2">

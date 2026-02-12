@@ -38,6 +38,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type {
   EmployeeContract,
   EmployeeContractCreateRequest,
@@ -51,6 +58,7 @@ import { formatDate, formatDateForInput, formatDateForApi } from '@/lib/utils/fo
 const contractSchema = z.object({
   from: z.string().min(1),
   to: z.string().optional(),
+  payplan_id: z.number().min(1),
   staff_category: z.enum(['qualified', 'supplementary', 'non_pedagogical']),
   grade: z.string().min(1),
   step: z.number().min(1).max(6),
@@ -86,6 +94,14 @@ export default function EmployeeContractsPage() {
     queryFn: () => apiClient.getEmployeeContracts(orgId, employeeId),
     enabled: !!orgId && !!employeeId,
   });
+
+  // Fetch payplans for dropdown
+  const { data: payPlansData } = useQuery({
+    queryKey: ['payplans', orgId],
+    queryFn: () => apiClient.getPayPlans(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+  const payPlans = payPlansData?.data ?? [];
 
   const createMutation = useMutation({
     mutationFn: (data: EmployeeContractCreateRequest) =>
@@ -155,12 +171,15 @@ export default function EmployeeContractsPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
     defaultValues: {
       from: '',
       to: '',
+      payplan_id: 0,
       staff_category: 'qualified',
       grade: '',
       step: 1,
@@ -170,7 +189,16 @@ export default function EmployeeContractsPage() {
 
   const handleCreate = () => {
     setEditingContract(null);
-    reset({ from: '', to: '', staff_category: 'qualified', grade: '', step: 1, weekly_hours: 39 });
+    const defaultPayPlanId = payPlans.length === 1 ? payPlans[0].id : 0;
+    reset({
+      from: '',
+      to: '',
+      payplan_id: defaultPayPlanId,
+      staff_category: 'qualified',
+      grade: '',
+      step: 1,
+      weekly_hours: 39,
+    });
     setIsContractDialogOpen(true);
   };
 
@@ -179,6 +207,7 @@ export default function EmployeeContractsPage() {
     reset({
       from: formatDateForInput(contract.from),
       to: contract.to ? formatDateForInput(contract.to) : '',
+      payplan_id: contract.payplan_id || 0,
       staff_category: contract.staff_category as 'qualified' | 'supplementary' | 'non_pedagogical',
       grade: contract.grade,
       step: contract.step,
@@ -199,6 +228,7 @@ export default function EmployeeContractsPage() {
         data: {
           from: formatDateForApi(data.from) || undefined,
           to: formatDateForApi(data.to) || undefined,
+          payplan_id: data.payplan_id,
           staff_category: data.staff_category,
           grade: data.grade,
           step: data.step,
@@ -209,6 +239,7 @@ export default function EmployeeContractsPage() {
       createMutation.mutate({
         from: formatDateForApi(data.from) || data.from,
         to: formatDateForApi(data.to),
+        payplan_id: data.payplan_id,
         staff_category: data.staff_category,
         grade: data.grade,
         step: data.step,
@@ -374,6 +405,28 @@ export default function EmployeeContractsPage() {
                 <Label htmlFor="to">{t('contracts.endDateOptional')}</Label>
                 <Input id="to" type="date" {...register('to')} />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payplan_id">{t('employees.payPlan')}</Label>
+              <Select
+                value={String(watch('payplan_id') || '')}
+                onValueChange={(val) => setValue('payplan_id', Number(val))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('employees.selectPayPlan')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {payPlans.map((pp) => (
+                    <SelectItem key={pp.id} value={String(pp.id)}>
+                      {pp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.payplan_id && (
+                <p className="text-sm text-destructive">{t('employees.selectPayPlan')}</p>
+              )}
             </div>
 
             <div className="space-y-2">

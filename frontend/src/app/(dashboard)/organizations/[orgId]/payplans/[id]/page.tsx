@@ -35,7 +35,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
 import type {
@@ -48,6 +47,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { formatDate, formatCurrency, formatPeriod } from '@/lib/utils/formatting';
+import { PayPlanGrid } from '@/components/payplans/payplan-grid';
 
 const periodSchema = z.object({
   from: z.string().min(1),
@@ -59,6 +59,7 @@ const entrySchema = z.object({
   grade: z.string().min(1),
   step: z.number().min(1).max(6),
   monthly_amount: z.number().min(0),
+  step_min_years: z.number().min(0).optional(),
 });
 
 type PeriodFormData = z.infer<typeof periodSchema>;
@@ -73,6 +74,7 @@ export default function PayPlanDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [view, setView] = useState<'panels' | 'table'>('panels');
   const [isPeriodDialogOpen, setIsPeriodDialogOpen] = useState(false);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
   const [isDeletePeriodDialogOpen, setIsDeletePeriodDialogOpen] = useState(false);
@@ -182,7 +184,7 @@ export default function PayPlanDetailPage() {
     formState: { errors: errorsEntry },
   } = useForm<EntryFormData>({
     resolver: zodResolver(entrySchema),
-    defaultValues: { grade: '', step: 1, monthly_amount: 0 },
+    defaultValues: { grade: '', step: 1, monthly_amount: 0, step_min_years: undefined },
   });
 
   const handleAddPeriod = () => {
@@ -194,7 +196,7 @@ export default function PayPlanDetailPage() {
   const handleAddEntry = (period: PayPlanPeriod) => {
     setSelectedPeriod(period);
     setEditingEntry(null);
-    resetEntry({ grade: '', step: 1, monthly_amount: 0 });
+    resetEntry({ grade: '', step: 1, monthly_amount: 0, step_min_years: undefined });
     setIsEntryDialogOpen(true);
   };
 
@@ -209,7 +211,13 @@ export default function PayPlanDetailPage() {
     if (selectedPeriod) {
       createEntryMutation.mutate({
         periodId: selectedPeriod.id,
-        data,
+        data: {
+          ...data,
+          step_min_years:
+            data.step_min_years != null && !isNaN(data.step_min_years)
+              ? data.step_min_years
+              : undefined,
+        },
       });
     }
   };
@@ -243,16 +251,51 @@ export default function PayPlanDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('governmentFundings.periods')}</CardTitle>
-          <Button size="sm" onClick={handleAddPeriod}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('payPlans.addPeriod')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md border">
+              <Button
+                size="sm"
+                variant={view === 'panels' ? 'secondary' : 'ghost'}
+                className="rounded-r-none"
+                onClick={() => setView('panels')}
+              >
+                {t('payPlans.viewPanels')}
+              </Button>
+              <Button
+                size="sm"
+                variant={view === 'table' ? 'secondary' : 'ghost'}
+                className="rounded-l-none"
+                onClick={() => setView('table')}
+              >
+                {t('payPlans.viewTable')}
+              </Button>
+            </div>
+            {view === 'panels' && (
+              <Button size="sm" onClick={handleAddPeriod}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('payPlans.addPeriod')}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {payPlan.periods?.length === 0 ? (
             <p className="py-8 text-center text-muted-foreground">
-              {t('payPlans.noPeriodsDefined')}
+              {view === 'panels' ? t('payPlans.noPeriodsDefined') : t('payPlans.noDataDefined')}
             </p>
+          ) : view === 'table' ? (
+            <div className="space-y-6">
+              {payPlan.periods?.map((period) => (
+                <div key={period.id}>
+                  <h3 className="mb-2 text-sm font-medium">
+                    {formatPeriod(period.from, period.to, 'en', t('common.ongoing'))}
+                    {' \u2014 '}
+                    {period.weekly_hours}h / {t('payPlans.weeklyHours')}
+                  </h3>
+                  <PayPlanGrid period={period} />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="space-y-6">
               {payPlan.periods?.map((period) => (
@@ -294,6 +337,7 @@ export default function PayPlanDetailPage() {
                           <TableRow>
                             <TableHead>{t('payPlans.grade')}</TableHead>
                             <TableHead>{t('payPlans.step')}</TableHead>
+                            <TableHead>{t('payPlans.stepMinYears')}</TableHead>
                             <TableHead>{t('payPlans.monthlyAmount')}</TableHead>
                             <TableHead className="text-right">{t('common.actions')}</TableHead>
                           </TableRow>
@@ -303,6 +347,11 @@ export default function PayPlanDetailPage() {
                             <TableRow key={entry.id}>
                               <TableCell className="font-medium">{entry.grade}</TableCell>
                               <TableCell>{entry.step}</TableCell>
+                              <TableCell>
+                                {entry.step_min_years != null
+                                  ? `${entry.step_min_years}y`
+                                  : '\u2014'}
+                              </TableCell>
                               <TableCell>{formatCurrency(entry.monthly_amount)}</TableCell>
                               <TableCell className="text-right">
                                 <Button
@@ -418,6 +467,16 @@ export default function PayPlanDetailPage() {
               {errorsEntry.monthly_amount && (
                 <p className="text-sm text-destructive">{t('payPlans.monthlyAmountRequired')}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="step_min_years">{t('payPlans.stepMinYearsLabel')}</Label>
+              <Input
+                id="step_min_years"
+                type="number"
+                min={0}
+                {...registerEntry('step_min_years', { valueAsNumber: true })}
+              />
             </div>
 
             <DialogFooter>

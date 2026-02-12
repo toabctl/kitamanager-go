@@ -253,7 +253,8 @@ func createOrganizationService(db *gorm.DB) *service.OrganizationService {
 // createEmployeeService creates an employee service for testing.
 func createEmployeeService(db *gorm.DB) *service.EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
-	return service.NewEmployeeService(employeeStore)
+	payPlanStore := store.NewPayPlanStore(db)
+	return service.NewEmployeeService(employeeStore, payPlanStore)
 }
 
 // createChildService creates a child service for testing.
@@ -275,4 +276,18 @@ func createAttendanceService(db *gorm.DB) *service.ChildAttendanceService {
 	attendanceStore := store.NewChildAttendanceStore(db)
 	childStore := store.NewChildStore(db)
 	return service.NewChildAttendanceService(attendanceStore, childStore)
+}
+
+// createTestPayPlan creates a pay plan for testing.
+func createTestPayPlan(t *testing.T, db *gorm.DB, name string, orgID uint) *models.PayPlan {
+	t.Helper()
+
+	payPlan := &models.PayPlan{
+		OrganizationID: orgID,
+		Name:           name,
+	}
+	if err := db.Create(payPlan).Error; err != nil {
+		t.Fatalf("failed to create test pay plan: %v", err)
+	}
+	return payPlan
 }
