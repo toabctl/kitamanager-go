@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -475,5 +476,5 @@ func (s *PayPlanService) CalculateSalary(ctx context.Context, payplanID uint, gr
 
 	// Calculate salary: MonthlyAmount * (employeeWeeklyHours / periodWeeklyHours)
 	salary := float64(entry.MonthlyAmount) * (weeklyHours / period.WeeklyHours)
-	return int(salary), nil
+	return int(math.Round(salary)), nil
 }

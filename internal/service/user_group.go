@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -83,7 +84,10 @@ func (s *UserGroupService) UpdateUserGroupRole(ctx context.Context, userID, grou
 	}
 
 	// Load group for response
-	group, _ := s.groupStore.FindByID(ctx, groupID)
+	group, err := s.groupStore.FindByID(ctx, groupID)
+	if err != nil {
+		slog.Warn("failed to load group for response", "group_id", groupID, "error", err)
+	}
 	ug.Role = role
 	ug.Group = group
 	resp := ug.ToResponse()
