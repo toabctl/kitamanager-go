@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -18,26 +19,26 @@ func NewChildAttendanceStore(db *gorm.DB) *ChildAttendanceStore {
 	return &ChildAttendanceStore{db: db}
 }
 
-func (s *ChildAttendanceStore) FindByID(id uint) (*models.ChildAttendance, error) {
+func (s *ChildAttendanceStore) FindByID(ctx context.Context, id uint) (*models.ChildAttendance, error) {
 	var attendance models.ChildAttendance
-	if err := s.db.Preload("Child").First(&attendance, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Preload("Child").First(&attendance, id).Error; err != nil {
 		return nil, err
 	}
 	return &attendance, nil
 }
 
-func (s *ChildAttendanceStore) FindByOrganizationAndDate(orgID uint, date time.Time, limit, offset int) ([]models.ChildAttendance, int64, error) {
+func (s *ChildAttendanceStore) FindByOrganizationAndDate(ctx context.Context, orgID uint, date time.Time, limit, offset int) ([]models.ChildAttendance, int64, error) {
 	var records []models.ChildAttendance
 	var total int64
 
-	query := s.db.Model(&models.ChildAttendance{}).
+	query := DBFromContext(ctx, s.db).Model(&models.ChildAttendance{}).
 		Where("organization_id = ? AND date = ?", orgID, date)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Preload("Child").
+	if err := DBFromContext(ctx, s.db).Preload("Child").
 		Where("organization_id = ? AND date = ?", orgID, date).
 		Order("created_at DESC").
 		Limit(limit).Offset(offset).
@@ -48,9 +49,9 @@ func (s *ChildAttendanceStore) FindByOrganizationAndDate(orgID uint, date time.T
 	return records, total, nil
 }
 
-func (s *ChildAttendanceStore) FindByChildAndDate(childID uint, date time.Time) (*models.ChildAttendance, error) {
+func (s *ChildAttendanceStore) FindByChildAndDate(ctx context.Context, childID uint, date time.Time) (*models.ChildAttendance, error) {
 	var attendance models.ChildAttendance
-	if err := s.db.Preload("Child").
+	if err := DBFromContext(ctx, s.db).Preload("Child").
 		Where("child_id = ? AND date = ?", childID, date).
 		First(&attendance).Error; err != nil {
 		return nil, err
@@ -58,18 +59,18 @@ func (s *ChildAttendanceStore) FindByChildAndDate(childID uint, date time.Time) 
 	return &attendance, nil
 }
 
-func (s *ChildAttendanceStore) FindByChildAndDateRange(childID uint, from, to time.Time, limit, offset int) ([]models.ChildAttendance, int64, error) {
+func (s *ChildAttendanceStore) FindByChildAndDateRange(ctx context.Context, childID uint, from, to time.Time, limit, offset int) ([]models.ChildAttendance, int64, error) {
 	var records []models.ChildAttendance
 	var total int64
 
-	query := s.db.Model(&models.ChildAttendance{}).
+	query := DBFromContext(ctx, s.db).Model(&models.ChildAttendance{}).
 		Where("child_id = ? AND date >= ? AND date <= ?", childID, from, to)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Preload("Child").
+	if err := DBFromContext(ctx, s.db).Preload("Child").
 		Where("child_id = ? AND date >= ? AND date <= ?", childID, from, to).
 		Order("date DESC").
 		Limit(limit).Offset(offset).
@@ -80,22 +81,22 @@ func (s *ChildAttendanceStore) FindByChildAndDateRange(childID uint, from, to ti
 	return records, total, nil
 }
 
-func (s *ChildAttendanceStore) Create(attendance *models.ChildAttendance) error {
-	return s.db.Create(attendance).Error
+func (s *ChildAttendanceStore) Create(ctx context.Context, attendance *models.ChildAttendance) error {
+	return DBFromContext(ctx, s.db).Create(attendance).Error
 }
 
-func (s *ChildAttendanceStore) Update(attendance *models.ChildAttendance) error {
-	return s.db.Save(attendance).Error
+func (s *ChildAttendanceStore) Update(ctx context.Context, attendance *models.ChildAttendance) error {
+	return DBFromContext(ctx, s.db).Save(attendance).Error
 }
 
-func (s *ChildAttendanceStore) Delete(id uint) error {
-	return s.db.Delete(&models.ChildAttendance{}, id).Error
+func (s *ChildAttendanceStore) Delete(ctx context.Context, id uint) error {
+	return DBFromContext(ctx, s.db).Delete(&models.ChildAttendance{}, id).Error
 }
 
 // GetDailySummary returns attendance summary for a given date and organization.
-func (s *ChildAttendanceStore) GetDailySummary(orgID uint, date time.Time) (*models.ChildAttendanceDailySummaryResponse, error) {
+func (s *ChildAttendanceStore) GetDailySummary(ctx context.Context, orgID uint, date time.Time) (*models.ChildAttendanceDailySummaryResponse, error) {
 	var records []models.ChildAttendance
-	if err := s.db.Where("organization_id = ? AND date = ?", orgID, date).
+	if err := DBFromContext(ctx, s.db).Where("organization_id = ? AND date = ?", orgID, date).
 		Find(&records).Error; err != nil {
 		return nil, err
 	}

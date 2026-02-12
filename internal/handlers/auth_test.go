@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -165,7 +166,7 @@ func TestAuthHandler_Login_UpdatesLastLogin(t *testing.T) {
 	}
 
 	// Verify last_login was updated
-	updatedUser, err := userStore.FindByID(user.ID)
+	updatedUser, err := userStore.FindByID(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("failed to find user: %v", err)
 	}

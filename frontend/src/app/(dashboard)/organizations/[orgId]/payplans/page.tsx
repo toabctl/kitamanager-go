@@ -16,20 +16,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type { PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
-
-const payPlanSchema = z.object({
-  name: z.string().min(1).max(255),
-});
-
-type PayPlanFormData = z.infer<typeof payPlanSchema>;
+import { payPlanSchema, type PayPlanFormData } from '@/lib/schemas';
 
 const defaultValues: PayPlanFormData = {
   name: '',
@@ -53,7 +48,7 @@ export default function PayPlansPage() {
   });
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['payplans', orgId, page],
+    queryKey: queryKeys.payPlans.list(orgId, page),
     queryFn: () => apiClient.getPayPlans(orgId, { page }),
     enabled: !!orgId,
   });
@@ -68,7 +63,7 @@ export default function PayPlansPage() {
 
   const mutations = useCrudMutations<PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest>({
     resourceName: 'payPlans',
-    queryKey: ['payplans', orgId],
+    queryKey: queryKeys.payPlans.all(orgId),
     createFn: (data) => apiClient.createPayPlan(orgId, data),
     updateFn: (id, data) => apiClient.updatePayPlan(orgId, id, data),
     deleteFn: (id) => apiClient.deletePayPlan(orgId, id),

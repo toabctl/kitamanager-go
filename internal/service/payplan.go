@@ -14,11 +14,11 @@ import (
 
 // PayPlanService handles business logic for pay plans.
 type PayPlanService struct {
-	store *store.PayPlanStore
+	store store.PayPlanStorer
 }
 
 // NewPayPlanService creates a new PayPlanService.
-func NewPayPlanService(store *store.PayPlanStore) *PayPlanService {
+func NewPayPlanService(store store.PayPlanStorer) *PayPlanService {
 	return &PayPlanService{store: store}
 }
 
@@ -30,7 +30,7 @@ func (s *PayPlanService) Create(ctx context.Context, orgID uint, req models.PayP
 	}
 
 	if err := s.store.Create(ctx, payplan); err != nil {
-		return nil, apperror.Internal("failed to create pay plan")
+		return nil, apperror.InternalWrap(err, "failed to create pay plan")
 	}
 
 	resp := payplan.ToResponse()
@@ -45,7 +45,7 @@ func (s *PayPlanService) GetByID(ctx context.Context, id, orgID uint, activeOn *
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 
 	if payplan.OrganizationID != orgID {
@@ -60,7 +60,7 @@ func (s *PayPlanService) GetByID(ctx context.Context, id, orgID uint, activeOn *
 func (s *PayPlanService) List(ctx context.Context, orgID uint, limit, offset int) ([]models.PayPlanResponse, int64, error) {
 	payplans, total, err := s.store.GetByOrganization(ctx, orgID, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch pay plans")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch pay plans")
 	}
 
 	responses := make([]models.PayPlanResponse, len(payplans))
@@ -78,7 +78,7 @@ func (s *PayPlanService) Update(ctx context.Context, id, orgID uint, req models.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 
 	if payplan.OrganizationID != orgID {
@@ -88,7 +88,7 @@ func (s *PayPlanService) Update(ctx context.Context, id, orgID uint, req models.
 	payplan.Name = req.Name
 
 	if err := s.store.Update(ctx, payplan); err != nil {
-		return nil, apperror.Internal("failed to update pay plan")
+		return nil, apperror.InternalWrap(err, "failed to update pay plan")
 	}
 
 	resp := payplan.ToResponse()
@@ -102,7 +102,7 @@ func (s *PayPlanService) Delete(ctx context.Context, id, orgID uint) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("pay plan")
 		}
-		return apperror.Internal("failed to fetch pay plan")
+		return apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 
 	if payplan.OrganizationID != orgID {
@@ -110,7 +110,7 @@ func (s *PayPlanService) Delete(ctx context.Context, id, orgID uint) error {
 	}
 
 	if err := s.store.Delete(ctx, id); err != nil {
-		return apperror.Internal("failed to delete pay plan")
+		return apperror.InternalWrap(err, "failed to delete pay plan")
 	}
 	return nil
 }
@@ -125,7 +125,7 @@ func (s *PayPlanService) CreatePeriod(ctx context.Context, payplanID, orgID uint
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -153,7 +153,7 @@ func (s *PayPlanService) CreatePeriod(ctx context.Context, payplanID, orgID uint
 	}
 
 	if err := s.store.CreatePeriod(ctx, period); err != nil {
-		return nil, apperror.Internal("failed to create period")
+		return nil, apperror.InternalWrap(err, "failed to create period")
 	}
 
 	resp := period.ToResponse()
@@ -168,7 +168,7 @@ func (s *PayPlanService) GetPeriod(ctx context.Context, periodID, payplanID, org
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -179,7 +179,7 @@ func (s *PayPlanService) GetPeriod(ctx context.Context, periodID, payplanID, org
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("period")
 		}
-		return nil, apperror.Internal("failed to fetch period")
+		return nil, apperror.InternalWrap(err, "failed to fetch period")
 	}
 
 	if period.PayPlanID != payplanID {
@@ -198,7 +198,7 @@ func (s *PayPlanService) UpdatePeriod(ctx context.Context, periodID, payplanID, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -209,7 +209,7 @@ func (s *PayPlanService) UpdatePeriod(ctx context.Context, periodID, payplanID, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("period")
 		}
-		return nil, apperror.Internal("failed to fetch period")
+		return nil, apperror.InternalWrap(err, "failed to fetch period")
 	}
 
 	if period.PayPlanID != payplanID {
@@ -235,7 +235,7 @@ func (s *PayPlanService) UpdatePeriod(ctx context.Context, periodID, payplanID, 
 	period.WeeklyHours = req.WeeklyHours
 
 	if err := s.store.UpdatePeriod(ctx, period); err != nil {
-		return nil, apperror.Internal("failed to update period")
+		return nil, apperror.InternalWrap(err, "failed to update period")
 	}
 
 	resp := period.ToResponse()
@@ -250,7 +250,7 @@ func (s *PayPlanService) DeletePeriod(ctx context.Context, periodID, payplanID, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("pay plan")
 		}
-		return apperror.Internal("failed to fetch pay plan")
+		return apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return apperror.NotFound("pay plan")
@@ -261,7 +261,7 @@ func (s *PayPlanService) DeletePeriod(ctx context.Context, periodID, payplanID, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("period")
 		}
-		return apperror.Internal("failed to fetch period")
+		return apperror.InternalWrap(err, "failed to fetch period")
 	}
 
 	if period.PayPlanID != payplanID {
@@ -269,7 +269,7 @@ func (s *PayPlanService) DeletePeriod(ctx context.Context, periodID, payplanID, 
 	}
 
 	if err := s.store.DeletePeriod(ctx, periodID); err != nil {
-		return apperror.Internal("failed to delete period")
+		return apperror.InternalWrap(err, "failed to delete period")
 	}
 	return nil
 }
@@ -284,7 +284,7 @@ func (s *PayPlanService) CreateEntry(ctx context.Context, entryReq models.PayPla
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -296,7 +296,7 @@ func (s *PayPlanService) CreateEntry(ctx context.Context, entryReq models.PayPla
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("period")
 		}
-		return nil, apperror.Internal("failed to fetch period")
+		return nil, apperror.InternalWrap(err, "failed to fetch period")
 	}
 	if period.PayPlanID != payplanID {
 		return nil, apperror.NotFound("period")
@@ -311,7 +311,7 @@ func (s *PayPlanService) CreateEntry(ctx context.Context, entryReq models.PayPla
 	}
 
 	if err := s.store.CreateEntry(ctx, entry); err != nil {
-		return nil, apperror.Internal("failed to create entry")
+		return nil, apperror.InternalWrap(err, "failed to create entry")
 	}
 
 	resp := entry.ToResponse()
@@ -326,7 +326,7 @@ func (s *PayPlanService) GetEntry(ctx context.Context, entryID, periodID, paypla
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -338,7 +338,7 @@ func (s *PayPlanService) GetEntry(ctx context.Context, entryID, periodID, paypla
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("period")
 		}
-		return nil, apperror.Internal("failed to fetch period")
+		return nil, apperror.InternalWrap(err, "failed to fetch period")
 	}
 	if period.PayPlanID != payplanID {
 		return nil, apperror.NotFound("period")
@@ -349,7 +349,7 @@ func (s *PayPlanService) GetEntry(ctx context.Context, entryID, periodID, paypla
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("entry")
 		}
-		return nil, apperror.Internal("failed to fetch entry")
+		return nil, apperror.InternalWrap(err, "failed to fetch entry")
 	}
 
 	if entry.PeriodID != periodID {
@@ -368,7 +368,7 @@ func (s *PayPlanService) UpdateEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("pay plan")
 		}
-		return nil, apperror.Internal("failed to fetch pay plan")
+		return nil, apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return nil, apperror.NotFound("pay plan")
@@ -380,7 +380,7 @@ func (s *PayPlanService) UpdateEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("period")
 		}
-		return nil, apperror.Internal("failed to fetch period")
+		return nil, apperror.InternalWrap(err, "failed to fetch period")
 	}
 	if period.PayPlanID != payplanID {
 		return nil, apperror.NotFound("period")
@@ -391,7 +391,7 @@ func (s *PayPlanService) UpdateEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("entry")
 		}
-		return nil, apperror.Internal("failed to fetch entry")
+		return nil, apperror.InternalWrap(err, "failed to fetch entry")
 	}
 
 	if entry.PeriodID != periodID {
@@ -404,7 +404,7 @@ func (s *PayPlanService) UpdateEntry(ctx context.Context, entryID, periodID, pay
 	entry.StepMinYears = req.StepMinYears
 
 	if err := s.store.UpdateEntry(ctx, entry); err != nil {
-		return nil, apperror.Internal("failed to update entry")
+		return nil, apperror.InternalWrap(err, "failed to update entry")
 	}
 
 	resp := entry.ToResponse()
@@ -419,7 +419,7 @@ func (s *PayPlanService) DeleteEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("pay plan")
 		}
-		return apperror.Internal("failed to fetch pay plan")
+		return apperror.InternalWrap(err, "failed to fetch pay plan")
 	}
 	if payplan.OrganizationID != orgID {
 		return apperror.NotFound("pay plan")
@@ -431,7 +431,7 @@ func (s *PayPlanService) DeleteEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("period")
 		}
-		return apperror.Internal("failed to fetch period")
+		return apperror.InternalWrap(err, "failed to fetch period")
 	}
 	if period.PayPlanID != payplanID {
 		return apperror.NotFound("period")
@@ -442,7 +442,7 @@ func (s *PayPlanService) DeleteEntry(ctx context.Context, entryID, periodID, pay
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("entry")
 		}
-		return apperror.Internal("failed to fetch entry")
+		return apperror.InternalWrap(err, "failed to fetch entry")
 	}
 
 	if entry.PeriodID != periodID {
@@ -450,7 +450,7 @@ func (s *PayPlanService) DeleteEntry(ctx context.Context, entryID, periodID, pay
 	}
 
 	if err := s.store.DeleteEntry(ctx, entryID); err != nil {
-		return apperror.Internal("failed to delete entry")
+		return apperror.InternalWrap(err, "failed to delete entry")
 	}
 	return nil
 }
@@ -462,7 +462,7 @@ func (s *PayPlanService) CalculateSalary(ctx context.Context, payplanID uint, gr
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, apperror.NotFound("no active pay plan period found for the given date")
 		}
-		return 0, apperror.Internal("failed to fetch pay plan period")
+		return 0, apperror.InternalWrap(err, "failed to fetch pay plan period")
 	}
 
 	entry, err := s.store.GetEntry(ctx, period.ID, grade, step)
@@ -470,7 +470,7 @@ func (s *PayPlanService) CalculateSalary(ctx context.Context, payplanID uint, gr
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, apperror.NotFound("no pay plan entry found for the given grade and step")
 		}
-		return 0, apperror.Internal("failed to fetch pay plan entry")
+		return 0, apperror.InternalWrap(err, "failed to fetch pay plan entry")
 	}
 
 	// Calculate salary: MonthlyAmount * (employeeWeeklyHours / periodWeeklyHours)

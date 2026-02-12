@@ -2,6 +2,7 @@ package apperror
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -104,6 +105,13 @@ func Forbidden(msg string) *AppError {
 // Internal creates an internal server error
 func Internal(msg string) *AppError {
 	return &AppError{Err: ErrInternalServer, Message: msg, Code: http.StatusInternalServerError, ErrorCode: CodeInternal}
+}
+
+// InternalWrap creates an internal server error that wraps the original error.
+// The original error is available via Unwrap() for logging/debugging but is not
+// exposed in HTTP responses.
+func InternalWrap(err error, msg string) *AppError {
+	return &AppError{Err: fmt.Errorf("%s: %w", msg, err), Message: msg, Code: http.StatusInternalServerError, ErrorCode: CodeInternal}
 }
 
 // Unauthorized creates an unauthorized error

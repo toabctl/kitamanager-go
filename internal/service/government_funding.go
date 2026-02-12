@@ -13,19 +13,20 @@ import (
 
 // GovernmentFundingService handles business logic for government funding operations
 type GovernmentFundingService struct {
-	store store.GovernmentFundingStorer
+	store      store.GovernmentFundingStorer
+	transactor store.Transactor
 }
 
 // NewGovernmentFundingService creates a new government funding service
-func NewGovernmentFundingService(store store.GovernmentFundingStorer) *GovernmentFundingService {
-	return &GovernmentFundingService{store: store}
+func NewGovernmentFundingService(store store.GovernmentFundingStorer, transactor store.Transactor) *GovernmentFundingService {
+	return &GovernmentFundingService{store: store, transactor: transactor}
 }
 
 // List returns a paginated list of government fundings
 func (s *GovernmentFundingService) List(ctx context.Context, limit, offset int) ([]models.GovernmentFundingResponse, int64, error) {
-	fundings, total, err := s.store.FindAll(limit, offset)
+	fundings, total, err := s.store.FindAll(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch government fundings")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch government fundings")
 	}
 
 	responses := make([]models.GovernmentFundingResponse, len(fundings))
@@ -37,7 +38,7 @@ func (s *GovernmentFundingService) List(ctx context.Context, limit, offset int) 
 
 // GetByID returns a government funding by ID without nested details
 func (s *GovernmentFundingService) GetByID(ctx context.Context, id uint) (*models.GovernmentFundingResponse, error) {
-	funding, err := s.store.FindByID(id)
+	funding, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("government funding")
 	}
@@ -55,14 +56,14 @@ type GovernmentFundingWithDetailsResponse struct {
 // periodsLimit controls how many periods are returned (0 = all)
 // activeOn filters periods to those active on the given date (nil = no filter)
 func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint, periodsLimit int, activeOn *time.Time) (*GovernmentFundingWithDetailsResponse, error) {
-	funding, err := s.store.FindByIDWithDetails(id, periodsLimit, activeOn)
+	funding, err := s.store.FindByIDWithDetails(ctx, id, periodsLimit, activeOn)
 	if err != nil {
 		return nil, apperror.NotFound("government funding")
 	}
 
-	totalPeriods, err := s.store.CountPeriods(id)
+	totalPeriods, err := s.store.CountPeriods(ctx, id)
 	if err != nil {
-		return nil, apperror.Internal("failed to count periods")
+		return nil, apperror.InternalWrap(err, "failed to count periods")
 	}
 
 	return &GovernmentFundingWithDetailsResponse{
@@ -94,8 +95,8 @@ func (s *GovernmentFundingService) Create(ctx context.Context, req *GovernmentFu
 		State: req.State,
 	}
 
-	if err := s.store.Create(funding); err != nil {
-		return nil, apperror.Internal("failed to create government funding")
+	if err := s.store.Create(ctx, funding); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create government funding")
 	}
 
 	resp := funding.ToResponse()
@@ -109,7 +110,7 @@ type GovernmentFundingUpdateRequest struct {
 
 // Update updates an existing government funding
 func (s *GovernmentFundingService) Update(ctx context.Context, id uint, req *GovernmentFundingUpdateRequest) (*models.GovernmentFundingResponse, error) {
-	funding, err := s.store.FindByID(id)
+	funding, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("government funding")
 	}
@@ -122,8 +123,8 @@ func (s *GovernmentFundingService) Update(ctx context.Context, id uint, req *Gov
 		funding.Name = name
 	}
 
-	if err := s.store.Update(funding); err != nil {
-		return nil, apperror.Internal("failed to update government funding")
+	if err := s.store.Update(ctx, funding); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update government funding")
 	}
 
 	resp := funding.ToResponse()
@@ -132,8 +133,8 @@ func (s *GovernmentFundingService) Update(ctx context.Context, id uint, req *Gov
 
 // Delete deletes a government funding
 func (s *GovernmentFundingService) Delete(ctx context.Context, id uint) error {
-	if err := s.store.Delete(id); err != nil {
-		return apperror.Internal("failed to delete government funding")
+	if err := s.store.Delete(ctx, id); err != nil {
+		return apperror.InternalWrap(err, "failed to delete government funding")
 	}
 	return nil
 }
@@ -164,10 +165,10 @@ func governmentFundingPeriodsOverlap(from1 time.Time, to1 *time.Time, from2 time
 
 // validatePeriodNoOverlap checks that the new/updated period doesn't overlap with existing periods.
 // excludeID is used when updating to exclude the period being updated from the check.
-func (s *GovernmentFundingService) validatePeriodNoOverlap(governmentFundingID uint, from time.Time, to *time.Time, excludeID *uint) error {
-	existingPeriods, err := s.store.FindPeriodsByGovernmentFundingID(governmentFundingID)
+func (s *GovernmentFundingService) validatePeriodNoOverlap(ctx context.Context, governmentFundingID uint, from time.Time, to *time.Time, excludeID *uint) error {
+	existingPeriods, err := s.store.FindPeriodsByGovernmentFundingID(ctx, governmentFundingID)
 	if err != nil {
-		return apperror.Internal("failed to check for period overlaps")
+		return apperror.InternalWrap(err, "failed to check for period overlaps")
 	}
 
 	for _, existing := range existingPeriods {
@@ -187,33 +188,40 @@ func (s *GovernmentFundingService) validatePeriodNoOverlap(governmentFundingID u
 // CreatePeriod creates a new period
 func (s *GovernmentFundingService) CreatePeriod(ctx context.Context, governmentFundingID uint, req *models.GovernmentFundingPeriodCreateRequest) (*models.GovernmentFundingPeriodResponse, error) {
 	// Verify government funding exists
-	if _, err := s.store.FindByID(governmentFundingID); err != nil {
+	if _, err := s.store.FindByID(ctx, governmentFundingID); err != nil {
 		return nil, apperror.NotFound("government funding")
 	}
 
-	// Validate no overlap with existing periods
-	if err := s.validatePeriodNoOverlap(governmentFundingID, req.From, req.To, nil); err != nil {
+	var resp models.GovernmentFundingPeriodResponse
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		// Validate no overlap with existing periods
+		if err := s.validatePeriodNoOverlap(txCtx, governmentFundingID, req.From, req.To, nil); err != nil {
+			return err
+		}
+
+		period := &models.GovernmentFundingPeriod{
+			GovernmentFundingID: governmentFundingID,
+			From:                req.From,
+			To:                  req.To,
+			Comment:             strings.TrimSpace(req.Comment),
+		}
+
+		if err := s.store.CreatePeriod(txCtx, period); err != nil {
+			return apperror.InternalWrap(err, "failed to create period")
+		}
+
+		resp = period.ToResponse()
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	period := &models.GovernmentFundingPeriod{
-		GovernmentFundingID: governmentFundingID,
-		From:                req.From,
-		To:                  req.To,
-		Comment:             strings.TrimSpace(req.Comment),
-	}
-
-	if err := s.store.CreatePeriod(period); err != nil {
-		return nil, apperror.Internal("failed to create period")
-	}
-
-	resp := period.ToResponse()
 	return &resp, nil
 }
 
 // GetPeriodByID returns a period by ID
 func (s *GovernmentFundingService) GetPeriodByID(ctx context.Context, id uint) (*models.GovernmentFundingPeriodResponse, error) {
-	period, err := s.store.FindPeriodByID(id)
+	period, err := s.store.FindPeriodByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("period")
 	}
@@ -223,7 +231,7 @@ func (s *GovernmentFundingService) GetPeriodByID(ctx context.Context, id uint) (
 
 // UpdatePeriod updates an existing period
 func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID uint, req *models.GovernmentFundingPeriodUpdateRequest) (*models.GovernmentFundingPeriodResponse, error) {
-	period, err := s.store.FindPeriodByID(periodID)
+	period, err := s.store.FindPeriodByID(ctx, periodID)
 	if err != nil {
 		return nil, apperror.NotFound("period")
 	}
@@ -238,20 +246,26 @@ func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID ui
 		newTo = req.To
 	}
 
-	// Validate no overlap with other periods (excluding this one)
-	if err := s.validatePeriodNoOverlap(period.GovernmentFundingID, newFrom, newTo, &periodID); err != nil {
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		// Validate no overlap with other periods (excluding this one)
+		if err := s.validatePeriodNoOverlap(txCtx, period.GovernmentFundingID, newFrom, newTo, &periodID); err != nil {
+			return err
+		}
+
+		// Apply updates
+		period.From = newFrom
+		period.To = newTo
+		if req.Comment != nil {
+			period.Comment = strings.TrimSpace(*req.Comment)
+		}
+
+		if err := s.store.UpdatePeriod(txCtx, period); err != nil {
+			return apperror.InternalWrap(err, "failed to update period")
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
-	}
-
-	// Apply updates
-	period.From = newFrom
-	period.To = newTo
-	if req.Comment != nil {
-		period.Comment = strings.TrimSpace(*req.Comment)
-	}
-
-	if err := s.store.UpdatePeriod(period); err != nil {
-		return nil, apperror.Internal("failed to update period")
 	}
 
 	resp := period.ToResponse()
@@ -260,8 +274,8 @@ func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID ui
 
 // DeletePeriod deletes a period
 func (s *GovernmentFundingService) DeletePeriod(ctx context.Context, periodID uint) error {
-	if err := s.store.DeletePeriod(periodID); err != nil {
-		return apperror.Internal("failed to delete period")
+	if err := s.store.DeletePeriod(ctx, periodID); err != nil {
+		return apperror.InternalWrap(err, "failed to delete period")
 	}
 	return nil
 }
@@ -271,7 +285,7 @@ func (s *GovernmentFundingService) DeletePeriod(ctx context.Context, periodID ui
 // CreateProperty creates a new property
 func (s *GovernmentFundingService) CreateProperty(ctx context.Context, periodID uint, req *models.GovernmentFundingPropertyCreateRequest) (*models.GovernmentFundingPropertyResponse, error) {
 	// Verify period exists
-	if _, err := s.store.FindPeriodByID(periodID); err != nil {
+	if _, err := s.store.FindPeriodByID(ctx, periodID); err != nil {
 		return nil, apperror.NotFound("period")
 	}
 
@@ -298,8 +312,8 @@ func (s *GovernmentFundingService) CreateProperty(ctx context.Context, periodID 
 		return nil, apperror.BadRequest("value cannot be empty or whitespace only")
 	}
 
-	if err := s.store.CreateProperty(property); err != nil {
-		return nil, apperror.Internal("failed to create property")
+	if err := s.store.CreateProperty(ctx, property); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create property")
 	}
 
 	resp := property.ToResponse()
@@ -308,7 +322,7 @@ func (s *GovernmentFundingService) CreateProperty(ctx context.Context, periodID 
 
 // GetPropertyByID returns a property by ID
 func (s *GovernmentFundingService) GetPropertyByID(ctx context.Context, id uint) (*models.GovernmentFundingPropertyResponse, error) {
-	property, err := s.store.FindPropertyByID(id)
+	property, err := s.store.FindPropertyByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("property")
 	}
@@ -318,7 +332,7 @@ func (s *GovernmentFundingService) GetPropertyByID(ctx context.Context, id uint)
 
 // UpdateProperty updates an existing property
 func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyID uint, req *models.GovernmentFundingPropertyUpdateRequest) (*models.GovernmentFundingPropertyResponse, error) {
-	property, err := s.store.FindPropertyByID(propertyID)
+	property, err := s.store.FindPropertyByID(ctx, propertyID)
 	if err != nil {
 		return nil, apperror.NotFound("property")
 	}
@@ -358,8 +372,8 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyI
 		return nil, apperror.BadRequest("max_age must be greater than min_age")
 	}
 
-	if err := s.store.UpdateProperty(property); err != nil {
-		return nil, apperror.Internal("failed to update property")
+	if err := s.store.UpdateProperty(ctx, property); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update property")
 	}
 
 	resp := property.ToResponse()
@@ -368,8 +382,8 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyI
 
 // DeleteProperty deletes a property
 func (s *GovernmentFundingService) DeleteProperty(ctx context.Context, propertyID uint) error {
-	if err := s.store.DeleteProperty(propertyID); err != nil {
-		return apperror.Internal("failed to delete property")
+	if err := s.store.DeleteProperty(ctx, propertyID); err != nil {
+		return apperror.InternalWrap(err, "failed to delete property")
 	}
 	return nil
 }

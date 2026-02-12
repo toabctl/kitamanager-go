@@ -65,7 +65,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	user, err := h.userStore.FindByEmail(req.Email)
+	user, err := h.userStore.FindByEmail(c.Request.Context(), req.Email)
 	if err != nil {
 		// Log failed login attempt
 		h.auditService.LogLoginFailed(req.Email, ipAddress, userAgent, "user not found")
@@ -88,7 +88,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Update last login timestamp
-	if err := h.userStore.UpdateLastLogin(user.ID); err != nil {
+	if err := h.userStore.UpdateLastLogin(c.Request.Context(), user.ID); err != nil {
 		// Log but don't fail login if last_login update fails
 		_ = c.Error(err)
 	}
@@ -204,7 +204,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	userID := uint(userIDFloat)
 
 	// Verify user still exists and is active
-	user, err := h.userStore.FindByID(userID)
+	user, err := h.userStore.FindByID(c.Request.Context(), userID)
 	if err != nil {
 		respondError(c, apperror.Unauthorized("user not found"))
 		return
@@ -351,7 +351,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userStore.FindByID(userID)
+	user, err := h.userStore.FindByID(c.Request.Context(), userID)
 	if err != nil {
 		respondError(c, apperror.NotFound("user not found"))
 		return

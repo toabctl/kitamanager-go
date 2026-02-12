@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   Organization,
   OrganizationCreateRequest,
@@ -31,20 +32,12 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { DEFAULT_PAGE_SIZE } from '@/lib/api/types';
-
-const organizationSchema = z.object({
-  name: z.string().min(1).max(255),
-  state: z.string().min(1),
-  active: z.boolean().default(true),
-});
-
-type OrganizationFormData = z.infer<typeof organizationSchema>;
+import { organizationSchema, type OrganizationFormData } from '@/lib/schemas';
 
 const states = [{ value: 'berlin', label: 'Berlin' }];
 
@@ -71,7 +64,7 @@ export default function OrganizationsPage() {
   });
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['organizations', page],
+    queryKey: queryKeys.organizations.list(page),
     queryFn: () => apiClient.getOrganizations({ page, limit: DEFAULT_PAGE_SIZE }),
   });
 
@@ -89,7 +82,7 @@ export default function OrganizationsPage() {
     OrganizationUpdateRequest
   >({
     resourceName: 'organizations',
-    queryKey: ['organizations'],
+    queryKey: queryKeys.organizations.all(),
     createFn: (data) => apiClient.createOrganization(data),
     updateFn: (id, data) => apiClient.updateOrganization(id, data),
     deleteFn: (id) => apiClient.deleteOrganization(id),

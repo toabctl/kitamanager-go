@@ -37,7 +37,7 @@ func (m *AuthorizationMiddleware) RequirePermission(resource, action string) gin
 		}
 
 		// First check if user is superadmin (can access everything)
-		isSuperAdmin, err := m.permissionService.IsSuperAdmin(userIDUint)
+		isSuperAdmin, err := m.permissionService.IsSuperAdmin(c.Request.Context(), userIDUint)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return
@@ -63,7 +63,7 @@ func (m *AuthorizationMiddleware) RequirePermission(resource, action string) gin
 		}
 
 		// Check permission
-		allowed, err := m.permissionService.CheckPermission(userIDUint, uint(orgID), resource, action)
+		allowed, err := m.permissionService.CheckPermission(c.Request.Context(), userIDUint, uint(orgID), resource, action)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return
@@ -95,7 +95,7 @@ func (m *AuthorizationMiddleware) RequireSuperAdmin() gin.HandlerFunc {
 			return
 		}
 
-		isSuperAdmin, err := m.permissionService.IsSuperAdmin(userIDUint)
+		isSuperAdmin, err := m.permissionService.IsSuperAdmin(c.Request.Context(), userIDUint)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return
@@ -127,7 +127,7 @@ func (m *AuthorizationMiddleware) RequireGlobalPermission(resource, action strin
 			return
 		}
 
-		allowed, err := m.permissionService.HasPermissionInAnyOrg(userIDUint, resource, action)
+		allowed, err := m.permissionService.HasPermissionInAnyOrg(c.Request.Context(), userIDUint, resource, action)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return
@@ -158,7 +158,7 @@ func (m *AuthorizationMiddleware) RequireOrgAccess() gin.HandlerFunc {
 		}
 
 		// Superadmins can access any org
-		isSuperAdmin, err := m.permissionService.IsSuperAdmin(userIDUint)
+		isSuperAdmin, err := m.permissionService.IsSuperAdmin(c.Request.Context(), userIDUint)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return
@@ -180,7 +180,7 @@ func (m *AuthorizationMiddleware) RequireOrgAccess() gin.HandlerFunc {
 			return
 		}
 
-		hasRole, err := m.permissionService.HasAnyRoleInOrg(userIDUint, uint(orgID))
+		hasRole, err := m.permissionService.HasAnyRoleInOrg(c.Request.Context(), userIDUint, uint(orgID))
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "authorization check failed"})
 			return

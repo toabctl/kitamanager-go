@@ -26,9 +26,9 @@ func NewOrganizationService(store store.OrganizationStorer, groupStore store.Gro
 // Superadmins see all organizations; other users see only organizations they belong to.
 func (s *OrganizationService) ListForUser(ctx context.Context, userID uint, search string, limit, offset int) ([]models.OrganizationResponse, int64, error) {
 	// Check if user is superadmin
-	user, err := s.userStore.FindByID(userID)
+	user, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch user")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch user")
 	}
 
 	if user.IsSuperAdmin {
@@ -37,9 +37,9 @@ func (s *OrganizationService) ListForUser(ctx context.Context, userID uint, sear
 	}
 
 	// Regular users only see organizations they belong to via group membership
-	orgs, err := s.userStore.GetUserOrganizations(userID)
+	orgs, err := s.userStore.GetUserOrganizations(ctx, userID)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch user organizations")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch user organizations")
 	}
 
 	// Apply search filter in memory (users typically belong to 1-3 orgs)
@@ -76,9 +76,9 @@ func (s *OrganizationService) ListForUser(ctx context.Context, userID uint, sear
 
 // List returns a paginated list of all organizations (for internal use)
 func (s *OrganizationService) List(ctx context.Context, search string, limit, offset int) ([]models.OrganizationResponse, int64, error) {
-	orgs, total, err := s.store.FindAll(search, limit, offset)
+	orgs, total, err := s.store.FindAll(ctx, search, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch organizations")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch organizations")
 	}
 
 	responses := make([]models.OrganizationResponse, len(orgs))
@@ -90,7 +90,7 @@ func (s *OrganizationService) List(ctx context.Context, search string, limit, of
 
 // GetByID returns an organization by ID
 func (s *OrganizationService) GetByID(ctx context.Context, id uint) (*models.OrganizationResponse, error) {
-	org, err := s.store.FindByID(id)
+	org, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("organization")
 	}
@@ -134,8 +134,8 @@ func (s *OrganizationService) Create(ctx context.Context, req *OrganizationCreat
 	}
 
 	// Create organization and default group in a single transaction
-	if err := s.store.CreateWithDefaultGroup(org, defaultGroup); err != nil {
-		return nil, apperror.Internal("failed to create organization")
+	if err := s.store.CreateWithDefaultGroup(ctx, org, defaultGroup); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create organization")
 	}
 
 	resp := org.ToResponse()
@@ -151,7 +151,7 @@ type OrganizationUpdateRequest struct {
 
 // Update updates an existing organization
 func (s *OrganizationService) Update(ctx context.Context, id uint, req *OrganizationUpdateRequest) (*models.OrganizationResponse, error) {
-	org, err := s.store.FindByID(id)
+	org, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("organization")
 	}
@@ -175,8 +175,8 @@ func (s *OrganizationService) Update(ctx context.Context, id uint, req *Organiza
 		org.State = *req.State
 	}
 
-	if err := s.store.Update(org); err != nil {
-		return nil, apperror.Internal("failed to update organization")
+	if err := s.store.Update(ctx, org); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update organization")
 	}
 
 	resp := org.ToResponse()
@@ -185,8 +185,8 @@ func (s *OrganizationService) Update(ctx context.Context, id uint, req *Organiza
 
 // Delete deletes an organization
 func (s *OrganizationService) Delete(ctx context.Context, id uint) error {
-	if err := s.store.Delete(id); err != nil {
-		return apperror.Internal("failed to delete organization")
+	if err := s.store.Delete(ctx, id); err != nil {
+		return apperror.InternalWrap(err, "failed to delete organization")
 	}
 	return nil
 }

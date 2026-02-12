@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -17,7 +18,7 @@ func TestUserStore_Create(t *testing.T) {
 		Active:   true,
 	}
 
-	err := store.Create(user)
+	err := store.Create(context.Background(), user)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -34,7 +35,7 @@ func TestUserStore_FindAll(t *testing.T) {
 	createTestUser(t, db, "User 1", "user1@example.com")
 	createTestUser(t, db, "User 2", "user2@example.com")
 
-	users, total, err := store.FindAll("", 100, 0)
+	users, total, err := store.FindAll(context.Background(), "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -54,7 +55,7 @@ func TestUserStore_FindByID(t *testing.T) {
 
 	created := createTestUser(t, db, "Test User", "test@example.com")
 
-	found, err := store.FindByID(created.ID)
+	found, err := store.FindByID(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -70,7 +71,7 @@ func TestUserStore_FindByEmail(t *testing.T) {
 
 	createTestUser(t, db, "Test User", "findme@example.com")
 
-	found, err := store.FindByEmail("findme@example.com")
+	found, err := store.FindByEmail(context.Background(), "findme@example.com")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -84,7 +85,7 @@ func TestUserStore_FindByEmail_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewUserStore(db)
 
-	_, err := store.FindByEmail("nonexistent@example.com")
+	_, err := store.FindByEmail(context.Background(), "nonexistent@example.com")
 	if err == nil {
 		t.Error("expected error for non-existent email")
 	}
@@ -97,12 +98,12 @@ func TestUserStore_Update(t *testing.T) {
 	user := createTestUser(t, db, "Original Name", "test@example.com")
 	user.Name = "Updated Name"
 
-	err := store.Update(user)
+	err := store.Update(context.Background(), user)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(user.ID)
+	found, _ := store.FindByID(context.Background(), user.ID)
 	if found.Name != "Updated Name" {
 		t.Errorf("expected name 'Updated Name', got '%s'", found.Name)
 	}
@@ -114,12 +115,12 @@ func TestUserStore_Delete(t *testing.T) {
 
 	user := createTestUser(t, db, "To Delete", "delete@example.com")
 
-	err := store.Delete(user.ID)
+	err := store.Delete(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(user.ID)
+	_, err = store.FindByID(context.Background(), user.ID)
 	if err == nil {
 		t.Error("expected error finding deleted user")
 	}
@@ -132,12 +133,12 @@ func TestUserStore_AddToGroup(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com")
 	group := createTestGroup(t, db, "Test Group")
 
-	err := store.AddToGroup(user.ID, group.ID)
+	err := store.AddToGroup(context.Background(), user.ID, group.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(user.ID)
+	found, _ := store.FindByID(context.Background(), user.ID)
 	if len(found.Groups) != 1 {
 		t.Errorf("expected 1 group, got %d", len(found.Groups))
 	}
@@ -150,14 +151,14 @@ func TestUserStore_RemoveFromGroup(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com")
 	group := createTestGroup(t, db, "Test Group")
 
-	_ = store.AddToGroup(user.ID, group.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group.ID)
 
-	err := store.RemoveFromGroup(user.ID, group.ID)
+	err := store.RemoveFromGroup(context.Background(), user.ID, group.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(user.ID)
+	found, _ := store.FindByID(context.Background(), user.ID)
 	if len(found.Groups) != 0 {
 		t.Errorf("expected 0 groups, got %d", len(found.Groups))
 	}
@@ -175,10 +176,10 @@ func TestUserStore_GetUserOrganizations(t *testing.T) {
 	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
 	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
 
-	_ = store.AddToGroup(user.ID, group1.ID)
-	_ = store.AddToGroup(user.ID, group2.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
 
-	orgs, err := store.GetUserOrganizations(user.ID)
+	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -199,23 +200,23 @@ func TestUserStore_RemoveFromAllGroupsInOrg(t *testing.T) {
 	group1 := createTestGroupWithOrg(t, db, "Group 1", org.ID)
 	group2 := createTestGroupWithOrg(t, db, "Group 2", org.ID)
 
-	_ = store.AddToGroup(user.ID, group1.ID)
-	_ = store.AddToGroup(user.ID, group2.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
 
 	// Verify user is in both groups
-	found, _ := store.FindByID(user.ID)
+	found, _ := store.FindByID(context.Background(), user.ID)
 	if len(found.Groups) != 2 {
 		t.Fatalf("expected 2 groups, got %d", len(found.Groups))
 	}
 
 	// Remove user from all groups in org
-	err := store.RemoveFromAllGroupsInOrg(user.ID, org.ID)
+	err := store.RemoveFromAllGroupsInOrg(context.Background(), user.ID, org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	// Verify user is no longer in any groups
-	found, _ = store.FindByID(user.ID)
+	found, _ = store.FindByID(context.Background(), user.ID)
 	if len(found.Groups) != 0 {
 		t.Errorf("expected 0 groups, got %d", len(found.Groups))
 	}
@@ -232,12 +233,12 @@ func TestUserStore_UpdateLastLogin(t *testing.T) {
 		t.Error("expected last_login to be nil initially")
 	}
 
-	err := store.UpdateLastLogin(user.ID)
+	err := store.UpdateLastLogin(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(user.ID)
+	found, _ := store.FindByID(context.Background(), user.ID)
 	if found.LastLogin == nil {
 		t.Error("expected last_login to be set after UpdateLastLogin")
 	}
@@ -260,11 +261,11 @@ func TestUserStore_GetUserOrganizations_MultipleOrgs(t *testing.T) {
 	_ = createTestGroupWithOrg(t, db, "Group 3", org3.ID) // User not in this group
 
 	// Add user to groups in org1 and org2 only
-	_ = store.AddToGroup(user.ID, group1.ID)
-	_ = store.AddToGroup(user.ID, group2.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
 
 	// Get user's organizations
-	orgs, err := store.GetUserOrganizations(user.ID)
+	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -301,12 +302,12 @@ func TestUserStore_GetUserOrganizations_MultipleGroupsSameOrg(t *testing.T) {
 	group3 := createTestGroupWithOrg(t, db, "Group 3", org.ID)
 
 	// Add user to all groups
-	_ = store.AddToGroup(user.ID, group1.ID)
-	_ = store.AddToGroup(user.ID, group2.ID)
-	_ = store.AddToGroup(user.ID, group3.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
+	_ = store.AddToGroup(context.Background(), user.ID, group3.ID)
 
 	// Get user's organizations - should only return the org once
-	orgs, err := store.GetUserOrganizations(user.ID)
+	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -329,7 +330,7 @@ func TestUserStore_GetUserOrganizations_NoGroups(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com")
 
 	// User has no group memberships
-	orgs, err := store.GetUserOrganizations(user.ID)
+	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -350,9 +351,9 @@ func TestUserStore_FindAll_PreloadsGroups(t *testing.T) {
 	user := createTestUser(t, db, "Test User", "test@example.com")
 
 	// Add user to group
-	_ = userStore.AddToGroup(user.ID, group.ID)
+	_ = userStore.AddToGroup(context.Background(), user.ID, group.ID)
 
-	users, _, err := userStore.FindAll("", 100, 0)
+	users, _, err := userStore.FindAll(context.Background(), "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -380,7 +381,7 @@ func TestUserStore_FindAll_Search(t *testing.T) {
 	createTestUser(t, db, "Charlie Admin", "admin@company.com")
 
 	// Search by name
-	users, total, err := store.FindAll("alice", 100, 0)
+	users, total, err := store.FindAll(context.Background(), "alice", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -392,7 +393,7 @@ func TestUserStore_FindAll_Search(t *testing.T) {
 	}
 
 	// Search by email
-	users2, total2, err := store.FindAll("admin", 100, 0)
+	users2, total2, err := store.FindAll(context.Background(), "admin", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -404,7 +405,7 @@ func TestUserStore_FindAll_Search(t *testing.T) {
 	}
 
 	// Empty search returns all
-	users3, total3, err := store.FindAll("", 100, 0)
+	users3, total3, err := store.FindAll(context.Background(), "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

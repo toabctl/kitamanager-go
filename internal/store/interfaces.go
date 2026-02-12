@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -8,160 +9,199 @@ import (
 
 // UserGroupStorer defines the interface for user-group relationship operations
 type UserGroupStorer interface {
-	AddUserToGroup(userID, groupID uint, role models.Role, createdBy string) (*models.UserGroup, error)
-	UpdateRole(userID, groupID uint, role models.Role) error
-	RemoveUserFromGroup(userID, groupID uint) error
-	FindByUserAndGroup(userID, groupID uint) (*models.UserGroup, error)
-	FindByUser(userID uint) ([]models.UserGroup, error)
-	FindByGroup(groupID uint) ([]models.UserGroup, error)
-	FindByUserAndOrg(userID, orgID uint) ([]models.UserGroup, error)
-	GetEffectiveRoleInOrg(userID, orgID uint) (models.Role, error)
-	GetUserOrganizationsWithRoles(userID uint) (map[uint]models.Role, error)
-	RemoveUserFromOrg(userID, orgID uint) error
-	SetSuperAdmin(userID uint, isSuperAdmin bool) error
-	IsSuperAdmin(userID uint) (bool, error)
-	Exists(userID, groupID uint) (bool, error)
+	AddUserToGroup(ctx context.Context, userID, groupID uint, role models.Role, createdBy string) (*models.UserGroup, error)
+	UpdateRole(ctx context.Context, userID, groupID uint, role models.Role) error
+	RemoveUserFromGroup(ctx context.Context, userID, groupID uint) error
+	FindByUserAndGroup(ctx context.Context, userID, groupID uint) (*models.UserGroup, error)
+	FindByUser(ctx context.Context, userID uint) ([]models.UserGroup, error)
+	FindByGroup(ctx context.Context, groupID uint) ([]models.UserGroup, error)
+	FindByUserAndOrg(ctx context.Context, userID, orgID uint) ([]models.UserGroup, error)
+	GetEffectiveRoleInOrg(ctx context.Context, userID, orgID uint) (models.Role, error)
+	GetUserOrganizationsWithRoles(ctx context.Context, userID uint) (map[uint]models.Role, error)
+	RemoveUserFromOrg(ctx context.Context, userID, orgID uint) error
+	SetSuperAdmin(ctx context.Context, userID uint, isSuperAdmin bool) error
+	IsSuperAdmin(ctx context.Context, userID uint) (bool, error)
+	Exists(ctx context.Context, userID, groupID uint) (bool, error)
 }
 
 // UserStorer defines the interface for user storage operations
 type UserStorer interface {
-	FindAll(search string, limit, offset int) ([]models.User, int64, error)
-	FindByOrganization(orgID uint, search string, limit, offset int) ([]models.User, int64, error)
-	FindByID(id uint) (*models.User, error)
-	FindByEmail(email string) (*models.User, error)
-	EmailExistsForOtherUser(email string, excludeUserID uint) (bool, error)
-	Create(user *models.User) error
-	Update(user *models.User) error
-	UpdateLastLogin(userID uint) error
-	Delete(id uint) error
-	AddToGroup(userID, groupID uint) error
-	RemoveFromGroup(userID, groupID uint) error
-	RemoveFromAllGroupsInOrg(userID, orgID uint) error
-	GetUserOrganizations(userID uint) ([]models.Organization, error)
+	FindAll(ctx context.Context, search string, limit, offset int) ([]models.User, int64, error)
+	FindByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.User, int64, error)
+	FindByID(ctx context.Context, id uint) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	EmailExistsForOtherUser(ctx context.Context, email string, excludeUserID uint) (bool, error)
+	Create(ctx context.Context, user *models.User) error
+	Update(ctx context.Context, user *models.User) error
+	UpdateLastLogin(ctx context.Context, userID uint) error
+	Delete(ctx context.Context, id uint) error
+	AddToGroup(ctx context.Context, userID, groupID uint) error
+	RemoveFromGroup(ctx context.Context, userID, groupID uint) error
+	RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID uint) error
+	GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error)
 }
 
 // OrganizationStorer defines the interface for organization storage operations
 type OrganizationStorer interface {
-	FindAll(search string, limit, offset int) ([]models.Organization, int64, error)
-	FindByID(id uint) (*models.Organization, error)
-	Create(org *models.Organization) error
-	CreateWithDefaultGroup(org *models.Organization, defaultGroup *models.Group) error
-	Update(org *models.Organization) error
-	Delete(id uint) error
+	FindAll(ctx context.Context, search string, limit, offset int) ([]models.Organization, int64, error)
+	FindByID(ctx context.Context, id uint) (*models.Organization, error)
+	Create(ctx context.Context, org *models.Organization) error
+	CreateWithDefaultGroup(ctx context.Context, org *models.Organization, defaultGroup *models.Group) error
+	Update(ctx context.Context, org *models.Organization) error
+	Delete(ctx context.Context, id uint) error
 }
 
 // GroupStorer defines the interface for group storage operations
 type GroupStorer interface {
-	FindAll(limit, offset int) ([]models.Group, int64, error)
-	FindByID(id uint) (*models.Group, error)
-	FindByOrganization(orgID uint) ([]models.Group, error)
-	FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Group, int64, error)
-	FindDefaultGroup(orgID uint) (*models.Group, error)
-	Create(group *models.Group) error
-	Update(group *models.Group) error
-	Delete(id uint) error
+	FindAll(ctx context.Context, limit, offset int) ([]models.Group, int64, error)
+	FindByID(ctx context.Context, id uint) (*models.Group, error)
+	FindByOrganization(ctx context.Context, orgID uint) ([]models.Group, error)
+	FindByOrganizationPaginated(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.Group, int64, error)
+	FindDefaultGroup(ctx context.Context, orgID uint) (*models.Group, error)
+	Create(ctx context.Context, group *models.Group) error
+	Update(ctx context.Context, group *models.Group) error
+	Delete(ctx context.Context, id uint) error
 }
 
 // EmployeeStorer defines the interface for employee storage operations
 type EmployeeStorer interface {
-	FindAll(limit, offset int) ([]models.Employee, int64, error)
-	FindByOrganization(orgID uint, limit, offset int) ([]models.Employee, int64, error)
-	FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error)
-	FindByID(id uint) (*models.Employee, error)
-	FindByIDMinimal(id uint) (*models.Employee, error) // Without preloads, for org checks
-	Create(emp *models.Employee) error
-	Update(emp *models.Employee) error
-	Delete(id uint) error
-	CreateContract(contract *models.EmployeeContract) error
-	FindContractByID(id uint) (*models.EmployeeContract, error)
-	UpdateContract(contract *models.EmployeeContract) error
-	DeleteContract(id uint) error
+	FindAll(ctx context.Context, limit, offset int) ([]models.Employee, int64, error)
+	FindByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.Employee, int64, error)
+	FindByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error)
+	FindByID(ctx context.Context, id uint) (*models.Employee, error)
+	FindByIDMinimal(ctx context.Context, id uint) (*models.Employee, error) // Without preloads, for org checks
+	Create(ctx context.Context, emp *models.Employee) error
+	Update(ctx context.Context, emp *models.Employee) error
+	Delete(ctx context.Context, id uint) error
+	CreateContract(ctx context.Context, contract *models.EmployeeContract) error
+	FindContractByID(ctx context.Context, id uint) (*models.EmployeeContract, error)
+	UpdateContract(ctx context.Context, contract *models.EmployeeContract) error
+	DeleteContract(ctx context.Context, id uint) error
 	Contracts() ContractStorer[models.EmployeeContract]
-	FindByOrganizationWithContracts(orgID uint, date time.Time) ([]models.Employee, error)
+	FindByOrganizationWithContracts(ctx context.Context, orgID uint, date time.Time) ([]models.Employee, error)
 }
 
 // ChildStorer defines the interface for child storage operations
 type ChildStorer interface {
-	FindAll(limit, offset int) ([]models.Child, int64, error)
-	FindByOrganization(orgID uint, limit, offset int) ([]models.Child, int64, error)
-	FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.Child, int64, error)
-	FindByOrganizationWithActiveOn(orgID uint, date time.Time) ([]models.Child, error)
-	CountByOrganizationWithActiveOn(orgID uint, date time.Time) (int64, error)
-	FindByID(id uint) (*models.Child, error)
-	FindByIDMinimal(id uint) (*models.Child, error) // Without preloads, for org checks
-	Create(child *models.Child) error
-	Update(child *models.Child) error
-	Delete(id uint) error
-	CreateContract(contract *models.ChildContract) error
-	FindContractByID(id uint) (*models.ChildContract, error)
-	UpdateContract(contract *models.ChildContract) error
-	DeleteContract(id uint) error
+	FindAll(ctx context.Context, limit, offset int) ([]models.Child, int64, error)
+	FindByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.Child, int64, error)
+	FindByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.Child, int64, error)
+	FindByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) ([]models.Child, error)
+	CountByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) (int64, error)
+	FindByID(ctx context.Context, id uint) (*models.Child, error)
+	FindByIDMinimal(ctx context.Context, id uint) (*models.Child, error) // Without preloads, for org checks
+	Create(ctx context.Context, child *models.Child) error
+	Update(ctx context.Context, child *models.Child) error
+	Delete(ctx context.Context, id uint) error
+	CreateContract(ctx context.Context, contract *models.ChildContract) error
+	FindContractByID(ctx context.Context, id uint) (*models.ChildContract, error)
+	UpdateContract(ctx context.Context, contract *models.ChildContract) error
+	DeleteContract(ctx context.Context, id uint) error
 	Contracts() ContractStorer[models.ChildContract]
 }
 
 // ContractStorer defines the interface for contract storage operations
 type ContractStorer[T models.HasPeriod] interface {
-	GetCurrentContract(personID uint) (*T, error)
-	GetContractOn(personID uint, date time.Time) (*T, error)
-	GetHistory(personID uint) ([]T, error)
-	GetHistoryPaginated(personID uint, limit, offset int) ([]T, int64, error)
-	HasActiveContract(personID uint, date time.Time) (bool, error)
-	ValidateNoOverlap(personID uint, from time.Time, to *time.Time, excludeID *uint) error
-	CloseCurrentContract(personID uint, endDate time.Time) error
+	GetCurrentContract(ctx context.Context, personID uint) (*T, error)
+	GetContractOn(ctx context.Context, personID uint, date time.Time) (*T, error)
+	GetHistory(ctx context.Context, personID uint) ([]T, error)
+	GetHistoryPaginated(ctx context.Context, personID uint, limit, offset int) ([]T, int64, error)
+	HasActiveContract(ctx context.Context, personID uint, date time.Time) (bool, error)
+	ValidateNoOverlap(ctx context.Context, personID uint, from time.Time, to *time.Time, excludeID *uint) error
+	CloseCurrentContract(ctx context.Context, personID uint, endDate time.Time) error
 }
 
 // SectionStorer defines the interface for section storage operations
 type SectionStorer interface {
-	FindByID(id uint) (*models.Section, error)
-	FindByOrganization(orgID uint) ([]models.Section, error)
-	FindByOrganizationPaginated(orgID uint, search string, limit, offset int) ([]models.Section, int64, error)
-	FindDefaultSection(orgID uint) (*models.Section, error)
-	FindByNameAndOrg(name string, orgID uint) (*models.Section, error)
-	Create(section *models.Section) error
-	Update(section *models.Section) error
-	Delete(id uint) error
-	HasChildren(id uint) (bool, error)
-	HasEmployees(id uint) (bool, error)
+	FindByID(ctx context.Context, id uint) (*models.Section, error)
+	FindByOrganization(ctx context.Context, orgID uint) ([]models.Section, error)
+	FindByOrganizationPaginated(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.Section, int64, error)
+	FindDefaultSection(ctx context.Context, orgID uint) (*models.Section, error)
+	FindByNameAndOrg(ctx context.Context, name string, orgID uint) (*models.Section, error)
+	Create(ctx context.Context, section *models.Section) error
+	Update(ctx context.Context, section *models.Section) error
+	Delete(ctx context.Context, id uint) error
+	HasChildren(ctx context.Context, id uint) (bool, error)
+	HasEmployees(ctx context.Context, id uint) (bool, error)
 }
 
 // GovernmentFundingStorer defines the interface for government funding storage operations
 type GovernmentFundingStorer interface {
 	// GovernmentFunding CRUD
-	FindAll(limit, offset int) ([]models.GovernmentFunding, int64, error)
-	FindByID(id uint) (*models.GovernmentFunding, error)
-	FindByIDWithDetails(id uint, periodsLimit int, activeOn *time.Time) (*models.GovernmentFunding, error)
-	FindByState(state string) (*models.GovernmentFunding, error)
-	FindByStateWithDetails(state string, periodsLimit int, activeOn *time.Time) (*models.GovernmentFunding, error)
-	CountPeriods(fundingID uint) (int64, error)
-	FindByName(name string) (*models.GovernmentFunding, error)
-	Create(funding *models.GovernmentFunding) error
-	Update(funding *models.GovernmentFunding) error
-	Delete(id uint) error
+	FindAll(ctx context.Context, limit, offset int) ([]models.GovernmentFunding, int64, error)
+	FindByID(ctx context.Context, id uint) (*models.GovernmentFunding, error)
+	FindByIDWithDetails(ctx context.Context, id uint, periodsLimit int, activeOn *time.Time) (*models.GovernmentFunding, error)
+	FindByState(ctx context.Context, state string) (*models.GovernmentFunding, error)
+	FindByStateWithDetails(ctx context.Context, state string, periodsLimit int, activeOn *time.Time) (*models.GovernmentFunding, error)
+	CountPeriods(ctx context.Context, fundingID uint) (int64, error)
+	FindByName(ctx context.Context, name string) (*models.GovernmentFunding, error)
+	Create(ctx context.Context, funding *models.GovernmentFunding) error
+	Update(ctx context.Context, funding *models.GovernmentFunding) error
+	Delete(ctx context.Context, id uint) error
 
 	// Period CRUD
-	FindPeriodByID(id uint) (*models.GovernmentFundingPeriod, error)
-	FindPeriodsByGovernmentFundingID(fundingID uint) ([]models.GovernmentFundingPeriod, error)
-	CreatePeriod(period *models.GovernmentFundingPeriod) error
-	UpdatePeriod(period *models.GovernmentFundingPeriod) error
-	DeletePeriod(id uint) error
+	FindPeriodByID(ctx context.Context, id uint) (*models.GovernmentFundingPeriod, error)
+	FindPeriodsByGovernmentFundingID(ctx context.Context, fundingID uint) ([]models.GovernmentFundingPeriod, error)
+	CreatePeriod(ctx context.Context, period *models.GovernmentFundingPeriod) error
+	UpdatePeriod(ctx context.Context, period *models.GovernmentFundingPeriod) error
+	DeletePeriod(ctx context.Context, id uint) error
 
 	// Property CRUD
-	FindPropertyByID(id uint) (*models.GovernmentFundingProperty, error)
-	CreateProperty(property *models.GovernmentFundingProperty) error
-	UpdateProperty(property *models.GovernmentFundingProperty) error
-	DeleteProperty(id uint) error
+	FindPropertyByID(ctx context.Context, id uint) (*models.GovernmentFundingProperty, error)
+	CreateProperty(ctx context.Context, property *models.GovernmentFundingProperty) error
+	UpdateProperty(ctx context.Context, property *models.GovernmentFundingProperty) error
+	DeleteProperty(ctx context.Context, id uint) error
 }
 
 // ChildAttendanceStorer defines the interface for child attendance storage operations
 type ChildAttendanceStorer interface {
-	FindByID(id uint) (*models.ChildAttendance, error)
-	FindByOrganizationAndDate(orgID uint, date time.Time, limit, offset int) ([]models.ChildAttendance, int64, error)
-	FindByChildAndDate(childID uint, date time.Time) (*models.ChildAttendance, error)
-	FindByChildAndDateRange(childID uint, from, to time.Time, limit, offset int) ([]models.ChildAttendance, int64, error)
-	Create(attendance *models.ChildAttendance) error
-	Update(attendance *models.ChildAttendance) error
-	Delete(id uint) error
-	GetDailySummary(orgID uint, date time.Time) (*models.ChildAttendanceDailySummaryResponse, error)
+	FindByID(ctx context.Context, id uint) (*models.ChildAttendance, error)
+	FindByOrganizationAndDate(ctx context.Context, orgID uint, date time.Time, limit, offset int) ([]models.ChildAttendance, int64, error)
+	FindByChildAndDate(ctx context.Context, childID uint, date time.Time) (*models.ChildAttendance, error)
+	FindByChildAndDateRange(ctx context.Context, childID uint, from, to time.Time, limit, offset int) ([]models.ChildAttendance, int64, error)
+	Create(ctx context.Context, attendance *models.ChildAttendance) error
+	Update(ctx context.Context, attendance *models.ChildAttendance) error
+	Delete(ctx context.Context, id uint) error
+	GetDailySummary(ctx context.Context, orgID uint, date time.Time) (*models.ChildAttendanceDailySummaryResponse, error)
+}
+
+// PayPlanStorer defines the interface for pay plan storage operations
+type PayPlanStorer interface {
+	Create(ctx context.Context, payplan *models.PayPlan) error
+	GetByID(ctx context.Context, id uint) (*models.PayPlan, error)
+	GetByIDWithPeriods(ctx context.Context, id uint, activeOn *time.Time) (*models.PayPlan, error)
+	GetByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.PayPlan, int64, error)
+	Update(ctx context.Context, payplan *models.PayPlan) error
+	Delete(ctx context.Context, id uint) error
+
+	// Period operations
+	CreatePeriod(ctx context.Context, period *models.PayPlanPeriod) error
+	GetPeriodByID(ctx context.Context, id uint) (*models.PayPlanPeriod, error)
+	GetPeriodByIDWithEntries(ctx context.Context, id uint) (*models.PayPlanPeriod, error)
+	GetPeriodsByPayPlan(ctx context.Context, payplanID uint) ([]models.PayPlanPeriod, error)
+	GetActivePeriod(ctx context.Context, payplanID uint, date time.Time) (*models.PayPlanPeriod, error)
+	UpdatePeriod(ctx context.Context, period *models.PayPlanPeriod) error
+	DeletePeriod(ctx context.Context, id uint) error
+
+	// Entry operations
+	CreateEntry(ctx context.Context, entry *models.PayPlanEntry) error
+	GetEntryByID(ctx context.Context, id uint) (*models.PayPlanEntry, error)
+	GetEntriesByPeriod(ctx context.Context, periodID uint) ([]models.PayPlanEntry, error)
+	GetEntry(ctx context.Context, periodID uint, grade string, step int) (*models.PayPlanEntry, error)
+	UpdateEntry(ctx context.Context, entry *models.PayPlanEntry) error
+	DeleteEntry(ctx context.Context, id uint) error
+}
+
+// AuditStorer defines the interface for audit log storage operations
+type AuditStorer interface {
+	Create(ctx context.Context, log *models.AuditLog) error
+	FindByUser(ctx context.Context, userID uint, limit, offset int) ([]models.AuditLog, int64, error)
+	FindByAction(ctx context.Context, action models.AuditAction, limit, offset int) ([]models.AuditLog, int64, error)
+	FindByDateRange(ctx context.Context, from, to time.Time, limit, offset int) ([]models.AuditLog, int64, error)
+	FindAll(ctx context.Context, limit, offset int) ([]models.AuditLog, int64, error)
+	FindFailedLogins(ctx context.Context, email string, since time.Time, limit int) ([]models.AuditLog, error)
+	CountFailedLoginsSince(ctx context.Context, email string, since time.Time) (int64, error)
+	Cleanup(ctx context.Context, olderThan time.Time) (int64, error)
 }
 
 // Compile-time interface compliance checks
@@ -175,4 +215,7 @@ var (
 	_ GovernmentFundingStorer = (*GovernmentFundingStore)(nil)
 	_ SectionStorer           = (*SectionStore)(nil)
 	_ ChildAttendanceStorer   = (*ChildAttendanceStore)(nil)
+	_ PayPlanStorer           = (*PayPlanStore)(nil)
+	_ AuditStorer             = (*AuditStore)(nil)
+	_ Transactor              = (*GormTransactor)(nil)
 )

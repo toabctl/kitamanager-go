@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   GovernmentFunding,
   GovernmentFundingCreateRequest,
@@ -51,15 +52,8 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Pagination } from '@/components/ui/pagination';
-
-const fundingSchema = z.object({
-  name: z.string().min(1).max(255),
-  state: z.string().min(1),
-});
-
-type FundingFormData = z.infer<typeof fundingSchema>;
+import { governmentFundingSchema, type GovernmentFundingFormData } from '@/lib/schemas';
 
 const states = [{ value: 'berlin', label: 'Berlin' }];
 
@@ -75,7 +69,7 @@ export default function GovernmentFundingsPage() {
   const [page, setPage] = useState(1);
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['government-fundings', page],
+    queryKey: queryKeys.governmentFundings.list(page),
     queryFn: () => apiClient.getGovernmentFundings({ page }),
   });
 
@@ -84,7 +78,7 @@ export default function GovernmentFundingsPage() {
   const createMutation = useMutation({
     mutationFn: (data: GovernmentFundingCreateRequest) => apiClient.createGovernmentFunding(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-fundings'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.all() });
       toast({ title: t('governmentFundings.createSuccess') });
       setIsDialogOpen(false);
       reset();
@@ -102,7 +96,7 @@ export default function GovernmentFundingsPage() {
     mutationFn: ({ id, data }: { id: number; data: GovernmentFundingUpdateRequest }) =>
       apiClient.updateGovernmentFunding(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-fundings'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.all() });
       toast({ title: t('governmentFundings.updateSuccess') });
       setIsDialogOpen(false);
       setEditingFunding(null);
@@ -120,7 +114,7 @@ export default function GovernmentFundingsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiClient.deleteGovernmentFunding(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-fundings'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.all() });
       toast({ title: t('governmentFundings.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingFunding(null);
@@ -141,8 +135,8 @@ export default function GovernmentFundingsPage() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<FundingFormData>({
-    resolver: zodResolver(fundingSchema),
+  } = useForm<GovernmentFundingFormData>({
+    resolver: zodResolver(governmentFundingSchema),
     defaultValues: {
       name: '',
       state: 'berlin',
@@ -170,7 +164,7 @@ export default function GovernmentFundingsPage() {
     router.push(`/government-fundings/${funding.id}`);
   };
 
-  const onSubmit = (data: FundingFormData) => {
+  const onSubmit = (data: GovernmentFundingFormData) => {
     if (editingFunding) {
       updateMutation.mutate({ id: editingFunding.id, data: { name: data.name } });
     } else {

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -17,11 +18,11 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	return &UserStore{db: db}
 }
 
-func (s *UserStore) FindAll(search string, limit, offset int) ([]models.User, int64, error) {
+func (s *UserStore) FindAll(ctx context.Context, search string, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
-	query := s.db.Model(&models.User{})
+	query := DBFromContext(ctx, s.db).Model(&models.User{})
 	if search != "" {
 		pattern := "%" + strings.ToLower(search) + "%"
 		query = query.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
@@ -31,7 +32,7 @@ func (s *UserStore) FindAll(search string, limit, offset int) ([]models.User, in
 		return nil, 0, err
 	}
 
-	dataQuery := s.db.Preload("Groups")
+	dataQuery := DBFromContext(ctx, s.db).Preload("Groups")
 	if search != "" {
 		pattern := "%" + strings.ToLower(search) + "%"
 		dataQuery = dataQuery.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
@@ -44,12 +45,12 @@ func (s *UserStore) FindAll(search string, limit, offset int) ([]models.User, in
 	return users, total, nil
 }
 
-func (s *UserStore) FindByOrganization(orgID uint, search string, limit, offset int) ([]models.User, int64, error) {
+func (s *UserStore) FindByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
 	// Count distinct users in the organization
-	countQuery := s.db.Model(&models.User{}).
+	countQuery := DBFromContext(ctx, s.db).Model(&models.User{}).
 		Distinct().
 		Joins("JOIN user_groups ON user_groups.user_id = users.id").
 		Joins("JOIN groups ON groups.id = user_groups.group_id").
@@ -80,62 +81,62 @@ func (s *UserStore) FindByOrganization(orgID uint, search string, limit, offset 
 	return users, total, nil
 }
 
-func (s *UserStore) FindByID(id uint) (*models.User, error) {
+func (s *UserStore) FindByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
-	if err := s.db.Preload("Groups").Preload("Groups.Organization").First(&user, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Preload("Groups").Preload("Groups.Organization").First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (s *UserStore) FindByEmail(email string) (*models.User, error) {
+func (s *UserStore) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (s *UserStore) EmailExistsForOtherUser(email string, excludeUserID uint) (bool, error) {
+func (s *UserStore) EmailExistsForOtherUser(ctx context.Context, email string, excludeUserID uint) (bool, error) {
 	var count int64
-	if err := s.db.Model(&models.User{}).Where("email = ? AND id != ?", email, excludeUserID).Count(&count).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(&models.User{}).Where("email = ? AND id != ?", email, excludeUserID).Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (s *UserStore) Create(user *models.User) error {
-	return s.db.Create(user).Error
+func (s *UserStore) Create(ctx context.Context, user *models.User) error {
+	return DBFromContext(ctx, s.db).Create(user).Error
 }
 
-func (s *UserStore) Update(user *models.User) error {
-	return s.db.Save(user).Error
+func (s *UserStore) Update(ctx context.Context, user *models.User) error {
+	return DBFromContext(ctx, s.db).Save(user).Error
 }
 
-func (s *UserStore) UpdateLastLogin(userID uint) error {
-	return s.db.Model(&models.User{}).Where("id = ?", userID).Update("last_login", time.Now()).Error
+func (s *UserStore) UpdateLastLogin(ctx context.Context, userID uint) error {
+	return DBFromContext(ctx, s.db).Model(&models.User{}).Where("id = ?", userID).Update("last_login", time.Now()).Error
 }
 
-func (s *UserStore) Delete(id uint) error {
-	return s.db.Delete(&models.User{}, id).Error
+func (s *UserStore) Delete(ctx context.Context, id uint) error {
+	return DBFromContext(ctx, s.db).Delete(&models.User{}, id).Error
 }
 
-func (s *UserStore) AddToGroup(userID, groupID uint) error {
+func (s *UserStore) AddToGroup(ctx context.Context, userID, groupID uint) error {
 	user := &models.User{ID: userID}
 	group := &models.Group{ID: groupID}
-	return s.db.Model(user).Association("Groups").Append(group)
+	return DBFromContext(ctx, s.db).Model(user).Association("Groups").Append(group)
 }
 
-func (s *UserStore) RemoveFromGroup(userID, groupID uint) error {
+func (s *UserStore) RemoveFromGroup(ctx context.Context, userID, groupID uint) error {
 	user := &models.User{ID: userID}
 	group := &models.Group{ID: groupID}
-	return s.db.Model(user).Association("Groups").Delete(group)
+	return DBFromContext(ctx, s.db).Model(user).Association("Groups").Delete(group)
 }
 
-func (s *UserStore) RemoveFromAllGroupsInOrg(userID, orgID uint) error {
+func (s *UserStore) RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID uint) error {
 	// Find all groups in the organization that the user belongs to
 	var groups []models.Group
-	err := s.db.Joins("JOIN user_groups ON user_groups.group_id = groups.id").
+	err := DBFromContext(ctx, s.db).Joins("JOIN user_groups ON user_groups.group_id = groups.id").
 		Where("user_groups.user_id = ? AND groups.organization_id = ?", userID, orgID).
 		Find(&groups).Error
 	if err != nil {
@@ -146,14 +147,14 @@ func (s *UserStore) RemoveFromAllGroupsInOrg(userID, orgID uint) error {
 	user := &models.User{ID: userID}
 	for _, group := range groups {
 		g := group // avoid closure issue
-		if err := s.db.Model(user).Association("Groups").Delete(&g); err != nil {
+		if err := DBFromContext(ctx, s.db).Model(user).Association("Groups").Delete(&g); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *UserStore) GetUserOrganizations(userID uint) ([]models.Organization, error) {
+func (s *UserStore) GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error) {
 	var orgs []models.Organization
 	err := s.db.Distinct().
 		Joins("JOIN groups ON groups.organization_id = organizations.id").

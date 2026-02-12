@@ -254,7 +254,8 @@ func createOrganizationService(db *gorm.DB) *service.OrganizationService {
 func createEmployeeService(db *gorm.DB) *service.EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
 	payPlanStore := store.NewPayPlanStore(db)
-	return service.NewEmployeeService(employeeStore, payPlanStore)
+	transactor := store.NewTransactor(db)
+	return service.NewEmployeeService(employeeStore, payPlanStore, transactor)
 }
 
 // createChildService creates a child service for testing.
@@ -262,7 +263,8 @@ func createChildService(db *gorm.DB) *service.ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	return service.NewChildService(childStore, orgStore, fundingStore)
+	transactor := store.NewTransactor(db)
+	return service.NewChildService(childStore, orgStore, fundingStore, transactor)
 }
 
 // createAuditService creates an audit service for testing.

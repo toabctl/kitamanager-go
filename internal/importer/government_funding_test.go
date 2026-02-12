@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -128,12 +129,12 @@ func TestImportGovernmentFundingFromFile(t *testing.T) {
 	filePath := createTestYAMLFile(t, yamlContent)
 
 	// First import should succeed
-	fundingID, err := importer.ImportGovernmentFundingFromFile(filePath, "berlin")
+	fundingID, err := importer.ImportGovernmentFundingFromFile(context.Background(), filePath, "berlin")
 	require.NoError(t, err)
 	assert.NotZero(t, fundingID)
 
 	// Verify government funding was created
-	funding, err := fundingStore.FindByIDWithDetails(fundingID, 0, nil)
+	funding, err := fundingStore.FindByIDWithDetails(context.Background(), fundingID, 0, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "Berlin Kita-Förderung", funding.Name)
 	assert.Equal(t, "berlin", funding.State)
@@ -189,16 +190,16 @@ func TestImportGovernmentFundingFromFile_Idempotency(t *testing.T) {
 	filePath := createTestYAMLFile(t, yamlContent)
 
 	// First import
-	fundingID1, err := importer.ImportGovernmentFundingFromFile(filePath, "berlin")
+	fundingID1, err := importer.ImportGovernmentFundingFromFile(context.Background(), filePath, "berlin")
 	require.NoError(t, err)
 
 	// Second import should return ErrGovernmentFundingExists
-	fundingID2, err := importer.ImportGovernmentFundingFromFile(filePath, "berlin")
+	fundingID2, err := importer.ImportGovernmentFundingFromFile(context.Background(), filePath, "berlin")
 	assert.ErrorIs(t, err, ErrGovernmentFundingExists)
 	assert.Equal(t, fundingID1, fundingID2)
 
 	// Verify only one government funding exists
-	fundings, total, err := fundingStore.FindAll(100, 0)
+	fundings, total, err := fundingStore.FindAll(context.Background(), 100, 0)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Len(t, fundings, 1)
@@ -224,10 +225,10 @@ func TestImportGovernmentFundingFromFile_FarFutureDateTreatedAsOngoing(t *testin
 
 	filePath := createTestYAMLFile(t, yamlContent)
 
-	fundingID, err := importer.ImportGovernmentFundingFromFile(filePath, "berlin")
+	fundingID, err := importer.ImportGovernmentFundingFromFile(context.Background(), filePath, "berlin")
 	require.NoError(t, err)
 
-	funding, err := fundingStore.FindByIDWithDetails(fundingID, 0, nil)
+	funding, err := fundingStore.FindByIDWithDetails(context.Background(), fundingID, 0, nil)
 	require.NoError(t, err)
 	require.Len(t, funding.Periods, 1)
 
@@ -240,7 +241,7 @@ func TestImportGovernmentFundingFromFile_FileNotFound(t *testing.T) {
 	fundingStore := store.NewGovernmentFundingStore(db)
 	importer := NewGovernmentFundingImporter(db, fundingStore)
 
-	_, err := importer.ImportGovernmentFundingFromFile("/nonexistent/file.yaml", "berlin")
+	_, err := importer.ImportGovernmentFundingFromFile(context.Background(), "/nonexistent/file.yaml", "berlin")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read file")
 }
@@ -252,7 +253,7 @@ func TestImportGovernmentFundingFromFile_InvalidYAML(t *testing.T) {
 
 	filePath := createTestYAMLFile(t, "invalid: yaml: content: [")
 
-	_, err := importer.ImportGovernmentFundingFromFile(filePath, "berlin")
+	_, err := importer.ImportGovernmentFundingFromFile(context.Background(), filePath, "berlin")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse YAML")
 }
@@ -262,7 +263,7 @@ func TestImportGovernmentFundingFromFile_InvalidState(t *testing.T) {
 	fundingStore := store.NewGovernmentFundingStore(db)
 	importer := NewGovernmentFundingImporter(db, fundingStore)
 
-	_, err := importer.ImportGovernmentFundingFromFile("/any/path.yaml", "invalid")
+	_, err := importer.ImportGovernmentFundingFromFile(context.Background(), "/any/path.yaml", "invalid")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid state")
 }

@@ -21,13 +21,13 @@ func NewPayPlanStore(db *gorm.DB) *PayPlanStore {
 
 // Create creates a new pay plan.
 func (s *PayPlanStore) Create(ctx context.Context, payplan *models.PayPlan) error {
-	return s.db.WithContext(ctx).Create(payplan).Error
+	return DBFromContext(ctx, s.db).Create(payplan).Error
 }
 
 // GetByID retrieves a pay plan by ID.
 func (s *PayPlanStore) GetByID(ctx context.Context, id uint) (*models.PayPlan, error) {
 	var payplan models.PayPlan
-	err := s.db.WithContext(ctx).First(&payplan, id).Error
+	err := DBFromContext(ctx, s.db).First(&payplan, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (s *PayPlanStore) GetByID(ctx context.Context, id uint) (*models.PayPlan, e
 // If activeOn is non-nil, only periods active on that date are returned.
 func (s *PayPlanStore) GetByIDWithPeriods(ctx context.Context, id uint, activeOn *time.Time) (*models.PayPlan, error) {
 	var payplan models.PayPlan
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Preload("Periods", func(db *gorm.DB) *gorm.DB {
 			q := db.Order("pay_plan_periods.\"from\" DESC")
 			if activeOn != nil {
@@ -61,7 +61,7 @@ func (s *PayPlanStore) GetByOrganization(ctx context.Context, orgID uint, limit,
 	var payplans []models.PayPlan
 	var total int64
 
-	query := s.db.WithContext(ctx).Model(&models.PayPlan{}).Where("organization_id = ?", orgID)
+	query := DBFromContext(ctx, s.db).Model(&models.PayPlan{}).Where("organization_id = ?", orgID)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -81,41 +81,41 @@ func (s *PayPlanStore) GetByOrganization(ctx context.Context, orgID uint, limit,
 
 // Update updates a pay plan.
 func (s *PayPlanStore) Update(ctx context.Context, payplan *models.PayPlan) error {
-	return s.db.WithContext(ctx).Save(payplan).Error
+	return DBFromContext(ctx, s.db).Save(payplan).Error
 }
 
 // Delete deletes a pay plan and all related periods and entries.
 func (s *PayPlanStore) Delete(ctx context.Context, id uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Delete entries first
-		if err := tx.Exec(`
-			DELETE FROM pay_plan_entries
-			WHERE period_id IN (SELECT id FROM pay_plan_periods WHERE pay_plan_id = ?)
-		`, id).Error; err != nil {
-			return err
-		}
+	db := DBFromContext(ctx, s.db)
 
-		// Delete periods
-		if err := tx.Where("pay_plan_id = ?", id).Delete(&models.PayPlanPeriod{}).Error; err != nil {
-			return err
-		}
+	// Delete entries first
+	if err := db.Exec(`
+		DELETE FROM pay_plan_entries
+		WHERE period_id IN (SELECT id FROM pay_plan_periods WHERE pay_plan_id = ?)
+	`, id).Error; err != nil {
+		return err
+	}
 
-		// Delete pay plan
-		return tx.Delete(&models.PayPlan{}, id).Error
-	})
+	// Delete periods
+	if err := db.Where("pay_plan_id = ?", id).Delete(&models.PayPlanPeriod{}).Error; err != nil {
+		return err
+	}
+
+	// Delete pay plan
+	return db.Delete(&models.PayPlan{}, id).Error
 }
 
 // Period operations
 
 // CreatePeriod creates a new period for a pay plan.
 func (s *PayPlanStore) CreatePeriod(ctx context.Context, period *models.PayPlanPeriod) error {
-	return s.db.WithContext(ctx).Create(period).Error
+	return DBFromContext(ctx, s.db).Create(period).Error
 }
 
 // GetPeriodByID retrieves a period by ID.
 func (s *PayPlanStore) GetPeriodByID(ctx context.Context, id uint) (*models.PayPlanPeriod, error) {
 	var period models.PayPlanPeriod
-	err := s.db.WithContext(ctx).First(&period, id).Error
+	err := DBFromContext(ctx, s.db).First(&period, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (s *PayPlanStore) GetPeriodByID(ctx context.Context, id uint) (*models.PayP
 // GetPeriodByIDWithEntries retrieves a period with all entries.
 func (s *PayPlanStore) GetPeriodByIDWithEntries(ctx context.Context, id uint) (*models.PayPlanPeriod, error) {
 	var period models.PayPlanPeriod
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Preload("Entries", func(db *gorm.DB) *gorm.DB {
 			return db.Order("pay_plan_entries.grade ASC, pay_plan_entries.step ASC")
 		}).
@@ -139,7 +139,7 @@ func (s *PayPlanStore) GetPeriodByIDWithEntries(ctx context.Context, id uint) (*
 // GetPeriodsByPayPlan retrieves all periods for a pay plan.
 func (s *PayPlanStore) GetPeriodsByPayPlan(ctx context.Context, payplanID uint) ([]models.PayPlanPeriod, error) {
 	var periods []models.PayPlanPeriod
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Where("pay_plan_id = ?", payplanID).
 		Order("\"from\" DESC").
 		Find(&periods).Error
@@ -152,7 +152,7 @@ func (s *PayPlanStore) GetPeriodsByPayPlan(ctx context.Context, payplanID uint) 
 // GetActivePeriod retrieves the active period for a pay plan at a given date.
 func (s *PayPlanStore) GetActivePeriod(ctx context.Context, payplanID uint, date time.Time) (*models.PayPlanPeriod, error) {
 	var period models.PayPlanPeriod
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Preload("Entries").
 		Where("pay_plan_id = ?", payplanID).
 		Scopes(PeriodActiveOn(`"from"`, `"to"`, date)).
@@ -166,32 +166,31 @@ func (s *PayPlanStore) GetActivePeriod(ctx context.Context, payplanID uint, date
 
 // UpdatePeriod updates a period.
 func (s *PayPlanStore) UpdatePeriod(ctx context.Context, period *models.PayPlanPeriod) error {
-	return s.db.WithContext(ctx).Save(period).Error
+	return DBFromContext(ctx, s.db).Save(period).Error
 }
 
 // DeletePeriod deletes a period and all related entries.
 func (s *PayPlanStore) DeletePeriod(ctx context.Context, id uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Delete entries first
-		if err := tx.Where("period_id = ?", id).Delete(&models.PayPlanEntry{}).Error; err != nil {
-			return err
-		}
-		// Delete period
-		return tx.Delete(&models.PayPlanPeriod{}, id).Error
-	})
+	db := DBFromContext(ctx, s.db)
+	// Delete entries first
+	if err := db.Where("period_id = ?", id).Delete(&models.PayPlanEntry{}).Error; err != nil {
+		return err
+	}
+	// Delete period
+	return db.Delete(&models.PayPlanPeriod{}, id).Error
 }
 
 // Entry operations
 
 // CreateEntry creates a new entry for a period.
 func (s *PayPlanStore) CreateEntry(ctx context.Context, entry *models.PayPlanEntry) error {
-	return s.db.WithContext(ctx).Create(entry).Error
+	return DBFromContext(ctx, s.db).Create(entry).Error
 }
 
 // GetEntryByID retrieves an entry by ID.
 func (s *PayPlanStore) GetEntryByID(ctx context.Context, id uint) (*models.PayPlanEntry, error) {
 	var entry models.PayPlanEntry
-	err := s.db.WithContext(ctx).First(&entry, id).Error
+	err := DBFromContext(ctx, s.db).First(&entry, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +200,7 @@ func (s *PayPlanStore) GetEntryByID(ctx context.Context, id uint) (*models.PayPl
 // GetEntriesByPeriod retrieves all entries for a period.
 func (s *PayPlanStore) GetEntriesByPeriod(ctx context.Context, periodID uint) ([]models.PayPlanEntry, error) {
 	var entries []models.PayPlanEntry
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Where("period_id = ?", periodID).
 		Order("grade ASC, step ASC").
 		Find(&entries).Error
@@ -214,7 +213,7 @@ func (s *PayPlanStore) GetEntriesByPeriod(ctx context.Context, periodID uint) ([
 // GetEntry retrieves a specific entry by grade and step.
 func (s *PayPlanStore) GetEntry(ctx context.Context, periodID uint, grade string, step int) (*models.PayPlanEntry, error) {
 	var entry models.PayPlanEntry
-	err := s.db.WithContext(ctx).
+	err := DBFromContext(ctx, s.db).
 		Where("period_id = ? AND grade = ? AND step = ?", periodID, grade, step).
 		First(&entry).Error
 	if err != nil {
@@ -225,10 +224,10 @@ func (s *PayPlanStore) GetEntry(ctx context.Context, periodID uint, grade string
 
 // UpdateEntry updates an entry.
 func (s *PayPlanStore) UpdateEntry(ctx context.Context, entry *models.PayPlanEntry) error {
-	return s.db.WithContext(ctx).Save(entry).Error
+	return DBFromContext(ctx, s.db).Save(entry).Error
 }
 
 // DeleteEntry deletes an entry.
 func (s *PayPlanStore) DeleteEntry(ctx context.Context, id uint) error {
-	return s.db.WithContext(ctx).Delete(&models.PayPlanEntry{}, id).Error
+	return DBFromContext(ctx, s.db).Delete(&models.PayPlanEntry{}, id).Error
 }

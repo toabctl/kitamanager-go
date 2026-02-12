@@ -11,12 +11,12 @@ import (
 
 // StepPromotionService handles step promotion calculations.
 type StepPromotionService struct {
-	payPlanStore  *store.PayPlanStore
+	payPlanStore  store.PayPlanStorer
 	employeeStore store.EmployeeStorer
 }
 
 // NewStepPromotionService creates a new StepPromotionService.
-func NewStepPromotionService(payPlanStore *store.PayPlanStore, employeeStore store.EmployeeStorer) *StepPromotionService {
+func NewStepPromotionService(payPlanStore store.PayPlanStorer, employeeStore store.EmployeeStorer) *StepPromotionService {
 	return &StepPromotionService{payPlanStore: payPlanStore, employeeStore: employeeStore}
 }
 
@@ -67,7 +67,7 @@ func DetermineEligibleStep(yearsOfService float64, entries []models.PayPlanEntry
 
 // GetStepPromotions computes employees eligible for step promotions in an organization.
 func (s *StepPromotionService) GetStepPromotions(ctx context.Context, orgID uint, date time.Time) (*models.StepPromotionsResponse, error) {
-	employees, err := s.employeeStore.FindByOrganizationWithContracts(orgID, date)
+	employees, err := s.employeeStore.FindByOrganizationWithContracts(ctx, orgID, date)
 	if err != nil {
 		return nil, err
 	}

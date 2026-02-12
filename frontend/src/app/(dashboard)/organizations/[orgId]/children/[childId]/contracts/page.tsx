@@ -40,6 +40,7 @@ import { PropertyTagInput } from '@/components/ui/tag-input';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   ChildContract,
   ChildContractCreateRequest,
@@ -48,21 +49,13 @@ import type {
 } from '@/lib/api/types';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   formatDate,
   formatDateForInput,
   formatDateForApi,
   propertiesToValues,
 } from '@/lib/utils/formatting';
-
-const contractSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().optional(),
-  properties: z.record(z.string()).optional(),
-});
-
-type ContractFormData = z.infer<typeof contractSchema>;
+import { childContractSchema, type ChildContractFormData } from '@/lib/schemas';
 
 export default function ChildContractsPage() {
   const params = useParams();
@@ -80,14 +73,14 @@ export default function ChildContractsPage() {
 
   // Fetch child data
   const { data: child, isLoading: childLoading } = useQuery({
-    queryKey: ['child', orgId, childId],
+    queryKey: queryKeys.children.detail(orgId, childId),
     queryFn: () => apiClient.getChild(orgId, childId),
     enabled: !!orgId && !!childId,
   });
 
   // Fetch contracts
   const { data: contracts, isLoading: contractsLoading } = useQuery({
-    queryKey: ['childContracts', orgId, childId],
+    queryKey: queryKeys.children.contracts(orgId, childId),
     queryFn: () => apiClient.getChildContracts(orgId, childId),
     enabled: !!orgId && !!childId,
   });
@@ -96,8 +89,8 @@ export default function ChildContractsPage() {
     mutationFn: (data: ChildContractCreateRequest) =>
       apiClient.createChildContract(orgId, childId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, childId] });
-      queryClient.invalidateQueries({ queryKey: ['child', orgId, childId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
       toast({ title: t('contracts.createSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
@@ -116,8 +109,8 @@ export default function ChildContractsPage() {
     mutationFn: ({ contractId, data }: { contractId: number; data: ChildContractUpdateRequest }) =>
       apiClient.updateChildContract(orgId, childId, contractId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, childId] });
-      queryClient.invalidateQueries({ queryKey: ['child', orgId, childId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
       toast({ title: t('contracts.updateSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
@@ -135,8 +128,8 @@ export default function ChildContractsPage() {
   const deleteMutation = useMutation({
     mutationFn: (contractId: number) => apiClient.deleteChildContract(orgId, childId, contractId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, childId] });
-      queryClient.invalidateQueries({ queryKey: ['child', orgId, childId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
       toast({ title: t('contracts.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingContract(null);
@@ -157,8 +150,8 @@ export default function ChildContractsPage() {
     control,
     watch,
     formState: { errors },
-  } = useForm<ContractFormData>({
-    resolver: zodResolver(contractSchema),
+  } = useForm<ChildContractFormData>({
+    resolver: zodResolver(childContractSchema),
     defaultValues: {
       from: '',
       to: '',
@@ -198,7 +191,7 @@ export default function ChildContractsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const onSubmit = (data: ContractFormData) => {
+  const onSubmit = (data: ChildContractFormData) => {
     if (editingContract) {
       updateMutation.mutate({
         contractId: editingContract.id,

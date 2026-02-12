@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   GovernmentFundingPeriod,
   GovernmentFundingProperty,
@@ -45,7 +46,6 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   formatDate,
   formatCurrency,
@@ -53,25 +53,12 @@ import {
   formatAgeRange,
   formatFte,
 } from '@/lib/utils/formatting';
-
-const periodSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().optional(),
-  comment: z.string().optional(),
-});
-
-const propertySchema = z.object({
-  key: z.string().min(1),
-  value: z.string().min(1),
-  payment: z.number().min(0),
-  requirement: z.number().min(0),
-  min_age: z.number().optional().nullable(),
-  max_age: z.number().optional().nullable(),
-  comment: z.string().optional(),
-});
-
-type PeriodFormData = z.infer<typeof periodSchema>;
-type PropertyFormData = z.infer<typeof propertySchema>;
+import {
+  governmentFundingPeriodSchema,
+  governmentFundingPropertySchema,
+  type GovernmentFundingPeriodFormData,
+  type GovernmentFundingPropertyFormData,
+} from '@/lib/schemas';
 
 export default function GovernmentFundingDetailPage() {
   const params = useParams();
@@ -93,7 +80,7 @@ export default function GovernmentFundingDetailPage() {
   } | null>(null);
 
   const { data: funding, isLoading } = useQuery({
-    queryKey: ['government-funding', fundingId],
+    queryKey: queryKeys.governmentFundings.detail(fundingId),
     queryFn: () => apiClient.getGovernmentFunding(fundingId, 100),
     enabled: !!fundingId,
   });
@@ -103,7 +90,7 @@ export default function GovernmentFundingDetailPage() {
     mutationFn: (data: GovernmentFundingPeriodCreateRequest) =>
       apiClient.createGovernmentFundingPeriod(fundingId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-funding', fundingId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
       toast({ title: t('governmentFundings.periodCreated') });
       setIsPeriodDialogOpen(false);
       resetPeriod();
@@ -120,7 +107,7 @@ export default function GovernmentFundingDetailPage() {
   const deletePeriodMutation = useMutation({
     mutationFn: (periodId: number) => apiClient.deleteGovernmentFundingPeriod(fundingId, periodId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-funding', fundingId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
       toast({ title: t('governmentFundings.periodDeleted') });
       setIsDeletePeriodDialogOpen(false);
       setDeletingPeriod(null);
@@ -144,7 +131,7 @@ export default function GovernmentFundingDetailPage() {
       data: GovernmentFundingPropertyCreateRequest;
     }) => apiClient.createGovernmentFundingProperty(fundingId, periodId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-funding', fundingId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
       toast({ title: t('governmentFundings.propertyCreated') });
       setIsPropertyDialogOpen(false);
       resetProperty();
@@ -162,7 +149,7 @@ export default function GovernmentFundingDetailPage() {
     mutationFn: ({ periodId, propertyId }: { periodId: number; propertyId: number }) =>
       apiClient.deleteGovernmentFundingProperty(fundingId, periodId, propertyId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['government-funding', fundingId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
       toast({ title: t('governmentFundings.propertyDeleted') });
       setIsDeletePropertyDialogOpen(false);
       setDeletingProperty(null);
@@ -181,8 +168,8 @@ export default function GovernmentFundingDetailPage() {
     handleSubmit: handleSubmitPeriod,
     reset: resetPeriod,
     formState: { errors: errorsPeriod },
-  } = useForm<PeriodFormData>({
-    resolver: zodResolver(periodSchema),
+  } = useForm<GovernmentFundingPeriodFormData>({
+    resolver: zodResolver(governmentFundingPeriodSchema),
     defaultValues: { from: '', to: '', comment: '' },
   });
 
@@ -191,8 +178,8 @@ export default function GovernmentFundingDetailPage() {
     handleSubmit: handleSubmitProperty,
     reset: resetProperty,
     formState: { errors: errorsProperty },
-  } = useForm<PropertyFormData>({
-    resolver: zodResolver(propertySchema),
+  } = useForm<GovernmentFundingPropertyFormData>({
+    resolver: zodResolver(governmentFundingPropertySchema),
     defaultValues: {
       key: '',
       value: '',
@@ -223,14 +210,14 @@ export default function GovernmentFundingDetailPage() {
     setIsPropertyDialogOpen(true);
   };
 
-  const onSubmitPeriod = (data: PeriodFormData) => {
+  const onSubmitPeriod = (data: GovernmentFundingPeriodFormData) => {
     createPeriodMutation.mutate({
       ...data,
       to: data.to || null,
     });
   };
 
-  const onSubmitProperty = (data: PropertyFormData) => {
+  const onSubmitProperty = (data: GovernmentFundingPropertyFormData) => {
     if (selectedPeriod) {
       createPropertyMutation.mutate({
         periodId: selectedPeriod.id,

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -20,11 +21,11 @@ func NewEmployeeStore(db *gorm.DB) *EmployeeStore {
 	}
 }
 
-func (s *EmployeeStore) FindAll(limit, offset int) ([]models.Employee, int64, error) {
+func (s *EmployeeStore) FindAll(ctx context.Context, limit, offset int) ([]models.Employee, int64, error) {
 	var employees []models.Employee
 	var total int64
 
-	if err := s.db.Model(&models.Employee{}).Count(&total).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(&models.Employee{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -35,16 +36,16 @@ func (s *EmployeeStore) FindAll(limit, offset int) ([]models.Employee, int64, er
 	return employees, total, nil
 }
 
-func (s *EmployeeStore) FindByOrganization(orgID uint, limit, offset int) ([]models.Employee, int64, error) {
-	return s.FindByOrganizationAndSection(orgID, nil, nil, "", nil, limit, offset)
+func (s *EmployeeStore) FindByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.Employee, int64, error) {
+	return s.FindByOrganizationAndSection(ctx, orgID, nil, nil, "", nil, limit, offset)
 }
 
-func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error) {
+func (s *EmployeeStore) FindByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error) {
 	var employees []models.Employee
 	var total int64
 
 	// Count query
-	countQuery := s.db.Model(&models.Employee{}).Where("employees.organization_id = ?", orgID)
+	countQuery := DBFromContext(ctx, s.db).Model(&models.Employee{}).Where("employees.organization_id = ?", orgID)
 	if sectionID != nil {
 		countQuery = countQuery.Where("employees.section_id = ?", *sectionID)
 	}
@@ -70,7 +71,7 @@ func (s *EmployeeStore) FindByOrganizationAndSection(orgID uint, sectionID *uint
 	}
 
 	// Data query
-	dataQuery := s.db.Preload("Contracts").Preload("Section").Where("employees.organization_id = ?", orgID)
+	dataQuery := DBFromContext(ctx, s.db).Preload("Contracts").Preload("Section").Where("employees.organization_id = ?", orgID)
 	if sectionID != nil {
 		dataQuery = dataQuery.Where("employees.section_id = ?", *sectionID)
 	}
@@ -103,9 +104,9 @@ func (s *EmployeeStore) Contracts() ContractStorer[models.EmployeeContract] {
 	return s.contractStore
 }
 
-func (s *EmployeeStore) FindByID(id uint) (*models.Employee, error) {
+func (s *EmployeeStore) FindByID(ctx context.Context, id uint) (*models.Employee, error) {
 	var employee models.Employee
-	if err := s.db.Preload("Organization").Preload("Section").Preload("Contracts").First(&employee, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Preload("Organization").Preload("Section").Preload("Contracts").First(&employee, id).Error; err != nil {
 		return nil, err
 	}
 	return &employee, nil
@@ -113,54 +114,53 @@ func (s *EmployeeStore) FindByID(id uint) (*models.Employee, error) {
 
 // FindByIDMinimal returns an employee without preloading relationships.
 // Useful for existence checks and org validation where relationships aren't needed.
-func (s *EmployeeStore) FindByIDMinimal(id uint) (*models.Employee, error) {
+func (s *EmployeeStore) FindByIDMinimal(ctx context.Context, id uint) (*models.Employee, error) {
 	var employee models.Employee
-	if err := s.db.First(&employee, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).First(&employee, id).Error; err != nil {
 		return nil, err
 	}
 	return &employee, nil
 }
 
-func (s *EmployeeStore) Create(employee *models.Employee) error {
-	return s.db.Create(employee).Error
+func (s *EmployeeStore) Create(ctx context.Context, employee *models.Employee) error {
+	return DBFromContext(ctx, s.db).Create(employee).Error
 }
 
-func (s *EmployeeStore) Update(employee *models.Employee) error {
-	return s.db.Save(employee).Error
+func (s *EmployeeStore) Update(ctx context.Context, employee *models.Employee) error {
+	return DBFromContext(ctx, s.db).Save(employee).Error
 }
 
-func (s *EmployeeStore) Delete(id uint) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("employee_id = ?", id).Delete(&models.EmployeeContract{}).Error; err != nil {
-			return err
-		}
-		return tx.Delete(&models.Employee{}, id).Error
-	})
+func (s *EmployeeStore) Delete(ctx context.Context, id uint) error {
+	db := DBFromContext(ctx, s.db)
+	if err := db.Where("employee_id = ?", id).Delete(&models.EmployeeContract{}).Error; err != nil {
+		return err
+	}
+	return db.Delete(&models.Employee{}, id).Error
 }
 
-func (s *EmployeeStore) CreateContract(contract *models.EmployeeContract) error {
-	return s.db.Create(contract).Error
+func (s *EmployeeStore) CreateContract(ctx context.Context, contract *models.EmployeeContract) error {
+	return DBFromContext(ctx, s.db).Create(contract).Error
 }
 
-func (s *EmployeeStore) FindContractByID(id uint) (*models.EmployeeContract, error) {
+func (s *EmployeeStore) FindContractByID(ctx context.Context, id uint) (*models.EmployeeContract, error) {
 	var contract models.EmployeeContract
-	if err := s.db.First(&contract, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).First(&contract, id).Error; err != nil {
 		return nil, err
 	}
 	return &contract, nil
 }
 
-func (s *EmployeeStore) UpdateContract(contract *models.EmployeeContract) error {
-	return s.db.Save(contract).Error
+func (s *EmployeeStore) UpdateContract(ctx context.Context, contract *models.EmployeeContract) error {
+	return DBFromContext(ctx, s.db).Save(contract).Error
 }
 
-func (s *EmployeeStore) DeleteContract(id uint) error {
-	return s.db.Delete(&models.EmployeeContract{}, id).Error
+func (s *EmployeeStore) DeleteContract(ctx context.Context, id uint) error {
+	return DBFromContext(ctx, s.db).Delete(&models.EmployeeContract{}, id).Error
 }
 
 // FindByOrganizationWithContracts fetches employees in an org who have an
 // active contract on `date`, with ALL their contracts preloaded (for seniority calculation).
-func (s *EmployeeStore) FindByOrganizationWithContracts(orgID uint, date time.Time) ([]models.Employee, error) {
+func (s *EmployeeStore) FindByOrganizationWithContracts(ctx context.Context, orgID uint, date time.Time) ([]models.Employee, error) {
 	var employees []models.Employee
 	err := s.db.
 		Preload("Contracts", func(db *gorm.DB) *gorm.DB {

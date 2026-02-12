@@ -1,12 +1,15 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
 )
+
+var ctx = context.Background()
 
 func TestChildStore_Create(t *testing.T) {
 	db := setupTestDB(t)
@@ -22,7 +25,7 @@ func TestChildStore_Create(t *testing.T) {
 		},
 	}
 
-	err := store.Create(child)
+	err := store.Create(ctx, child)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -44,7 +47,7 @@ func TestChildStore_FindAll(t *testing.T) {
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Child2", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
-	children, total, err := store.FindAll(100, 0)
+	children, total, err := store.FindAll(ctx, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -73,7 +76,7 @@ func TestChildStore_FindByID(t *testing.T) {
 	}
 	db.Create(child)
 
-	found, err := store.FindByID(child.ID)
+	found, err := store.FindByID(ctx, child.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -100,7 +103,7 @@ func TestChildStore_FindByOrganization(t *testing.T) {
 		Person: models.Person{OrganizationID: org2.ID, FirstName: "Child3", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
-	children, total, err := store.FindByOrganization(org1.ID, 100, 0)
+	children, total, err := store.FindByOrganization(ctx, org1.ID, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -130,12 +133,12 @@ func TestChildStore_Update(t *testing.T) {
 	db.Create(child)
 
 	child.FirstName = "Updated"
-	err := store.Update(child)
+	err := store.Update(ctx, child)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(child.ID)
+	found, _ := store.FindByID(ctx, child.ID)
 	if found.FirstName != "Updated" {
 		t.Errorf("expected first name 'Updated', got '%s'", found.FirstName)
 	}
@@ -156,12 +159,12 @@ func TestChildStore_Delete(t *testing.T) {
 	}
 	db.Create(child)
 
-	err := store.Delete(child.ID)
+	err := store.Delete(ctx, child.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(child.ID)
+	_, err = store.FindByID(ctx, child.ID)
 	if err == nil {
 		t.Error("expected error finding deleted child")
 	}
@@ -193,7 +196,7 @@ func TestChildStore_CreateContract(t *testing.T) {
 		},
 	}
 
-	err := store.CreateContract(contract)
+	err := store.CreateContract(ctx, contract)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -228,12 +231,12 @@ func TestChildStore_DeleteContract(t *testing.T) {
 	}
 	db.Create(contract)
 
-	err := store.DeleteContract(contract.ID)
+	err := store.DeleteContract(ctx, contract.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindContractByID(contract.ID)
+	_, err = store.FindContractByID(ctx, contract.ID)
 	if err == nil {
 		t.Error("expected error finding deleted contract")
 	}
@@ -265,13 +268,13 @@ func TestChildStore_DeleteAlsoDeletesContracts(t *testing.T) {
 	db.Create(contract)
 	contractID := contract.ID
 
-	err := store.Delete(child.ID)
+	err := store.Delete(ctx, child.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	// Verify contract is also deleted
-	_, err = store.FindContractByID(contractID)
+	_, err = store.FindContractByID(ctx, contractID)
 	if err == nil {
 		t.Error("expected contract to be deleted with child")
 	}
@@ -305,7 +308,7 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 	db.Create(existing)
 
 	// Try to create overlapping contract
-	err := store.Contracts().ValidateNoOverlap(
+	err := store.Contracts().ValidateNoOverlap(ctx,
 		child.ID,
 		time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		datePtr(time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)),
@@ -317,7 +320,7 @@ func TestChildStore_ContractOverlapValidation(t *testing.T) {
 	}
 
 	// Non-overlapping contract should succeed
-	err = store.Contracts().ValidateNoOverlap(
+	err = store.Contracts().ValidateNoOverlap(ctx,
 		child.ID,
 		time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		nil,
@@ -439,7 +442,7 @@ func TestChildStore_FindByOrganizationWithActiveOn(t *testing.T) {
 	})
 
 	// Query for children with active contracts on refDate
-	children, err := store.FindByOrganizationWithActiveOn(org.ID, refDate)
+	children, err := store.FindByOrganizationWithActiveOn(ctx, org.ID, refDate)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -513,7 +516,7 @@ func TestChildStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	db.Create(childNoContract)
 
 	// Query with activeOn filter
-	children, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", 100, 0)
+	children, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -534,7 +537,7 @@ func TestChildStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 
 	// Query without activeOn (should return all 4 children)
-	allChildren, allTotal, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "", 100, 0)
+	allChildren, allTotal, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -573,7 +576,7 @@ func TestChildStore_FindByOrganizationAndSection_ActiveOn_Pagination(t *testing.
 	db.Create(noContract)
 
 	// Paginate: limit=2, offset=0 should return 2 of 3 total
-	children, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", 2, 0)
+	children, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "", 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -586,7 +589,7 @@ func TestChildStore_FindByOrganizationAndSection_ActiveOn_Pagination(t *testing.
 	}
 
 	// Page 2: limit=2, offset=2 should return 1 remaining
-	children2, _, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", 2, 2)
+	children2, _, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "", 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -606,7 +609,7 @@ func TestChildStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	db.Create(&models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Emilia", LastName: "Fischer", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search by first name prefix (case-insensitive)
-	children, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "em", 100, 0)
+	children, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "em", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -618,7 +621,7 @@ func TestChildStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search by last name
-	children, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "schmidt", 100, 0)
+	children, total, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "schmidt", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -630,7 +633,7 @@ func TestChildStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search with no results
-	children, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "zzz", 100, 0)
+	children, total, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "zzz", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -642,7 +645,7 @@ func TestChildStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Empty search returns all
-	_, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "", 100, 0)
+	_, total, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -664,7 +667,7 @@ func TestChildStore_FindByOrganizationAndSection_SearchWithPagination(t *testing
 	db.Create(&models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Noah", LastName: "Fischer", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Page 1 of search results (limit=2)
-	children, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "emma", 2, 0)
+	children, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "emma", 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -676,7 +679,7 @@ func TestChildStore_FindByOrganizationAndSection_SearchWithPagination(t *testing
 	}
 
 	// Page 2
-	children, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "emma", 2, 2)
+	children, _, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "emma", 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -685,7 +688,7 @@ func TestChildStore_FindByOrganizationAndSection_SearchWithPagination(t *testing
 	}
 
 	// Page 3 (last)
-	children, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "emma", 2, 4)
+	children, _, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "emma", 2, 4)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -710,7 +713,7 @@ func TestChildStore_FindByOrganizationAndSection_SearchWithActiveOn(t *testing.T
 	db.Create(&models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Emilia", LastName: "Fischer", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search "em" + activeOn: only Emma has an active contract
-	children, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "em", 100, 0)
+	children, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "em", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -775,13 +778,13 @@ func TestChildStore_ContractProperties_JSONSerialization(t *testing.T) {
 				},
 			}
 
-			err := store.CreateContract(contract)
+			err := store.CreateContract(ctx, contract)
 			if err != nil {
 				t.Fatalf("failed to create contract: %v", err)
 			}
 
 			// Retrieve the contract from database
-			retrieved, err := store.FindContractByID(contract.ID)
+			retrieved, err := store.FindContractByID(ctx, contract.ID)
 			if err != nil {
 				t.Fatalf("failed to retrieve contract: %v", err)
 			}
@@ -801,7 +804,7 @@ func TestChildStore_ContractProperties_JSONSerialization(t *testing.T) {
 			}
 
 			// Cleanup for next test
-			_ = store.DeleteContract(contract.ID)
+			_ = store.DeleteContract(ctx, contract.ID)
 		})
 	}
 }

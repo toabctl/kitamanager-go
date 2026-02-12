@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -41,19 +42,20 @@ func randomGender() string {
 // If the user already exists, it will be skipped.
 // The user will be assigned the superadmin role (in database).
 func SeedAdmin(cfg *config.Config, userStore *store.UserStore, userGroupStore *store.UserGroupStore, enforcer *rbac.Enforcer) error {
+	ctx := context.Background()
 	if cfg.SeedAdminEmail == "" || cfg.SeedAdminPassword == "" {
 		slog.Info("Admin seeding skipped: SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD not set")
 		return nil
 	}
 
 	// Check if user already exists
-	existingUser, err := userStore.FindByEmail(cfg.SeedAdminEmail)
+	existingUser, err := userStore.FindByEmail(ctx, cfg.SeedAdminEmail)
 	if err == nil && existingUser != nil {
 		slog.Info("Admin user already exists", "email", cfg.SeedAdminEmail)
 
 		// Ensure superadmin is set in database
 		if !existingUser.IsSuperAdmin {
-			if err := userGroupStore.SetSuperAdmin(existingUser.ID, true); err != nil {
+			if err := userGroupStore.SetSuperAdmin(ctx, existingUser.ID, true); err != nil {
 				slog.Warn("Failed to ensure superadmin status in database", "error", err)
 			} else {
 				slog.Info("Superadmin status set in database", "userId", existingUser.ID)
@@ -87,7 +89,7 @@ func SeedAdmin(cfg *config.Config, userStore *store.UserStore, userGroupStore *s
 		CreatedBy:    "system",
 	}
 
-	if err := userStore.Create(user); err != nil {
+	if err := userStore.Create(ctx, user); err != nil {
 		return err
 	}
 
@@ -111,9 +113,10 @@ func SeedGovernmentFunding(cfg *config.Config, db *gorm.DB, fundingStore *store.
 		return nil
 	}
 
+	ctx := context.Background()
 	governmentFundingImporter := importer.NewGovernmentFundingImporter(db, fundingStore)
 
-	fundingID, err := governmentFundingImporter.ImportGovernmentFundingFromFile(cfg.GovernmentFundingSeedPath, cfg.GovernmentFundingSeedState)
+	fundingID, err := governmentFundingImporter.ImportGovernmentFundingFromFile(ctx, cfg.GovernmentFundingSeedPath, cfg.GovernmentFundingSeedState)
 	if err != nil {
 		if errors.Is(err, importer.ErrGovernmentFundingExists) {
 			slog.Info("Government funding already seeded", "state", cfg.GovernmentFundingSeedState, "id", fundingID)
@@ -181,8 +184,9 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	slog.Info("Seeding test data...")
 
 	// Import Berlin government funding plan
+	ctx := context.Background()
 	governmentFundingImporter := importer.NewGovernmentFundingImporter(db, fundingStore)
-	id, err := governmentFundingImporter.ImportGovernmentFundingFromFile("configs/government-fundings/berlin.yaml", "berlin")
+	id, err := governmentFundingImporter.ImportGovernmentFundingFromFile(ctx, "configs/government-fundings/berlin.yaml", "berlin")
 	if err != nil {
 		if errors.Is(err, importer.ErrGovernmentFundingExists) {
 			slog.Info("Berlin government funding already exists", "id", id)

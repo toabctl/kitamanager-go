@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -16,7 +17,7 @@ func TestOrganizationStore_Create(t *testing.T) {
 		CreatedBy: "admin@test.com",
 	}
 
-	err := store.Create(org)
+	err := store.Create(context.Background(), org)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -34,7 +35,7 @@ func TestOrganizationStore_FindAll(t *testing.T) {
 	createTestOrganization(t, db, "Org 1")
 	createTestOrganization(t, db, "Org 2")
 
-	orgs, total, err := store.FindAll("", 100, 0)
+	orgs, total, err := store.FindAll(context.Background(), "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -54,7 +55,7 @@ func TestOrganizationStore_FindByID(t *testing.T) {
 
 	created := createTestOrganization(t, db, "Test Org")
 
-	found, err := store.FindByID(created.ID)
+	found, err := store.FindByID(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -68,7 +69,7 @@ func TestOrganizationStore_FindByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewOrganizationStore(db)
 
-	_, err := store.FindByID(999)
+	_, err := store.FindByID(context.Background(), 999)
 	if err == nil {
 		t.Error("expected error for non-existent organization")
 	}
@@ -81,12 +82,12 @@ func TestOrganizationStore_Update(t *testing.T) {
 	org := createTestOrganization(t, db, "Original Name")
 	org.Name = "Updated Name"
 
-	err := store.Update(org)
+	err := store.Update(context.Background(), org)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(org.ID)
+	found, _ := store.FindByID(context.Background(), org.ID)
 	if found.Name != "Updated Name" {
 		t.Errorf("expected name 'Updated Name', got '%s'", found.Name)
 	}
@@ -98,12 +99,12 @@ func TestOrganizationStore_Delete(t *testing.T) {
 
 	org := createTestOrganization(t, db, "To Delete")
 
-	err := store.Delete(org.ID)
+	err := store.Delete(context.Background(), org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(org.ID)
+	_, err = store.FindByID(context.Background(), org.ID)
 	if err == nil {
 		t.Error("expected error finding deleted organization")
 	}

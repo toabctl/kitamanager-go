@@ -32,30 +32,30 @@ func (s *UserGroupService) AddUserToGroup(ctx context.Context, userID, groupID u
 	}
 
 	// Verify user exists
-	_, err := s.userStore.FindByID(userID)
+	_, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
 		return nil, apperror.NotFound("user")
 	}
 
 	// Verify group exists
-	group, err := s.groupStore.FindByID(groupID)
+	group, err := s.groupStore.FindByID(ctx, groupID)
 	if err != nil {
 		return nil, apperror.NotFound("group")
 	}
 
 	// Check if already a member
-	exists, err := s.userGroupStore.Exists(userID, groupID)
+	exists, err := s.userGroupStore.Exists(ctx, userID, groupID)
 	if err != nil {
-		return nil, apperror.Internal("failed to check existing membership")
+		return nil, apperror.InternalWrap(err, "failed to check existing membership")
 	}
 	if exists {
 		return nil, apperror.BadRequest("user is already a member of this group")
 	}
 
 	// Create membership
-	ug, err := s.userGroupStore.AddUserToGroup(userID, groupID, role, createdBy)
+	ug, err := s.userGroupStore.AddUserToGroup(ctx, userID, groupID, role, createdBy)
 	if err != nil {
-		return nil, apperror.Internal("failed to add user to group")
+		return nil, apperror.InternalWrap(err, "failed to add user to group")
 	}
 
 	// Load group data for response
@@ -72,18 +72,18 @@ func (s *UserGroupService) UpdateUserGroupRole(ctx context.Context, userID, grou
 	}
 
 	// Verify membership exists
-	ug, err := s.userGroupStore.FindByUserAndGroup(userID, groupID)
+	ug, err := s.userGroupStore.FindByUserAndGroup(ctx, userID, groupID)
 	if err != nil {
 		return nil, apperror.NotFound("user-group membership")
 	}
 
 	// Update role
-	if err := s.userGroupStore.UpdateRole(userID, groupID, role); err != nil {
-		return nil, apperror.Internal("failed to update role")
+	if err := s.userGroupStore.UpdateRole(ctx, userID, groupID, role); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update role")
 	}
 
 	// Load group for response
-	group, _ := s.groupStore.FindByID(groupID)
+	group, _ := s.groupStore.FindByID(ctx, groupID)
 	ug.Role = role
 	ug.Group = group
 	resp := ug.ToResponse()
@@ -93,16 +93,16 @@ func (s *UserGroupService) UpdateUserGroupRole(ctx context.Context, userID, grou
 // RemoveUserFromGroup removes a user from a group
 func (s *UserGroupService) RemoveUserFromGroup(ctx context.Context, userID, groupID uint) error {
 	// Check if membership exists
-	exists, err := s.userGroupStore.Exists(userID, groupID)
+	exists, err := s.userGroupStore.Exists(ctx, userID, groupID)
 	if err != nil {
-		return apperror.Internal("failed to check membership")
+		return apperror.InternalWrap(err, "failed to check membership")
 	}
 	if !exists {
 		return apperror.NotFound("user-group membership")
 	}
 
-	if err := s.userGroupStore.RemoveUserFromGroup(userID, groupID); err != nil {
-		return apperror.Internal("failed to remove user from group")
+	if err := s.userGroupStore.RemoveUserFromGroup(ctx, userID, groupID); err != nil {
+		return apperror.InternalWrap(err, "failed to remove user from group")
 	}
 	return nil
 }
@@ -110,20 +110,20 @@ func (s *UserGroupService) RemoveUserFromGroup(ctx context.Context, userID, grou
 // GetUserMemberships returns all group memberships for a user with effective org roles
 func (s *UserGroupService) GetUserMemberships(ctx context.Context, userID uint) (*models.UserMembershipsResponse, error) {
 	// Verify user exists
-	_, err := s.userStore.FindByID(userID)
+	_, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
 		return nil, apperror.NotFound("user")
 	}
 
-	memberships, err := s.userGroupStore.FindByUser(userID)
+	memberships, err := s.userGroupStore.FindByUser(ctx, userID)
 	if err != nil {
-		return nil, apperror.Internal("failed to fetch memberships")
+		return nil, apperror.InternalWrap(err, "failed to fetch memberships")
 	}
 
 	// Calculate effective org roles
-	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(userID)
+	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(ctx, userID)
 	if err != nil {
-		return nil, apperror.Internal("failed to calculate effective roles")
+		return nil, apperror.InternalWrap(err, "failed to calculate effective roles")
 	}
 
 	result := make([]models.UserMembership, 0, len(memberships))
@@ -152,13 +152,13 @@ func (s *UserGroupService) GetUserMemberships(ctx context.Context, userID uint) 
 // SetSuperAdmin sets or unsets superadmin status for a user
 func (s *UserGroupService) SetSuperAdmin(ctx context.Context, userID uint, isSuperAdmin bool) error {
 	// Verify user exists
-	_, err := s.userStore.FindByID(userID)
+	_, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
 		return apperror.NotFound("user")
 	}
 
-	if err := s.userGroupStore.SetSuperAdmin(userID, isSuperAdmin); err != nil {
-		return apperror.Internal("failed to update superadmin status")
+	if err := s.userGroupStore.SetSuperAdmin(ctx, userID, isSuperAdmin); err != nil {
+		return apperror.InternalWrap(err, "failed to update superadmin status")
 	}
 	return nil
 }
@@ -166,7 +166,7 @@ func (s *UserGroupService) SetSuperAdmin(ctx context.Context, userID uint, isSup
 // AddUserToOrganization adds a user to an organization's default group with member role
 func (s *UserGroupService) AddUserToOrganization(ctx context.Context, userID, orgID uint, createdBy string) (*models.UserGroupResponse, error) {
 	// Find default group for organization
-	defaultGroup, err := s.groupStore.FindDefaultGroup(orgID)
+	defaultGroup, err := s.groupStore.FindDefaultGroup(ctx, orgID)
 	if err != nil {
 		return nil, apperror.NotFound("organization or default group")
 	}
@@ -177,13 +177,13 @@ func (s *UserGroupService) AddUserToOrganization(ctx context.Context, userID, or
 // RemoveUserFromOrganization removes a user from all groups in an organization
 func (s *UserGroupService) RemoveUserFromOrganization(ctx context.Context, userID, orgID uint) error {
 	// Verify user exists
-	_, err := s.userStore.FindByID(userID)
+	_, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
 		return apperror.NotFound("user")
 	}
 
-	if err := s.userGroupStore.RemoveUserFromOrg(userID, orgID); err != nil {
-		return apperror.Internal("failed to remove user from organization")
+	if err := s.userGroupStore.RemoveUserFromOrg(ctx, userID, orgID); err != nil {
+		return apperror.InternalWrap(err, "failed to remove user from organization")
 	}
 	return nil
 }

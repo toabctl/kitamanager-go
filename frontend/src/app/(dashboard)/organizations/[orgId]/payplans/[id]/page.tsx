@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   PayPlanPeriod,
   PayPlanEntry,
@@ -45,25 +46,14 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { formatDate, formatCurrency, formatPeriod } from '@/lib/utils/formatting';
 import { PayPlanGrid } from '@/components/payplans/payplan-grid';
-
-const periodSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().optional(),
-  weekly_hours: z.number().min(0).max(168),
-});
-
-const entrySchema = z.object({
-  grade: z.string().min(1),
-  step: z.number().min(1).max(6),
-  monthly_amount: z.number().min(0),
-  step_min_years: z.number().min(0).optional(),
-});
-
-type PeriodFormData = z.infer<typeof periodSchema>;
-type EntryFormData = z.infer<typeof entrySchema>;
+import {
+  payPlanPeriodSchema,
+  payPlanEntrySchema,
+  type PayPlanPeriodFormData,
+  type PayPlanEntryFormData,
+} from '@/lib/schemas';
 
 export default function PayPlanDetailPage() {
   const params = useParams();
@@ -89,7 +79,7 @@ export default function PayPlanDetailPage() {
   } | null>(null);
 
   const { data: payPlan, isLoading } = useQuery({
-    queryKey: ['payplan', orgId, payPlanId],
+    queryKey: queryKeys.payPlans.detail(orgId, payPlanId),
     queryFn: () => apiClient.getPayPlan(orgId, payPlanId),
     enabled: !!orgId && !!payPlanId,
   });
@@ -99,7 +89,7 @@ export default function PayPlanDetailPage() {
     mutationFn: (data: PayPlanPeriodCreateRequest) =>
       apiClient.createPayPlanPeriod(orgId, payPlanId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payplan', orgId, payPlanId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
       toast({ title: t('payPlans.periodCreated') });
       setIsPeriodDialogOpen(false);
       resetPeriod();
@@ -116,7 +106,7 @@ export default function PayPlanDetailPage() {
   const deletePeriodMutation = useMutation({
     mutationFn: (periodId: number) => apiClient.deletePayPlanPeriod(orgId, payPlanId, periodId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payplan', orgId, payPlanId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
       toast({ title: t('payPlans.periodDeleted') });
       setIsDeletePeriodDialogOpen(false);
       setDeletingPeriod(null);
@@ -135,7 +125,7 @@ export default function PayPlanDetailPage() {
     mutationFn: ({ periodId, data }: { periodId: number; data: PayPlanEntryCreateRequest }) =>
       apiClient.createPayPlanEntry(orgId, payPlanId, periodId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payplan', orgId, payPlanId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
       toast({ title: t('payPlans.entryCreated') });
       setIsEntryDialogOpen(false);
       resetEntry();
@@ -153,7 +143,7 @@ export default function PayPlanDetailPage() {
     mutationFn: ({ periodId, entryId }: { periodId: number; entryId: number }) =>
       apiClient.deletePayPlanEntry(orgId, payPlanId, periodId, entryId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payplan', orgId, payPlanId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
       toast({ title: t('payPlans.entryDeleted') });
       setIsDeleteEntryDialogOpen(false);
       setDeletingEntry(null);
@@ -172,8 +162,8 @@ export default function PayPlanDetailPage() {
     handleSubmit: handleSubmitPeriod,
     reset: resetPeriod,
     formState: { errors: errorsPeriod },
-  } = useForm<PeriodFormData>({
-    resolver: zodResolver(periodSchema),
+  } = useForm<PayPlanPeriodFormData>({
+    resolver: zodResolver(payPlanPeriodSchema),
     defaultValues: { from: '', to: '', weekly_hours: 39 },
   });
 
@@ -182,8 +172,8 @@ export default function PayPlanDetailPage() {
     handleSubmit: handleSubmitEntry,
     reset: resetEntry,
     formState: { errors: errorsEntry },
-  } = useForm<EntryFormData>({
-    resolver: zodResolver(entrySchema),
+  } = useForm<PayPlanEntryFormData>({
+    resolver: zodResolver(payPlanEntrySchema),
     defaultValues: { grade: '', step: 1, monthly_amount: 0, step_min_years: undefined },
   });
 
@@ -200,14 +190,14 @@ export default function PayPlanDetailPage() {
     setIsEntryDialogOpen(true);
   };
 
-  const onSubmitPeriod = (data: PeriodFormData) => {
+  const onSubmitPeriod = (data: PayPlanPeriodFormData) => {
     createPeriodMutation.mutate({
       ...data,
       to: data.to || null,
     });
   };
 
-  const onSubmitEntry = (data: EntryFormData) => {
+  const onSubmitEntry = (data: PayPlanEntryFormData) => {
     if (selectedPeriod) {
       createEntryMutation.mutate({
         periodId: selectedPeriod.id,

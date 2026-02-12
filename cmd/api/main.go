@@ -123,6 +123,9 @@ func main() {
 	// Initialize RBAC permission service
 	permissionService := rbac.NewPermissionService(userGroupStore, enforcer)
 
+	// Initialize transactor for service-layer transactions
+	transactor := store.NewTransactor(db)
+
 	// Initialize services
 	auditService := service.NewAuditService(auditStore)
 	userService := service.NewUserService(userStore, groupStore)
@@ -130,9 +133,9 @@ func main() {
 	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
 	groupService := service.NewGroupService(groupStore)
 	sectionService := service.NewSectionService(sectionStore)
-	employeeService := service.NewEmployeeService(employeeStore, payPlanStore)
-	childService := service.NewChildService(childStore, orgStore, governmentFundingStore)
-	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore)
+	employeeService := service.NewEmployeeService(employeeStore, payPlanStore, transactor)
+	childService := service.NewChildService(childStore, orgStore, governmentFundingStore, transactor)
+	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore, transactor)
 	payPlanService := service.NewPayPlanService(payPlanStore)
 	childAttendanceService := service.NewChildAttendanceService(childAttendanceStore, childStore)
 	stepPromotionService := service.NewStepPromotionService(payPlanStore, employeeStore)

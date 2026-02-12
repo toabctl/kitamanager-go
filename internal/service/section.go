@@ -25,9 +25,9 @@ func NewSectionService(store store.SectionStorer) *SectionService {
 
 // ListByOrganization returns a paginated list of sections for a specific organization
 func (s *SectionService) ListByOrganization(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.SectionResponse, int64, error) {
-	sections, total, err := s.store.FindByOrganizationPaginated(orgID, search, limit, offset)
+	sections, total, err := s.store.FindByOrganizationPaginated(ctx, orgID, search, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch sections")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch sections")
 	}
 
 	responses := make([]models.SectionResponse, len(sections))
@@ -39,7 +39,7 @@ func (s *SectionService) ListByOrganization(ctx context.Context, orgID uint, sea
 
 // GetByIDAndOrg returns a section by ID if it belongs to the specified organization
 func (s *SectionService) GetByIDAndOrg(ctx context.Context, id, orgID uint) (*models.SectionResponse, error) {
-	section, err := s.store.FindByID(id)
+	section, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("section")
 	}
@@ -60,7 +60,7 @@ func (s *SectionService) Create(ctx context.Context, orgID uint, req *models.Sec
 	}
 
 	// Check for duplicate name in organization
-	existing, err := s.store.FindByNameAndOrg(name, orgID)
+	existing, err := s.store.FindByNameAndOrg(ctx, name, orgID)
 	if err == nil && existing != nil {
 		return nil, apperror.BadRequest("section with this name already exists in the organization")
 	}
@@ -71,8 +71,8 @@ func (s *SectionService) Create(ctx context.Context, orgID uint, req *models.Sec
 		CreatedBy:      createdBy,
 	}
 
-	if err := s.store.Create(section); err != nil {
-		return nil, apperror.Internal("failed to create section")
+	if err := s.store.Create(ctx, section); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create section")
 	}
 
 	resp := section.ToResponse()
@@ -81,7 +81,7 @@ func (s *SectionService) Create(ctx context.Context, orgID uint, req *models.Sec
 
 // UpdateByIDAndOrg updates a section if it belongs to the specified organization
 func (s *SectionService) UpdateByIDAndOrg(ctx context.Context, id, orgID uint, req *models.SectionUpdateRequest) (*models.SectionResponse, error) {
-	section, err := s.store.FindByID(id)
+	section, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("section")
 	}
@@ -97,7 +97,7 @@ func (s *SectionService) UpdateByIDAndOrg(ctx context.Context, id, orgID uint, r
 		}
 
 		// Check for duplicate name in organization (excluding current section)
-		existing, err := s.store.FindByNameAndOrg(name, orgID)
+		existing, err := s.store.FindByNameAndOrg(ctx, name, orgID)
 		if err == nil && existing != nil && existing.ID != id {
 			return nil, apperror.BadRequest("section with this name already exists in the organization")
 		}
@@ -105,8 +105,8 @@ func (s *SectionService) UpdateByIDAndOrg(ctx context.Context, id, orgID uint, r
 		section.Name = name
 	}
 
-	if err := s.store.Update(section); err != nil {
-		return nil, apperror.Internal("failed to update section")
+	if err := s.store.Update(ctx, section); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update section")
 	}
 
 	resp := section.ToResponse()
@@ -115,7 +115,7 @@ func (s *SectionService) UpdateByIDAndOrg(ctx context.Context, id, orgID uint, r
 
 // DeleteByIDAndOrg deletes a section if it belongs to the specified organization
 func (s *SectionService) DeleteByIDAndOrg(ctx context.Context, id, orgID uint) error {
-	section, err := s.store.FindByID(id)
+	section, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return apperror.NotFound("section")
 	}
@@ -130,25 +130,25 @@ func (s *SectionService) DeleteByIDAndOrg(ctx context.Context, id, orgID uint) e
 	}
 
 	// Check if section has children
-	hasChildren, err := s.store.HasChildren(id)
+	hasChildren, err := s.store.HasChildren(ctx, id)
 	if err != nil {
-		return apperror.Internal("failed to check section children")
+		return apperror.InternalWrap(err, "failed to check section children")
 	}
 	if hasChildren {
 		return apperror.BadRequest("cannot delete section with assigned children")
 	}
 
 	// Check if section has employees
-	hasEmployees, err := s.store.HasEmployees(id)
+	hasEmployees, err := s.store.HasEmployees(ctx, id)
 	if err != nil {
-		return apperror.Internal("failed to check section employees")
+		return apperror.InternalWrap(err, "failed to check section employees")
 	}
 	if hasEmployees {
 		return apperror.BadRequest("cannot delete section with assigned employees")
 	}
 
-	if err := s.store.Delete(id); err != nil {
-		return apperror.Internal("failed to delete section")
+	if err := s.store.Delete(ctx, id); err != nil {
+		return apperror.InternalWrap(err, "failed to delete section")
 	}
 	return nil
 }
@@ -156,13 +156,13 @@ func (s *SectionService) DeleteByIDAndOrg(ctx context.Context, id, orgID uint) e
 // GetOrCreateDefaultSection gets or creates the default "Unassigned" section for an organization
 func (s *SectionService) GetOrCreateDefaultSection(ctx context.Context, orgID uint, createdBy string) (*models.Section, error) {
 	// Try to find existing default section
-	section, err := s.store.FindDefaultSection(orgID)
+	section, err := s.store.FindDefaultSection(ctx, orgID)
 	if err == nil {
 		return section, nil
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, apperror.Internal("failed to check for default section")
+		return nil, apperror.InternalWrap(err, "failed to check for default section")
 	}
 
 	// Create default section
@@ -173,8 +173,8 @@ func (s *SectionService) GetOrCreateDefaultSection(ctx context.Context, orgID ui
 		CreatedBy:      createdBy,
 	}
 
-	if err := s.store.Create(section); err != nil {
-		return nil, apperror.Internal("failed to create default section")
+	if err := s.store.Create(ctx, section); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create default section")
 	}
 
 	return section, nil

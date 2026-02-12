@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"testing"
 
 	"gorm.io/gorm"
@@ -20,7 +21,7 @@ func TestSectionStore_Create(t *testing.T) {
 		CreatedBy:      "admin@test.com",
 	}
 
-	err := store.Create(section)
+	err := store.Create(context.Background(), section)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -39,7 +40,7 @@ func TestSectionStore_FindByID(t *testing.T) {
 
 	created := createTestSection(t, db, "Test Section")
 
-	found, err := store.FindByID(created.ID)
+	found, err := store.FindByID(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -53,7 +54,7 @@ func TestSectionStore_FindByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewSectionStore(db)
 
-	_, err := store.FindByID(999)
+	_, err := store.FindByID(context.Background(), 999)
 	if err == nil {
 		t.Error("expected error for non-existent section")
 	}
@@ -66,12 +67,12 @@ func TestSectionStore_Update(t *testing.T) {
 	section := createTestSection(t, db, "Original Name")
 	section.Name = "Updated Name"
 
-	err := store.Update(section)
+	err := store.Update(context.Background(), section)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(section.ID)
+	found, _ := store.FindByID(context.Background(), section.ID)
 	if found.Name != "Updated Name" {
 		t.Errorf("expected name 'Updated Name', got '%s'", found.Name)
 	}
@@ -83,12 +84,12 @@ func TestSectionStore_Delete(t *testing.T) {
 
 	section := createTestSection(t, db, "To Delete")
 
-	err := store.Delete(section.ID)
+	err := store.Delete(context.Background(), section.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(section.ID)
+	_, err = store.FindByID(context.Background(), section.ID)
 	if err == nil {
 		t.Error("expected error finding deleted section")
 	}
@@ -107,7 +108,7 @@ func TestSectionStore_FindByOrganization(t *testing.T) {
 	createTestSectionWithOrg(t, db, "Section 3", org2.ID)
 
 	// Find sections in org1
-	sections, err := store.FindByOrganization(org1.ID)
+	sections, err := store.FindByOrganization(context.Background(), org1.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -124,7 +125,7 @@ func TestSectionStore_FindByOrganization(t *testing.T) {
 	}
 
 	// Find sections in org2
-	sections2, err := store.FindByOrganization(org2.ID)
+	sections2, err := store.FindByOrganization(context.Background(), org2.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -146,7 +147,7 @@ func TestSectionStore_FindByOrganizationPaginated(t *testing.T) {
 	}
 
 	// Test pagination
-	sections, total, err := store.FindByOrganizationPaginated(org.ID, "", 2, 0)
+	sections, total, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "", 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -160,7 +161,7 @@ func TestSectionStore_FindByOrganizationPaginated(t *testing.T) {
 	}
 
 	// Test second page
-	sections2, _, err := store.FindByOrganizationPaginated(org.ID, "", 2, 2)
+	sections2, _, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "", 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -181,7 +182,7 @@ func TestSectionStore_FindByOrganizationPaginated_Search(t *testing.T) {
 	createTestSectionWithOrg(t, db, "Elementar", org.ID)
 
 	// Search for "krippe" (case-insensitive)
-	sections, total, err := store.FindByOrganizationPaginated(org.ID, "krippe", 100, 0)
+	sections, total, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "krippe", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -195,7 +196,7 @@ func TestSectionStore_FindByOrganizationPaginated_Search(t *testing.T) {
 	}
 
 	// Search for non-matching term
-	sections2, total2, err := store.FindByOrganizationPaginated(org.ID, "nonexistent", 100, 0)
+	sections2, total2, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "nonexistent", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -229,7 +230,7 @@ func TestSectionStore_FindDefaultSection(t *testing.T) {
 	}
 
 	// Find the default section
-	found, err := store.FindDefaultSection(org.ID)
+	found, err := store.FindDefaultSection(context.Background(), org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -252,7 +253,7 @@ func TestSectionStore_FindDefaultSection_NotFound(t *testing.T) {
 	createTestSectionWithOrg(t, db, "Regular Section", org.ID)
 
 	// Try to find default section (should fail)
-	_, err := store.FindDefaultSection(org.ID)
+	_, err := store.FindDefaultSection(context.Background(), org.ID)
 	if err == nil {
 		t.Error("expected error when no default section exists")
 	}
@@ -266,7 +267,7 @@ func TestSectionStore_HasChildren(t *testing.T) {
 	section := createTestSectionWithOrg(t, db, "Test Section", org.ID)
 
 	// Section should have no children initially
-	hasChildren, err := store.HasChildren(section.ID)
+	hasChildren, err := store.HasChildren(context.Background(), section.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -288,7 +289,7 @@ func TestSectionStore_HasChildren(t *testing.T) {
 	}
 
 	// Section should now have children
-	hasChildren, err = store.HasChildren(section.ID)
+	hasChildren, err = store.HasChildren(context.Background(), section.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -305,7 +306,7 @@ func TestSectionStore_HasEmployees(t *testing.T) {
 	section := createTestSectionWithOrg(t, db, "Test Section", org.ID)
 
 	// Section should have no employees initially
-	hasEmployees, err := store.HasEmployees(section.ID)
+	hasEmployees, err := store.HasEmployees(context.Background(), section.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -327,7 +328,7 @@ func TestSectionStore_HasEmployees(t *testing.T) {
 	}
 
 	// Section should now have employees
-	hasEmployees, err = store.HasEmployees(section.ID)
+	hasEmployees, err = store.HasEmployees(context.Background(), section.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -388,7 +389,7 @@ func TestSectionStore_FindByNameAndOrg(t *testing.T) {
 	createTestSectionWithOrg(t, db, "Existing Section", org.ID)
 
 	// Find existing name
-	section, err := store.FindByNameAndOrg("Existing Section", org.ID)
+	section, err := store.FindByNameAndOrg(context.Background(), "Existing Section", org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -397,7 +398,7 @@ func TestSectionStore_FindByNameAndOrg(t *testing.T) {
 	}
 
 	// Find non-existing name
-	_, err = store.FindByNameAndOrg("New Section", org.ID)
+	_, err = store.FindByNameAndOrg(context.Background(), "New Section", org.ID)
 	if err == nil {
 		t.Error("expected error for non-existing section name")
 	}

@@ -17,17 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
 import type { Group, GroupCreateRequest, GroupUpdateRequest } from '@/lib/api/types';
-import { z } from 'zod';
 import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
-
-const groupSchema = z.object({
-  name: z.string().min(1).max(255),
-  active: z.boolean().default(true),
-});
-
-type GroupFormData = z.infer<typeof groupSchema>;
+import { groupSchema, type GroupFormData } from '@/lib/schemas';
 
 const defaultValues: GroupFormData = {
   name: '',

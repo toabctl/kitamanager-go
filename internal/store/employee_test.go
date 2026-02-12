@@ -22,7 +22,7 @@ func TestEmployeeStore_Create(t *testing.T) {
 		},
 	}
 
-	err := store.Create(employee)
+	err := store.Create(ctx, employee)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -57,7 +57,7 @@ func TestEmployeeStore_FindAll(t *testing.T) {
 	db.Create(employee1)
 	db.Create(employee2)
 
-	employees, total, err := store.FindAll(100, 0)
+	employees, total, err := store.FindAll(ctx, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -86,7 +86,7 @@ func TestEmployeeStore_FindByID(t *testing.T) {
 	}
 	db.Create(employee)
 
-	found, err := store.FindByID(employee.ID)
+	found, err := store.FindByID(ctx, employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -113,7 +113,7 @@ func TestEmployeeStore_FindByOrganization(t *testing.T) {
 		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp3", LastName: "Last", Gender: "male", Birthdate: time.Now()},
 	})
 
-	employees, total, err := store.FindByOrganization(org1.ID, 100, 0)
+	employees, total, err := store.FindByOrganization(ctx, org1.ID, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -143,12 +143,12 @@ func TestEmployeeStore_Update(t *testing.T) {
 	db.Create(employee)
 
 	employee.FirstName = "Updated"
-	err := store.Update(employee)
+	err := store.Update(ctx, employee)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(employee.ID)
+	found, _ := store.FindByID(ctx, employee.ID)
 	if found.FirstName != "Updated" {
 		t.Errorf("expected first name 'Updated', got '%s'", found.FirstName)
 	}
@@ -169,12 +169,12 @@ func TestEmployeeStore_Delete(t *testing.T) {
 	}
 	db.Create(employee)
 
-	err := store.Delete(employee.ID)
+	err := store.Delete(ctx, employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(employee.ID)
+	_, err = store.FindByID(ctx, employee.ID)
 	if err == nil {
 		t.Error("expected error finding deleted employee")
 	}
@@ -208,7 +208,7 @@ func TestEmployeeStore_CreateContract(t *testing.T) {
 		Grade:         "S8a", Step: 3,
 	}
 
-	err := store.CreateContract(contract)
+	err := store.CreateContract(ctx, contract)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -246,12 +246,12 @@ func TestEmployeeStore_DeleteContract(t *testing.T) {
 	}
 	db.Create(contract)
 
-	err := store.DeleteContract(contract.ID)
+	err := store.DeleteContract(ctx, contract.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindContractByID(contract.ID)
+	_, err = store.FindContractByID(ctx, contract.ID)
 	if err == nil {
 		t.Error("expected error finding deleted contract")
 	}
@@ -308,7 +308,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	db.Create(empNoContract)
 
 	// Query with activeOn filter
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "", nil, 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -324,7 +324,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	}
 
 	// Query without activeOn (should return all 4 employees)
-	allEmployees, allTotal, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "", nil, 100, 0)
+	allEmployees, allTotal, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -347,7 +347,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Lisa", LastName: "Maier", Birthdate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search by first name prefix (case-insensitive)
-	_, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "ma", nil, 100, 0)
+	_, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "ma", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -357,7 +357,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search by last name
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "mustermann", nil, 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "mustermann", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -369,7 +369,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Search with no results
-	employees, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "zzz", nil, 100, 0)
+	employees, total, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "zzz", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -381,7 +381,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_Search(t *testing.T) {
 	}
 
 	// Empty search returns all
-	_, total, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "", nil, 100, 0)
+	_, total, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -403,7 +403,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Anna", LastName: "Weber", Birthdate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Page 1 of search results (limit=2)
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 0)
+	employees, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "max", nil, 2, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -415,7 +415,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	}
 
 	// Page 2
-	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 2)
+	employees, _, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "max", nil, 2, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -424,7 +424,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithPagination(t *test
 	}
 
 	// Page 3 (last)
-	employees, _, err = store.FindByOrganizationAndSection(org.ID, nil, nil, "max", nil, 2, 4)
+	employees, _, err = store.FindByOrganizationAndSection(ctx, org.ID, nil, nil, "max", nil, 2, 4)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -449,7 +449,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithActiveOn(t *testin
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Maria", LastName: "Mueller", Birthdate: time.Date(1985, 1, 1, 0, 0, 0, 0, time.UTC)}})
 
 	// Search "m" + activeOn: only Max has an active contract
-	employees, total, err := store.FindByOrganizationAndSection(org.ID, nil, &refDate, "m", nil, 100, 0)
+	employees, total, err := store.FindByOrganizationAndSection(ctx, org.ID, nil, &refDate, "m", nil, 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -490,13 +490,13 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 	db.Create(contract)
 	contractID := contract.ID
 
-	err := store.Delete(employee.ID)
+	err := store.Delete(ctx, employee.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	// Verify contract is also deleted
-	_, err = store.FindContractByID(contractID)
+	_, err = store.FindContractByID(ctx, contractID)
 	if err == nil {
 		t.Error("expected contract to be deleted with employee")
 	}

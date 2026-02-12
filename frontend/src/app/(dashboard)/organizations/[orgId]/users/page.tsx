@@ -20,32 +20,22 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type { User, UserCreateRequest, UserUpdateRequest } from '@/lib/api/types';
 import { Pagination } from '@/components/ui/pagination';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { formatDate } from '@/lib/utils/formatting';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
-
-const userCreateSchema = z.object({
-  name: z.string().min(1).max(255),
-  email: z.string().email(),
-  password: z.string().min(6),
-  active: z.boolean().default(true),
-});
-
-const userUpdateSchema = z.object({
-  name: z.string().min(1).max(255),
-  email: z.string().email(),
-  active: z.boolean().default(true),
-});
-
-type UserCreateFormData = z.infer<typeof userCreateSchema>;
-type UserUpdateFormData = z.infer<typeof userUpdateSchema>;
+import {
+  userCreateSchema,
+  userUpdateSchema,
+  type UserCreateFormData,
+  type UserUpdateFormData,
+} from '@/lib/schemas';
 
 const createDefaultValues: UserCreateFormData = {
   name: '',
@@ -94,7 +84,7 @@ export default function UsersPage() {
   });
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['users', page],
+    queryKey: queryKeys.users.list(page),
     queryFn: () => apiClient.getUsers({ page }),
   });
 
@@ -109,7 +99,7 @@ export default function UsersPage() {
 
   const mutations = useCrudMutations<User, UserCreateRequest, UserUpdateRequest>({
     resourceName: 'users',
-    queryKey: ['users'],
+    queryKey: queryKeys.users.all(),
     createFn: (data) => apiClient.createUser(data),
     updateFn: (id, data) => apiClient.updateUser(id, data),
     deleteFn: (id) => apiClient.deleteUser(id),

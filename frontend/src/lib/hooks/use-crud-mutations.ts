@@ -9,7 +9,7 @@ export interface UseCrudMutationsConfig<TItem, TCreate, TUpdate> {
   /** Resource name for i18n keys (e.g., 'groups', 'organizations') */
   resourceName: string;
   /** Query key to invalidate on success */
-  queryKey: (string | number | undefined)[];
+  queryKey: readonly (string | number | undefined)[];
   /** Function to create a new item */
   createFn?: (data: TCreate) => Promise<TItem>;
   /** Function to update an existing item */

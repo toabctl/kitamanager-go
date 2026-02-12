@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
@@ -17,22 +16,24 @@ type ChildService struct {
 	store        store.ChildStorer
 	orgStore     store.OrganizationStorer
 	fundingStore store.GovernmentFundingStorer
+	transactor   store.Transactor
 }
 
 // NewChildService creates a new child service
-func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer) *ChildService {
+func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer, transactor store.Transactor) *ChildService {
 	return &ChildService{
 		store:        store,
 		orgStore:     orgStore,
 		fundingStore: fundingStore,
+		transactor:   transactor,
 	}
 }
 
 // List returns a paginated list of children
 func (s *ChildService) List(ctx context.Context, limit, offset int) ([]models.ChildResponse, int64, error) {
-	children, total, err := s.store.FindAll(limit, offset)
+	children, total, err := s.store.FindAll(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch children")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch children")
 	}
 
 	responses := make([]models.ChildResponse, len(children))
@@ -49,9 +50,9 @@ func (s *ChildService) ListByOrganization(ctx context.Context, orgID uint, limit
 
 // ListByOrganizationAndSection returns a paginated list of children for an organization, optionally filtered by section, active contract date, and/or name search
 func (s *ChildService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, limit, offset int) ([]models.ChildResponse, int64, error) {
-	children, total, err := s.store.FindByOrganizationAndSection(orgID, sectionID, activeOn, search, limit, offset)
+	children, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, sectionID, activeOn, search, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch children")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch children")
 	}
 
 	responses := make([]models.ChildResponse, len(children))
@@ -63,7 +64,7 @@ func (s *ChildService) ListByOrganizationAndSection(ctx context.Context, orgID u
 
 // GetByID returns a child by ID, validating it belongs to the specified organization
 func (s *ChildService) GetByID(ctx context.Context, id, orgID uint) (*models.ChildResponse, error) {
-	child, err := s.store.FindByID(id)
+	child, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
@@ -78,39 +79,29 @@ func (s *ChildService) GetByID(ctx context.Context, id, orgID uint) (*models.Chi
 // Create creates a new child
 func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.ChildCreateRequest) (*models.ChildResponse, error) {
 	// Trim and validate input
-	req.FirstName = strings.TrimSpace(req.FirstName)
-	req.LastName = strings.TrimSpace(req.LastName)
-
-	if validation.IsWhitespaceOnly(req.FirstName) {
-		return nil, apperror.BadRequest("first_name cannot be empty or whitespace only")
-	}
-	if validation.IsWhitespaceOnly(req.LastName) {
-		return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
-	}
-	if !models.IsValidGender(req.Gender) {
-		return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
-	}
-	birthdate, err := time.Parse("2006-01-02", req.Birthdate)
+	person, err := validation.ValidatePersonCreate(&validation.PersonCreateFields{
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Gender:    req.Gender,
+		Birthdate: req.Birthdate,
+	})
 	if err != nil {
-		return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
-	}
-	if err := validation.ValidateBirthdate(birthdate); err != nil {
-		return nil, apperror.BadRequest(err.Error())
+		return nil, err
 	}
 
 	child := &models.Child{
 		Person: models.Person{
 			OrganizationID: orgID,
 			SectionID:      req.SectionID,
-			FirstName:      req.FirstName,
-			LastName:       req.LastName,
-			Gender:         req.Gender,
-			Birthdate:      birthdate,
+			FirstName:      person.FirstName,
+			LastName:       person.LastName,
+			Gender:         person.Gender,
+			Birthdate:      person.Birthdate,
 		},
 	}
 
-	if err := s.store.Create(child); err != nil {
-		return nil, apperror.Internal("failed to create child")
+	if err := s.store.Create(ctx, child); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create child")
 	}
 
 	resp := child.ToResponse()
@@ -119,7 +110,7 @@ func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.Child
 
 // Update updates an existing child, validating it belongs to the specified organization
 func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.ChildUpdateRequest) (*models.ChildResponse, error) {
-	child, err := s.store.FindByID(id)
+	child, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
@@ -129,32 +120,29 @@ func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.C
 	}
 
 	if req.FirstName != nil {
-		trimmed := strings.TrimSpace(*req.FirstName)
-		if validation.IsWhitespaceOnly(trimmed) {
-			return nil, apperror.BadRequest("first_name cannot be empty or whitespace only")
+		trimmed, err := validation.ValidateAndTrimName(*req.FirstName, "first_name")
+		if err != nil {
+			return nil, err
 		}
 		child.FirstName = trimmed
 	}
 	if req.LastName != nil {
-		trimmed := strings.TrimSpace(*req.LastName)
-		if validation.IsWhitespaceOnly(trimmed) {
-			return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
+		trimmed, err := validation.ValidateAndTrimName(*req.LastName, "last_name")
+		if err != nil {
+			return nil, err
 		}
 		child.LastName = trimmed
 	}
 	if req.Gender != nil {
-		if !models.IsValidGender(*req.Gender) {
-			return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
+		if err := validation.ValidateGender(*req.Gender); err != nil {
+			return nil, err
 		}
 		child.Gender = *req.Gender
 	}
 	if req.Birthdate != nil {
-		bd, err := time.Parse("2006-01-02", *req.Birthdate)
+		bd, err := validation.ParseAndValidateBirthdate(*req.Birthdate)
 		if err != nil {
-			return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
-		}
-		if err := validation.ValidateBirthdate(bd); err != nil {
-			return nil, apperror.BadRequest(err.Error())
+			return nil, err
 		}
 		child.Birthdate = bd
 	}
@@ -164,41 +152,44 @@ func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.C
 		child.Section = nil
 	}
 
-	if err := s.store.Update(child); err != nil {
-		return nil, apperror.Internal("failed to update child")
+	if err := s.store.Update(ctx, child); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update child")
 	}
 
 	// Reload to get fresh associations (e.g., new Section after section_id change)
-	child, err = s.store.FindByID(id)
+	child, err = s.store.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperror.Internal("failed to reload child after update")
+		return nil, apperror.InternalWrap(err, "failed to reload child after update")
 	}
 
 	resp := child.ToResponse()
 	return &resp, nil
 }
 
-// Delete deletes a child, validating it belongs to the specified organization
+// Delete deletes a child and its contracts, validating it belongs to the specified organization.
+// The ownership check and deletion run in a single transaction.
 func (s *ChildService) Delete(ctx context.Context, id, orgID uint) error {
-	// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(id)
-	if err != nil {
-		return apperror.NotFound("child")
-	}
-	if child.OrganizationID != orgID {
-		return apperror.NotFound("child")
-	}
+	return s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
+		child, err := s.store.FindByIDMinimal(txCtx, id)
+		if err != nil {
+			return apperror.NotFound("child")
+		}
+		if child.OrganizationID != orgID {
+			return apperror.NotFound("child")
+		}
 
-	if err := s.store.Delete(id); err != nil {
-		return apperror.Internal("failed to delete child")
-	}
-	return nil
+		if err := s.store.Delete(txCtx, id); err != nil {
+			return apperror.InternalWrap(err, "failed to delete child")
+		}
+		return nil
+	})
 }
 
 // ListContracts returns paginated contract history for a child, validating it belongs to the specified organization
 func (s *ChildService) ListContracts(ctx context.Context, childID, orgID uint, limit, offset int) ([]models.ChildContractResponse, int64, error) {
 	// Verify child exists and belongs to org (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return nil, 0, apperror.NotFound("child")
 	}
@@ -207,9 +198,9 @@ func (s *ChildService) ListContracts(ctx context.Context, childID, orgID uint, l
 		return nil, 0, apperror.NotFound("child")
 	}
 
-	contracts, total, err := s.store.Contracts().GetHistoryPaginated(childID, limit, offset)
+	contracts, total, err := s.store.Contracts().GetHistoryPaginated(ctx, childID, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch contracts")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch contracts")
 	}
 
 	responses := make([]models.ChildContractResponse, len(contracts))
@@ -222,7 +213,7 @@ func (s *ChildService) ListContracts(ctx context.Context, childID, orgID uint, l
 // GetCurrentContract returns the current active contract for a child, validating it belongs to the specified organization
 func (s *ChildService) GetCurrentContract(ctx context.Context, childID, orgID uint) (*models.ChildContractResponse, error) {
 	// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
@@ -230,9 +221,9 @@ func (s *ChildService) GetCurrentContract(ctx context.Context, childID, orgID ui
 		return nil, apperror.NotFound("child")
 	}
 
-	contract, err := s.store.Contracts().GetCurrentContract(childID)
+	contract, err := s.store.Contracts().GetCurrentContract(ctx, childID)
 	if err != nil {
-		return nil, apperror.Internal("failed to fetch contract")
+		return nil, apperror.InternalWrap(err, "failed to fetch contract")
 	}
 	if contract == nil {
 		return nil, apperror.NotFound("active contract")
@@ -244,7 +235,7 @@ func (s *ChildService) GetCurrentContract(ctx context.Context, childID, orgID ui
 // GetContractByID returns a contract by ID, validating ownership
 func (s *ChildService) GetContractByID(ctx context.Context, contractID, childID, orgID uint) (*models.ChildContractResponse, error) {
 	// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
@@ -253,7 +244,7 @@ func (s *ChildService) GetContractByID(ctx context.Context, contractID, childID,
 	}
 
 	// Get contract
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return nil, apperror.NotFound("contract")
 	}
@@ -265,7 +256,8 @@ func (s *ChildService) GetContractByID(ctx context.Context, contractID, childID,
 	return &resp, nil
 }
 
-// CreateContract creates a new contract for a child, validating it belongs to the specified organization
+// CreateContract creates a new contract for a child, validating it belongs to the specified organization.
+// The overlap validation and contract creation run in a single transaction.
 func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, req *models.ChildContractCreateRequest) (*models.ChildContractResponse, error) {
 	// Validate period
 	if err := validation.ValidatePeriod(req.From, req.To); err != nil {
@@ -273,21 +265,13 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 	}
 
 	// Verify child exists and belongs to org (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
 	// Security: Validate child belongs to the specified organization
 	if child.OrganizationID != orgID {
 		return nil, apperror.NotFound("child")
-	}
-
-	// Validate no overlap
-	if err := s.store.Contracts().ValidateNoOverlap(childID, req.From, req.To, nil); err != nil {
-		if errors.Is(err, store.ErrContractOverlap) {
-			return nil, apperror.Conflict(err.Error())
-		}
-		return nil, apperror.Internal("failed to validate contract")
 	}
 
 	contract := &models.ChildContract{
@@ -301,8 +285,17 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 		},
 	}
 
-	if err := s.store.CreateContract(contract); err != nil {
-		return nil, apperror.Internal("failed to create contract")
+	// Validate + create in a single transaction to prevent race conditions
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.store.Contracts().ValidateNoOverlap(txCtx, childID, req.From, req.To, nil); err != nil {
+			if errors.Is(err, store.ErrContractOverlap) {
+				return apperror.Conflict(err.Error())
+			}
+			return apperror.InternalWrap(err, "failed to validate contract")
+		}
+		return s.store.CreateContract(txCtx, contract)
+	}); err != nil {
+		return nil, err
 	}
 
 	resp := contract.ToResponse()
@@ -312,7 +305,7 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 // UpdateContract updates an existing contract, validating it belongs to a child in the specified organization.
 func (s *ChildService) UpdateContract(ctx context.Context, contractID, childID, orgID uint, req *models.ChildContractUpdateRequest) (*models.ChildContractResponse, error) {
 	// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return nil, apperror.NotFound("child")
 	}
@@ -321,7 +314,7 @@ func (s *ChildService) UpdateContract(ctx context.Context, contractID, childID, 
 	}
 
 	// Validate contract belongs to the child
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return nil, apperror.NotFound("contract")
 	}
@@ -346,16 +339,17 @@ func (s *ChildService) UpdateContract(ctx context.Context, contractID, childID, 
 		return nil, apperror.BadRequest(err.Error())
 	}
 
-	// Validate no overlap (excluding this contract)
-	if err := s.store.Contracts().ValidateNoOverlap(childID, contract.From, contract.To, &contractID); err != nil {
-		if errors.Is(err, store.ErrContractOverlap) {
-			return nil, apperror.Conflict(err.Error())
+	// Validate + update in a single transaction to prevent race conditions
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.store.Contracts().ValidateNoOverlap(txCtx, childID, contract.From, contract.To, &contractID); err != nil {
+			if errors.Is(err, store.ErrContractOverlap) {
+				return apperror.Conflict(err.Error())
+			}
+			return apperror.InternalWrap(err, "failed to validate contract")
 		}
-		return nil, apperror.Internal("failed to validate contract")
-	}
-
-	if err := s.store.UpdateContract(contract); err != nil {
-		return nil, apperror.Internal("failed to update contract")
+		return s.store.UpdateContract(txCtx, contract)
+	}); err != nil {
+		return nil, err
 	}
 
 	resp := contract.ToResponse()
@@ -365,7 +359,7 @@ func (s *ChildService) UpdateContract(ctx context.Context, contractID, childID, 
 // DeleteContract deletes a contract, validating it belongs to a child in the specified organization
 func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, orgID uint) error {
 	// Security: Validate child belongs to the specified organization (use minimal query - no preloads needed)
-	child, err := s.store.FindByIDMinimal(childID)
+	child, err := s.store.FindByIDMinimal(ctx, childID)
 	if err != nil {
 		return apperror.NotFound("child")
 	}
@@ -374,7 +368,7 @@ func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, 
 	}
 
 	// Validate contract belongs to the child
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return apperror.NotFound("contract")
 	}
@@ -382,8 +376,8 @@ func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, 
 		return apperror.NotFound("contract")
 	}
 
-	if err := s.store.DeleteContract(contractID); err != nil {
-		return apperror.Internal("failed to delete contract")
+	if err := s.store.DeleteContract(ctx, contractID); err != nil {
+		return apperror.InternalWrap(err, "failed to delete contract")
 	}
 	return nil
 }
@@ -391,15 +385,15 @@ func (s *ChildService) DeleteContract(ctx context.Context, contractID, childID, 
 // CalculateFunding calculates government funding for all children with active contracts on the given date
 func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date time.Time) (*models.ChildrenFundingResponse, error) {
 	// Get organization to determine state
-	org, err := s.orgStore.FindByID(orgID)
+	org, err := s.orgStore.FindByID(ctx, orgID)
 	if err != nil {
 		return nil, apperror.NotFound("organization")
 	}
 
 	// Get children with active contracts on this date
-	children, err := s.store.FindByOrganizationWithActiveOn(orgID, date)
+	children, err := s.store.FindByOrganizationWithActiveOn(ctx, orgID, date)
 	if err != nil {
-		return nil, apperror.Internal("failed to fetch children")
+		return nil, apperror.InternalWrap(err, "failed to fetch children")
 	}
 
 	response := &models.ChildrenFundingResponse{
@@ -408,7 +402,7 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 	}
 
 	// Look up funding by organization's state (0 = all periods, needed to find matching period for date)
-	funding, err := s.fundingStore.FindByStateWithDetails(org.State, 0, nil)
+	funding, err := s.fundingStore.FindByStateWithDetails(ctx, org.State, 0, nil)
 	if err != nil {
 		// No funding defined for this state - return 0 funding for all children
 		for _, child := range children {
@@ -537,9 +531,9 @@ func getAllContractKeyValues(properties models.ContractProperties) []models.Chil
 // GetAgeDistribution returns age distribution of children with active contracts on the given date
 func (s *ChildService) GetAgeDistribution(ctx context.Context, orgID uint, date time.Time) (*models.AgeDistributionResponse, error) {
 	// Get children with active contracts on this date
-	children, err := s.store.FindByOrganizationWithActiveOn(orgID, date)
+	children, err := s.store.FindByOrganizationWithActiveOn(ctx, orgID, date)
 	if err != nil {
-		return nil, apperror.Internal("failed to fetch children")
+		return nil, apperror.InternalWrap(err, "failed to fetch children")
 	}
 
 	// Define age buckets: 0, 1, 2, 3, 4, 5, 6+
@@ -628,9 +622,9 @@ func (s *ChildService) GetContractCountByMonth(ctx context.Context, orgID uint, 
 		for month := 1; month <= 12; month++ {
 			// Use 15th of the month as sample date
 			sampleDate := time.Date(year, time.Month(month), 15, 0, 0, 0, 0, time.UTC)
-			count, err := s.store.CountByOrganizationWithActiveOn(orgID, sampleDate)
+			count, err := s.store.CountByOrganizationWithActiveOn(ctx, orgID, sampleDate)
 			if err != nil {
-				return nil, apperror.Internal("failed to count children for month")
+				return nil, apperror.InternalWrap(err, "failed to count children for month")
 			}
 			response.Years[yearIdx].Counts[month-1] = int(count)
 		}

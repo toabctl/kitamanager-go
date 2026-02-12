@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { GripVertical } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { useToast } from '@/lib/hooks/use-toast';
 import type { Child, Employee } from '@/lib/api/types';
 import { getActiveContract } from '@/lib/utils/contracts';
@@ -41,19 +42,19 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
   );
 
   const { data: sectionsData, isLoading: sectionsLoading } = useQuery({
-    queryKey: ['sections', orgId],
+    queryKey: queryKeys.sections.list(orgId),
     queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
     enabled: !!orgId,
   });
 
   const { data: children, isLoading: childrenLoading } = useQuery({
-    queryKey: ['children-all', orgId],
+    queryKey: queryKeys.children.allUnpaginated(orgId),
     queryFn: () => apiClient.getChildrenAll(orgId),
     enabled: !!orgId,
   });
 
   const { data: allEmployees, isLoading: employeesLoading } = useQuery({
-    queryKey: ['employees-all', orgId],
+    queryKey: queryKeys.employees.allUnpaginated(orgId),
     queryFn: () => apiClient.getEmployeesAll(orgId),
     enabled: !!orgId,
   });
@@ -115,9 +116,9 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     mutationFn: ({ childId, sectionId }: { childId: number; sectionId: number | null }) =>
       apiClient.updateChild(orgId, childId, { section_id: sectionId }),
     onMutate: async ({ childId, sectionId }) => {
-      await queryClient.cancelQueries({ queryKey: ['children-all', orgId] });
-      const previous = queryClient.getQueryData<Child[]>(['children-all', orgId]);
-      queryClient.setQueryData<Child[]>(['children-all', orgId], (old) =>
+      await queryClient.cancelQueries({ queryKey: queryKeys.children.allUnpaginated(orgId) });
+      const previous = queryClient.getQueryData<Child[]>(queryKeys.children.allUnpaginated(orgId));
+      queryClient.setQueryData<Child[]>(queryKeys.children.allUnpaginated(orgId), (old) =>
         old?.map((c) => (c.id === childId ? { ...c, section_id: sectionId } : c))
       );
       return { previous };
@@ -127,13 +128,13 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(['children-all', orgId], context.previous);
+        queryClient.setQueryData(queryKeys.children.allUnpaginated(orgId), context.previous);
       }
       toast({ title: t('sections.movedFailed'), variant: 'destructive' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['children-all', orgId] });
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.allUnpaginated(orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
     },
   });
 
@@ -141,9 +142,11 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     mutationFn: ({ employeeId, sectionId }: { employeeId: number; sectionId: number | null }) =>
       apiClient.updateEmployee(orgId, employeeId, { section_id: sectionId }),
     onMutate: async ({ employeeId, sectionId }) => {
-      await queryClient.cancelQueries({ queryKey: ['employees-all', orgId] });
-      const previous = queryClient.getQueryData<Employee[]>(['employees-all', orgId]);
-      queryClient.setQueryData<Employee[]>(['employees-all', orgId], (old) =>
+      await queryClient.cancelQueries({ queryKey: queryKeys.employees.allUnpaginated(orgId) });
+      const previous = queryClient.getQueryData<Employee[]>(
+        queryKeys.employees.allUnpaginated(orgId)
+      );
+      queryClient.setQueryData<Employee[]>(queryKeys.employees.allUnpaginated(orgId), (old) =>
         old?.map((e) => (e.id === employeeId ? { ...e, section_id: sectionId } : e))
       );
       return { previous };
@@ -153,13 +156,13 @@ export function SectionKanbanBoard({ orgId }: SectionKanbanBoardProps) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(['employees-all', orgId], context.previous);
+        queryClient.setQueryData(queryKeys.employees.allUnpaginated(orgId), context.previous);
       }
       toast({ title: t('sections.employeeMovedFailed'), variant: 'destructive' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees-all', orgId] });
-      queryClient.invalidateQueries({ queryKey: ['employees', orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.allUnpaginated(orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.all(orgId) });
     },
   });
 

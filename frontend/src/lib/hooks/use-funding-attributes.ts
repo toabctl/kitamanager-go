@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { useUiStore } from '@/stores/ui-store';
 
 export interface FundingAttribute {
@@ -22,7 +23,7 @@ export function useFundingAttributes(orgId: number, fromDate?: string, toDate?: 
 
   // Fetch all government fundings (cached by React Query)
   const { data: fundingsResponse } = useQuery({
-    queryKey: ['governmentFundings', 'all'],
+    queryKey: queryKeys.governmentFundings.allCached(),
     queryFn: () => apiClient.getGovernmentFundings({ page: 1, limit: 100 }),
     staleTime: 5 * 60 * 1000, // 5 minutes - funding configs rarely change
     enabled: !!state,
@@ -33,7 +34,7 @@ export function useFundingAttributes(orgId: number, fromDate?: string, toDate?: 
 
   // Fetch funding details with all periods if we found a matching funding
   const { data: fundingDetails } = useQuery({
-    queryKey: ['governmentFunding', funding?.id, 'details'],
+    queryKey: queryKeys.governmentFundings.detailCached(funding?.id),
     queryFn: () => apiClient.getGovernmentFunding(funding!.id, 0), // 0 = all periods
     staleTime: 5 * 60 * 1000,
     enabled: !!funding?.id,

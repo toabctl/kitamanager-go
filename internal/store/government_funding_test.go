@@ -49,7 +49,7 @@ func TestGovernmentFundingStore_FindByIDWithDetails_ActiveOn(t *testing.T) {
 	})
 
 	t.Run("nil activeOn returns all periods", func(t *testing.T) {
-		result, err := store.FindByIDWithDetails(funding.ID, 0, nil)
+		result, err := store.FindByIDWithDetails(ctx, funding.ID, 0, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -60,7 +60,7 @@ func TestGovernmentFundingStore_FindByIDWithDetails_ActiveOn(t *testing.T) {
 
 	t.Run("activeOn filters to matching period", func(t *testing.T) {
 		date := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
-		result, err := store.FindByIDWithDetails(funding.ID, 0, &date)
+		result, err := store.FindByIDWithDetails(ctx, funding.ID, 0, &date)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -78,7 +78,7 @@ func TestGovernmentFundingStore_FindByIDWithDetails_ActiveOn(t *testing.T) {
 
 	t.Run("activeOn matches ongoing period", func(t *testing.T) {
 		date := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-		result, err := store.FindByIDWithDetails(funding.ID, 0, &date)
+		result, err := store.FindByIDWithDetails(ctx, funding.ID, 0, &date)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -92,7 +92,7 @@ func TestGovernmentFundingStore_FindByIDWithDetails_ActiveOn(t *testing.T) {
 
 	t.Run("activeOn with no matching period returns empty", func(t *testing.T) {
 		date := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
-		result, err := store.FindByIDWithDetails(funding.ID, 0, &date)
+		result, err := store.FindByIDWithDetails(ctx, funding.ID, 0, &date)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -104,7 +104,7 @@ func TestGovernmentFundingStore_FindByIDWithDetails_ActiveOn(t *testing.T) {
 	t.Run("activeOn combined with periodsLimit", func(t *testing.T) {
 		// All 3 periods should be active on their respective dates,
 		// but limit should still be respected
-		result, err := store.FindByIDWithDetails(funding.ID, 1, nil)
+		result, err := store.FindByIDWithDetails(ctx, funding.ID, 1, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -137,7 +137,7 @@ func TestGovernmentFundingStore_FindByStateWithDetails_ActiveOn(t *testing.T) {
 	})
 
 	t.Run("nil activeOn returns all", func(t *testing.T) {
-		result, err := store.FindByStateWithDetails("berlin", 0, nil)
+		result, err := store.FindByStateWithDetails(ctx, "berlin", 0, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -148,7 +148,7 @@ func TestGovernmentFundingStore_FindByStateWithDetails_ActiveOn(t *testing.T) {
 
 	t.Run("activeOn filters periods", func(t *testing.T) {
 		date := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
-		result, err := store.FindByStateWithDetails("berlin", 0, &date)
+		result, err := store.FindByStateWithDetails(ctx, "berlin", 0, &date)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

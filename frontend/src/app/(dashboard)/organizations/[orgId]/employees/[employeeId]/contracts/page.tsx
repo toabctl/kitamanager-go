@@ -18,13 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,17 +27,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   EmployeeContract,
   EmployeeContractCreateRequest,
@@ -52,20 +37,9 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { formatDate, formatDateForInput, formatDateForApi } from '@/lib/utils/formatting';
-
-const contractSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().optional(),
-  payplan_id: z.number().min(1),
-  staff_category: z.enum(['qualified', 'supplementary', 'non_pedagogical']),
-  grade: z.string().min(1),
-  step: z.number().min(1).max(6),
-  weekly_hours: z.number().min(0).max(168),
-});
-
-type ContractFormData = z.infer<typeof contractSchema>;
+import { EmployeeContractDialog } from '@/components/employees/employee-contract-dialog';
+import { employeeContractSchema, type EmployeeContractFormData } from '@/lib/schemas';
 
 export default function EmployeeContractsPage() {
   const params = useParams();
@@ -81,23 +55,20 @@ export default function EmployeeContractsPage() {
   const [editingContract, setEditingContract] = useState<EmployeeContract | null>(null);
   const [deletingContract, setDeletingContract] = useState<EmployeeContract | null>(null);
 
-  // Fetch employee data
   const { data: employee, isLoading: employeeLoading } = useQuery({
-    queryKey: ['employee', orgId, employeeId],
+    queryKey: queryKeys.employees.detail(orgId, employeeId),
     queryFn: () => apiClient.getEmployee(orgId, employeeId),
     enabled: !!orgId && !!employeeId,
   });
 
-  // Fetch contracts
   const { data: contracts, isLoading: contractsLoading } = useQuery({
-    queryKey: ['employeeContracts', orgId, employeeId],
+    queryKey: queryKeys.employees.contracts(orgId, employeeId),
     queryFn: () => apiClient.getEmployeeContracts(orgId, employeeId),
     enabled: !!orgId && !!employeeId,
   });
 
-  // Fetch payplans for dropdown
   const { data: payPlansData } = useQuery({
-    queryKey: ['payplans', orgId],
+    queryKey: queryKeys.payPlans.all(orgId),
     queryFn: () => apiClient.getPayPlans(orgId, { limit: 100 }),
     enabled: !!orgId,
   });
@@ -107,8 +78,8 @@ export default function EmployeeContractsPage() {
     mutationFn: (data: EmployeeContractCreateRequest) =>
       apiClient.createEmployeeContract(orgId, employeeId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employeeContracts', orgId, employeeId] });
-      queryClient.invalidateQueries({ queryKey: ['employee', orgId, employeeId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
       toast({ title: t('contracts.createSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
@@ -132,8 +103,8 @@ export default function EmployeeContractsPage() {
       data: EmployeeContractUpdateRequest;
     }) => apiClient.updateEmployeeContract(orgId, employeeId, contractId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employeeContracts', orgId, employeeId] });
-      queryClient.invalidateQueries({ queryKey: ['employee', orgId, employeeId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
       toast({ title: t('contracts.updateSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
@@ -152,8 +123,8 @@ export default function EmployeeContractsPage() {
     mutationFn: (contractId: number) =>
       apiClient.deleteEmployeeContract(orgId, employeeId, contractId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employeeContracts', orgId, employeeId] });
-      queryClient.invalidateQueries({ queryKey: ['employee', orgId, employeeId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
       toast({ title: t('contracts.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingContract(null);
@@ -174,8 +145,8 @@ export default function EmployeeContractsPage() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<ContractFormData>({
-    resolver: zodResolver(contractSchema),
+  } = useForm<EmployeeContractFormData>({
+    resolver: zodResolver(employeeContractSchema),
     defaultValues: {
       from: '',
       to: '',
@@ -221,7 +192,7 @@ export default function EmployeeContractsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const onSubmit = (data: ContractFormData) => {
+  const onSubmit = (data: EmployeeContractFormData) => {
     if (editingContract) {
       updateMutation.mutate({
         contractId: editingContract.id,
@@ -257,7 +228,6 @@ export default function EmployeeContractsPage() {
 
   const isLoading = employeeLoading || contractsLoading;
 
-  // Sort contracts by start date descending (most recent first)
   const sortedContracts = contracts
     ? [...contracts].sort((a, b) => b.from.localeCompare(a.from))
     : [];
@@ -384,124 +354,19 @@ export default function EmployeeContractsPage() {
         </CardContent>
       </Card>
 
-      {/* Contract Create/Edit Dialog */}
-      <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingContract ? t('contracts.edit') : t('contracts.create')}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="from">{t('contracts.startDate')}</Label>
-                <Input id="from" type="date" {...register('from')} />
-                {errors.from && (
-                  <p className="text-sm text-destructive">{t('contracts.startDateRequired')}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="to">{t('contracts.endDateOptional')}</Label>
-                <Input id="to" type="date" {...register('to')} />
-              </div>
-            </div>
+      <EmployeeContractDialog
+        open={isContractDialogOpen}
+        onOpenChange={setIsContractDialogOpen}
+        title={editingContract ? t('contracts.edit') : t('contracts.create')}
+        register={register}
+        onSubmit={handleSubmit(onSubmit)}
+        errors={errors}
+        watch={watch}
+        setValue={setValue}
+        isSaving={createMutation.isPending || updateMutation.isPending}
+        payPlans={payPlans}
+      />
 
-            <div className="space-y-2">
-              <Label htmlFor="payplan_id">{t('employees.payPlan')}</Label>
-              <Select
-                value={String(watch('payplan_id') || '')}
-                onValueChange={(val) => setValue('payplan_id', Number(val))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('employees.selectPayPlan')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {payPlans.map((pp) => (
-                    <SelectItem key={pp.id} value={String(pp.id)}>
-                      {pp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.payplan_id && (
-                <p className="text-sm text-destructive">{t('employees.selectPayPlan')}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="staff_category">{t('employees.staffCategory.label')}</Label>
-              <select
-                id="staff_category"
-                {...register('staff_category')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="qualified">{t('employees.staffCategory.qualified')}</option>
-                <option value="supplementary">{t('employees.staffCategory.supplementary')}</option>
-                <option value="non_pedagogical">
-                  {t('employees.staffCategory.non_pedagogical')}
-                </option>
-              </select>
-              {errors.staff_category && (
-                <p className="text-sm text-destructive">{t('validation.staffCategoryRequired')}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="grade">{t('employees.grade')}</Label>
-                <Input id="grade" {...register('grade')} placeholder="S8a" />
-                {errors.grade && (
-                  <p className="text-sm text-destructive">{t('payPlans.gradeRequired')}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="step">{t('employees.step')}</Label>
-                <Input
-                  id="step"
-                  type="number"
-                  min={1}
-                  max={6}
-                  {...register('step', { valueAsNumber: true })}
-                />
-                {errors.step && (
-                  <p className="text-sm text-destructive">{t('payPlans.stepRequired')}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="weekly_hours">{t('employees.weeklyHours')}</Label>
-              <Input
-                id="weekly_hours"
-                type="number"
-                min={0}
-                max={168}
-                step={0.5}
-                {...register('weekly_hours', { valueAsNumber: true })}
-              />
-              {errors.weekly_hours && (
-                <p className="text-sm text-destructive">{t('validation.weeklyHoursRequired')}</p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsContractDialogOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

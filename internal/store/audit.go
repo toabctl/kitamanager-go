@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -19,23 +20,23 @@ func NewAuditStore(db *gorm.DB) *AuditStore {
 }
 
 // Create creates a new audit log entry
-func (s *AuditStore) Create(log *models.AuditLog) error {
+func (s *AuditStore) Create(ctx context.Context, log *models.AuditLog) error {
 	if log.Timestamp.IsZero() {
 		log.Timestamp = time.Now()
 	}
-	return s.db.Create(log).Error
+	return DBFromContext(ctx, s.db).Create(log).Error
 }
 
 // FindByUser returns audit logs for a specific user
-func (s *AuditStore) FindByUser(userID uint, limit, offset int) ([]models.AuditLog, int64, error) {
+func (s *AuditStore) FindByUser(ctx context.Context, userID uint, limit, offset int) ([]models.AuditLog, int64, error) {
 	var logs []models.AuditLog
 	var total int64
 
-	if err := s.db.Model(&models.AuditLog{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(&models.AuditLog{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Where("user_id = ?", userID).
+	if err := DBFromContext(ctx, s.db).Where("user_id = ?", userID).
 		Order("timestamp DESC").
 		Limit(limit).
 		Offset(offset).
@@ -47,15 +48,15 @@ func (s *AuditStore) FindByUser(userID uint, limit, offset int) ([]models.AuditL
 }
 
 // FindByAction returns audit logs for a specific action type
-func (s *AuditStore) FindByAction(action models.AuditAction, limit, offset int) ([]models.AuditLog, int64, error) {
+func (s *AuditStore) FindByAction(ctx context.Context, action models.AuditAction, limit, offset int) ([]models.AuditLog, int64, error) {
 	var logs []models.AuditLog
 	var total int64
 
-	if err := s.db.Model(&models.AuditLog{}).Where("action = ?", action).Count(&total).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(&models.AuditLog{}).Where("action = ?", action).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Where("action = ?", action).
+	if err := DBFromContext(ctx, s.db).Where("action = ?", action).
 		Order("timestamp DESC").
 		Limit(limit).
 		Offset(offset).
@@ -67,17 +68,17 @@ func (s *AuditStore) FindByAction(action models.AuditAction, limit, offset int) 
 }
 
 // FindByDateRange returns audit logs within a date range
-func (s *AuditStore) FindByDateRange(from, to time.Time, limit, offset int) ([]models.AuditLog, int64, error) {
+func (s *AuditStore) FindByDateRange(ctx context.Context, from, to time.Time, limit, offset int) ([]models.AuditLog, int64, error) {
 	var logs []models.AuditLog
 	var total int64
 
-	query := s.db.Model(&models.AuditLog{}).Where("timestamp >= ? AND timestamp <= ?", from, to)
+	query := DBFromContext(ctx, s.db).Model(&models.AuditLog{}).Where("timestamp >= ? AND timestamp <= ?", from, to)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Where("timestamp >= ? AND timestamp <= ?", from, to).
+	if err := DBFromContext(ctx, s.db).Where("timestamp >= ? AND timestamp <= ?", from, to).
 		Order("timestamp DESC").
 		Limit(limit).
 		Offset(offset).
@@ -89,15 +90,15 @@ func (s *AuditStore) FindByDateRange(from, to time.Time, limit, offset int) ([]m
 }
 
 // FindAll returns all audit logs with pagination
-func (s *AuditStore) FindAll(limit, offset int) ([]models.AuditLog, int64, error) {
+func (s *AuditStore) FindAll(ctx context.Context, limit, offset int) ([]models.AuditLog, int64, error) {
 	var logs []models.AuditLog
 	var total int64
 
-	if err := s.db.Model(&models.AuditLog{}).Count(&total).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(&models.AuditLog{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := s.db.Order("timestamp DESC").
+	if err := DBFromContext(ctx, s.db).Order("timestamp DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&logs).Error; err != nil {
@@ -108,10 +109,10 @@ func (s *AuditStore) FindAll(limit, offset int) ([]models.AuditLog, int64, error
 }
 
 // FindFailedLogins returns failed login attempts, optionally filtered by email
-func (s *AuditStore) FindFailedLogins(email string, since time.Time, limit int) ([]models.AuditLog, error) {
+func (s *AuditStore) FindFailedLogins(ctx context.Context, email string, since time.Time, limit int) ([]models.AuditLog, error) {
 	var logs []models.AuditLog
 
-	query := s.db.Where("action = ? AND timestamp >= ?", models.AuditActionLoginFailed, since)
+	query := DBFromContext(ctx, s.db).Where("action = ? AND timestamp >= ?", models.AuditActionLoginFailed, since)
 	if email != "" {
 		query = query.Where("user_email = ?", email)
 	}
@@ -124,9 +125,9 @@ func (s *AuditStore) FindFailedLogins(email string, since time.Time, limit int) 
 }
 
 // CountFailedLoginsSince counts failed login attempts for an email since a given time
-func (s *AuditStore) CountFailedLoginsSince(email string, since time.Time) (int64, error) {
+func (s *AuditStore) CountFailedLoginsSince(ctx context.Context, email string, since time.Time) (int64, error) {
 	var count int64
-	err := s.db.Model(&models.AuditLog{}).
+	err := DBFromContext(ctx, s.db).Model(&models.AuditLog{}).
 		Where("action = ? AND user_email = ? AND timestamp >= ?",
 			models.AuditActionLoginFailed, email, since).
 		Count(&count).Error
@@ -134,7 +135,7 @@ func (s *AuditStore) CountFailedLoginsSince(email string, since time.Time) (int6
 }
 
 // Cleanup removes audit logs older than the specified duration
-func (s *AuditStore) Cleanup(olderThan time.Time) (int64, error) {
-	result := s.db.Where("timestamp < ?", olderThan).Delete(&models.AuditLog{})
+func (s *AuditStore) Cleanup(ctx context.Context, olderThan time.Time) (int64, error) {
+	result := DBFromContext(ctx, s.db).Where("timestamp < ?", olderThan).Delete(&models.AuditLog{})
 	return result.RowsAffected, result.Error
 }

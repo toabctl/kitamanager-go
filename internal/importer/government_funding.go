@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -37,9 +38,9 @@ func NewGovernmentFundingImporter(db *gorm.DB, fundingStore *store.GovernmentFun
 // The state parameter specifies which Bundesland this funding applies to.
 // If a government funding for the given state already exists, it returns ErrGovernmentFundingExists
 // and the existing government funding's ID.
-func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(filePath, state string) (uint, error) {
+func (i *GovernmentFundingImporter) ImportGovernmentFundingFromFile(ctx context.Context, filePath, state string) (uint, error) {
 	// Check if government funding for this state already exists
-	existingFunding, err := i.fundingStore.FindByState(state)
+	existingFunding, err := i.fundingStore.FindByState(ctx, state)
 	if err == nil && existingFunding != nil {
 		slog.Info("Government funding for state already exists, skipping import", "state", state, "id", existingFunding.ID)
 		return existingFunding.ID, ErrGovernmentFundingExists

@@ -14,7 +14,7 @@ import (
 func TestGovernmentFundingService_List(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	// Create test funding
@@ -37,7 +37,7 @@ func TestGovernmentFundingService_List(t *testing.T) {
 func TestGovernmentFundingService_List_Empty(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	fundings, total, err := svc.List(ctx, 10, 0)
@@ -56,7 +56,7 @@ func TestGovernmentFundingService_List_Empty(t *testing.T) {
 func TestGovernmentFundingService_GetByID(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Berlin Funding", State: "berlin"}
@@ -78,7 +78,7 @@ func TestGovernmentFundingService_GetByID(t *testing.T) {
 func TestGovernmentFundingService_GetByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	_, err := svc.GetByID(ctx, 999)
@@ -98,7 +98,7 @@ func TestGovernmentFundingService_GetByID_NotFound(t *testing.T) {
 func TestGovernmentFundingService_GetByIDWithDetails(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Berlin Funding", State: "berlin"}
@@ -144,7 +144,7 @@ func TestGovernmentFundingService_GetByIDWithDetails(t *testing.T) {
 func TestGovernmentFundingService_Create(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &GovernmentFundingCreateRequest{
@@ -171,7 +171,7 @@ func TestGovernmentFundingService_Create(t *testing.T) {
 func TestGovernmentFundingService_Create_InvalidState(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &GovernmentFundingCreateRequest{
@@ -196,7 +196,7 @@ func TestGovernmentFundingService_Create_InvalidState(t *testing.T) {
 func TestGovernmentFundingService_Create_WhitespaceName(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &GovernmentFundingCreateRequest{
@@ -221,7 +221,7 @@ func TestGovernmentFundingService_Create_WhitespaceName(t *testing.T) {
 func TestGovernmentFundingService_Create_TrimsName(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &GovernmentFundingCreateRequest{
@@ -242,7 +242,7 @@ func TestGovernmentFundingService_Create_TrimsName(t *testing.T) {
 func TestGovernmentFundingService_Update(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Original Name", State: "berlin"}
@@ -264,7 +264,7 @@ func TestGovernmentFundingService_Update(t *testing.T) {
 func TestGovernmentFundingService_Update_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	newName := "Updated Name"
@@ -287,7 +287,7 @@ func TestGovernmentFundingService_Update_NotFound(t *testing.T) {
 func TestGovernmentFundingService_Update_WhitespaceName(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Original Name", State: "berlin"}
@@ -313,7 +313,7 @@ func TestGovernmentFundingService_Update_WhitespaceName(t *testing.T) {
 func TestGovernmentFundingService_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "To Delete", State: "berlin"}
@@ -336,7 +336,7 @@ func TestGovernmentFundingService_Delete(t *testing.T) {
 func TestGovernmentFundingService_CreatePeriod(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -363,7 +363,7 @@ func TestGovernmentFundingService_CreatePeriod(t *testing.T) {
 func TestGovernmentFundingService_CreatePeriod_FundingNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &models.GovernmentFundingPeriodCreateRequest{
@@ -387,7 +387,7 @@ func TestGovernmentFundingService_CreatePeriod_FundingNotFound(t *testing.T) {
 func TestGovernmentFundingService_CreatePeriod_OverlapRejected(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -424,7 +424,7 @@ func TestGovernmentFundingService_CreatePeriod_OverlapRejected(t *testing.T) {
 func TestGovernmentFundingService_UpdatePeriod(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -455,7 +455,7 @@ func TestGovernmentFundingService_UpdatePeriod(t *testing.T) {
 func TestGovernmentFundingService_UpdatePeriod_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	newComment := "Updated comment"
@@ -480,7 +480,7 @@ func TestGovernmentFundingService_UpdatePeriod_NotFound(t *testing.T) {
 func TestGovernmentFundingService_DeletePeriod(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -509,7 +509,7 @@ func TestGovernmentFundingService_DeletePeriod(t *testing.T) {
 func TestGovernmentFundingService_CreateProperty(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -551,7 +551,7 @@ func TestGovernmentFundingService_CreateProperty(t *testing.T) {
 func TestGovernmentFundingService_CreateProperty_PeriodNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	req := &models.GovernmentFundingPropertyCreateRequest{
@@ -578,7 +578,7 @@ func TestGovernmentFundingService_CreateProperty_PeriodNotFound(t *testing.T) {
 func TestGovernmentFundingService_CreateProperty_InvalidAgeRange(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -619,7 +619,7 @@ func TestGovernmentFundingService_CreateProperty_InvalidAgeRange(t *testing.T) {
 func TestGovernmentFundingService_CreateProperty_WhitespaceKey(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -655,7 +655,7 @@ func TestGovernmentFundingService_CreateProperty_WhitespaceKey(t *testing.T) {
 func TestGovernmentFundingService_UpdateProperty(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
@@ -694,7 +694,7 @@ func TestGovernmentFundingService_UpdateProperty(t *testing.T) {
 func TestGovernmentFundingService_UpdateProperty_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	newPayment := 150000
@@ -719,7 +719,7 @@ func TestGovernmentFundingService_UpdateProperty_NotFound(t *testing.T) {
 func TestGovernmentFundingService_DeleteProperty(t *testing.T) {
 	db := setupTestDB(t)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	svc := NewGovernmentFundingService(fundingStore)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
 	ctx := context.Background()
 
 	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}

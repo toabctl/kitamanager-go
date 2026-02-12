@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { formatCurrency } from '@/lib/utils/formatting';
 
 function formatServiceStart(dateStr: string): string {
@@ -28,7 +29,7 @@ export function StepPromotionsWidget({ orgId }: StepPromotionsWidgetProps) {
   const t = useTranslations('stepPromotions');
 
   const { data } = useQuery({
-    queryKey: ['step-promotions', orgId],
+    queryKey: queryKeys.stepPromotions(orgId),
     queryFn: () => apiClient.getStepPromotions(orgId),
     enabled: !!orgId,
   });

@@ -15,19 +15,20 @@ import (
 // EmployeeService handles business logic for employee operations
 type EmployeeService struct {
 	store        store.EmployeeStorer
-	payPlanStore *store.PayPlanStore
+	payPlanStore store.PayPlanStorer
+	transactor   store.Transactor
 }
 
 // NewEmployeeService creates a new employee service
-func NewEmployeeService(store store.EmployeeStorer, payPlanStore *store.PayPlanStore) *EmployeeService {
-	return &EmployeeService{store: store, payPlanStore: payPlanStore}
+func NewEmployeeService(store store.EmployeeStorer, payPlanStore store.PayPlanStorer, transactor store.Transactor) *EmployeeService {
+	return &EmployeeService{store: store, payPlanStore: payPlanStore, transactor: transactor}
 }
 
 // List returns a paginated list of employees
 func (s *EmployeeService) List(ctx context.Context, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	employees, total, err := s.store.FindAll(limit, offset)
+	employees, total, err := s.store.FindAll(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch employees")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch employees")
 	}
 
 	responses := make([]models.EmployeeResponse, len(employees))
@@ -44,9 +45,9 @@ func (s *EmployeeService) ListByOrganization(ctx context.Context, orgID uint, li
 
 // ListByOrganizationAndSection returns a paginated list of employees for an organization, optionally filtered by section, active contract date, name search, and/or staff category
 func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	employees, total, err := s.store.FindByOrganizationAndSection(orgID, sectionID, activeOn, search, staffCategory, limit, offset)
+	employees, total, err := s.store.FindByOrganizationAndSection(ctx, orgID, sectionID, activeOn, search, staffCategory, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch employees")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch employees")
 	}
 
 	responses := make([]models.EmployeeResponse, len(employees))
@@ -58,7 +59,7 @@ func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgI
 
 // GetByID returns an employee by ID, validating it belongs to the specified organization
 func (s *EmployeeService) GetByID(ctx context.Context, id, orgID uint) (*models.EmployeeResponse, error) {
-	employee, err := s.store.FindByID(id)
+	employee, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -73,39 +74,29 @@ func (s *EmployeeService) GetByID(ctx context.Context, id, orgID uint) (*models.
 // Create creates a new employee
 func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.EmployeeCreateRequest) (*models.EmployeeResponse, error) {
 	// Trim and validate input
-	req.FirstName = strings.TrimSpace(req.FirstName)
-	req.LastName = strings.TrimSpace(req.LastName)
-
-	if validation.IsWhitespaceOnly(req.FirstName) {
-		return nil, apperror.BadRequest("first_name cannot be empty or whitespace only")
-	}
-	if validation.IsWhitespaceOnly(req.LastName) {
-		return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
-	}
-	if !models.IsValidGender(req.Gender) {
-		return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
-	}
-	birthdate, err := time.Parse("2006-01-02", req.Birthdate)
+	person, err := validation.ValidatePersonCreate(&validation.PersonCreateFields{
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Gender:    req.Gender,
+		Birthdate: req.Birthdate,
+	})
 	if err != nil {
-		return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
-	}
-	if err := validation.ValidateBirthdate(birthdate); err != nil {
-		return nil, apperror.BadRequest(err.Error())
+		return nil, err
 	}
 
 	employee := &models.Employee{
 		Person: models.Person{
 			OrganizationID: orgID,
 			SectionID:      req.SectionID,
-			FirstName:      req.FirstName,
-			LastName:       req.LastName,
-			Gender:         req.Gender,
-			Birthdate:      birthdate,
+			FirstName:      person.FirstName,
+			LastName:       person.LastName,
+			Gender:         person.Gender,
+			Birthdate:      person.Birthdate,
 		},
 	}
 
-	if err := s.store.Create(employee); err != nil {
-		return nil, apperror.Internal("failed to create employee")
+	if err := s.store.Create(ctx, employee); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to create employee")
 	}
 
 	resp := employee.ToResponse()
@@ -114,7 +105,7 @@ func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.Em
 
 // Update updates an existing employee, validating it belongs to the specified organization
 func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *models.EmployeeUpdateRequest) (*models.EmployeeResponse, error) {
-	employee, err := s.store.FindByID(id)
+	employee, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -124,32 +115,29 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 	}
 
 	if req.FirstName != nil {
-		trimmed := strings.TrimSpace(*req.FirstName)
-		if validation.IsWhitespaceOnly(trimmed) {
-			return nil, apperror.BadRequest("first_name cannot be empty or whitespace only")
+		trimmed, err := validation.ValidateAndTrimName(*req.FirstName, "first_name")
+		if err != nil {
+			return nil, err
 		}
 		employee.FirstName = trimmed
 	}
 	if req.LastName != nil {
-		trimmed := strings.TrimSpace(*req.LastName)
-		if validation.IsWhitespaceOnly(trimmed) {
-			return nil, apperror.BadRequest("last_name cannot be empty or whitespace only")
+		trimmed, err := validation.ValidateAndTrimName(*req.LastName, "last_name")
+		if err != nil {
+			return nil, err
 		}
 		employee.LastName = trimmed
 	}
 	if req.Gender != nil {
-		if !models.IsValidGender(*req.Gender) {
-			return nil, apperror.BadRequest("gender must be one of: male, female, diverse")
+		if err := validation.ValidateGender(*req.Gender); err != nil {
+			return nil, err
 		}
 		employee.Gender = *req.Gender
 	}
 	if req.Birthdate != nil {
-		bd, err := time.Parse("2006-01-02", *req.Birthdate)
+		bd, err := validation.ParseAndValidateBirthdate(*req.Birthdate)
 		if err != nil {
-			return nil, apperror.BadRequest("invalid birthdate format, expected YYYY-MM-DD")
-		}
-		if err := validation.ValidateBirthdate(bd); err != nil {
-			return nil, apperror.BadRequest(err.Error())
+			return nil, err
 		}
 		employee.Birthdate = bd
 	}
@@ -159,41 +147,44 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 		employee.Section = nil
 	}
 
-	if err := s.store.Update(employee); err != nil {
-		return nil, apperror.Internal("failed to update employee")
+	if err := s.store.Update(ctx, employee); err != nil {
+		return nil, apperror.InternalWrap(err, "failed to update employee")
 	}
 
 	// Reload to get fresh associations (e.g., new Section after section_id change)
-	employee, err = s.store.FindByID(id)
+	employee, err = s.store.FindByID(ctx, id)
 	if err != nil {
-		return nil, apperror.Internal("failed to reload employee after update")
+		return nil, apperror.InternalWrap(err, "failed to reload employee after update")
 	}
 
 	resp := employee.ToResponse()
 	return &resp, nil
 }
 
-// Delete deletes an employee, validating it belongs to the specified organization
+// Delete deletes an employee and its contracts, validating it belongs to the specified organization.
+// The ownership check and deletion run in a single transaction.
 func (s *EmployeeService) Delete(ctx context.Context, id, orgID uint) error {
-	// Security: Validate employee belongs to the specified organization
-	employee, err := s.store.FindByID(id)
-	if err != nil {
-		return apperror.NotFound("employee")
-	}
-	if employee.OrganizationID != orgID {
-		return apperror.NotFound("employee")
-	}
+	return s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		// Security: Validate employee belongs to the specified organization
+		employee, err := s.store.FindByID(txCtx, id)
+		if err != nil {
+			return apperror.NotFound("employee")
+		}
+		if employee.OrganizationID != orgID {
+			return apperror.NotFound("employee")
+		}
 
-	if err := s.store.Delete(id); err != nil {
-		return apperror.Internal("failed to delete employee")
-	}
-	return nil
+		if err := s.store.Delete(txCtx, id); err != nil {
+			return apperror.InternalWrap(err, "failed to delete employee")
+		}
+		return nil
+	})
 }
 
 // ListContracts returns paginated contract history for an employee, validating it belongs to the specified organization
 func (s *EmployeeService) ListContracts(ctx context.Context, employeeID, orgID uint, limit, offset int) ([]models.EmployeeContractResponse, int64, error) {
 	// Verify employee exists and belongs to org (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return nil, 0, apperror.NotFound("employee")
 	}
@@ -202,9 +193,9 @@ func (s *EmployeeService) ListContracts(ctx context.Context, employeeID, orgID u
 		return nil, 0, apperror.NotFound("employee")
 	}
 
-	contracts, total, err := s.store.Contracts().GetHistoryPaginated(employeeID, limit, offset)
+	contracts, total, err := s.store.Contracts().GetHistoryPaginated(ctx, employeeID, limit, offset)
 	if err != nil {
-		return nil, 0, apperror.Internal("failed to fetch contracts")
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch contracts")
 	}
 
 	responses := make([]models.EmployeeContractResponse, len(contracts))
@@ -217,7 +208,7 @@ func (s *EmployeeService) ListContracts(ctx context.Context, employeeID, orgID u
 // GetCurrentContract returns the current active contract for an employee, validating it belongs to the specified organization
 func (s *EmployeeService) GetCurrentContract(ctx context.Context, employeeID, orgID uint) (*models.EmployeeContractResponse, error) {
 	// Security: Validate employee belongs to the specified organization (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -225,9 +216,9 @@ func (s *EmployeeService) GetCurrentContract(ctx context.Context, employeeID, or
 		return nil, apperror.NotFound("employee")
 	}
 
-	contract, err := s.store.Contracts().GetCurrentContract(employeeID)
+	contract, err := s.store.Contracts().GetCurrentContract(ctx, employeeID)
 	if err != nil {
-		return nil, apperror.Internal("failed to fetch contract")
+		return nil, apperror.InternalWrap(err, "failed to fetch contract")
 	}
 	if contract == nil {
 		return nil, apperror.NotFound("active contract")
@@ -251,7 +242,7 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 	req.Grade = strings.TrimSpace(req.Grade)
 
 	// Verify employee exists and belongs to org (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -267,14 +258,6 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 	}
 	if payPlan.OrganizationID != orgID {
 		return nil, apperror.BadRequest("payplan does not belong to this organization")
-	}
-
-	// Validate no overlap
-	if err := s.store.Contracts().ValidateNoOverlap(employeeID, req.From, req.To, nil); err != nil {
-		if errors.Is(err, store.ErrContractOverlap) {
-			return nil, apperror.Conflict(err.Error())
-		}
-		return nil, apperror.Internal("failed to validate contract")
 	}
 
 	contract := &models.EmployeeContract{
@@ -293,8 +276,17 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 		PayPlanID:     req.PayPlanID,
 	}
 
-	if err := s.store.CreateContract(contract); err != nil {
-		return nil, apperror.Internal("failed to create contract")
+	// Validate + create in a single transaction to prevent race conditions
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.store.Contracts().ValidateNoOverlap(txCtx, employeeID, req.From, req.To, nil); err != nil {
+			if errors.Is(err, store.ErrContractOverlap) {
+				return apperror.Conflict(err.Error())
+			}
+			return apperror.InternalWrap(err, "failed to validate contract")
+		}
+		return s.store.CreateContract(txCtx, contract)
+	}); err != nil {
+		return nil, err
 	}
 
 	resp := contract.ToResponse()
@@ -304,7 +296,7 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 // DeleteContract deletes a contract, validating it belongs to an employee in the specified organization
 func (s *EmployeeService) DeleteContract(ctx context.Context, contractID, employeeID, orgID uint) error {
 	// Security: Validate employee belongs to the specified organization (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return apperror.NotFound("employee")
 	}
@@ -313,7 +305,7 @@ func (s *EmployeeService) DeleteContract(ctx context.Context, contractID, employ
 	}
 
 	// Validate contract belongs to the employee
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return apperror.NotFound("contract")
 	}
@@ -321,8 +313,8 @@ func (s *EmployeeService) DeleteContract(ctx context.Context, contractID, employ
 		return apperror.NotFound("contract")
 	}
 
-	if err := s.store.DeleteContract(contractID); err != nil {
-		return apperror.Internal("failed to delete contract")
+	if err := s.store.DeleteContract(ctx, contractID); err != nil {
+		return apperror.InternalWrap(err, "failed to delete contract")
 	}
 	return nil
 }
@@ -330,7 +322,7 @@ func (s *EmployeeService) DeleteContract(ctx context.Context, contractID, employ
 // GetContractByID returns a contract by ID, validating ownership
 func (s *EmployeeService) GetContractByID(ctx context.Context, contractID, employeeID, orgID uint) (*models.EmployeeContractResponse, error) {
 	// Security: Validate employee belongs to the specified organization (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -339,7 +331,7 @@ func (s *EmployeeService) GetContractByID(ctx context.Context, contractID, emplo
 	}
 
 	// Get contract
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return nil, apperror.NotFound("contract")
 	}
@@ -354,7 +346,7 @@ func (s *EmployeeService) GetContractByID(ctx context.Context, contractID, emplo
 // UpdateContract updates an existing contract, validating ownership
 func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employeeID, orgID uint, req *models.EmployeeContractUpdateRequest) (*models.EmployeeContractResponse, error) {
 	// Security: Validate employee belongs to the specified organization (use minimal query - no preloads needed)
-	employee, err := s.store.FindByIDMinimal(employeeID)
+	employee, err := s.store.FindByIDMinimal(ctx, employeeID)
 	if err != nil {
 		return nil, apperror.NotFound("employee")
 	}
@@ -363,7 +355,7 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 	}
 
 	// Get contract
-	contract, err := s.store.FindContractByID(contractID)
+	contract, err := s.store.FindContractByID(ctx, contractID)
 	if err != nil {
 		return nil, apperror.NotFound("contract")
 	}
@@ -422,20 +414,22 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 		return nil, apperror.BadRequest(err.Error())
 	}
 
-	// Check for overlap if dates changed
-	if req.From != nil || req.To != nil {
-		if err := s.store.Contracts().ValidateNoOverlap(employeeID, newFrom, newTo, &contractID); err != nil {
-			if errors.Is(err, store.ErrContractOverlap) {
-				return nil, apperror.Conflict(err.Error())
-			}
-			return nil, apperror.Internal("failed to validate contract")
-		}
-		contract.From = newFrom
-		contract.To = newTo
-	}
+	contract.From = newFrom
+	contract.To = newTo
 
-	if err := s.store.UpdateContract(contract); err != nil {
-		return nil, apperror.Internal("failed to update contract")
+	// Validate + update in a single transaction to prevent race conditions
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if req.From != nil || req.To != nil {
+			if err := s.store.Contracts().ValidateNoOverlap(txCtx, employeeID, newFrom, newTo, &contractID); err != nil {
+				if errors.Is(err, store.ErrContractOverlap) {
+					return apperror.Conflict(err.Error())
+				}
+				return apperror.InternalWrap(err, "failed to validate contract")
+			}
+		}
+		return s.store.UpdateContract(txCtx, contract)
+	}); err != nil {
+		return nil, err
 	}
 
 	resp := contract.ToResponse()

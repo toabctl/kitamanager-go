@@ -242,13 +242,15 @@ func createChildService(db *gorm.DB) *ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	return NewChildService(childStore, orgStore, fundingStore)
+	transactor := store.NewTransactor(db)
+	return NewChildService(childStore, orgStore, fundingStore, transactor)
 }
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
 	payPlanStore := store.NewPayPlanStore(db)
-	return NewEmployeeService(employeeStore, payPlanStore)
+	transactor := store.NewTransactor(db)
+	return NewEmployeeService(employeeStore, payPlanStore, transactor)
 }
 
 // createTestPayPlan creates a pay plan for testing.

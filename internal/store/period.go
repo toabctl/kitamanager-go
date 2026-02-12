@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -24,15 +25,15 @@ func NewPeriodStore[T models.HasPeriod](db *gorm.DB, personIDCol string) *Period
 }
 
 // GetCurrentContract returns the active contract for a person (if any).
-func (s *PeriodStore[T]) GetCurrentContract(personID uint) (*T, error) {
-	return s.GetContractOn(personID, time.Now())
+func (s *PeriodStore[T]) GetCurrentContract(ctx context.Context, personID uint) (*T, error) {
+	return s.GetContractOn(ctx, personID, time.Now())
 }
 
 // GetContractOn returns the contract valid on a specific date.
 // Returns nil if no contract exists for that date.
-func (s *PeriodStore[T]) GetContractOn(personID uint, date time.Time) (*T, error) {
+func (s *PeriodStore[T]) GetContractOn(ctx context.Context, personID uint, date time.Time) (*T, error) {
 	var contract T
-	err := s.db.Where(
+	err := DBFromContext(ctx, s.db).Where(
 		s.personIDCol+" = ? AND from_date <= ? AND (to_date IS NULL OR to_date >= ?)",
 		personID, date, date,
 	).First(&contract).Error
@@ -46,26 +47,26 @@ func (s *PeriodStore[T]) GetContractOn(personID uint, date time.Time) (*T, error
 }
 
 // GetHistory returns all contracts for a person ordered by from_date.
-func (s *PeriodStore[T]) GetHistory(personID uint) ([]T, error) {
+func (s *PeriodStore[T]) GetHistory(ctx context.Context, personID uint) ([]T, error) {
 	var contracts []T
-	err := s.db.Where(s.personIDCol+" = ?", personID).
+	err := DBFromContext(ctx, s.db).Where(s.personIDCol+" = ?", personID).
 		Order("from_date ASC").
 		Find(&contracts).Error
 	return contracts, err
 }
 
 // GetHistoryPaginated returns paginated contracts for a person ordered by from_date desc.
-func (s *PeriodStore[T]) GetHistoryPaginated(personID uint, limit, offset int) ([]T, int64, error) {
+func (s *PeriodStore[T]) GetHistoryPaginated(ctx context.Context, personID uint, limit, offset int) ([]T, int64, error) {
 	var contracts []T
 	var total int64
 
 	// Count total
-	if err := s.db.Model(new(T)).Where(s.personIDCol+" = ?", personID).Count(&total).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Model(new(T)).Where(s.personIDCol+" = ?", personID).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// Get paginated results (desc for most recent first)
-	err := s.db.Where(s.personIDCol+" = ?", personID).
+	err := DBFromContext(ctx, s.db).Where(s.personIDCol+" = ?", personID).
 		Order("from_date DESC").
 		Limit(limit).
 		Offset(offset).
@@ -74,9 +75,9 @@ func (s *PeriodStore[T]) GetHistoryPaginated(personID uint, limit, offset int) (
 }
 
 // HasActiveContract checks if a person has a contract on the given date.
-func (s *PeriodStore[T]) HasActiveContract(personID uint, date time.Time) (bool, error) {
+func (s *PeriodStore[T]) HasActiveContract(ctx context.Context, personID uint, date time.Time) (bool, error) {
 	var count int64
-	err := s.db.Model(new(T)).Where(
+	err := DBFromContext(ctx, s.db).Model(new(T)).Where(
 		s.personIDCol+" = ? AND from_date <= ? AND (to_date IS NULL OR to_date >= ?)",
 		personID, date, date,
 	).Count(&count).Error
@@ -85,8 +86,8 @@ func (s *PeriodStore[T]) HasActiveContract(personID uint, date time.Time) (bool,
 
 // ValidateNoOverlap checks if a new contract would overlap with existing ones.
 // Use excludeID to exclude a specific contract (for updates).
-func (s *PeriodStore[T]) ValidateNoOverlap(personID uint, from time.Time, to *time.Time, excludeID *uint) error {
-	query := s.db.Model(new(T)).Where(s.personIDCol+" = ?", personID)
+func (s *PeriodStore[T]) ValidateNoOverlap(ctx context.Context, personID uint, from time.Time, to *time.Time, excludeID *uint) error {
+	query := DBFromContext(ctx, s.db).Model(new(T)).Where(s.personIDCol+" = ?", personID)
 
 	if excludeID != nil {
 		query = query.Where("id != ?", *excludeID)
@@ -124,8 +125,8 @@ func (s *PeriodStore[T]) ValidateNoOverlap(personID uint, from time.Time, to *ti
 }
 
 // CloseCurrentContract sets the end date of the current ongoing contract.
-func (s *PeriodStore[T]) CloseCurrentContract(personID uint, endDate time.Time) error {
-	return s.db.Model(new(T)).
+func (s *PeriodStore[T]) CloseCurrentContract(ctx context.Context, personID uint, endDate time.Time) error {
+	return DBFromContext(ctx, s.db).Model(new(T)).
 		Where(s.personIDCol+" = ? AND to_date IS NULL", personID).
 		Update("to_date", endDate).Error
 }

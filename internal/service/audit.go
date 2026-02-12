@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"time"
@@ -11,11 +12,11 @@ import (
 
 // AuditService handles audit logging operations
 type AuditService struct {
-	store *store.AuditStore
+	store store.AuditStorer
 }
 
 // NewAuditService creates a new AuditService
-func NewAuditService(store *store.AuditStore) *AuditService {
+func NewAuditService(store store.AuditStorer) *AuditService {
 	return &AuditService{store: store}
 }
 
@@ -203,12 +204,12 @@ func (s *AuditService) LogOrgCreate(actorID, orgID uint, orgName, ipAddress stri
 }
 
 // GetLogs returns paginated audit logs
-func (s *AuditService) GetLogs(limit, offset int) ([]models.AuditLogResponse, int64, error) {
+func (s *AuditService) GetLogs(ctx context.Context, limit, offset int) ([]models.AuditLogResponse, int64, error) {
 	if s == nil || s.store == nil {
 		return nil, 0, nil
 	}
 
-	logs, total, err := s.store.FindAll(limit, offset)
+	logs, total, err := s.store.FindAll(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -222,12 +223,12 @@ func (s *AuditService) GetLogs(limit, offset int) ([]models.AuditLogResponse, in
 }
 
 // GetLogsByUser returns audit logs for a specific user
-func (s *AuditService) GetLogsByUser(userID uint, limit, offset int) ([]models.AuditLogResponse, int64, error) {
+func (s *AuditService) GetLogsByUser(ctx context.Context, userID uint, limit, offset int) ([]models.AuditLogResponse, int64, error) {
 	if s == nil || s.store == nil {
 		return nil, 0, nil
 	}
 
-	logs, total, err := s.store.FindByUser(userID, limit, offset)
+	logs, total, err := s.store.FindByUser(ctx, userID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -241,13 +242,13 @@ func (s *AuditService) GetLogsByUser(userID uint, limit, offset int) ([]models.A
 }
 
 // CountRecentFailedLogins counts failed login attempts for an email in the last duration
-func (s *AuditService) CountRecentFailedLogins(email string, duration time.Duration) (int64, error) {
+func (s *AuditService) CountRecentFailedLogins(ctx context.Context, email string, duration time.Duration) (int64, error) {
 	if s == nil || s.store == nil {
 		return 0, nil
 	}
 
 	since := time.Now().Add(-duration)
-	return s.store.CountFailedLoginsSince(email, since)
+	return s.store.CountFailedLoginsSince(ctx, email, since)
 }
 
 // log creates an audit log entry asynchronously to not block the main request
@@ -261,7 +262,7 @@ func (s *AuditService) log(entry *models.AuditLog) {
 
 	// Log asynchronously to not block the request
 	go func() {
-		if err := s.store.Create(entry); err != nil {
+		if err := s.store.Create(context.Background(), entry); err != nil {
 			slog.Error("Failed to create audit log",
 				"action", entry.Action,
 				"error", err)

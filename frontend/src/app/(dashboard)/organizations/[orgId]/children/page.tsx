@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   Child,
   ChildContractCreateRequest,
@@ -41,7 +42,6 @@ import { PropertyTagInput } from '@/components/ui/tag-input';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   formatDate,
   calculateAge,
@@ -60,22 +60,12 @@ import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
 import { PersonFormDialog } from '@/components/crud/person-form-dialog';
-
-const childSchema = z.object({
-  first_name: z.string().min(1),
-  last_name: z.string().min(1),
-  gender: z.enum(['male', 'female', 'diverse']),
-  birthdate: z.string().min(1),
-});
-
-const contractSchema = z.object({
-  from: z.string().min(1),
-  to: z.string().optional(),
-  properties: z.record(z.string()).optional(),
-});
-
-type ChildFormData = z.infer<typeof childSchema>;
-type ContractFormData = z.infer<typeof contractSchema>;
+import {
+  childSchema,
+  childContractSchema,
+  type ChildFormData,
+  type ChildContractFormData,
+} from '@/lib/schemas';
 
 export default function ChildrenPage() {
   const params = useParams();
@@ -97,7 +87,7 @@ export default function ChildrenPage() {
   const search = useDebouncedValue(searchInput, 300);
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ['children', orgId, page, search],
+    queryKey: queryKeys.children.list(orgId, page, search),
     queryFn: () => apiClient.getChildren(orgId, { page, search: search || undefined }),
     enabled: !!orgId,
   });
@@ -106,7 +96,7 @@ export default function ChildrenPage() {
 
   // Fetch funding data for all children
   const { data: fundingData } = useQuery({
-    queryKey: ['childrenFunding', orgId],
+    queryKey: queryKeys.children.funding(orgId),
     queryFn: () => apiClient.getChildrenFunding(orgId),
     enabled: !!orgId,
     staleTime: 60 * 1000, // 1 minute - funding doesn't change often
@@ -121,7 +111,7 @@ export default function ChildrenPage() {
     mutationFn: (data: Omit<ChildFormData, 'organization_id'>) =>
       apiClient.createChild(orgId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.createSuccess') });
       setIsChildDialogOpen(false);
       resetChild();
@@ -139,7 +129,7 @@ export default function ChildrenPage() {
     mutationFn: ({ id, data }: { id: number; data: Partial<ChildFormData> }) =>
       apiClient.updateChild(orgId, id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.updateSuccess') });
       setIsChildDialogOpen(false);
       setEditingChild(null);
@@ -157,7 +147,7 @@ export default function ChildrenPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiClient.deleteChild(orgId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingChild(null);
@@ -182,8 +172,10 @@ export default function ChildrenPage() {
       data: ChildContractUpdateRequest;
     }) => apiClient.updateChildContract(orgId, childId, contractId, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
-      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, variables.childId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.children.contracts(orgId, variables.childId),
+      });
     },
     onError: (error) => {
       toast({
@@ -215,8 +207,10 @@ export default function ChildrenPage() {
       return apiClient.createChildContract(orgId, childId, data);
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['children', orgId] });
-      queryClient.invalidateQueries({ queryKey: ['childContracts', orgId, variables.childId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.children.contracts(orgId, variables.childId),
+      });
       toast({
         title: endCurrentContract
           ? t('contracts.previousContractEnded')
@@ -260,8 +254,8 @@ export default function ChildrenPage() {
     watch: watchContract,
     control: controlContract,
     formState: { errors: errorsContract },
-  } = useForm<ContractFormData>({
-    resolver: zodResolver(contractSchema),
+  } = useForm<ChildContractFormData>({
+    resolver: zodResolver(childContractSchema),
     defaultValues: {
       from: '',
       to: '',
@@ -365,7 +359,7 @@ export default function ChildrenPage() {
   };
 
   const onSubmitContract = useCallback(
-    (data: ContractFormData) => {
+    (data: ChildContractFormData) => {
       if (contractChild) {
         // If there's an active contract and we're ending it, check if something actually changed
         if (activeContract && endCurrentContract) {

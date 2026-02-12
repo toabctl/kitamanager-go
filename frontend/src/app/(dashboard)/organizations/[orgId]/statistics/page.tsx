@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { AgeDistributionChart } from '@/components/charts/age-distribution-chart';
 import { MonthlyContractChart } from '@/components/charts/monthly-contract-chart';
 
@@ -15,13 +16,13 @@ export default function StatisticsPage() {
   const t = useTranslations();
 
   const { data: ageDistribution, isLoading: isLoadingAge } = useQuery({
-    queryKey: ['age-distribution', orgId],
+    queryKey: queryKeys.statistics.ageDistribution(orgId),
     queryFn: () => apiClient.getAgeDistribution(orgId),
     enabled: !!orgId,
   });
 
   const { data: contractCounts, isLoading: isLoadingContracts } = useQuery({
-    queryKey: ['contract-counts', orgId],
+    queryKey: queryKeys.statistics.contractCounts(orgId),
     queryFn: () => apiClient.getChildrenContractCountByMonth(orgId),
     enabled: !!orgId,
   });

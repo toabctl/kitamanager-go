@@ -81,7 +81,7 @@ export function useCrudPage<
     defaultValues: config.defaultValues as DefaultValues<TFormData>,
   });
 
-  const queryKey: (string | number | undefined)[] = [config.resourceName, orgId];
+  const queryKey: readonly (string | number | undefined)[] = [config.resourceName, orgId];
 
   const { data: paginatedData, isLoading } = useQuery({
     queryKey: [...queryKey, page],

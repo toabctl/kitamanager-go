@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"testing"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -20,7 +21,7 @@ func TestGroupStore_Create(t *testing.T) {
 		CreatedBy:      "admin@test.com",
 	}
 
-	err := store.Create(group)
+	err := store.Create(context.Background(), group)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -40,7 +41,7 @@ func TestGroupStore_FindAll(t *testing.T) {
 	createTestGroup(t, db, "Group 1")
 	createTestGroup(t, db, "Group 2")
 
-	groups, total, err := store.FindAll(100, 0)
+	groups, total, err := store.FindAll(context.Background(), 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -60,7 +61,7 @@ func TestGroupStore_FindByID(t *testing.T) {
 
 	created := createTestGroup(t, db, "Test Group")
 
-	found, err := store.FindByID(created.ID)
+	found, err := store.FindByID(context.Background(), created.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -74,7 +75,7 @@ func TestGroupStore_FindByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewGroupStore(db)
 
-	_, err := store.FindByID(999)
+	_, err := store.FindByID(context.Background(), 999)
 	if err == nil {
 		t.Error("expected error for non-existent group")
 	}
@@ -87,12 +88,12 @@ func TestGroupStore_Update(t *testing.T) {
 	group := createTestGroup(t, db, "Original Name")
 	group.Name = "Updated Name"
 
-	err := store.Update(group)
+	err := store.Update(context.Background(), group)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	found, _ := store.FindByID(group.ID)
+	found, _ := store.FindByID(context.Background(), group.ID)
 	if found.Name != "Updated Name" {
 		t.Errorf("expected name 'Updated Name', got '%s'", found.Name)
 	}
@@ -104,12 +105,12 @@ func TestGroupStore_Delete(t *testing.T) {
 
 	group := createTestGroup(t, db, "To Delete")
 
-	err := store.Delete(group.ID)
+	err := store.Delete(context.Background(), group.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	_, err = store.FindByID(group.ID)
+	_, err = store.FindByID(context.Background(), group.ID)
 	if err == nil {
 		t.Error("expected error finding deleted group")
 	}
@@ -128,7 +129,7 @@ func TestGroupStore_FindByOrganization(t *testing.T) {
 	createTestGroupWithOrg(t, db, "Group 3", org2.ID)
 
 	// Find groups in org1
-	groups, err := store.FindByOrganization(org1.ID)
+	groups, err := store.FindByOrganization(context.Background(), org1.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -145,7 +146,7 @@ func TestGroupStore_FindByOrganization(t *testing.T) {
 	}
 
 	// Find groups in org2
-	groups2, err := store.FindByOrganization(org2.ID)
+	groups2, err := store.FindByOrganization(context.Background(), org2.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -176,7 +177,7 @@ func TestGroupStore_FindDefaultGroup(t *testing.T) {
 	}
 
 	// Find the default group
-	found, err := store.FindDefaultGroup(org.ID)
+	found, err := store.FindDefaultGroup(context.Background(), org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -199,7 +200,7 @@ func TestGroupStore_FindDefaultGroup_NotFound(t *testing.T) {
 	createTestGroupWithOrg(t, db, "Regular Group", org.ID)
 
 	// Try to find default group (should fail)
-	_, err := store.FindDefaultGroup(org.ID)
+	_, err := store.FindDefaultGroup(context.Background(), org.ID)
 	if err == nil {
 		t.Error("expected error when no default group exists")
 	}
@@ -216,7 +217,7 @@ func TestGroupStore_FindByOrganizationPaginated_Search(t *testing.T) {
 	createTestGroupWithOrg(t, db, "Members", org.ID)
 
 	// Search for "admin" (case-insensitive)
-	groups, total, err := store.FindByOrganizationPaginated(org.ID, "admin", 100, 0)
+	groups, total, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "admin", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -230,7 +231,7 @@ func TestGroupStore_FindByOrganizationPaginated_Search(t *testing.T) {
 	}
 
 	// Empty search returns all
-	groups2, total2, err := store.FindByOrganizationPaginated(org.ID, "", 100, 0)
+	groups2, total2, err := store.FindByOrganizationPaginated(context.Background(), org.ID, "", 100, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

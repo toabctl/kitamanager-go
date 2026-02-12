@@ -1,6 +1,8 @@
 package rbac
 
 import (
+	"context"
+
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
@@ -20,8 +22,8 @@ func NewPermissionService(userGroupStore store.UserGroupStorer, enforcer *Enforc
 }
 
 // IsSuperAdmin checks if a user is a superadmin (from database)
-func (s *PermissionService) IsSuperAdmin(userID uint) (bool, error) {
-	return s.userGroupStore.IsSuperAdmin(userID)
+func (s *PermissionService) IsSuperAdmin(ctx context.Context, userID uint) (bool, error) {
+	return s.userGroupStore.IsSuperAdmin(ctx, userID)
 }
 
 // CheckPermission checks if a user has permission to perform an action on a resource in an organization
@@ -29,9 +31,9 @@ func (s *PermissionService) IsSuperAdmin(userID uint) (bool, error) {
 // 1. Check if user is superadmin -> full access
 // 2. Get user's effective role in the organization (highest role from all groups)
 // 3. Check if that role has permission via Casbin policies
-func (s *PermissionService) CheckPermission(userID, orgID uint, resource, action string) (bool, error) {
+func (s *PermissionService) CheckPermission(ctx context.Context, userID, orgID uint, resource, action string) (bool, error) {
 	// Check superadmin first
-	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(userID)
+	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -40,7 +42,7 @@ func (s *PermissionService) CheckPermission(userID, orgID uint, resource, action
 	}
 
 	// Get effective role in organization
-	role, err := s.userGroupStore.GetEffectiveRoleInOrg(userID, orgID)
+	role, err := s.userGroupStore.GetEffectiveRoleInOrg(ctx, userID, orgID)
 	if err != nil {
 		return false, err
 	}
@@ -56,9 +58,9 @@ func (s *PermissionService) CheckPermission(userID, orgID uint, resource, action
 
 // HasPermissionInAnyOrg checks if a user has permission in any of their organizations
 // Used for global resources like users and groups
-func (s *PermissionService) HasPermissionInAnyOrg(userID uint, resource, action string) (bool, error) {
+func (s *PermissionService) HasPermissionInAnyOrg(ctx context.Context, userID uint, resource, action string) (bool, error) {
 	// Check superadmin first
-	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(userID)
+	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -67,7 +69,7 @@ func (s *PermissionService) HasPermissionInAnyOrg(userID uint, resource, action 
 	}
 
 	// Get all organizations with roles
-	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(userID)
+	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -87,8 +89,8 @@ func (s *PermissionService) HasPermissionInAnyOrg(userID uint, resource, action 
 }
 
 // GetUserRoles returns all roles a user has in a specific organization
-func (s *PermissionService) GetUserRoles(userID, orgID uint) ([]models.Role, error) {
-	memberships, err := s.userGroupStore.FindByUserAndOrg(userID, orgID)
+func (s *PermissionService) GetUserRoles(ctx context.Context, userID, orgID uint) ([]models.Role, error) {
+	memberships, err := s.userGroupStore.FindByUserAndOrg(ctx, userID, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +103,13 @@ func (s *PermissionService) GetUserRoles(userID, orgID uint) ([]models.Role, err
 }
 
 // GetEffectiveRole returns the highest role a user has in an organization
-func (s *PermissionService) GetEffectiveRole(userID, orgID uint) (models.Role, error) {
-	return s.userGroupStore.GetEffectiveRoleInOrg(userID, orgID)
+func (s *PermissionService) GetEffectiveRole(ctx context.Context, userID, orgID uint) (models.Role, error) {
+	return s.userGroupStore.GetEffectiveRoleInOrg(ctx, userID, orgID)
 }
 
 // HasAnyRoleInOrg checks if user has any role in the organization
-func (s *PermissionService) HasAnyRoleInOrg(userID, orgID uint) (bool, error) {
-	role, err := s.userGroupStore.GetEffectiveRoleInOrg(userID, orgID)
+func (s *PermissionService) HasAnyRoleInOrg(ctx context.Context, userID, orgID uint) (bool, error) {
+	role, err := s.userGroupStore.GetEffectiveRoleInOrg(ctx, userID, orgID)
 	if err != nil {
 		return false, err
 	}
@@ -115,9 +117,9 @@ func (s *PermissionService) HasAnyRoleInOrg(userID, orgID uint) (bool, error) {
 }
 
 // HasAnyRole checks if a user has any role in any organization
-func (s *PermissionService) HasAnyRole(userID uint) (bool, error) {
+func (s *PermissionService) HasAnyRole(ctx context.Context, userID uint) (bool, error) {
 	// Check superadmin
-	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(userID)
+	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -126,7 +128,7 @@ func (s *PermissionService) HasAnyRole(userID uint) (bool, error) {
 	}
 
 	// Check for any org memberships
-	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(userID)
+	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(ctx, userID)
 	if err != nil {
 		return false, err
 	}
