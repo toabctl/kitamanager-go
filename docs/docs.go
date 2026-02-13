@@ -5465,6 +5465,79 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/statistics/staffing-hours": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns monthly data points comparing required vs available staffing hours.\nRequired hours are calculated from children's contract properties matched against government funding requirements.\nAvailable hours are the sum of weekly hours from pedagogical staff (qualified + supplementary) contracts.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "Get staffing hours statistics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD), defaults to 12 months ago",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD), defaults to 6 months ahead",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by section ID",
+                        "name": "section_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/users": {
             "get": {
                 "security": [
@@ -8639,6 +8712,42 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Kita"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursDataPoint": {
+            "type": "object",
+            "properties": {
+                "available_hours": {
+                    "type": "number",
+                    "example": 340
+                },
+                "child_count": {
+                    "type": "integer",
+                    "example": 45
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2025-01-01"
+                },
+                "required_hours": {
+                    "type": "number",
+                    "example": 312.5
+                },
+                "staff_count": {
+                    "type": "integer",
+                    "example": 12
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursResponse": {
+            "type": "object",
+            "properties": {
+                "data_points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursDataPoint"
+                    }
                 }
             }
         },

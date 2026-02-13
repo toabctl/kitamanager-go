@@ -468,7 +468,7 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 	}
 
 	// Find the period covering this date
-	period := s.findPeriodForDate(funding.Periods, date)
+	period := findPeriodForDate(funding.Periods, date)
 
 	// Set weekly hours basis from the funding period
 	if period != nil {
@@ -493,16 +493,32 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 	return response, nil
 }
 
-// findPeriodForDate finds the funding period that covers the given date
-func (s *ChildService) findPeriodForDate(periods []models.GovernmentFundingPeriod, date time.Time) *models.GovernmentFundingPeriod {
+// findPeriodForDate finds the funding period that covers the given date (package-level for reuse)
+func findPeriodForDate(periods []models.GovernmentFundingPeriod, date time.Time) *models.GovernmentFundingPeriod {
 	for i := range periods {
 		period := &periods[i]
-		// Check if date is within period: from <= date AND (to is nil OR to >= date)
 		if !period.From.After(date) && (period.To == nil || !period.To.Before(date)) {
 			return period
 		}
 	}
 	return nil
+}
+
+// sumChildRequirement calculates the total requirement for a child based on their age and contract properties.
+func sumChildRequirement(age int, props models.ContractProperties, period *models.GovernmentFundingPeriod) float64 {
+	if period == nil {
+		return 0
+	}
+	total := 0.0
+	for _, fundingProp := range period.Properties {
+		if !fundingProp.MatchesAge(age) {
+			continue
+		}
+		if props.HasValue(fundingProp.Key, fundingProp.Value) {
+			total += fundingProp.Requirement
+		}
+	}
+	return total
 }
 
 // calculateChildFunding calculates funding for a single child based on their age and contract properties.

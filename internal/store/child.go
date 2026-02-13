@@ -208,6 +208,36 @@ func (s *ChildStore) FindContractsByOrganizationInDateRange(ctx context.Context,
 	return contracts, nil
 }
 
+// FindByOrganizationInDateRange returns children that have contracts overlapping the given date range.
+// Children are returned with their contracts preloaded (only those overlapping the range).
+// Optional sectionID filters on the contract's section, not the child's section.
+func (s *ChildStore) FindByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, sectionID *uint) ([]models.Child, error) {
+	var children []models.Child
+
+	query := DBFromContext(ctx, s.db).
+		Preload("Contracts", func(db *gorm.DB) *gorm.DB {
+			q := db.Where("from_date <= ? AND (to_date IS NULL OR to_date >= ?)", rangeEnd, rangeStart)
+			if sectionID != nil {
+				q = q.Where("section_id = ?", *sectionID)
+			}
+			return q
+		}).
+		Joins("JOIN child_contracts ON child_contracts.child_id = children.id").
+		Where("children.organization_id = ?", orgID).
+		Where("child_contracts.from_date <= ?", rangeEnd).
+		Where("child_contracts.to_date IS NULL OR child_contracts.to_date >= ?", rangeStart)
+
+	if sectionID != nil {
+		query = query.Where("child_contracts.section_id = ?", *sectionID)
+	}
+
+	if err := query.Distinct().Find(&children).Error; err != nil {
+		return nil, err
+	}
+
+	return children, nil
+}
+
 // CountByOrganizationWithActiveOn counts children with active contracts on the given date.
 // A contract is active if: from_date <= date AND (to_date IS NULL OR to_date >= date)
 func (s *ChildStore) CountByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) (int64, error) {

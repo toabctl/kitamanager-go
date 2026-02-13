@@ -140,6 +140,7 @@ func main() {
 	payPlanService := service.NewPayPlanService(payPlanStore)
 	childAttendanceService := service.NewChildAttendanceService(childAttendanceStore, childStore)
 	stepPromotionService := service.NewStepPromotionService(payPlanStore, employeeStore)
+	statisticsService := service.NewStatisticsService(childStore, employeeStore, orgStore, governmentFundingStore)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userStore, cfg.JWTSecret, auditService)
@@ -153,6 +154,7 @@ func main() {
 	payPlanHandler := handlers.NewPayPlanHandler(payPlanService, auditService)
 	childAttendanceHandler := handlers.NewChildAttendanceHandler(childAttendanceService, auditService)
 	stepPromotionHandler := handlers.NewStepPromotionHandler(stepPromotionService)
+	statisticsHandler := handlers.NewStatisticsHandler(statisticsService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware
@@ -198,7 +200,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Setup API routes
-	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, stepPromotionHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter, apiRateLimiter)
+	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, stepPromotionHandler, statisticsHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter, apiRateLimiter)
 
 	// Create HTTP server
 	srv := &http.Server{

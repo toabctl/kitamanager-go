@@ -21,6 +21,7 @@ func Setup(
 	payPlanHandler *handlers.PayPlanHandler,
 	childAttendanceHandler *handlers.ChildAttendanceHandler,
 	stepPromotionHandler *handlers.StepPromotionHandler,
+	statisticsHandler *handlers.StatisticsHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	authzMiddleware *middleware.AuthorizationMiddleware,
 	csrfMiddleware *middleware.CSRFMiddleware,
@@ -202,6 +203,13 @@ func Setup(
 				orgScoped.GET("/users",
 					authzMiddleware.RequirePermission(rbac.ResourceUsers, rbac.ActionRead),
 					userHandler.ListByOrganization)
+
+				// ============================================================
+				// Organization-wide statistics
+				// ============================================================
+				orgScoped.GET("/statistics/staffing-hours",
+					authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+					statisticsHandler.GetStaffingHours)
 
 				// Employees
 				employees := orgScoped.Group("/employees")

@@ -205,3 +205,12 @@ func createTestPayPlan(t *testing.T, db *gorm.DB, name string, orgID uint) *mode
 	t.Helper()
 	return testutil.CreateTestPayPlan(t, db, name, orgID)
 }
+
+// createStatisticsService creates a statistics service for testing.
+func createStatisticsService(db *gorm.DB) *service.StatisticsService {
+	childStore := store.NewChildStore(db)
+	employeeStore := store.NewEmployeeStore(db)
+	orgStore := store.NewOrganizationStore(db)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	return service.NewStatisticsService(childStore, employeeStore, orgStore, fundingStore)
+}

@@ -80,6 +80,7 @@ type EmployeeStorer interface {
 	Contracts() ContractStorer[models.EmployeeContract]
 	FindByOrganizationWithContracts(ctx context.Context, orgID uint, date time.Time) ([]models.Employee, error)
 	FindContractsByEmployeePaginated(ctx context.Context, employeeID uint, limit, offset int) ([]models.EmployeeContract, int64, error)
+	FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, staffCategories []string, sectionID *uint) ([]models.EmployeeContract, error)
 }
 
 // ChildStorer defines the interface for child storage operations
@@ -90,6 +91,7 @@ type ChildStorer interface {
 	FindByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) ([]models.Child, error)
 	CountByOrganizationWithActiveOn(ctx context.Context, orgID uint, date time.Time) (int64, error)
 	FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time) ([]models.ChildContract, error)
+	FindByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, sectionID *uint) ([]models.Child, error)
 	FindByID(ctx context.Context, id uint) (*models.Child, error)
 	FindByIDMinimal(ctx context.Context, id uint) (*models.Child, error) // Without preloads, for org checks
 	Create(ctx context.Context, child *models.Child) error

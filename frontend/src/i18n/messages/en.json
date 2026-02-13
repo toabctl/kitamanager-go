@@ -49,7 +49,8 @@
     "createSuccess": "{resource} created successfully",
     "deleteSuccess": "{resource} deleted successfully",
     "retry": "Retry",
-    "all": "All"
+    "all": "All",
+    "today": "Today"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -102,7 +103,12 @@
     "childrenCount": "Children",
     "totalChildren": "{count} children total",
     "ageYears": "{age} years",
-    "ageSixPlus": "6+ years"
+    "ageSixPlus": "6+ years",
+    "staffingHours": "Staffing Hours",
+    "requiredHours": "Required Hours",
+    "availableHours": "Available Hours",
+    "filterBySection": "Filter by Section",
+    "allSections": "All Sections"
   },
   "months": {
     "jan": "Jan",

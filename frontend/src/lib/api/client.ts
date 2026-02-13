@@ -48,6 +48,7 @@ import type {
   PayPlanEntryCreateRequest,
   PayPlanEntryUpdateRequest,
   StepPromotionsResponse,
+  StaffingHoursResponse,
   Section,
   SectionCreateRequest,
   SectionUpdateRequest,
@@ -687,6 +688,16 @@ class ApiClient {
     const params = date ? { date } : {};
     const response = await this.client.get<StepPromotionsResponse>(
       `/organizations/${orgId}/employees/step-promotions`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getStaffingHours(orgId: number, sectionId?: number): Promise<StaffingHoursResponse> {
+    const params: Record<string, string> = {};
+    if (sectionId) params.section_id = sectionId.toString();
+    const response = await this.client.get<StaffingHoursResponse>(
+      `/organizations/${orgId}/statistics/staffing-hours`,
       { params }
     );
     return response.data;

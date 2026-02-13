@@ -1,11 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 
@@ -21,10 +29,16 @@ const MonthlyContractChart = dynamic(
   { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
 );
 
+const StaffingHoursChart = dynamic(
+  () => import('@/components/charts/staffing-hours-chart').then((mod) => mod.StaffingHoursChart),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
+
 export default function StatisticsPage() {
   const params = useParams();
   const orgId = Number(params.orgId);
   const t = useTranslations();
+  const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>(undefined);
 
   const { data: ageDistribution, isLoading: isLoadingAge } = useQuery({
     queryKey: queryKeys.statistics.ageDistribution(orgId),
@@ -35,6 +49,18 @@ export default function StatisticsPage() {
   const { data: contractCounts, isLoading: isLoadingContracts } = useQuery({
     queryKey: queryKeys.statistics.contractCounts(orgId),
     queryFn: () => apiClient.getChildrenContractCountByMonth(orgId),
+    enabled: !!orgId,
+  });
+
+  const { data: sections } = useQuery({
+    queryKey: queryKeys.sections.list(orgId),
+    queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+
+  const { data: staffingHours, isLoading: isLoadingStaffing } = useQuery({
+    queryKey: queryKeys.statistics.staffingHours(orgId, selectedSectionId),
+    queryFn: () => apiClient.getStaffingHours(orgId, selectedSectionId),
     enabled: !!orgId,
   });
 
@@ -71,6 +97,42 @@ export default function StatisticsPage() {
               <Skeleton className="h-[300px] w-full" />
             ) : contractCounts ? (
               <MonthlyContractChart data={contractCounts} />
+            ) : (
+              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Staffing Hours */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle>{t('statistics.staffingHours')}</CardTitle>
+            {sections && sections.data.length > 0 && (
+              <Select
+                value={selectedSectionId?.toString() ?? 'all'}
+                onValueChange={(value) =>
+                  setSelectedSectionId(value === 'all' ? undefined : Number(value))
+                }
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder={t('statistics.filterBySection')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('statistics.allSections')}</SelectItem>
+                  {sections.data.map((section) => (
+                    <SelectItem key={section.id} value={section.id.toString()}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isLoadingStaffing ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : staffingHours ? (
+              <StaffingHoursChart data={staffingHours} />
             ) : (
               <p className="text-muted-foreground">{t('statistics.chartError')}</p>
             )}

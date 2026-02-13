@@ -174,6 +174,31 @@ func (s *EmployeeStore) DeleteContract(ctx context.Context, id uint) error {
 	return DBFromContext(ctx, s.db).Delete(&models.EmployeeContract{}, id).Error
 }
 
+// FindContractsByOrganizationInDateRange returns employee contracts for an organization
+// where the contract overlaps with the given date range, filtered by staff categories.
+func (s *EmployeeStore) FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, staffCategories []string, sectionID *uint) ([]models.EmployeeContract, error) {
+	var contracts []models.EmployeeContract
+
+	query := DBFromContext(ctx, s.db).
+		Joins("JOIN employees ON employees.id = employee_contracts.employee_id").
+		Where("employees.organization_id = ?", orgID).
+		Where("employee_contracts.from_date <= ?", rangeEnd).
+		Where("employee_contracts.to_date IS NULL OR employee_contracts.to_date >= ?", rangeStart)
+
+	if len(staffCategories) > 0 {
+		query = query.Where("employee_contracts.staff_category IN ?", staffCategories)
+	}
+
+	if sectionID != nil {
+		query = query.Where("employee_contracts.section_id = ?", *sectionID)
+	}
+
+	if err := query.Find(&contracts).Error; err != nil {
+		return nil, err
+	}
+	return contracts, nil
+}
+
 // FindByOrganizationWithContracts fetches employees in an org who have an
 // active contract on `date`, with ALL their contracts preloaded (for seniority calculation).
 func (s *EmployeeStore) FindByOrganizationWithContracts(ctx context.Context, orgID uint, date time.Time) ([]models.Employee, error) {

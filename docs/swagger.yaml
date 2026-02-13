@@ -1598,6 +1598,31 @@ definitions:
         maxLength: 255
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursDataPoint:
+    properties:
+      available_hours:
+        example: 340
+        type: number
+      child_count:
+        example: 45
+        type: integer
+      date:
+        example: "2025-01-01"
+        type: string
+      required_hours:
+        example: 312.5
+        type: number
+      staff_count:
+        example: 12
+        type: integer
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursResponse:
+    properties:
+      data_points:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursDataPoint'
+        type: array
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.StepPromotionResponse:
     properties:
       current_amount:
@@ -5481,6 +5506,56 @@ paths:
       summary: Update a section
       tags:
       - sections
+  /api/v1/organizations/{orgId}/statistics/staffing-hours:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Returns monthly data points comparing required vs available staffing hours.
+        Required hours are calculated from children's contract properties matched against government funding requirements.
+        Available hours are the sum of weekly hours from pedagogical staff (qualified + supplementary) contracts.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD), defaults to 12 months ago
+        in: query
+        name: from
+        type: string
+      - description: End date (YYYY-MM-DD), defaults to 6 months ahead
+        in: query
+        name: to
+        type: string
+      - description: Filter by section ID
+        in: query
+        name: section_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.StaffingHoursResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get staffing hours statistics
+      tags:
+      - statistics
   /api/v1/organizations/{orgId}/users:
     get:
       consumes:

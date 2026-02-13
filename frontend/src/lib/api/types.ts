@@ -544,3 +544,16 @@ export interface StepPromotionsResponse {
   total_monthly_cost_delta: number;
   promotions: StepPromotion[];
 }
+
+// Staffing hours statistics
+export interface StaffingHoursDataPoint {
+  date: string;
+  required_hours: number;
+  available_hours: number;
+  child_count: number;
+  staff_count: number;
+}
+
+export interface StaffingHoursResponse {
+  data_points: StaffingHoursDataPoint[];
+}
