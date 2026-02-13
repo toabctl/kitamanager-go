@@ -1,12 +1,15 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
 import { Building2, Users, Baby, UserCog } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StepPromotionsWidget } from '@/components/dashboard/step-promotions-widget';
 import { UpcomingChildrenWidget } from '@/components/dashboard/upcoming-children-widget';
 import { SectionAgeAlertsWidget } from '@/components/dashboard/section-age-alerts-widget';
+import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { useUiStore } from '@/stores/ui-store';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -45,6 +48,26 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const selectedOrg = getSelectedOrganization();
 
+  const { data: employeesData, isLoading: employeesLoading } = useQuery({
+    queryKey: [...queryKeys.employees.list(selectedOrganizationId ?? 0, 1), 'count'],
+    queryFn: () => apiClient.getEmployees(selectedOrganizationId!, { page: 1, limit: 1 }),
+    enabled: !!selectedOrganizationId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: childrenData, isLoading: childrenLoading } = useQuery({
+    queryKey: [...queryKeys.children.list(selectedOrganizationId ?? 0, 1), 'count'],
+    queryFn: () => apiClient.getChildren(selectedOrganizationId!, { page: 1, limit: 1 }),
+    enabled: !!selectedOrganizationId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: [...queryKeys.users.list(1), 'count'],
+    queryFn: () => apiClient.getUsers({ page: 1, limit: 1 }),
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -62,9 +85,24 @@ export default function DashboardPage() {
           icon={Building2}
           loading={organizationsLoading}
         />
-        <StatCard title={t('dashboard.totalEmployees')} value="-" icon={Users} loading={false} />
-        <StatCard title={t('dashboard.totalChildren')} value="-" icon={Baby} loading={false} />
-        <StatCard title={t('dashboard.totalUsers')} value="-" icon={UserCog} loading={false} />
+        <StatCard
+          title={t('dashboard.totalEmployees')}
+          value={employeesData?.total ?? '-'}
+          icon={Users}
+          loading={employeesLoading}
+        />
+        <StatCard
+          title={t('dashboard.totalChildren')}
+          value={childrenData?.total ?? '-'}
+          icon={Baby}
+          loading={childrenLoading}
+        />
+        <StatCard
+          title={t('dashboard.totalUsers')}
+          value={usersData?.total ?? '-'}
+          icon={UserCog}
+          loading={usersLoading}
+        />
       </div>
 
       <Card>

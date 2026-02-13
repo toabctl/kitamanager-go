@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import DashboardPage from '../page';
 import { useUiStore } from '@/stores/ui-store';
 import { useAuthStore } from '@/stores/auth-store';
+import { renderWithProviders } from '@/test-utils';
 
 // Mock the stores
 jest.mock('@/stores/ui-store', () => ({
@@ -31,7 +32,7 @@ describe('DashboardPage', () => {
       user: null,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('dashboard.title')).toBeInTheDocument();
     expect(screen.getByText('dashboard.welcome')).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe('DashboardPage', () => {
       user: { name: 'John Doe' },
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText(/John Doe/)).toBeInTheDocument();
   });
@@ -64,7 +65,7 @@ describe('DashboardPage', () => {
       user: null,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('dashboard.totalOrganizations')).toBeInTheDocument();
     expect(screen.getByText('dashboard.totalEmployees')).toBeInTheDocument();
@@ -83,7 +84,7 @@ describe('DashboardPage', () => {
       user: null,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('3')).toBeInTheDocument();
   });
@@ -99,7 +100,7 @@ describe('DashboardPage', () => {
       user: null,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     // Should have skeleton elements when loading
     const card = screen.getByText('dashboard.totalOrganizations').closest('.rounded-lg');
@@ -117,7 +118,7 @@ describe('DashboardPage', () => {
       user: null,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('dashboard.quickStats')).toBeInTheDocument();
     expect(screen.getByText('statistics.selectOrgForStats')).toBeInTheDocument();
