@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -59,6 +59,91 @@ import {
   type GovernmentFundingPeriodFormData,
   type GovernmentFundingPropertyFormData,
 } from '@/lib/schemas';
+
+function PropertiesGroupedByKey({
+  period,
+  onDeleteProperty,
+  t,
+}: {
+  period: GovernmentFundingPeriod;
+  onDeleteProperty: (property: GovernmentFundingProperty) => void;
+  t: (key: string) => string;
+}) {
+  // Group by key, then by value within each key
+  const groups = useMemo(() => {
+    const keyMap = new Map<string, Map<string, GovernmentFundingProperty[]>>();
+    for (const prop of period.properties ?? []) {
+      let valueMap = keyMap.get(prop.key);
+      if (!valueMap) {
+        valueMap = new Map<string, GovernmentFundingProperty[]>();
+        keyMap.set(prop.key, valueMap);
+      }
+      const list = valueMap.get(prop.value);
+      if (list) {
+        list.push(prop);
+      } else {
+        valueMap.set(prop.value, [prop]);
+      }
+    }
+    return Array.from(keyMap.entries()).map(
+      ([key, valueMap]) =>
+        [key, Array.from(valueMap.entries())] as [string, [string, GovernmentFundingProperty[]][]]
+    );
+  }, [period.properties]);
+
+  if (!period.properties?.length) {
+    return (
+      <p className="py-4 text-center text-muted-foreground">
+        {t('governmentFundings.noPropertiesDefined')}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {groups.map(([key, valueGroups]) => (
+        <div key={key}>
+          <h4 className="text-sm font-semibold">{key}</h4>
+          <div className="mt-2 space-y-3 pl-4">
+            {valueGroups.map(([value, properties]) => (
+              <div key={value}>
+                <p className="mb-1 text-sm text-muted-foreground">{value}</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('governmentFundings.ageRange')}</TableHead>
+                      <TableHead>{t('governmentFundings.payment')}</TableHead>
+                      <TableHead>{t('governmentFundings.requirementFte')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {properties.map((property) => (
+                      <TableRow key={property.id}>
+                        <TableCell>{formatAgeRange(property.min_age, property.max_age)}</TableCell>
+                        <TableCell>{formatCurrency(property.payment)}</TableCell>
+                        <TableCell>{formatFte(property.requirement)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onDeleteProperty(property)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function GovernmentFundingDetailPage() {
   const params = useParams();
@@ -170,7 +255,7 @@ export default function GovernmentFundingDetailPage() {
     formState: { errors: errorsPeriod },
   } = useForm<GovernmentFundingPeriodFormData>({
     resolver: zodResolver(governmentFundingPeriodSchema),
-    defaultValues: { from: '', to: '', comment: '' },
+    defaultValues: { from: '', to: '', full_time_weekly_hours: 39, comment: '' },
   });
 
   const {
@@ -192,7 +277,7 @@ export default function GovernmentFundingDetailPage() {
   });
 
   const handleAddPeriod = () => {
-    resetPeriod({ from: '', to: '', comment: '' });
+    resetPeriod({ from: '', to: '', full_time_weekly_hours: 39, comment: '' });
     setIsPeriodDialogOpen(true);
   };
 
@@ -279,7 +364,10 @@ export default function GovernmentFundingDetailPage() {
                   <CardHeader className="flex flex-row items-center justify-between py-3">
                     <div>
                       <CardTitle className="text-base">
-                        {formatPeriod(period.from, period.to, 'en', t('common.ongoing'))}
+                        {formatPeriod(period.from, period.to, 'en', t('common.ongoing'))}{' '}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          ({period.full_time_weekly_hours}h/FTE)
+                        </span>
                       </CardTitle>
                       {period.comment && (
                         <p className="text-sm text-muted-foreground">{period.comment}</p>
@@ -303,49 +391,14 @@ export default function GovernmentFundingDetailPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {period.properties?.length === 0 ? (
-                      <p className="py-4 text-center text-muted-foreground">
-                        {t('governmentFundings.noPropertiesDefined')}
-                      </p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('governmentFundings.key')}</TableHead>
-                            <TableHead>{t('governmentFundings.value')}</TableHead>
-                            <TableHead>{t('governmentFundings.ageRange')}</TableHead>
-                            <TableHead>{t('governmentFundings.payment')}</TableHead>
-                            <TableHead>{t('governmentFundings.requirementFte')}</TableHead>
-                            <TableHead className="text-right">{t('common.actions')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {period.properties?.map((property) => (
-                            <TableRow key={property.id}>
-                              <TableCell className="font-medium">{property.key}</TableCell>
-                              <TableCell>{property.value}</TableCell>
-                              <TableCell>
-                                {formatAgeRange(property.min_age, property.max_age)}
-                              </TableCell>
-                              <TableCell>{formatCurrency(property.payment)}</TableCell>
-                              <TableCell>{formatFte(property.requirement)}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setDeletingProperty({ period, property });
-                                    setIsDeletePropertyDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
+                    <PropertiesGroupedByKey
+                      period={period}
+                      onDeleteProperty={(property) => {
+                        setDeletingProperty({ period, property });
+                        setIsDeletePropertyDialogOpen(true);
+                      }}
+                      t={t}
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -373,6 +426,25 @@ export default function GovernmentFundingDetailPage() {
                 <Label htmlFor="to">{t('governmentFundings.toDateOptional')}</Label>
                 <Input id="to" type="date" {...registerPeriod('to')} />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="full_time_weekly_hours">
+                {t('governmentFundings.fullTimeWeeklyHours')}
+              </Label>
+              <Input
+                id="full_time_weekly_hours"
+                type="number"
+                min={0.1}
+                max={80}
+                step={0.5}
+                {...registerPeriod('full_time_weekly_hours', { valueAsNumber: true })}
+              />
+              {errorsPeriod.full_time_weekly_hours && (
+                <p className="text-sm text-destructive">
+                  {t('validation.fullTimeWeeklyHoursRequired')}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

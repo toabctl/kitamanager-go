@@ -889,15 +889,11 @@ func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
 	// Funding is now automatically looked up by org.State ("berlin")
 
 	// Create funding period covering our test date
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 
 	// Create properties with age filter (ages 3-6)
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7) // 1000.00 EUR
 	createTestFundingProperty(t, db, period.ID, "supplements", "ndh", 50000, 3, 7)    // 500.00 EUR
-
-	// Create pay plan with weekly hours for the org
-	payPlan := createTestPayPlan(t, db, "TVöD-SuE", org.ID)
-	createTestPayPlanPeriod(t, db, payPlan.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 
 	// Create child (born 2022-01-15, age 3 on 2025-01-27)
 	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
@@ -921,7 +917,7 @@ func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	// Verify weekly hours basis is set from pay plan
+	// Verify weekly hours basis is set from funding period (not pay plan)
 	if result.WeeklyHoursBasis != 39.0 {
 		t.Errorf("WeeklyHoursBasis = %f, want 39.0", result.WeeklyHoursBasis)
 	}
@@ -1002,7 +998,7 @@ func TestChildService_CalculateFunding_NoMatchingPeriod(t *testing.T) {
 
 	// Create period that doesn't cover our test date
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to)
+	createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to, 39.0)
 
 	// Create child with contract
 	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
@@ -1039,7 +1035,7 @@ func TestChildService_CalculateFunding_NoMatchingAgeProperty(t *testing.T) {
 	// Funding is now automatically looked up by org.State ("berlin")
 
 	// Create period
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 
 	// Create property for ages 0-2 only
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 0, 2)
@@ -1080,7 +1076,7 @@ func TestChildService_CalculateFunding_PartialAttributeMatch(t *testing.T) {
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
 	// Funding is now automatically looked up by org.State ("berlin")
 
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7)
 	// "unknown_key" property does NOT exist
 
@@ -1121,7 +1117,7 @@ func TestChildService_CalculateFunding_SingleProperty(t *testing.T) {
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
 	// Funding is now automatically looked up by org.State ("berlin")
 
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7)
 
 	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
@@ -1158,7 +1154,7 @@ func TestChildService_CalculateFunding_ChildNoActiveOnDate(t *testing.T) {
 	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
 	// Funding is now automatically looked up by org.State ("berlin")
 
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7)
 
 	// Child with active contract
@@ -1203,7 +1199,7 @@ func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
 	// Both orgs have state="berlin", so they share the same funding
 	funding := createTestGovernmentFunding(t, db, "Funding")
 
-	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
 	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7)
 
 	// Child in org1
@@ -1240,6 +1236,75 @@ func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
 		if cf.ChildName == "Org2 Child" {
 			t.Error("SECURITY: org2's child leaked into org1's funding calculation")
 		}
+	}
+}
+
+func TestChildService_CalculateFunding_WeeklyHoursFromFundingPeriod(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+
+	// Create funding period with different weekly hours (40.0 instead of 39.0)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 40.0)
+	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 100000, 3, 7)
+
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if result.WeeklyHoursBasis != 40.0 {
+		t.Errorf("WeeklyHoursBasis = %f, want 40.0 (from funding period)", result.WeeklyHoursBasis)
+	}
+}
+
+func TestChildService_CalculateFunding_NoMatchingPeriod_WeeklyHoursZero(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+
+	// Create period that doesn't cover our test date
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to, 39.0)
+
+	child := createTestChild(t, db, "Max", "Mustermann", org.ID)
+	child.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
+	db.Save(child)
+
+	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		From:       fromDate,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+
+	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
+	result, err := svc.CalculateFunding(ctx, org.ID, refDate)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if result.WeeklyHoursBasis != 0 {
+		t.Errorf("WeeklyHoursBasis = %f, want 0 (no matching period)", result.WeeklyHoursBasis)
 	}
 }
 

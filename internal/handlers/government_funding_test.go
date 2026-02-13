@@ -225,7 +225,8 @@ func TestGovernmentFundingHandler_CreatePeriod_NoOverlap(t *testing.T) {
 			// Try to create new period
 			newFrom, _ := time.Parse("2006-01-02", tt.newFrom)
 			body := map[string]interface{}{
-				"from": newFrom.Format(time.RFC3339),
+				"from":                   newFrom.Format(time.RFC3339),
+				"full_time_weekly_hours": 39.0,
 			}
 			if tt.newTo != nil {
 				newTo, _ := time.Parse("2006-01-02", *tt.newTo)
@@ -756,7 +757,8 @@ func TestGovernmentFundingHandler_CreatePeriod_Validation(t *testing.T) {
 
 	t.Run("non-existent funding ID", func(t *testing.T) {
 		body := map[string]interface{}{
-			"from": "2024-01-01T00:00:00Z",
+			"from":                   "2024-01-01T00:00:00Z",
+			"full_time_weekly_hours": 39.0,
 		}
 		w := performRequest(r, "POST", "/fundings/999/periods", body)
 
@@ -767,7 +769,8 @@ func TestGovernmentFundingHandler_CreatePeriod_Validation(t *testing.T) {
 
 	t.Run("invalid funding ID", func(t *testing.T) {
 		body := map[string]interface{}{
-			"from": "2024-01-01T00:00:00Z",
+			"from":                   "2024-01-01T00:00:00Z",
+			"full_time_weekly_hours": 39.0,
 		}
 		w := performRequest(r, "POST", "/fundings/abc/periods", body)
 

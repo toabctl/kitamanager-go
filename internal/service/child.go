@@ -16,17 +16,15 @@ type ChildService struct {
 	store        store.ChildStorer
 	orgStore     store.OrganizationStorer
 	fundingStore store.GovernmentFundingStorer
-	payPlanStore store.PayPlanStorer
 	transactor   store.Transactor
 }
 
 // NewChildService creates a new child service
-func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer, payPlanStore store.PayPlanStorer, transactor store.Transactor) *ChildService {
+func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer, transactor store.Transactor) *ChildService {
 	return &ChildService{
 		store:        store,
 		orgStore:     orgStore,
 		fundingStore: fundingStore,
-		payPlanStore: payPlanStore,
 		transactor:   transactor,
 	}
 }
@@ -448,13 +446,6 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 		Children: make([]models.ChildFundingResponse, 0, len(children)),
 	}
 
-	// Look up org's pay plan to get weekly hours basis
-	if payPlans, _, err := s.payPlanStore.GetByOrganization(ctx, orgID, 1, 0); err == nil && len(payPlans) > 0 {
-		if period, err := s.payPlanStore.GetActivePeriod(ctx, payPlans[0].ID, date); err == nil && period != nil {
-			response.WeeklyHoursBasis = period.WeeklyHours
-		}
-	}
-
 	// Look up funding by organization's state (0 = all periods, needed to find matching period for date)
 	funding, err := s.fundingStore.FindByStateWithDetails(ctx, org.State, 0, nil)
 	if err != nil {
@@ -478,6 +469,11 @@ func (s *ChildService) CalculateFunding(ctx context.Context, orgID uint, date ti
 
 	// Find the period covering this date
 	period := s.findPeriodForDate(funding.Periods, date)
+
+	// Set weekly hours basis from the funding period
+	if period != nil {
+		response.WeeklyHoursBasis = period.FullTimeWeeklyHours
+	}
 
 	for _, child := range children {
 		if len(child.Contracts) == 0 {

@@ -135,7 +135,7 @@ func main() {
 	groupService := service.NewGroupService(groupStore)
 	sectionService := service.NewSectionService(sectionStore)
 	employeeService := service.NewEmployeeService(employeeStore, payPlanStore, transactor)
-	childService := service.NewChildService(childStore, orgStore, governmentFundingStore, payPlanStore, transactor)
+	childService := service.NewChildService(childStore, orgStore, governmentFundingStore, transactor)
 	governmentFundingService := service.NewGovernmentFundingService(governmentFundingStore, transactor)
 	payPlanService := service.NewPayPlanService(payPlanStore)
 	childAttendanceService := service.NewChildAttendanceService(childAttendanceStore, childStore)

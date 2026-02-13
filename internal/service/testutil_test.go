@@ -122,9 +122,8 @@ func createChildService(db *gorm.DB) *ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	payPlanStore := store.NewPayPlanStore(db)
 	transactor := store.NewTransactor(db)
-	return NewChildService(childStore, orgStore, fundingStore, payPlanStore, transactor)
+	return NewChildService(childStore, orgStore, fundingStore, transactor)
 }
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {
@@ -227,13 +226,14 @@ func createTestGovernmentFunding(t *testing.T, db *gorm.DB, name string) *models
 }
 
 // createTestFundingPeriod creates a funding period for testing.
-func createTestFundingPeriod(t *testing.T, db *gorm.DB, fundingID uint, from time.Time, to *time.Time) *models.GovernmentFundingPeriod {
+func createTestFundingPeriod(t *testing.T, db *gorm.DB, fundingID uint, from time.Time, to *time.Time, fullTimeWeeklyHours float64) *models.GovernmentFundingPeriod {
 	t.Helper()
 
 	period := &models.GovernmentFundingPeriod{
 		GovernmentFundingID: fundingID,
 		From:                from,
 		To:                  to,
+		FullTimeWeeklyHours: fullTimeWeeklyHours,
 	}
 	if err := db.Create(period).Error; err != nil {
 		t.Fatalf("failed to create test funding period: %v", err)

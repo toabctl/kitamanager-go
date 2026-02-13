@@ -334,7 +334,8 @@
     "staffCategoryRequired": "Personalkategorie ist erforderlich",
     "weeklyHoursRequired": "Wochenstunden sind erforderlich",
     "weeklyHoursMin": "Wochenstunden müssen mindestens 0 sein",
-    "weeklyHoursMax": "Wochenstunden können 168 nicht überschreiten"
+    "weeklyHoursMax": "Wochenstunden können 168 nicht überschreiten",
+    "fullTimeWeeklyHoursRequired": "Vollzeit-Wochenstunden sind erforderlich (0,1 - 80)"
   },
   "settings": {
     "title": "Einstellungen",
@@ -400,6 +401,7 @@
     "noPropertiesDefined": "Keine Eigenschaften definiert. Klicken Sie auf +, um eine hinzuzufügen.",
     "noPeriodsDefined": "Keine Zeiträume definiert. Klicken Sie auf \"Zeitraum hinzufügen\", um zu beginnen.",
     "showAllPeriods": "Alle {count} Zeiträume anzeigen",
+    "fullTimeWeeklyHours": "Vollzeit-Wochenstunden",
     "years": "Jahre"
   },
   "sections": {

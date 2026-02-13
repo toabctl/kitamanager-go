@@ -1,5 +1,93 @@
 - to: ''
+  from: '2026-01-01'
+  full_time_weekly_hours: 39
+  comment: 'Aufschlag für Praxisunterstützungssystem (45€ pro Kind/Jahr) inklusive
+
+    '
+  entries:
+  - age:
+    - 0
+    - 8
+    properties:
+    - key: integration
+      value: integration a
+      payment: 1693.1
+      requirement: 0.25
+    - key: integration
+      value: integration b
+      payment: 3378.64
+      requirement: 0.5
+    - key: ndh
+      value: ndh
+      payment: 101.16
+      requirement: 0.017
+    - key: qm/mss
+      value: qm/mss
+      payment: 59.51
+      requirement: 0.01
+  - age:
+    - 0
+    - 1
+    properties:
+    - key: care_type
+      value: ganztag erweitert
+      payment: 2217.23
+      requirement: 0.316
+    - key: care_type
+      value: ganztag
+      payment: 2132.43
+      requirement: 0.301
+    - key: care_type
+      value: teilzeit
+      payment: 1657.57
+      requirement: 0.217
+    - key: care_type
+      value: halbtag
+      payment: 1278.81
+      requirement: 0.15
+  - age:
+    - 2
+    - 2
+    properties:
+    - key: care_type
+      value: ganztag erweitert
+      payment: 1815.85
+      requirement: 0.245
+    - key: care_type
+      value: ganztag
+      payment: 1731.06
+      requirement: 0.23
+    - key: care_type
+      value: teilzeit
+      payment: 1437.1
+      requirement: 0.178
+    - key: care_type
+      value: halbtag
+      payment: 1165.75
+      requirement: 0.13
+  - age:
+    - 3
+    - 8
+    properties:
+    - key: care_type
+      value: ganztag erweitert
+      payment: 1131.82
+      requirement: 0.124
+    - key: care_type
+      value: ganztag
+      payment: 1047.03
+      requirement: 0.109
+    - key: care_type
+      value: teilzeit
+      payment: 933.97
+      requirement: 0.089
+    - key: care_type
+      value: halbtag
+      payment: 826.56
+      requirement: 0.07
+- to: '2026-01-01'
   from: '2025-02-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -87,6 +175,7 @@
       requirement: 0.07
 - to: '2025-02-01'
   from: '2025-01-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -174,6 +263,7 @@
       requirement: 0.07
 - to: '2025-01-01'
   from: '2024-11-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -261,6 +351,7 @@
       requirement: 0.07
 - to: '2024-11-01'
   from: '2024-10-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -348,6 +439,7 @@
       requirement: 0.07
 - to: '2024-10-01'
   from: '2024-02-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -435,6 +527,7 @@
       requirement: 0.07
 - to: '2024-02-01'
   from: '2023-03-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -522,6 +615,7 @@
       requirement: 0.07
 - to: '2023-03-01'
   from: '2023-01-01'
+  full_time_weekly_hours: 39
   comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
     (2,50€ pro Kind/Monat) inklusive
 
@@ -612,6 +706,7 @@
       requirement: 0.07
 - to: '2023-01-01'
   from: '2022-01-01'
+  full_time_weekly_hours: 39
   entries:
   - age:
     - 0
@@ -695,6 +790,7 @@
       requirement: 0.07
 - to: '2022-01-01'
   from: '2021-01-01'
+  full_time_weekly_hours: 39
   entries:
   - age:
     - 0
@@ -778,6 +874,7 @@
       requirement: 0.07
 - to: '2021-01-01'
   from: '2020-08-01'
+  full_time_weekly_hours: 39
   entries:
   - age:
     - 0
@@ -861,6 +958,7 @@
       requirement: 0.07
 - to: '2020-08-01'
   from: '2020-01-01'
+  full_time_weekly_hours: 39
   entries:
   - age:
     - 0
@@ -944,6 +1042,7 @@
       requirement: 0.07
 - to: '2020-01-01'
   from: '2018-10-01'
+  full_time_weekly_hours: 39
   entries:
   - age:
     - 0

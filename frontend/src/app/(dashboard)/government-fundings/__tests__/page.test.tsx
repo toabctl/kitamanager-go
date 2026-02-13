@@ -34,7 +34,6 @@ const mockFundings = [
     id: 1,
     name: 'Berliner Kita Funding',
     state: 'berlin',
-    total_periods: 3,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },
@@ -42,7 +41,6 @@ const mockFundings = [
     id: 2,
     name: 'Hamburg Kita Funding',
     state: 'berlin',
-    total_periods: 1,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },
@@ -85,8 +83,6 @@ describe('GovernmentFundingsPage', () => {
     });
 
     expect(screen.getByText('Hamburg Kita Funding')).toBeInTheDocument();
-    // Periods count should be rendered
-    expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('shows no results when empty', async () => {
@@ -111,7 +107,6 @@ describe('GovernmentFundingsPage', () => {
     expect(screen.getByText('common.id')).toBeInTheDocument();
     expect(screen.getByText('common.name')).toBeInTheDocument();
     expect(screen.getByText('states.state')).toBeInTheDocument();
-    expect(screen.getByText('governmentFundings.periods')).toBeInTheDocument();
     expect(screen.getByText('common.actions')).toBeInTheDocument();
   });
 

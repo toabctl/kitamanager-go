@@ -642,6 +642,9 @@ definitions:
       from:
         example: "2023-03-01"
         type: string
+      full_time_weekly_hours:
+        example: 39
+        type: number
       government_funding_id:
         example: 1
         type: integer
@@ -665,11 +668,15 @@ definitions:
       from:
         example: "2023-03-01"
         type: string
+      full_time_weekly_hours:
+        example: 39
+        type: number
       to:
         example: "2024-02-29"
         type: string
     required:
     - from
+    - full_time_weekly_hours
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodResponse:
     properties:
@@ -682,6 +689,9 @@ definitions:
       from:
         example: "2023-03-01"
         type: string
+      full_time_weekly_hours:
+        example: 39
+        type: number
       government_funding_id:
         example: 1
         type: integer
@@ -701,6 +711,9 @@ definitions:
       from:
         example: "2023-03-01"
         type: string
+      full_time_weekly_hours:
+        example: 39
+        type: number
       to:
         example: "2024-02-29"
         type: string

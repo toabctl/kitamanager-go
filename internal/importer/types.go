@@ -2,10 +2,11 @@ package importer
 
 // YAMLGovernmentFundingPeriod represents a period in the YAML government funding file.
 type YAMLGovernmentFundingPeriod struct {
-	From    string                       `yaml:"from"`
-	To      string                       `yaml:"to"`
-	Comment string                       `yaml:"comment,omitempty"`
-	Entries []YAMLGovernmentFundingEntry `yaml:"entries"`
+	From                string                       `yaml:"from"`
+	To                  string                       `yaml:"to"`
+	FullTimeWeeklyHours float64                      `yaml:"full_time_weekly_hours"`
+	Comment             string                       `yaml:"comment,omitempty"`
+	Entries             []YAMLGovernmentFundingEntry `yaml:"entries"`
 }
 
 // YAMLGovernmentFundingEntry represents an age-based entry in the YAML government funding file.

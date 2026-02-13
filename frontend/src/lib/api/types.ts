@@ -39,7 +39,6 @@ export interface GovernmentFunding {
   created_at: string;
   updated_at: string;
   periods?: GovernmentFundingPeriod[];
-  total_periods?: number;
 }
 
 export interface GovernmentFundingPeriod {
@@ -47,6 +46,7 @@ export interface GovernmentFundingPeriod {
   government_funding_id: number;
   from: string;
   to?: string | null;
+  full_time_weekly_hours: number;
   comment?: string;
   created_at: string;
   properties?: GovernmentFundingProperty[];
@@ -77,12 +77,14 @@ export interface GovernmentFundingUpdateRequest {
 export interface GovernmentFundingPeriodCreateRequest {
   from: string;
   to?: string | null;
+  full_time_weekly_hours: number;
   comment?: string;
 }
 
 export interface GovernmentFundingPeriodUpdateRequest {
   from?: string;
   to?: string | null;
+  full_time_weekly_hours?: number;
   comment?: string;
 }
 

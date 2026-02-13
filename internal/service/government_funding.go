@@ -198,6 +198,7 @@ func (s *GovernmentFundingService) CreatePeriod(ctx context.Context, governmentF
 			GovernmentFundingID: governmentFundingID,
 			From:                req.From,
 			To:                  req.To,
+			FullTimeWeeklyHours: req.FullTimeWeeklyHours,
 			Comment:             strings.TrimSpace(req.Comment),
 		}
 
@@ -250,6 +251,9 @@ func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID ui
 		// Apply updates
 		period.From = newFrom
 		period.To = newTo
+		if req.FullTimeWeeklyHours != nil {
+			period.FullTimeWeeklyHours = *req.FullTimeWeeklyHours
+		}
 		if req.Comment != nil {
 			period.Comment = strings.TrimSpace(*req.Comment)
 		}

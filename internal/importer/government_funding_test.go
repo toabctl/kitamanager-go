@@ -97,6 +97,7 @@ func TestImportGovernmentFundingFromFile(t *testing.T) {
 -
   from: '2023-03-01'
   to: ''
+  full_time_weekly_hours: 39
   entries:
     - age: [0,2]
       properties:
@@ -111,6 +112,7 @@ func TestImportGovernmentFundingFromFile(t *testing.T) {
 -
   from: '2022-01-01'
   to: '2023-03-01'
+  full_time_weekly_hours: 39
   comment: |
     Test period
   entries:
@@ -174,6 +176,7 @@ func TestImportGovernmentFundingFromFile_Idempotency(t *testing.T) {
 -
   from: '2023-03-01'
   to: ''
+  full_time_weekly_hours: 39
   entries:
     - age: [0,2]
       properties:
@@ -210,6 +213,7 @@ func TestImportGovernmentFundingFromFile_FarFutureDateTreatedAsOngoing(t *testin
 -
   from: '2023-03-01'
   to: '2060-01-01'
+  full_time_weekly_hours: 39
   entries:
     - age: [0,2]
       properties:

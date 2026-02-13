@@ -343,8 +343,9 @@ func TestGovernmentFundingService_CreatePeriod(t *testing.T) {
 	db.Create(funding)
 
 	req := &models.GovernmentFundingPeriodCreateRequest{
-		From:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		Comment: "Test period",
+		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		FullTimeWeeklyHours: 39.0,
+		Comment:             "Test period",
 	}
 
 	result, err := svc.CreatePeriod(ctx, funding.ID, req)
@@ -357,6 +358,9 @@ func TestGovernmentFundingService_CreatePeriod(t *testing.T) {
 	}
 	if result.Comment != "Test period" {
 		t.Errorf("Comment = %s, want 'Test period'", result.Comment)
+	}
+	if result.FullTimeWeeklyHours != 39.0 {
+		t.Errorf("FullTimeWeeklyHours = %f, want 39.0", result.FullTimeWeeklyHours)
 	}
 }
 
@@ -449,6 +453,37 @@ func TestGovernmentFundingService_UpdatePeriod(t *testing.T) {
 
 	if result.Comment != "Updated comment" {
 		t.Errorf("Comment = %s, want 'Updated comment'", result.Comment)
+	}
+}
+
+func TestGovernmentFundingService_UpdatePeriod_FullTimeWeeklyHours(t *testing.T) {
+	db := setupTestDB(t)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
+	ctx := context.Background()
+
+	funding := &models.GovernmentFunding{Name: "Test Funding", State: "berlin"}
+	db.Create(funding)
+
+	period := &models.GovernmentFundingPeriod{
+		GovernmentFundingID: funding.ID,
+		From:                time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		FullTimeWeeklyHours: 39.0,
+	}
+	db.Create(period)
+
+	newHours := 40.0
+	req := &models.GovernmentFundingPeriodUpdateRequest{
+		FullTimeWeeklyHours: &newHours,
+	}
+
+	result, err := svc.UpdatePeriod(ctx, period.ID, req)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if result.FullTimeWeeklyHours != 40.0 {
+		t.Errorf("FullTimeWeeklyHours = %f, want 40.0", result.FullTimeWeeklyHours)
 	}
 }
 

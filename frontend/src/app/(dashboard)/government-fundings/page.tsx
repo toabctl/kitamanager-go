@@ -193,7 +193,6 @@ export default function GovernmentFundingsPage() {
                   <TableHead>{t('common.id')}</TableHead>
                   <TableHead>{t('common.name')}</TableHead>
                   <TableHead>{t('states.state')}</TableHead>
-                  <TableHead>{t('governmentFundings.periods')}</TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -203,7 +202,6 @@ export default function GovernmentFundingsPage() {
                     <TableCell>{funding.id}</TableCell>
                     <TableCell className="font-medium">{funding.name}</TableCell>
                     <TableCell>{t(`states.${funding.state}`)}</TableCell>
-                    <TableCell>{funding.total_periods || funding.periods?.length || 0}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleView(funding)}>
                         <Eye className="h-4 w-4" />
@@ -219,7 +217,7 @@ export default function GovernmentFundingsPage() {
                 ))}
                 {fundings?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       {t('common.noResults')}
                     </TableCell>
                   </TableRow>

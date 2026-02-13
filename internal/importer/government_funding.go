@@ -124,10 +124,15 @@ func (i *GovernmentFundingImporter) importPeriod(tx *gorm.DB, fundingID uint, ya
 		to = &toDate
 	}
 
+	if yamlPeriod.FullTimeWeeklyHours <= 0 {
+		return nil, fmt.Errorf("full_time_weekly_hours is required and must be > 0")
+	}
+
 	period := &models.GovernmentFundingPeriod{
 		GovernmentFundingID: fundingID,
 		From:                from,
 		To:                  to,
+		FullTimeWeeklyHours: yamlPeriod.FullTimeWeeklyHours,
 		Comment:             strings.TrimSpace(yamlPeriod.Comment),
 	}
 

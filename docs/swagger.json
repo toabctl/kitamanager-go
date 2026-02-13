@@ -7302,6 +7302,10 @@
                     "type": "string",
                     "example": "2023-03-01"
                 },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
+                },
                 "government_funding_id": {
                     "type": "integer",
                     "example": 1
@@ -7325,7 +7329,8 @@
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodCreateRequest": {
             "type": "object",
             "required": [
-                "from"
+                "from",
+                "full_time_weekly_hours"
             ],
             "properties": {
                 "comment": {
@@ -7336,6 +7341,10 @@
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "to": {
                     "type": "string",
@@ -7357,6 +7366,10 @@
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "government_funding_id": {
                     "type": "integer",
@@ -7383,6 +7396,10 @@
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "to": {
                     "type": "string",

@@ -7308,6 +7308,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-03-01"
                 },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
+                },
                 "government_funding_id": {
                     "type": "integer",
                     "example": 1
@@ -7331,7 +7335,8 @@ const docTemplate = `{
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodCreateRequest": {
             "type": "object",
             "required": [
-                "from"
+                "from",
+                "full_time_weekly_hours"
             ],
             "properties": {
                 "comment": {
@@ -7342,6 +7347,10 @@ const docTemplate = `{
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "to": {
                     "type": "string",
@@ -7363,6 +7372,10 @@ const docTemplate = `{
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "government_funding_id": {
                     "type": "integer",
@@ -7389,6 +7402,10 @@ const docTemplate = `{
                 "from": {
                     "type": "string",
                     "example": "2023-03-01"
+                },
+                "full_time_weekly_hours": {
+                    "type": "number",
+                    "example": 39
                 },
                 "to": {
                     "type": "string",

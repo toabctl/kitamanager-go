@@ -28,6 +28,7 @@ type GovernmentFundingPeriod struct {
 	GovernmentFundingID uint                        `gorm:"not null;index" json:"government_funding_id" example:"1"`
 	From                time.Time                   `gorm:"column:from_date;type:date;not null" json:"from" example:"2023-03-01"`
 	To                  *time.Time                  `gorm:"column:to_date;type:date" json:"to" example:"2024-02-29"`
+	FullTimeWeeklyHours float64                     `gorm:"not null" json:"full_time_weekly_hours" example:"39.0"`
 	Comment             string                      `gorm:"size:1000" json:"comment,omitempty" example:"Funding period 2023/2024"`
 	CreatedAt           time.Time                   `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	Properties          []GovernmentFundingProperty `gorm:"foreignKey:PeriodID;constraint:OnDelete:CASCADE" json:"properties,omitempty"`
@@ -100,16 +101,18 @@ type GovernmentFundingUpdateRequest struct {
 
 // GovernmentFundingPeriodCreateRequest represents the request body for creating a government funding period.
 type GovernmentFundingPeriodCreateRequest struct {
-	From    time.Time  `json:"from" binding:"required" example:"2023-03-01"`
-	To      *time.Time `json:"to" example:"2024-02-29"`
-	Comment string     `json:"comment" binding:"max=1000" example:"Funding period 2023/2024"`
+	From                time.Time  `json:"from" binding:"required" example:"2023-03-01"`
+	To                  *time.Time `json:"to" example:"2024-02-29"`
+	FullTimeWeeklyHours float64    `json:"full_time_weekly_hours" binding:"required,gt=0" example:"39.0"`
+	Comment             string     `json:"comment" binding:"max=1000" example:"Funding period 2023/2024"`
 }
 
 // GovernmentFundingPeriodUpdateRequest represents the request body for updating a government funding period.
 type GovernmentFundingPeriodUpdateRequest struct {
-	From    *time.Time `json:"from" example:"2023-03-01"`
-	To      *time.Time `json:"to" example:"2024-02-29"`
-	Comment *string    `json:"comment" binding:"omitempty,max=1000" example:"Updated comment"`
+	From                *time.Time `json:"from" example:"2023-03-01"`
+	To                  *time.Time `json:"to" example:"2024-02-29"`
+	FullTimeWeeklyHours *float64   `json:"full_time_weekly_hours" binding:"omitempty,gt=0" example:"39.0"`
+	Comment             *string    `json:"comment" binding:"omitempty,max=1000" example:"Updated comment"`
 }
 
 // GovernmentFundingPropertyCreateRequest represents the request body for creating a government funding property.
@@ -159,6 +162,7 @@ type GovernmentFundingPeriodResponse struct {
 	GovernmentFundingID uint       `json:"government_funding_id" example:"1"`
 	From                time.Time  `json:"from" example:"2023-03-01"`
 	To                  *time.Time `json:"to" example:"2024-02-29"`
+	FullTimeWeeklyHours float64    `json:"full_time_weekly_hours" example:"39.0"`
 	Comment             string     `json:"comment,omitempty" example:"Funding period 2023/2024"`
 	CreatedAt           time.Time  `json:"created_at" example:"2024-01-15T10:30:00Z"`
 }
@@ -169,6 +173,7 @@ func (p *GovernmentFundingPeriod) ToResponse() GovernmentFundingPeriodResponse {
 		GovernmentFundingID: p.GovernmentFundingID,
 		From:                p.From,
 		To:                  p.To,
+		FullTimeWeeklyHours: p.FullTimeWeeklyHours,
 		Comment:             p.Comment,
 		CreatedAt:           p.CreatedAt,
 	}

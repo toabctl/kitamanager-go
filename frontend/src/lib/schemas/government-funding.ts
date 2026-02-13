@@ -10,6 +10,7 @@ export const governmentFundingPeriodSchema = z
   .object({
     from: z.string().min(1),
     to: z.string().optional(),
+    full_time_weekly_hours: z.number().min(0.1).max(80),
     comment: z.string().max(1000).optional(),
   })
   .refine((data) => !data.to || !isDateBefore(data.to, data.from), {

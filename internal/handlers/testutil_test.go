@@ -183,9 +183,8 @@ func createChildService(db *gorm.DB) *service.ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
-	payPlanStore := store.NewPayPlanStore(db)
 	transactor := store.NewTransactor(db)
-	return service.NewChildService(childStore, orgStore, fundingStore, payPlanStore, transactor)
+	return service.NewChildService(childStore, orgStore, fundingStore, transactor)
 }
 
 // createAuditService creates an audit service for testing.

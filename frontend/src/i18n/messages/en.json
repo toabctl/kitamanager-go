@@ -334,7 +334,8 @@
     "staffCategoryRequired": "Staff category is required",
     "weeklyHoursRequired": "Weekly hours is required",
     "weeklyHoursMin": "Weekly hours must be at least 0",
-    "weeklyHoursMax": "Weekly hours cannot exceed 168"
+    "weeklyHoursMax": "Weekly hours cannot exceed 168",
+    "fullTimeWeeklyHoursRequired": "Full-time weekly hours is required (0.1 - 80)"
   },
   "settings": {
     "title": "Settings",
@@ -400,6 +401,7 @@
     "noPropertiesDefined": "No properties defined. Click + to add one.",
     "noPeriodsDefined": "No periods defined. Click \"Add Period\" to get started.",
     "showAllPeriods": "Show all {count} periods",
+    "fullTimeWeeklyHours": "Full-Time Weekly Hours",
     "years": "years"
   },
   "sections": {
