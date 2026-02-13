@@ -23,7 +23,6 @@ import { useUiStore } from '@/stores/ui-store';
 import { OrgSelector } from './org-selector';
 
 const navigation = [
-  { name: 'nav.dashboard', href: '/', icon: LayoutDashboard, requiresOrg: false },
   { name: 'nav.organizations', href: '/organizations', icon: Building2, requiresOrg: false },
   {
     name: 'nav.governmentFundings',
@@ -34,6 +33,7 @@ const navigation = [
 ];
 
 const orgNavigation = [
+  { name: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'nav.users', href: '/users', icon: UserCog },
   { name: 'nav.groups', href: '/groups', icon: UsersRound },
   { name: 'nav.employees', href: '/employees', icon: Users },
@@ -49,7 +49,6 @@ export function AppSidebar() {
   const { sidebarCollapsed, toggleSidebar, selectedOrganizationId } = useUiStore();
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
   };
 

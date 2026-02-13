@@ -40,7 +40,7 @@ export function OrgSelector() {
   const handleSelect = (orgId: number) => {
     setSelectedOrganization(orgId);
     // Navigate to the organization's default page
-    router.push(`/organizations/${orgId}/users`);
+    router.push(`/organizations/${orgId}/dashboard`);
   };
 
   if (organizationsLoading) {

@@ -92,7 +92,11 @@
     "totalOrganizations": "Organisationen gesamt",
     "totalEmployees": "Mitarbeiter gesamt",
     "totalChildren": "Kinder gesamt",
-    "totalUsers": "Benutzer gesamt"
+    "totalUsers": "Benutzer gesamt",
+    "activeEmployees": "Aktive Mitarbeiter",
+    "activeChildren": "Aktive Kinder",
+    "requiredHours": "Benötigte Stunden",
+    "availableHours": "Verfügbare Stunden"
   },
   "statistics": {
     "title": "Statistiken",

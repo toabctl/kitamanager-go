@@ -45,8 +45,8 @@ export const queryKeys = {
   statistics: {
     ageDistribution: (orgId: number) => ['age-distribution', orgId] as const,
     contractCounts: (orgId: number) => ['contract-counts', orgId] as const,
-    staffingHours: (orgId: number, sectionId?: number) =>
-      ['staffing-hours', orgId, sectionId] as const,
+    staffingHours: (orgId: number, sectionId?: number, from?: string, to?: string) =>
+      ['staffing-hours', orgId, sectionId, from, to] as const,
   },
   stepPromotions: (orgId: number) => ['step-promotions', orgId] as const,
 } as const;

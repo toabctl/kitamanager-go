@@ -92,7 +92,11 @@
     "totalOrganizations": "Total Organizations",
     "totalEmployees": "Total Employees",
     "totalChildren": "Total Children",
-    "totalUsers": "Total Users"
+    "totalUsers": "Total Users",
+    "activeEmployees": "Active Employees",
+    "activeChildren": "Active Children",
+    "requiredHours": "Required Hours",
+    "availableHours": "Available Hours"
   },
   "statistics": {
     "title": "Statistics",

@@ -60,7 +60,7 @@ export default function StatisticsPage() {
 
   const { data: staffingHours, isLoading: isLoadingStaffing } = useQuery({
     queryKey: queryKeys.statistics.staffingHours(orgId, selectedSectionId),
-    queryFn: () => apiClient.getStaffingHours(orgId, selectedSectionId),
+    queryFn: () => apiClient.getStaffingHours(orgId, { sectionId: selectedSectionId }),
     enabled: !!orgId,
   });
 

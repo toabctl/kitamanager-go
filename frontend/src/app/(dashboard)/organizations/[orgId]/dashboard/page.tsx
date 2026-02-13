@@ -1,0 +1,99 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
+import { Users, Baby, Clock, CalendarClock } from 'lucide-react';
+import { StatCard } from '@/components/dashboard/stat-card';
+import { StepPromotionsWidget } from '@/components/dashboard/step-promotions-widget';
+import { UpcomingChildrenWidget } from '@/components/dashboard/upcoming-children-widget';
+import { SectionAgeAlertsWidget } from '@/components/dashboard/section-age-alerts-widget';
+import { apiClient } from '@/lib/api/client';
+import { queryKeys } from '@/lib/api/queryKeys';
+import { useAuthStore } from '@/stores/auth-store';
+
+export default function OrgDashboardPage() {
+  const params = useParams();
+  const orgId = Number(params.orgId);
+  const t = useTranslations();
+  const { user } = useAuthStore();
+
+  const { from, to } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const first = new Date(y, m, 1);
+    const last = new Date(y, m + 1, 0);
+    return {
+      from: first.toISOString().slice(0, 10),
+      to: last.toISOString().slice(0, 10),
+    };
+  }, []);
+
+  const { data: employeesData, isLoading: employeesLoading } = useQuery({
+    queryKey: [...queryKeys.employees.list(orgId, 1), 'count'],
+    queryFn: () => apiClient.getEmployees(orgId, { page: 1, limit: 1 }),
+    enabled: !!orgId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: childrenData, isLoading: childrenLoading } = useQuery({
+    queryKey: [...queryKeys.children.list(orgId, 1), 'count'],
+    queryFn: () => apiClient.getChildren(orgId, { page: 1, limit: 1 }),
+    enabled: !!orgId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: staffingData, isLoading: staffingLoading } = useQuery({
+    queryKey: queryKeys.statistics.staffingHours(orgId, undefined, from, to),
+    queryFn: () => apiClient.getStaffingHours(orgId, { from, to }),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const currentMonth = staffingData?.data_points?.[0];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+        <p className="text-muted-foreground">
+          {t('dashboard.welcome')}
+          {user?.name && `, ${user.name}`}
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title={t('dashboard.activeEmployees')}
+          value={employeesData?.total ?? '-'}
+          icon={Users}
+          loading={employeesLoading}
+        />
+        <StatCard
+          title={t('dashboard.activeChildren')}
+          value={childrenData?.total ?? '-'}
+          icon={Baby}
+          loading={childrenLoading}
+        />
+        <StatCard
+          title={t('dashboard.requiredHours')}
+          value={currentMonth ? Math.round(currentMonth.required_hours) : '-'}
+          icon={Clock}
+          loading={staffingLoading}
+        />
+        <StatCard
+          title={t('dashboard.availableHours')}
+          value={currentMonth ? Math.round(currentMonth.available_hours) : '-'}
+          icon={CalendarClock}
+          loading={staffingLoading}
+        />
+      </div>
+
+      <StepPromotionsWidget orgId={orgId} />
+      <UpcomingChildrenWidget orgId={orgId} />
+      <SectionAgeAlertsWidget orgId={orgId} />
+    </div>
+  );
+}

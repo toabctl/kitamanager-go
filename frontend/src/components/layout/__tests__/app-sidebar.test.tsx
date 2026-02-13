@@ -37,10 +37,9 @@ describe('AppSidebar', () => {
     };
   });
 
-  it('renders main navigation links (Dashboard, Organizations, Government Fundings)', () => {
+  it('renders main navigation links (Organizations, Government Fundings)', () => {
     render(<AppSidebar />);
 
-    expect(screen.getByText('nav.dashboard')).toBeInTheDocument();
     expect(screen.getByText('nav.organizations')).toBeInTheDocument();
     expect(screen.getByText('nav.governmentFundings')).toBeInTheDocument();
   });
@@ -69,6 +68,7 @@ describe('AppSidebar', () => {
 
     render(<AppSidebar />);
 
+    expect(screen.getByText('nav.dashboard')).toBeInTheDocument();
     expect(screen.getByText('nav.users')).toBeInTheDocument();
     expect(screen.getByText('nav.employees')).toBeInTheDocument();
     expect(screen.getByText('nav.children')).toBeInTheDocument();
@@ -95,7 +95,6 @@ describe('AppSidebar', () => {
     render(<AppSidebar />);
 
     // When collapsed, navigation text labels are hidden
-    expect(screen.queryByText('nav.dashboard')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.organizations')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.governmentFundings')).not.toBeInTheDocument();
     // Org selector is also hidden when collapsed

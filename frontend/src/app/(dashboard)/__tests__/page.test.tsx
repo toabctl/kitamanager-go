@@ -1,126 +1,74 @@
 import { screen } from '@testing-library/react';
-import DashboardPage from '../page';
+import RootRedirectPage from '../page';
 import { useUiStore } from '@/stores/ui-store';
-import { useAuthStore } from '@/stores/auth-store';
 import { renderWithProviders } from '@/test-utils';
 
-// Mock the stores
+const mockReplace = jest.fn();
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: mockReplace }),
+}));
+
+jest.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}));
+
 jest.mock('@/stores/ui-store', () => ({
   useUiStore: jest.fn(),
 }));
 
-jest.mock('@/stores/auth-store', () => ({
-  useAuthStore: jest.fn(),
-}));
-
-const mockGetSelectedOrganization = jest.fn();
-
-describe('DashboardPage', () => {
+describe('RootRedirectPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetSelectedOrganization.mockReturnValue(null);
   });
 
-  it('renders dashboard title', () => {
-    (useUiStore as unknown as jest.Mock).mockReturnValue({
-      organizations: [],
-      organizationsLoading: false,
-      selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: null,
-    });
-
-    renderWithProviders(<DashboardPage />);
-
-    expect(screen.getByText('dashboard.title')).toBeInTheDocument();
-    expect(screen.getByText('dashboard.welcome')).toBeInTheDocument();
-  });
-
-  it('displays user name when available', () => {
-    (useUiStore as unknown as jest.Mock).mockReturnValue({
-      organizations: [],
-      organizationsLoading: false,
-      selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: { name: 'John Doe' },
-    });
-
-    renderWithProviders(<DashboardPage />);
-
-    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-  });
-
-  it('renders stat cards', () => {
+  it('redirects to selected org dashboard', () => {
     (useUiStore as unknown as jest.Mock).mockReturnValue({
       organizations: [{ id: 1 }, { id: 2 }],
       organizationsLoading: false,
-      selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: null,
+      selectedOrganizationId: 2,
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<RootRedirectPage />);
 
-    expect(screen.getByText('dashboard.totalOrganizations')).toBeInTheDocument();
-    expect(screen.getByText('dashboard.totalEmployees')).toBeInTheDocument();
-    expect(screen.getByText('dashboard.totalChildren')).toBeInTheDocument();
-    expect(screen.getByText('dashboard.totalUsers')).toBeInTheDocument();
+    expect(mockReplace).toHaveBeenCalledWith('/organizations/2/dashboard');
   });
 
-  it('shows organization count', () => {
+  it('redirects to first org when none selected', () => {
     (useUiStore as unknown as jest.Mock).mockReturnValue({
-      organizations: [{ id: 1 }, { id: 2 }, { id: 3 }],
+      organizations: [{ id: 5 }],
       organizationsLoading: false,
       selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: null,
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<RootRedirectPage />);
 
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(mockReplace).toHaveBeenCalledWith('/organizations/5/dashboard');
   });
 
-  it('shows loading skeleton when organizations loading', () => {
+  it('shows loading skeleton while orgs load', () => {
     (useUiStore as unknown as jest.Mock).mockReturnValue({
       organizations: [],
       organizationsLoading: true,
       selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: null,
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<RootRedirectPage />);
 
-    // Should have skeleton elements when loading
-    const card = screen.getByText('dashboard.totalOrganizations').closest('.rounded-lg');
-    expect(card).toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('renders quick stats section', () => {
+  it('shows fallback when no orgs exist', () => {
     (useUiStore as unknown as jest.Mock).mockReturnValue({
       organizations: [],
       organizationsLoading: false,
       selectedOrganizationId: null,
-      getSelectedOrganization: mockGetSelectedOrganization,
-    });
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-      user: null,
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<RootRedirectPage />);
 
-    expect(screen.getByText('dashboard.quickStats')).toBeInTheDocument();
+    expect(screen.getByText('dashboard.title')).toBeInTheDocument();
     expect(screen.getByText('statistics.selectOrgForStats')).toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

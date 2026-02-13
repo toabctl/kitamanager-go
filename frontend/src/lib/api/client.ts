@@ -693,9 +693,14 @@ class ApiClient {
     return response.data;
   }
 
-  async getStaffingHours(orgId: number, sectionId?: number): Promise<StaffingHoursResponse> {
+  async getStaffingHours(
+    orgId: number,
+    opts?: { sectionId?: number; from?: string; to?: string }
+  ): Promise<StaffingHoursResponse> {
     const params: Record<string, string> = {};
-    if (sectionId) params.section_id = sectionId.toString();
+    if (opts?.sectionId) params.section_id = opts.sectionId.toString();
+    if (opts?.from) params.from = opts.from;
+    if (opts?.to) params.to = opts.to;
     const response = await this.client.get<StaffingHoursResponse>(
       `/organizations/${orgId}/statistics/staffing-hours`,
       { params }
