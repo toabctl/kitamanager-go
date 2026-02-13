@@ -88,8 +88,7 @@
 - to: '2026-01-01'
   from: '2025-02-01'
   full_time_weekly_hours: 39
-  comment: 'Aufschlag für Praxisunterstützungssystem (60€ pro Kind/Jahr) und Digitalisierung
-    (2,50€ pro Kind/Monat) inklusive
+  comment: 'Aufschlag für Praxisunterstützungssystem (45€ pro Kind/Jahr) inklusive
 
     '
   entries:
