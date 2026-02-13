@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
@@ -69,7 +70,7 @@ func DetermineEligibleStep(yearsOfService float64, entries []models.PayPlanEntry
 func (s *StepPromotionService) GetStepPromotions(ctx context.Context, orgID uint, date time.Time) (*models.StepPromotionsResponse, error) {
 	employees, err := s.employeeStore.FindByOrganizationWithContracts(ctx, orgID, date)
 	if err != nil {
-		return nil, err
+		return nil, apperror.InternalWrap(err, "failed to fetch employees for step promotions")
 	}
 
 	// Collect unique payplan IDs from active contracts

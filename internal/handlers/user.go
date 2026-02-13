@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -271,6 +272,8 @@ func (h *UserHandler) AddToGroup(c *gin.Context) {
 		return
 	}
 
+	h.auditService.LogUserAddToGroup(getUserID(c), userID, req.GroupID, string(req.Role), c.ClientIP())
+
 	c.JSON(http.StatusCreated, resp)
 }
 
@@ -310,11 +313,25 @@ func (h *UserHandler) UpdateGroupRole(c *gin.Context) {
 		return
 	}
 
+	// Get current role before update for audit log
+	memberships, _ := h.userGroupService.GetUserMemberships(c.Request.Context(), userID)
+	oldRole := ""
+	if memberships != nil {
+		for _, m := range memberships.Memberships {
+			if m.GroupID == groupID {
+				oldRole = string(m.Role)
+				break
+			}
+		}
+	}
+
 	resp, err := h.userGroupService.UpdateUserGroupRole(c.Request.Context(), userID, groupID, req.Role)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
+
+	h.auditService.LogRoleChange(getUserID(c), userID, groupID, oldRole, string(req.Role), c.ClientIP())
 
 	c.JSON(http.StatusOK, resp)
 }
@@ -351,6 +368,8 @@ func (h *UserHandler) RemoveFromGroup(c *gin.Context) {
 		respondError(c, err)
 		return
 	}
+
+	h.auditService.LogUserRemoveFromGroup(getUserID(c), userID, groupID, c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }
@@ -474,6 +493,8 @@ func (h *UserHandler) AddToOrganization(c *gin.Context) {
 		return
 	}
 
+	h.auditService.LogUserAddToGroup(getUserID(c), userID, resp.GroupID, string(resp.Role), c.ClientIP())
+
 	c.JSON(http.StatusCreated, resp)
 }
 
@@ -509,6 +530,8 @@ func (h *UserHandler) RemoveFromOrganization(c *gin.Context) {
 		respondError(c, err)
 		return
 	}
+
+	h.auditService.LogResourceDelete(getUserID(c), "user_organization", userID, fmt.Sprintf("user %d from org %d", userID, orgID), c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }

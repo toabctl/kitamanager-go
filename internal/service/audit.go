@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
@@ -303,7 +304,7 @@ func (s *AuditService) GetLogs(ctx context.Context, limit, offset int) ([]models
 
 	logs, total, err := s.store.FindAll(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch audit logs")
 	}
 
 	responses := make([]models.AuditLogResponse, len(logs))
@@ -322,7 +323,7 @@ func (s *AuditService) GetLogsByUser(ctx context.Context, userID uint, limit, of
 
 	logs, total, err := s.store.FindByUser(ctx, userID, limit, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch audit logs for user")
 	}
 
 	responses := make([]models.AuditLogResponse, len(logs))
