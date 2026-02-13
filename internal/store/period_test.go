@@ -550,6 +550,271 @@ func TestPeriodStore_HasActiveContract(t *testing.T) {
 	}
 }
 
+func TestPeriodStore_GetContractOn_ConsecutiveContracts(t *testing.T) {
+	db := setupTestDB(t)
+	org := createTestOrganization(t, db, "Test Org")
+
+	employee := &models.Employee{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Test",
+			LastName:       "Employee",
+			Birthdate:      time.Now(),
+		},
+	}
+	db.Create(employee)
+
+	store := NewEmployeeStore(db)
+
+	// Contract A: Jan 1 to Jan 10
+	contractA := &models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				To:   datePtr(time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)),
+			},
+		},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
+	}
+	db.Create(contractA)
+
+	// Contract B: Jan 11 onwards (consecutive, no gap)
+	contractB := &models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 11, 0, 0, 0, 0, time.UTC),
+				To:   nil,
+			},
+		},
+		StaffCategory: "supplementary",
+		WeeklyHours:   30,
+		Grade:         "S8b", Step: 1,
+	}
+	db.Create(contractB)
+
+	tests := []struct {
+		name    string
+		date    time.Time
+		wantID  *uint
+		wantNil bool
+	}{
+		{
+			name:    "before both contracts",
+			date:    time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC),
+			wantNil: true,
+		},
+		{
+			name:   "day 9 - within contract A",
+			date:   time.Date(2024, 1, 9, 0, 0, 0, 0, time.UTC),
+			wantID: &contractA.ID,
+		},
+		{
+			name:   "day 10 - last day of contract A (inclusive)",
+			date:   time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC),
+			wantID: &contractA.ID,
+		},
+		{
+			name:   "day 11 - first day of contract B",
+			date:   time.Date(2024, 1, 11, 0, 0, 0, 0, time.UTC),
+			wantID: &contractB.ID,
+		},
+		{
+			name:   "day 20 - within contract B",
+			date:   time.Date(2024, 1, 20, 0, 0, 0, 0, time.UTC),
+			wantID: &contractB.ID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			found, err := store.Contracts().GetContractOn(ctx, employee.ID, tt.date)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.wantNil {
+				if found != nil {
+					t.Errorf("expected nil, got contract ID %d", found.ID)
+				}
+			} else {
+				if found == nil {
+					t.Error("expected contract, got nil")
+				} else if found.ID != *tt.wantID {
+					t.Errorf("expected contract ID %d, got %d", *tt.wantID, found.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestPeriodStore_GetContractOn_GapBetweenContracts(t *testing.T) {
+	db := setupTestDB(t)
+	org := createTestOrganization(t, db, "Test Org")
+
+	employee := &models.Employee{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Test",
+			LastName:       "Employee",
+			Birthdate:      time.Now(),
+		},
+	}
+	db.Create(employee)
+
+	store := NewEmployeeStore(db)
+
+	// Contract A: Jan 1 to Jan 2
+	contractA := &models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				To:   datePtr(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+			},
+		},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		Grade:         "S8a", Step: 3,
+	}
+	db.Create(contractA)
+
+	// Contract B: Jan 4 onwards (gap on Jan 3)
+	contractB := &models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC),
+				To:   nil,
+			},
+		},
+		StaffCategory: "supplementary",
+		WeeklyHours:   30,
+		Grade:         "S8b", Step: 1,
+	}
+	db.Create(contractB)
+
+	tests := []struct {
+		name    string
+		date    time.Time
+		wantID  *uint
+		wantNil bool
+	}{
+		{
+			name:   "day 1 - within contract A",
+			date:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			wantID: &contractA.ID,
+		},
+		{
+			name:   "day 2 - last day of contract A",
+			date:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+			wantID: &contractA.ID,
+		},
+		{
+			name:    "day 3 - gap between contracts (no active contract)",
+			date:    time.Date(2024, 1, 3, 0, 0, 0, 0, time.UTC),
+			wantNil: true,
+		},
+		{
+			name:   "day 4 - first day of contract B",
+			date:   time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC),
+			wantID: &contractB.ID,
+		},
+		{
+			name:   "day 10 - well within contract B",
+			date:   time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC),
+			wantID: &contractB.ID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			found, err := store.Contracts().GetContractOn(ctx, employee.ID, tt.date)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.wantNil {
+				if found != nil {
+					t.Errorf("expected nil, got contract ID %d", found.ID)
+				}
+			} else {
+				if found == nil {
+					t.Error("expected contract, got nil")
+				} else if found.ID != *tt.wantID {
+					t.Errorf("expected contract ID %d, got %d", *tt.wantID, found.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestPeriodStore_HasActiveContract_GapBetweenContracts(t *testing.T) {
+	db := setupTestDB(t)
+	org := createTestOrganization(t, db, "Test Org")
+
+	employee := &models.Employee{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "Test",
+			LastName:       "Employee",
+			Birthdate:      time.Now(),
+		},
+	}
+	db.Create(employee)
+
+	// Contract A: Jan 1 to Jan 2
+	db.Create(&models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				To:   datePtr(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+			},
+		},
+		StaffCategory: "qualified",
+	})
+
+	// Contract B: Jan 4 onwards
+	db.Create(&models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			Period: models.Period{
+				From: time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC),
+				To:   nil,
+			},
+		},
+		StaffCategory: "supplementary",
+	})
+
+	store := NewEmployeeStore(db)
+
+	tests := []struct {
+		name     string
+		date     time.Time
+		expected bool
+	}{
+		{"day 2 - last day of A", time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC), true},
+		{"day 3 - gap (no active)", time.Date(2024, 1, 3, 0, 0, 0, 0, time.UTC), false},
+		{"day 4 - first day of B", time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hasActive, err := store.Contracts().HasActiveContract(ctx, employee.ID, tt.date)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if hasActive != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, hasActive)
+			}
+		})
+	}
+}
+
 func TestPeriodStore_CloseCurrentContract(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
