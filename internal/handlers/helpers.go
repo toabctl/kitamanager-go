@@ -147,9 +147,9 @@ func parseOptionalUint(c *gin.Context, param string) (*uint, bool) {
 	return &result, true
 }
 
-// parseOrgResourceAndContractID parses orgId, resource "id", and contractId from URL parameters.
-// Returns (orgID, resourceID, contractID, ok). If ok is false, error response has been sent.
-func parseOrgResourceAndContractID(c *gin.Context) (uint, uint, uint, bool) {
+// parseOrgResourceAndSubID parses orgId, resource "id", and a named sub-resource ID from URL parameters.
+// Returns (orgID, resourceID, subID, ok). If ok is false, error response has been sent.
+func parseOrgResourceAndSubID(c *gin.Context, subParam string) (uint, uint, uint, bool) {
 	orgID, err := parseID(c, "orgId")
 	if err != nil {
 		respondError(c, err)
@@ -162,13 +162,19 @@ func parseOrgResourceAndContractID(c *gin.Context) (uint, uint, uint, bool) {
 		return 0, 0, 0, false
 	}
 
-	contractID, err := parseID(c, "contractId")
+	subID, err := parseID(c, subParam)
 	if err != nil {
 		respondError(c, err)
 		return 0, 0, 0, false
 	}
 
-	return orgID, resourceID, contractID, true
+	return orgID, resourceID, subID, true
+}
+
+// parseOrgResourceAndContractID parses orgId, resource "id", and contractId from URL parameters.
+// Returns (orgID, resourceID, contractID, ok). If ok is false, error response has been sent.
+func parseOrgResourceAndContractID(c *gin.Context) (uint, uint, uint, bool) {
+	return parseOrgResourceAndSubID(c, "contractId")
 }
 
 // bindJSON binds JSON request body to the given type.

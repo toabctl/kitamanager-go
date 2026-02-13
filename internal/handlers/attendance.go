@@ -80,19 +80,8 @@ func (h *ChildAttendanceHandler) Create(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/attendance/{attendanceId} [get]
 func (h *ChildAttendanceHandler) Get(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	childID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	attendanceID, err := parseID(c, "attendanceId")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, attendanceID, ok := parseOrgResourceAndSubID(c, "attendanceId")
+	if !ok {
 		return
 	}
 
@@ -123,19 +112,8 @@ func (h *ChildAttendanceHandler) Get(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/attendance/{attendanceId} [put]
 func (h *ChildAttendanceHandler) Update(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	childID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	attendanceID, err := parseID(c, "attendanceId")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, attendanceID, ok := parseOrgResourceAndSubID(c, "attendanceId")
+	if !ok {
 		return
 	}
 
@@ -174,19 +152,8 @@ func (h *ChildAttendanceHandler) Update(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{id}/attendance/{attendanceId} [delete]
 func (h *ChildAttendanceHandler) Delete(c *gin.Context) {
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	childID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-	attendanceID, err := parseID(c, "attendanceId")
-	if err != nil {
-		respondError(c, err)
+	orgID, childID, attendanceID, ok := parseOrgResourceAndSubID(c, "attendanceId")
+	if !ok {
 		return
 	}
 

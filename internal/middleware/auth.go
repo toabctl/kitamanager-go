@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -30,6 +31,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			// Fall back to Authorization header for backwards compatibility and API clients
 			authHeader := c.GetHeader("Authorization")
 			if authHeader == "" {
+				slog.Warn("Auth failed: no token or authorization header", "ip", c.ClientIP(), "path", c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 					Code:    apperror.CodeUnauthorized,
 					Message: "authorization required",
@@ -40,6 +42,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
+				slog.Warn("Auth failed: invalid authorization header format", "ip", c.ClientIP(), "path", c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 					Code:    apperror.CodeUnauthorized,
 					Message: "invalid authorization header format",
@@ -57,6 +60,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
+			slog.Warn("Auth failed: invalid token", "ip", c.ClientIP(), "path", c.Request.URL.Path, "error", err)
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
 				Message: "invalid token",
@@ -67,6 +71,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
+			slog.Warn("Auth failed: invalid token claims", "ip", c.ClientIP(), "path", c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
 				Message: "invalid token claims",
@@ -79,6 +84,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// For backwards compatibility, accept tokens without type claim
 		if tokenType, exists := claims["type"]; exists {
 			if tokenType != "access" {
+				slog.Warn("Auth failed: invalid token type", "ip", c.ClientIP(), "path", c.Request.URL.Path, "type", tokenType)
 				c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 					Code:    apperror.CodeUnauthorized,
 					Message: "invalid token type",
@@ -91,6 +97,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// JWT numbers are parsed as float64, convert to uint
 		userIDFloat, ok := claims["user_id"].(float64)
 		if !ok {
+			slog.Warn("Auth failed: invalid user id in token", "ip", c.ClientIP(), "path", c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
 				Message: "invalid user id in token",

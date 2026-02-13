@@ -213,7 +213,7 @@ func (h *PayPlanHandler) Delete(c *gin.Context) {
 
 	// Audit log pay plan deletion
 	actorID := getUserID(c)
-	h.auditService.LogResourceDelete(actorID, "payplan", id, payplan.Name, c.ClientIP())
+	h.auditService.LogResourceDelete(actorID, "pay_plan", id, payplan.Name, c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }
