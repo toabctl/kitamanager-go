@@ -52,8 +52,8 @@ func TestSectionHandler_List(t *testing.T) {
 	var response models.PaginatedResponse[models.SectionResponse]
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 2 {
-		t.Errorf("expected 2 sections, got %d", len(response.Data))
+	if len(response.Data) != 3 { // 1 auto-created default + 2 manually created
+		t.Errorf("expected 3 sections, got %d", len(response.Data))
 	}
 }
 
@@ -76,8 +76,8 @@ func TestSectionHandler_List_Empty(t *testing.T) {
 	var response models.PaginatedResponse[models.SectionResponse]
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 0 {
-		t.Errorf("expected 0 sections, got %d", len(response.Data))
+	if len(response.Data) != 1 { // 1 auto-created default
+		t.Errorf("expected 1 section, got %d", len(response.Data))
 	}
 }
 
@@ -312,11 +312,11 @@ func TestSectionHandler_Delete(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
 	}
 
-	// Verify section was deleted
+	// Verify section was deleted (only auto-created default should remain)
 	var sections []models.Section
 	db.Find(&sections)
-	if len(sections) != 0 {
-		t.Error("expected section to be deleted")
+	if len(sections) != 1 {
+		t.Errorf("expected 1 section (auto-created default), got %d", len(sections))
 	}
 }
 
@@ -339,11 +339,11 @@ func TestSectionHandler_Delete_WrongOrg(t *testing.T) {
 		t.Errorf("expected status %d when deleting section from wrong org, got %d", http.StatusNotFound, w.Code)
 	}
 
-	// Verify section was NOT deleted
+	// Verify section was NOT deleted (2 auto-created defaults + 1 manual = 3)
 	var sections []models.Section
 	db.Find(&sections)
-	if len(sections) != 1 {
-		t.Error("expected section to still exist")
+	if len(sections) != 3 {
+		t.Errorf("expected 3 sections, got %d", len(sections))
 	}
 }
 
@@ -366,12 +366,11 @@ func TestSectionHandler_Delete_WithChildren(t *testing.T) {
 	if err := db.Create(child).Error; err != nil {
 		t.Fatalf("failed to create test child: %v", err)
 	}
-	secID := section.ID
 	if err := db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-			SectionID: &secID,
+			SectionID: section.ID,
 		},
 	}).Error; err != nil {
 		t.Fatalf("failed to create test child contract: %v", err)
@@ -386,11 +385,11 @@ func TestSectionHandler_Delete_WithChildren(t *testing.T) {
 		t.Errorf("expected status %d when deleting section with children, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 
-	// Verify section was NOT deleted
+	// Verify section was NOT deleted (1 default auto-created + 1 manual = 2)
 	var sections []models.Section
 	db.Find(&sections)
-	if len(sections) != 1 {
-		t.Error("expected section to still exist")
+	if len(sections) != 2 {
+		t.Errorf("expected 2 sections to still exist, got %d", len(sections))
 	}
 }
 
@@ -413,12 +412,11 @@ func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 	if err := db.Create(employee).Error; err != nil {
 		t.Fatalf("failed to create test employee: %v", err)
 	}
-	secID := section.ID
 	if err := db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-			SectionID: &secID,
+			SectionID: section.ID,
 		},
 		StaffCategory: "qualified",
 		Grade:         "S8a",
@@ -438,11 +436,11 @@ func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 		t.Errorf("expected status %d when deleting section with employees, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 
-	// Verify section was NOT deleted
+	// Verify section was NOT deleted (1 default auto-created + 1 manual = 2)
 	var sections []models.Section
 	db.Find(&sections)
-	if len(sections) != 1 {
-		t.Error("expected section to still exist")
+	if len(sections) != 2 {
+		t.Errorf("expected 2 sections to still exist, got %d", len(sections))
 	}
 }
 
@@ -504,8 +502,8 @@ func TestSectionHandler_List_OnlyShowsOrgSections(t *testing.T) {
 	var response models.PaginatedResponse[models.SectionResponse]
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 2 {
-		t.Errorf("expected 2 sections for org1, got %d", len(response.Data))
+	if len(response.Data) != 3 { // 1 auto-created default + 2 manually created
+		t.Errorf("expected 3 sections for org1, got %d", len(response.Data))
 	}
 
 	// List sections for org2
@@ -513,8 +511,8 @@ func TestSectionHandler_List_OnlyShowsOrgSections(t *testing.T) {
 
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 1 {
-		t.Errorf("expected 1 section for org2, got %d", len(response.Data))
+	if len(response.Data) != 2 { // 1 auto-created default + 1 manually created
+		t.Errorf("expected 2 sections for org2, got %d", len(response.Data))
 	}
 }
 
@@ -643,7 +641,7 @@ func TestSectionHandler_List_Search(t *testing.T) {
 	w = performRequest(r, "GET", fmt.Sprintf("/organizations/%d/sections", org.ID), nil)
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 3 {
-		t.Errorf("expected 3 sections without search, got %d", len(response.Data))
+	if len(response.Data) != 4 { // 1 auto-created default + 3 manually created
+		t.Errorf("expected 4 sections without search, got %d", len(response.Data))
 	}
 }

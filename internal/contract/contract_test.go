@@ -280,9 +280,10 @@ func TestContract_OrganizationCreate(t *testing.T) {
 	cleanupBetweenTests()
 
 	resp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "New Organization",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "New Organization",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 
 	if resp.Code != http.StatusCreated {
@@ -371,9 +372,10 @@ func TestContract_GroupsList(t *testing.T) {
 
 	// Create organization first (groups are org-scoped)
 	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Groups List Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Groups List Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	if orgResp.Code != http.StatusCreated {
 		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
@@ -395,9 +397,10 @@ func TestContract_GroupCreate(t *testing.T) {
 
 	// Create organization first
 	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Group Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Group Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	if orgResp.Code != http.StatusCreated {
 		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())

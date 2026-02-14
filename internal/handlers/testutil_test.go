@@ -121,21 +121,42 @@ func createTestGroupWithOrgAndDefault(t *testing.T, db *gorm.DB, name string, or
 	return testutil.CreateTestGroupWithOrgAndDefault(t, db, name, orgID, isDefault)
 }
 
+// ensureTestSection finds or creates a default section for the given organization.
+func ensureTestSection(t *testing.T, db *gorm.DB, orgID uint) uint {
+	t.Helper()
+	var section models.Section
+	result := db.Where("organization_id = ? AND is_default = ?", orgID, true).First(&section)
+	if result.Error == nil {
+		return section.ID
+	}
+	section = models.Section{OrganizationID: orgID, Name: "Default", IsDefault: true}
+	if err := db.Create(&section).Error; err != nil {
+		t.Fatalf("failed to create test section: %v", err)
+	}
+	return section.ID
+}
+
 // createActiveChildContract creates an open-ended contract for a child (active today).
 func createActiveChildContract(t *testing.T, db *gorm.DB, childID uint) {
 	t.Helper()
+	var child models.Child
+	db.First(&child, childID)
+	sectionID := ensureTestSection(t, db, child.OrganizationID)
 	db.Create(&models.ChildContract{
 		ChildID:      childID,
-		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}, SectionID: sectionID},
 	})
 }
 
 // createActiveEmployeeContract creates an open-ended contract for an employee (active today).
 func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 	t.Helper()
+	var emp models.Employee
+	db.First(&emp, employeeID)
+	sectionID := ensureTestSection(t, db, emp.OrganizationID)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    employeeID,
-		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}, SectionID: sectionID},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 	})
@@ -174,8 +195,9 @@ func createOrganizationService(db *gorm.DB) *service.OrganizationService {
 func createEmployeeService(db *gorm.DB) *service.EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
 	payPlanStore := store.NewPayPlanStore(db)
+	sectionStore := store.NewSectionStore(db)
 	transactor := store.NewTransactor(db)
-	return service.NewEmployeeService(employeeStore, payPlanStore, transactor)
+	return service.NewEmployeeService(employeeStore, payPlanStore, sectionStore, transactor)
 }
 
 // createChildService creates a child service for testing.
@@ -183,8 +205,9 @@ func createChildService(db *gorm.DB) *service.ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
+	sectionStore := store.NewSectionStore(db)
 	transactor := store.NewTransactor(db)
-	return service.NewChildService(childStore, orgStore, fundingStore, transactor)
+	return service.NewChildService(childStore, orgStore, fundingStore, sectionStore, transactor)
 }
 
 // createAuditService creates an audit service for testing.

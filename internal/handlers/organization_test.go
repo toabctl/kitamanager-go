@@ -98,9 +98,10 @@ func TestOrganizationHandler_Create(t *testing.T) {
 	r.POST("/organizations", handler.Create)
 
 	body := models.OrganizationCreateRequest{
-		Name:   "New Org",
-		Active: true,
-		State:  "berlin",
+		Name:               "New Org",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Bären",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -236,8 +237,9 @@ func TestOrganizationHandler_Create_EmptyName(t *testing.T) {
 	r.POST("/organizations", handler.Create)
 
 	body := models.OrganizationCreateRequest{
-		Name:   "",
-		Active: true,
+		Name:               "",
+		Active:             true,
+		DefaultSectionName: "Default",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -256,8 +258,9 @@ func TestOrganizationHandler_Create_WhitespaceOnlyName(t *testing.T) {
 	r.POST("/organizations", handler.Create)
 
 	body := models.OrganizationCreateRequest{
-		Name:   "   ",
-		Active: true,
+		Name:               "   ",
+		Active:             true,
+		DefaultSectionName: "Default",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -282,8 +285,9 @@ func TestOrganizationHandler_Create_NameTooLong(t *testing.T) {
 	}
 
 	body := models.OrganizationCreateRequest{
-		Name:   longName,
-		Active: true,
+		Name:               longName,
+		Active:             true,
+		DefaultSectionName: "Default",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -455,9 +459,10 @@ func TestOrganizationHandler_Create_InvalidState(t *testing.T) {
 	r.POST("/organizations", handler.Create)
 
 	body := models.OrganizationCreateRequest{
-		Name:   "New Org",
-		Active: true,
-		State:  "invalid_state",
+		Name:               "New Org",
+		Active:             true,
+		State:              "invalid_state",
+		DefaultSectionName: "Default",
 	}
 
 	w := performRequest(r, "POST", "/organizations", body)
@@ -485,6 +490,65 @@ func TestOrganizationHandler_Create_MissingState(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d for missing state, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestOrganizationHandler_Create_MissingDefaultSectionName(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService, nil)
+
+	r := setupTestRouter()
+	r.POST("/organizations", handler.Create)
+
+	// Missing default_section_name (required field)
+	body := map[string]interface{}{
+		"name":   "New Org",
+		"active": true,
+		"state":  "berlin",
+	}
+
+	w := performRequest(r, "POST", "/organizations", body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for missing default_section_name, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestOrganizationHandler_Create_CreatesDefaultSection(t *testing.T) {
+	db := setupTestDB(t)
+	orgService := createOrganizationService(db)
+	handler := NewOrganizationHandler(orgService, nil)
+
+	r := setupTestRouter()
+	r.POST("/organizations", handler.Create)
+
+	body := models.OrganizationCreateRequest{
+		Name:               "New Org",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Bären",
+	}
+
+	w := performRequest(r, "POST", "/organizations", body)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var result models.Organization
+	parseResponse(t, w, &result)
+
+	// Verify default section was created with the correct name
+	var section models.Section
+	if err := db.Where("organization_id = ? AND is_default = ?", result.ID, true).First(&section).Error; err != nil {
+		t.Fatalf("expected default section to exist, got error: %v", err)
+	}
+	if section.Name != "Bären" {
+		t.Errorf("expected section name 'Bären', got '%s'", section.Name)
+	}
+	if !section.IsDefault {
+		t.Error("expected section to have IsDefault = true")
 	}
 }
 

@@ -259,6 +259,7 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -268,7 +269,8 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 	})
@@ -296,6 +298,7 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -308,7 +311,8 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 	})
@@ -330,6 +334,7 @@ func TestEmployeeHandler_GetCurrentContract(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -339,7 +344,8 @@ func TestEmployeeHandler_GetCurrentContract(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
 	})
@@ -367,6 +373,7 @@ func TestEmployeeHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -379,7 +386,8 @@ func TestEmployeeHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
 	})
@@ -422,6 +430,7 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -434,6 +443,7 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		To:            nil,
 		StaffCategory: "supplementary",
@@ -462,6 +472,7 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -476,6 +487,7 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	// Create a same-day contract (from == to)
 	sameDay := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          sameDay,
 		To:            &sameDay,
 		StaffCategory: "qualified",
@@ -510,6 +522,7 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -526,6 +539,7 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		To:            nil,
 		StaffCategory: "qualified",
@@ -555,6 +569,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -567,7 +582,8 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
 	})
@@ -577,6 +593,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 
 	// Try to create overlapping contract
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		To:            nil,
 		StaffCategory: "qualified",
@@ -598,6 +615,7 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -606,7 +624,8 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 	}
@@ -628,6 +647,7 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -639,7 +659,8 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 	}
@@ -668,6 +689,7 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create two employees in same org
 	employee1 := &models.Employee{
@@ -684,7 +706,8 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee1.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 	}
@@ -704,6 +727,160 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 	var stillExists models.EmployeeContract
 	if err := db.First(&stillExists, contract.ID).Error; err != nil {
 		t.Errorf("contract was deleted despite wrong employee access")
+	}
+}
+
+// CROSS-ORG SECTION TESTS: Ensure sections from one org can't be used in another
+
+func TestEmployeeHandler_CreateContract_SectionFromWrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	org2SectionID := ensureTestSection(t, db, org2.ID)
+
+	// Create employee in org1
+	employee := &models.Employee{
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(employee)
+
+	// Create pay plan for org1
+	payPlan := &models.PayPlan{OrganizationID: org1.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
+
+	// Try to create contract with org2's section for org1's employee
+	body := models.EmployeeContractCreateRequest{
+		SectionID:     org2SectionID,
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		Grade:         "S8a",
+		Step:          1,
+		WeeklyHours:   39,
+		PayPlanID:     payPlan.ID,
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org1.ID, employee.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("SECURITY: expected status %d when using section from wrong org, got %d: %s",
+			http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestEmployeeHandler_UpdateContract_SectionFromWrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org1SectionID := ensureTestSection(t, db, org1.ID)
+	org2 := createTestOrganization(t, db, "Org 2")
+	org2SectionID := ensureTestSection(t, db, org2.ID)
+
+	// Create employee in org1 with a valid contract
+	employee := &models.Employee{
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(employee)
+
+	contract := &models.EmployeeContract{
+		EmployeeID: employee.ID,
+		BaseContract: models.BaseContract{
+			SectionID: org1SectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+		},
+		StaffCategory: "qualified",
+		WeeklyHours:   39,
+	}
+	db.Create(contract)
+
+	r := setupTestRouter()
+	r.PUT("/organizations/:orgId/employees/:id/contracts/:contractId", handler.UpdateContract)
+
+	// Try to update contract to use org2's section
+	body := models.EmployeeContractUpdateRequest{
+		SectionID: &org2SectionID,
+	}
+
+	w := performRequest(r, "PUT", fmt.Sprintf("/organizations/%d/employees/%d/contracts/%d", org1.ID, employee.ID, contract.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("SECURITY: expected status %d when updating to section from wrong org, got %d: %s",
+			http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestEmployeeHandler_CreateContract_MissingSectionID(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := &models.Employee{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(employee)
+
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
+
+	// Send request without section_id (required field)
+	body := map[string]interface{}{
+		"from":           "2025-01-01",
+		"staff_category": "qualified",
+		"grade":          "S8a",
+		"step":           3,
+		"weekly_hours":   39,
+		"payplan_id":     payPlan.ID,
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for missing section_id, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestEmployeeHandler_CreateContract_NonExistentSection(t *testing.T) {
+	db := setupTestDB(t)
+	employeeService := createEmployeeService(db)
+	handler := NewEmployeeHandler(employeeService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := &models.Employee{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+	}
+	db.Create(employee)
+
+	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
+	db.Create(payPlan)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
+
+	body := models.EmployeeContractCreateRequest{
+		SectionID:     99999, // Non-existent section
+		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		StaffCategory: "qualified",
+		Grade:         "S8a",
+		Step:          3,
+		WeeklyHours:   39,
+		PayPlanID:     payPlan.ID,
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/employees/%d/contracts", org.ID, employee.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for non-existent section, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }
 
@@ -1107,6 +1284,7 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
 	db.Create(payPlan)
@@ -1115,6 +1293,7 @@ func TestEmployeeHandler_CreateContract_EmployeeNotFound(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1135,6 +1314,7 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	payPlan := &models.PayPlan{OrganizationID: org.ID, Name: "TVöD-SuE"}
 	db.Create(payPlan)
@@ -1143,6 +1323,7 @@ func TestEmployeeHandler_CreateContract_InvalidEmployeeID(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1190,6 +1371,7 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1202,6 +1384,7 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   0,
@@ -1223,6 +1406,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1236,7 +1420,8 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
 		StaffCategory: "qualified",
 	})
@@ -1246,6 +1431,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 	// Create contract starting Jan 1, 2025 (day after previous ends) - should succeed
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1270,6 +1456,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1283,7 +1470,8 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
 		StaffCategory: "qualified",
 	})
@@ -1293,6 +1481,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 
 	// Try to create contract starting Jan 31, 2025 (same day as previous ends) - should fail
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1448,6 +1637,7 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1461,6 +1651,7 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 
 	toDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
 		To:            &toDate,
 		StaffCategory: "qualified",
@@ -1482,6 +1673,7 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1494,6 +1686,7 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   -1,
@@ -1514,6 +1707,7 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1526,6 +1720,7 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "qualified",
 		WeeklyHours:   169,
@@ -1546,6 +1741,7 @@ func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1558,6 +1754,7 @@ func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 	r.POST("/organizations/:orgId/employees/:id/contracts", handler.CreateContract)
 
 	body := models.EmployeeContractCreateRequest{
+		SectionID:     sectionID,
 		From:          time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		StaffCategory: "invalid_value",
 		WeeklyHours:   40,
@@ -1696,6 +1893,7 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1704,7 +1902,8 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1779,6 +1978,7 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	emp1 := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1793,7 +1993,8 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: emp1.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1821,6 +2022,7 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1829,7 +2031,8 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1890,6 +2093,7 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1900,7 +2104,8 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1},
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1909,7 +2114,8 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 	contract2 := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "non_pedagogical",
 		WeeklyHours:   40,
@@ -1938,6 +2144,7 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1946,7 +2153,8 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 	contract := &models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
@@ -1977,6 +2185,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 	handler := NewEmployeeHandler(employeeService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create employee with qualified contract
 	emp1 := &models.Employee{
@@ -1985,7 +2194,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 	db.Create(emp1)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    emp1.ID,
-		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 	})
@@ -1997,7 +2206,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 	db.Create(emp2)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    emp2.ID,
-		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "supplementary",
 		WeeklyHours:   40,
 	})
@@ -2009,7 +2218,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 	db.Create(emp3)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    emp3.ID,
-		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "non_pedagogical",
 		WeeklyHours:   40,
 	})

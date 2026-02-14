@@ -36,6 +36,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { PropertyTagInput } from '@/components/ui/tag-input';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
@@ -86,6 +93,13 @@ export default function ChildContractsPage() {
     queryKey: queryKeys.children.contracts(orgId, childId),
     queryFn: () => apiClient.getChildContracts(orgId, childId),
     enabled: !!orgId && !!childId,
+  });
+
+  // Fetch sections for section selector
+  const { data: sectionsData } = useQuery({
+    queryKey: queryKeys.sections.list(orgId),
+    queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
+    enabled: !!orgId,
   });
 
   const createMutation = useMutation({
@@ -152,6 +166,7 @@ export default function ChildContractsPage() {
     reset,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ChildContractFormData>({
     resolver: zodResolver(childContractSchema),
@@ -186,7 +201,7 @@ export default function ChildContractsPage() {
         suggestedTo = calculateContractEndDate(birthdate, orgState) || '';
       }
     }
-    reset({ from: '', to: suggestedTo, properties: undefined });
+    reset({ from: '', to: suggestedTo, section_id: 0, properties: undefined });
     setIsContractDialogOpen(true);
   };
 
@@ -195,6 +210,7 @@ export default function ChildContractsPage() {
     reset({
       from: formatDateForInput(contract.from),
       to: contract.to ? formatDateForInput(contract.to) : '',
+      section_id: contract.section_id,
       properties: contract.properties as Record<string, string> | undefined,
     });
     setIsContractDialogOpen(true);
@@ -219,6 +235,7 @@ export default function ChildContractsPage() {
       createMutation.mutate({
         from: formatDateForApi(data.from) || data.from,
         to: formatDateForApi(data.to),
+        section_id: data.section_id,
         properties: data.properties,
       });
     }
@@ -396,6 +413,30 @@ export default function ChildContractsPage() {
                 )}
               </div>
             </div>
+
+            {sectionsData && sectionsData.data.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="contract_section">{t('sections.title')} *</Label>
+                <Select
+                  value={watch('section_id')?.toString() || ''}
+                  onValueChange={(val) => setValue('section_id', val ? Number(val) : 0)}
+                >
+                  <SelectTrigger id="contract_section">
+                    <SelectValue placeholder={t('sections.selectSection')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sectionsData.data.map((section) => (
+                      <SelectItem key={section.id} value={section.id.toString()}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.section_id && (
+                  <p className="text-sm text-destructive">{t('validation.sectionRequired')}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="properties">{t('contracts.propertiesLabel')}</Label>

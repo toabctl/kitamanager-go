@@ -20,12 +20,13 @@ func createStatisticsService(db *gorm.DB) *StatisticsService {
 	return NewStatisticsService(childStore, employeeStore, orgStore, fundingStore)
 }
 
-func createTestEmployeeContractWithCategory(t *testing.T, db *gorm.DB, employeeID uint, payplanID uint, from time.Time, to *time.Time, weeklyHours float64, staffCategory string) *models.EmployeeContract {
+func createTestEmployeeContractWithCategory(t *testing.T, db *gorm.DB, employeeID uint, payplanID uint, from time.Time, to *time.Time, weeklyHours float64, staffCategory string, sectionID uint) *models.EmployeeContract {
 	t.Helper()
 	contract := &models.EmployeeContract{
 		EmployeeID: employeeID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: from, To: to},
+			Period:    models.Period{From: from, To: to},
+			SectionID: sectionID,
 		},
 		StaffCategory: staffCategory,
 		WeeklyHours:   weeklyHours,
@@ -37,7 +38,7 @@ func createTestEmployeeContractWithCategory(t *testing.T, db *gorm.DB, employeeI
 	return contract
 }
 
-func createTestChildContract(t *testing.T, db *gorm.DB, childID uint, from time.Time, to *time.Time, sectionID *uint, properties models.ContractProperties) *models.ChildContract {
+func createTestChildContract(t *testing.T, db *gorm.DB, childID uint, from time.Time, to *time.Time, sectionID uint, properties models.ContractProperties) *models.ChildContract {
 	t.Helper()
 	contract := &models.ChildContract{
 		ChildID: childID,
@@ -98,20 +99,22 @@ func TestStatisticsService_GetStaffingHours_Basic(t *testing.T) {
 	// Funding property: care_type=ganztag, requirement=0.25, ages 0-6
 	createTestFundingPropertyWithRequirement(t, db, period.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// 2 children with contracts from 2024-01-01, ongoing
 	child1 := createTestChild(t, db, "Child", "One", org.ID)
 	child2 := createTestChild(t, db, "Child", "Two", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child1.ID, contractFrom, nil, nil, props)
-	createTestChildContract(t, db, child2.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child1.ID, contractFrom, nil, section.ID, props)
+	createTestChildContract(t, db, child2.ID, contractFrom, nil, section.ID, props)
 
 	// 2 employees with qualified contracts, 30 hours each
 	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
 	emp1 := createTestEmployee(t, db, "Emp", "One", org.ID)
 	emp2 := createTestEmployee(t, db, "Emp", "Two", org.ID)
-	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified")
-	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 30.0, "qualified")
+	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section.ID)
+	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
@@ -156,11 +159,13 @@ func TestStatisticsService_GetStaffingHours_NoChildren(t *testing.T) {
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
 	createTestFundingPropertyWithRequirement(t, db, period.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Only employees, no children
 	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
 	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 30.0, "qualified")
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
@@ -198,11 +203,13 @@ func TestStatisticsService_GetStaffingHours_NoEmployees(t *testing.T) {
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
 	createTestFundingPropertyWithRequirement(t, db, period.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Only children, no employees
 	child := createTestChild(t, db, "Child", "One", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
@@ -285,11 +292,11 @@ func TestStatisticsService_GetStaffingHours_SectionFilter(t *testing.T) {
 
 	// Child in section 1
 	child1 := createTestChild(t, db, "Child", "One", org.ID)
-	createTestChildContract(t, db, child1.ID, contractFrom, nil, &section1.ID, props)
+	createTestChildContract(t, db, child1.ID, contractFrom, nil, section1.ID, props)
 
 	// Child in section 2
 	child2 := createTestChild(t, db, "Child", "Two", org.ID)
-	createTestChildContract(t, db, child2.ID, contractFrom, nil, &section2.ID, props)
+	createTestChildContract(t, db, child2.ID, contractFrom, nil, section2.ID, props)
 
 	// Employee in section 1
 	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
@@ -298,7 +305,7 @@ func TestStatisticsService_GetStaffingHours_SectionFilter(t *testing.T) {
 		EmployeeID: emp1.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: contractFrom, To: nil},
-			SectionID: &section1.ID,
+			SectionID: section1.ID,
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   30.0,
@@ -314,7 +321,7 @@ func TestStatisticsService_GetStaffingHours_SectionFilter(t *testing.T) {
 		EmployeeID: emp2.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: contractFrom, To: nil},
-			SectionID: &section2.ID,
+			SectionID: section2.ID,
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   25.0,
@@ -414,11 +421,13 @@ func TestStatisticsService_GetStaffingHours_ContractStartsMidRange(t *testing.T)
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
 	createTestFundingPropertyWithRequirement(t, db, period.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Child contract starts 2024-03-01 (mid-range)
 	child := createTestChild(t, db, "Child", "One", org.ID)
 	contractFrom := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
@@ -465,15 +474,17 @@ func TestStatisticsService_GetStaffingHours_OngoingContracts(t *testing.T) {
 	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
 	createTestFundingPropertyWithRequirement(t, db, period.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Contracts with To = nil (ongoing)
 	child := createTestChild(t, db, "Child", "One", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
 
 	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
 	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
-	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 35.0, "qualified")
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 35.0, "qualified", section.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
@@ -504,20 +515,22 @@ func TestStatisticsService_GetStaffingHours_NonPedagogicalExcluded(t *testing.T)
 	org := createTestOrganization(t, db, "Test Org")
 	db.Model(org).Update("state", "berlin")
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// Qualified employee (should be counted)
 	emp1 := createTestEmployee(t, db, "Emp", "Qualified", org.ID)
-	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified")
+	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section.ID)
 
 	// Supplementary employee (should be counted)
 	emp2 := createTestEmployee(t, db, "Emp", "Supplementary", org.ID)
-	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 20.0, "supplementary")
+	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 20.0, "supplementary", section.ID)
 
 	// Non-pedagogical employee (should NOT be counted)
 	emp3 := createTestEmployee(t, db, "Emp", "Kitchen", org.ID)
-	createTestEmployeeContractWithCategory(t, db, emp3.ID, payplan.ID, contractFrom, nil, 40.0, "non_pedagogical")
+	createTestEmployeeContractWithCategory(t, db, emp3.ID, payplan.ID, contractFrom, nil, 40.0, "non_pedagogical", section.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
@@ -547,11 +560,13 @@ func TestStatisticsService_GetStaffingHours_NoFundingForState(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	db.Model(org).Update("state", "hamburg")
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Child with contract
 	child := createTestChild(t, db, "Child", "One", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
@@ -592,11 +607,13 @@ func TestStatisticsService_GetStaffingHours_FundingPeriodChange(t *testing.T) {
 	period2 := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), &toDate2, 40.0)
 	createTestFundingPropertyWithRequirement(t, db, period2.ID, "care_type", "ganztag", 0.25, 0, 6)
 
+	section := createTestSection(t, db, "Default", org.ID, true)
+
 	// Child with ongoing contract
 	child := createTestChild(t, db, "Child", "One", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	props := models.ContractProperties{"care_type": "ganztag"}
-	createTestChildContract(t, db, child.ID, contractFrom, nil, nil, props)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)

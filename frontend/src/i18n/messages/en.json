@@ -140,7 +140,9 @@
     "createSuccess": "Organization created successfully",
     "updateSuccess": "Organization updated successfully",
     "selectOrg": "Select Organization",
-    "newOrganization": "New Organization"
+    "newOrganization": "New Organization",
+    "defaultSectionName": "Default Section Name",
+    "defaultSectionNamePlaceholder": "e.g. Bären, Sonnenschein"
   },
   "employees": {
     "title": "Employees",
@@ -346,7 +348,9 @@
     "weeklyHoursRequired": "Weekly hours is required",
     "weeklyHoursMin": "Weekly hours must be at least 0",
     "weeklyHoursMax": "Weekly hours cannot exceed 168",
-    "fullTimeWeeklyHoursRequired": "Full-time weekly hours is required (0.1 - 80)"
+    "fullTimeWeeklyHoursRequired": "Full-time weekly hours is required (0.1 - 80)",
+    "defaultSectionNameRequired": "Default section name is required",
+    "sectionRequired": "Section is required"
   },
   "settings": {
     "title": "Settings",
@@ -441,7 +445,8 @@
     "optional": "optional",
     "ageRangeError": "Max age must be greater than min age",
     "ageMismatchWarning": "Age mismatch",
-    "ageMismatchDescription": "This child's age is outside the target section's age range."
+    "ageMismatchDescription": "This child's age is outside the target section's age range.",
+    "selectSection": "Select section"
   },
   "payPlans": {
     "title": "Pay Plans",

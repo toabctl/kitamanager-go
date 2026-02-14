@@ -9,12 +9,9 @@ import {
   deleteEmployeeViaApi,
   createChildContractViaApi,
   createEmployeeContractViaApi,
-  createSectionViaApi,
-  deleteSectionViaApi,
-  updateChildSectionViaApi,
+  getSectionsViaApi,
   uniqueName,
   formatDateForApi,
-  getTodayStr,
 } from './utils/test-helpers';
 
 // Ensure English locale for all tests
@@ -23,6 +20,7 @@ test.use({ locale: 'en-US' });
 test.describe('Child Contracts - CRUD Operations', () => {
   let token: string;
   let orgId: number;
+  let defaultSectionId: number;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
@@ -30,6 +28,9 @@ test.describe('Child Contracts - CRUD Operations', () => {
     token = await getApiToken(page);
     const org = await getFirstOrganization(page, token);
     orgId = org.id;
+    // Get the default section for creating contracts
+    const sections = await getSectionsViaApi(page, token, orgId);
+    defaultSectionId = sections[0].id;
     await page.close();
   });
 
@@ -164,6 +165,7 @@ test.describe('Child Contracts - CRUD Operations', () => {
 
     await createChildContractViaApi(page, token, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
+      section_id: defaultSectionId,
       properties: { care_type: 'ganztag' },
     });
 
@@ -213,6 +215,7 @@ test.describe('Child Contracts - CRUD Operations', () => {
 
     await createChildContractViaApi(page, token, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
+      section_id: defaultSectionId,
       properties: { care_type: 'halbtag' },
     });
 
@@ -248,6 +251,7 @@ test.describe('Child Contracts - CRUD Operations', () => {
 test.describe('Child Contract Workflow - create child, add contract, move section', () => {
   let token: string;
   let orgId: number;
+  let defaultSectionId: number;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
@@ -255,6 +259,8 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
     token = await getApiToken(page);
     const org = await getFirstOrganization(page, token);
     orgId = org.id;
+    const sections = await getSectionsViaApi(page, token, orgId);
+    defaultSectionId = sections[0].id;
     await page.close();
   });
 
@@ -276,12 +282,9 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
 
     await createChildContractViaApi(page, token, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
+      section_id: defaultSectionId,
       properties: { care_type: 'ganztag' },
     });
-
-    // Create a section to move the child to later
-    const sectionName = uniqueName('TargetSection');
-    const section = await createSectionViaApi(page, token, orgId, sectionName);
 
     try {
       // 2. Navigate to children list and add a new contract via the UI
@@ -323,10 +326,7 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
         { timeout: 5000 }
       );
 
-      // 3. Move the child to the target section via API
-      await updateChildSectionViaApi(page, token, orgId, child.id, section.id);
-
-      // 4. Verify contract history shows both contracts
+      // 3. Verify contract history shows both contracts
       await page.goto(`/organizations/${orgId}/children/${child.id}/contracts`);
       await page.waitForLoadState('networkidle');
 
@@ -337,17 +337,8 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
       // The old contract should be ended (has a to date), the new one should be active
       await expect(page.getByText(/Ended/i).first()).toBeVisible();
       await expect(page.getByText(/Active/i).first()).toBeVisible();
-
-      // 5. Verify the child appears in the correct section on the board
-      await page.goto(`/organizations/${orgId}/sections`);
-      await page.waitForLoadState('networkidle');
-
-      // The section column should contain the child
-      await expect(page.getByText(sectionName)).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText(childName)).toBeVisible({ timeout: 10000 });
     } finally {
       await deleteChildViaApi(page, token, orgId, child.id);
-      await deleteSectionViaApi(page, token, orgId, section.id);
     }
   });
 });
@@ -355,6 +346,7 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
 test.describe('Employee Contracts - CRUD Operations', () => {
   let token: string;
   let orgId: number;
+  let defaultSectionId: number;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
@@ -362,6 +354,8 @@ test.describe('Employee Contracts - CRUD Operations', () => {
     token = await getApiToken(page);
     const org = await getFirstOrganization(page, token);
     orgId = org.id;
+    const sections = await getSectionsViaApi(page, token, orgId);
+    defaultSectionId = sections[0].id;
     await page.close();
   });
 
@@ -428,6 +422,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
 
     await createEmployeeContractViaApi(page, token, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
+      section_id: defaultSectionId,
       staff_category: 'qualified',
       grade: 'S8a',
       step: 2,
@@ -480,6 +475,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
 
     await createEmployeeContractViaApi(page, token, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
+      section_id: defaultSectionId,
       staff_category: 'supplementary',
       grade: 'S2',
       step: 1,

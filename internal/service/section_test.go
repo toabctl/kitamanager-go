@@ -28,11 +28,11 @@ func TestSectionService_ListByOrganization(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(sections) != 2 {
-		t.Errorf("expected 2 sections, got %d", len(sections))
+	if len(sections) != 3 { // 1 auto-created default + 2 manually created
+		t.Errorf("expected 3 sections, got %d", len(sections))
 	}
-	if total != 2 {
-		t.Errorf("expected total 2, got %d", total)
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
 	}
 }
 
@@ -54,8 +54,8 @@ func TestSectionService_ListByOrganization_Pagination(t *testing.T) {
 	if len(sections) != 2 {
 		t.Errorf("page 1: expected 2 sections, got %d", len(sections))
 	}
-	if total != 3 {
-		t.Errorf("expected total 3, got %d", total)
+	if total != 4 { // 1 auto-created default + 3 manually created
+		t.Errorf("expected total 4, got %d", total)
 	}
 
 	// Page 2
@@ -63,11 +63,11 @@ func TestSectionService_ListByOrganization_Pagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if len(sections) != 1 {
-		t.Errorf("page 2: expected 1 section, got %d", len(sections))
+	if len(sections) != 2 {
+		t.Errorf("page 2: expected 2 sections, got %d", len(sections))
 	}
-	if total != 3 {
-		t.Errorf("expected total 3, got %d", total)
+	if total != 4 {
+		t.Errorf("expected total 4, got %d", total)
 	}
 }
 
@@ -496,12 +496,11 @@ func TestSectionService_DeleteByIDAndOrg_CannotDeleteWithEmployees(t *testing.T)
 
 	// Create an employee with a contract assigned to this section
 	employee := createTestEmployee(t, db, "Jane", "Smith", org.ID)
-	secID := section.ID
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-			SectionID: &secID,
+			SectionID: section.ID,
 		},
 		StaffCategory: "qualified",
 		Grade:         "S8a",
@@ -550,62 +549,6 @@ func TestSectionService_DeleteByIDAndOrg_WrongOrg(t *testing.T) {
 	}
 }
 
-// =========================================
-// GetOrCreateDefaultSection Tests
-// =========================================
-
-func TestSectionService_GetOrCreateDefaultSection_CreatesWhenNoneExists(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createSectionService(db)
-	ctx := context.Background()
-
-	org := createTestOrganization(t, db, "Test Org")
-
-	section, err := svc.GetOrCreateDefaultSection(ctx, org.ID, "admin@example.com")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if section.ID == 0 {
-		t.Error("expected ID to be set")
-	}
-	if section.Name != "Unassigned" {
-		t.Errorf("Name = %v, want Unassigned", section.Name)
-	}
-	if !section.IsDefault {
-		t.Error("expected IsDefault to be true")
-	}
-	if section.OrganizationID != org.ID {
-		t.Errorf("OrganizationID = %d, want %d", section.OrganizationID, org.ID)
-	}
-	if section.CreatedBy != "admin@example.com" {
-		t.Errorf("CreatedBy = %v, want admin@example.com", section.CreatedBy)
-	}
-}
-
-func TestSectionService_GetOrCreateDefaultSection_ReturnsExisting(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createSectionService(db)
-	ctx := context.Background()
-
-	org := createTestOrganization(t, db, "Test Org")
-
-	// Create default section first
-	first, err := svc.GetOrCreateDefaultSection(ctx, org.ID, "admin@example.com")
-	if err != nil {
-		t.Fatalf("first call: expected no error, got %v", err)
-	}
-
-	// Call again - should return the same section
-	second, err := svc.GetOrCreateDefaultSection(ctx, org.ID, "other@example.com")
-	if err != nil {
-		t.Fatalf("second call: expected no error, got %v", err)
-	}
-
-	if second.ID != first.ID {
-		t.Errorf("expected same section ID %d, got %d", first.ID, second.ID)
-	}
-}
 
 // =========================================
 // validateAgeRange Unit Tests

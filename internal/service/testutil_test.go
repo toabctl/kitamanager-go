@@ -86,14 +86,13 @@ func createTestChildWithContract(t *testing.T, db *gorm.DB, firstName, lastName 
 	if err := db.Create(child).Error; err != nil {
 		t.Fatalf("failed to create test child: %v", err)
 	}
-	sid := sectionID
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
 			Period: models.Period{
 				From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
-			SectionID: &sid,
+			SectionID: sectionID,
 		},
 	}
 	if err := db.Create(contract).Error; err != nil {
@@ -133,15 +132,17 @@ func createChildService(db *gorm.DB) *ChildService {
 	childStore := store.NewChildStore(db)
 	orgStore := store.NewOrganizationStore(db)
 	fundingStore := store.NewGovernmentFundingStore(db)
+	sectionStore := store.NewSectionStore(db)
 	transactor := store.NewTransactor(db)
-	return NewChildService(childStore, orgStore, fundingStore, transactor)
+	return NewChildService(childStore, orgStore, fundingStore, sectionStore, transactor)
 }
 
 func createEmployeeService(db *gorm.DB) *EmployeeService {
 	employeeStore := store.NewEmployeeStore(db)
 	payPlanStore := store.NewPayPlanStore(db)
+	sectionStore := store.NewSectionStore(db)
 	transactor := store.NewTransactor(db)
-	return NewEmployeeService(employeeStore, payPlanStore, transactor)
+	return NewEmployeeService(employeeStore, payPlanStore, sectionStore, transactor)
 }
 
 // createTestPayPlan creates a pay plan for testing.

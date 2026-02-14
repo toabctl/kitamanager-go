@@ -127,6 +127,13 @@ export default function ChildrenPage() {
     fundingData?.children?.map((f) => [f.child_id, f]) ?? []
   );
 
+  // Fetch sections for section selector in dialogs
+  const { data: sectionsData } = useQuery({
+    queryKey: queryKeys.sections.list(orgId),
+    queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+
   // Get org state for school enrollment date calculation
   const orgState = useUiStore((state) => state.organizations.find((o) => o.id === orgId)?.state);
 
@@ -141,6 +148,7 @@ export default function ChildrenPage() {
       await apiClient.createChildContract(orgId, child.id, {
         from: formatDateForApi(data.contract_from) || data.contract_from,
         to: formatDateForApi(data.contract_to),
+        section_id: data.section_id,
         properties: data.properties,
       });
       return child;
@@ -287,6 +295,7 @@ export default function ChildrenPage() {
     handleSubmit: handleSubmitContract,
     reset: resetContract,
     watch: watchContract,
+    setValue: setValueContract,
     control: controlContract,
     formState: { errors: errorsContract },
   } = useForm<ChildContractFormData>({
@@ -294,6 +303,7 @@ export default function ChildrenPage() {
     defaultValues: {
       from: '',
       to: '',
+      section_id: 0,
       properties: undefined,
     },
   });
@@ -316,6 +326,7 @@ export default function ChildrenPage() {
       birthdate: '',
       contract_from: '',
       contract_to: '',
+      section_id: 0,
       properties: undefined,
     },
   });
@@ -361,6 +372,7 @@ export default function ChildrenPage() {
       birthdate: '',
       contract_from: '',
       contract_to: '',
+      section_id: 0,
       properties: undefined,
     });
     setIsChildDialogOpen(true);
@@ -406,10 +418,11 @@ export default function ChildrenPage() {
         resetContract({
           from: tomorrowStr,
           to: suggestedTo,
+          section_id: active.section_id,
           properties: active.properties as Record<string, string> | undefined,
         });
       } else {
-        resetContract({ from: '', to: suggestedTo, properties: undefined });
+        resetContract({ from: '', to: suggestedTo, section_id: 0, properties: undefined });
       }
       setIsContractDialogOpen(true);
     },
@@ -486,6 +499,7 @@ export default function ChildrenPage() {
           data: {
             from: formatDateForApi(data.from) || data.from,
             to: formatDateForApi(data.to),
+            section_id: data.section_id,
             properties: data.properties,
           },
         });
@@ -568,10 +582,8 @@ export default function ChildrenPage() {
                       <TableCell>{formatDate(child.birthdate)}</TableCell>
                       <TableCell>{calculateAge(child.birthdate)}</TableCell>
                       <TableCell>
-                        {currentContract?.section_name ? (
+                        {currentContract?.section_name && (
                           <span>{currentContract.section_name}</span>
-                        ) : (
-                          <span className="text-muted-foreground">{t('sections.unassigned')}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -798,6 +810,32 @@ export default function ChildrenPage() {
                 </div>
               </div>
 
+              {sectionsData && sectionsData.data.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="create_section">{t('sections.title')} *</Label>
+                  <Select
+                    value={watchCreate('section_id')?.toString() || ''}
+                    onValueChange={(value) =>
+                      setValueCreate('section_id', value ? Number(value) : 0)
+                    }
+                  >
+                    <SelectTrigger id="create_section">
+                      <SelectValue placeholder={t('sections.selectSection')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sectionsData.data.map((section) => (
+                        <SelectItem key={section.id} value={section.id.toString()}>
+                          {section.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errorsCreate.section_id && (
+                    <p className="text-sm text-destructive">{t('validation.sectionRequired')}</p>
+                  )}
+                </div>
+              )}
+
               <div className="mt-4 space-y-2">
                 <Label htmlFor="create_properties">{t('contracts.propertiesLabel')}</Label>
                 <Controller
@@ -891,6 +929,32 @@ export default function ChildrenPage() {
                 )}
               </div>
             </div>
+
+            {sectionsData && sectionsData.data.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="contract_section">{t('sections.title')} *</Label>
+                <Select
+                  value={watchContract('section_id')?.toString() || ''}
+                  onValueChange={(value) =>
+                    setValueContract('section_id', value ? Number(value) : 0)
+                  }
+                >
+                  <SelectTrigger id="contract_section">
+                    <SelectValue placeholder={t('sections.selectSection')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sectionsData.data.map((section) => (
+                      <SelectItem key={section.id} value={section.id.toString()}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errorsContract.section_id && (
+                  <p className="text-sm text-destructive">{t('validation.sectionRequired')}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="properties">{t('contracts.propertiesLabel')}</Label>

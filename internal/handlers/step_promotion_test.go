@@ -43,7 +43,7 @@ func TestStepPromotionHandler_GetStepPromotions(t *testing.T) {
 	from := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    emp.ID,
-		BaseContract:  models.BaseContract{Period: models.Period{From: from}},
+		BaseContract:  models.BaseContract{SectionID: 1, Period: models.Period{From: from}},
 		StaffCategory: "qualified",
 		Grade:         "S8a",
 		Step:          2,

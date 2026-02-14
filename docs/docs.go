@@ -6757,7 +6757,8 @@ const docTemplate = `{
         "github_com_eenemeene_kitamanager-go_internal_models.ChildContractCreateRequest": {
             "type": "object",
             "required": [
-                "from"
+                "from",
+                "section_id"
             ],
             "properties": {
                 "from": {
@@ -7112,6 +7113,7 @@ const docTemplate = `{
             "required": [
                 "from",
                 "payplan_id",
+                "section_id",
                 "staff_category",
                 "weekly_hours"
             ],
@@ -7906,6 +7908,7 @@ const docTemplate = `{
         "github_com_eenemeene_kitamanager-go_internal_models.OrganizationCreateRequest": {
             "type": "object",
             "required": [
+                "default_section_name",
                 "name",
                 "state"
             ],
@@ -7913,6 +7916,11 @@ const docTemplate = `{
                 "active": {
                     "type": "boolean",
                     "example": true
+                },
+                "default_section_name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Bären"
                 },
                 "name": {
                     "type": "string",

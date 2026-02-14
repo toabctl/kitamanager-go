@@ -11,7 +11,7 @@ type ContractProperties map[string]interface{}
 // This is embedded by ChildContract and EmployeeContract.
 type BaseContract struct {
 	Period
-	SectionID *uint    `gorm:"index" json:"section_id,omitempty"`
+	SectionID uint     `gorm:"not null;index" json:"section_id"`
 	Section   *Section `gorm:"foreignKey:SectionID" json:"section,omitempty"`
 	// Properties stores flexible key-value data as JSON.
 	// For children: {"care_type": "ganztag", "supplements": ["ndh", "mss"]}

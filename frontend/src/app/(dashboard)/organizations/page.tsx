@@ -45,6 +45,7 @@ const defaultValues: OrganizationFormData = {
   name: '',
   state: 'berlin',
   active: true,
+  default_section_name: '',
 };
 
 export default function OrganizationsPage() {
@@ -92,9 +93,13 @@ export default function OrganizationsPage() {
 
   const onSubmit = (data: OrganizationFormData) => {
     if (dialogs.editingItem) {
-      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data });
+      const { default_section_name: _, ...updateData } = data;
+      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data: updateData });
     } else {
-      mutations.createMutation.mutate(data);
+      mutations.createMutation.mutate({
+        ...data,
+        default_section_name: data.default_section_name || '',
+      });
     }
   };
 
@@ -195,6 +200,24 @@ export default function OrganizationsPage() {
               />
               <Label htmlFor="active">{t('common.active')}</Label>
             </div>
+
+            {!dialogs.isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="default_section_name">
+                  {t('organizations.defaultSectionName')}
+                </Label>
+                <Input
+                  id="default_section_name"
+                  {...register('default_section_name')}
+                  placeholder={t('organizations.defaultSectionNamePlaceholder')}
+                />
+                {errors.default_section_name && (
+                  <p className="text-sm text-destructive">
+                    {t('validation.defaultSectionNameRequired')}
+                  </p>
+                )}
+              </div>
+            )}
 
             <DialogFooter>
               <Button

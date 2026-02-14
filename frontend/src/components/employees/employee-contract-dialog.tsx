@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EmployeeContract, PayPlan } from '@/lib/api/types';
+import type { EmployeeContract, PayPlan, Section } from '@/lib/api/types';
 import { formatDate } from '@/lib/utils/formatting';
 import type { EmployeeContractFormData } from '@/lib/schemas';
 
@@ -43,6 +43,7 @@ export interface EmployeeContractDialogProps {
   setValue: UseFormSetValue<EmployeeContractFormData>;
   isSaving: boolean;
   payPlans: PayPlan[];
+  sections: Section[];
   activeContractInfo?: ActiveContractInfo;
 }
 
@@ -57,6 +58,7 @@ export function EmployeeContractDialog({
   setValue,
   isSaving,
   payPlans,
+  sections,
   activeContractInfo,
 }: EmployeeContractDialogProps) {
   const t = useTranslations();
@@ -118,6 +120,30 @@ export function EmployeeContractDialog({
               <Input id="to" type="date" {...register('to')} />
             </div>
           </div>
+
+          {sections.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="section_id">{t('sections.title')} *</Label>
+              <Select
+                value={watch('section_id')?.toString() || ''}
+                onValueChange={(val) => setValue('section_id', val ? Number(val) : 0)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('sections.selectSection')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.section_id && (
+                <p className="text-sm text-destructive">{t('validation.sectionRequired')}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="payplan_id">{t('employees.payPlan')}</Label>

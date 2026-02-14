@@ -140,7 +140,9 @@
     "createSuccess": "Organisation erfolgreich erstellt",
     "updateSuccess": "Organisation erfolgreich aktualisiert",
     "selectOrg": "Organisation auswählen",
-    "newOrganization": "Neue Organisation"
+    "newOrganization": "Neue Organisation",
+    "defaultSectionName": "Name der Standardgruppe",
+    "defaultSectionNamePlaceholder": "z.B. Bären, Sonnenschein"
   },
   "employees": {
     "title": "Mitarbeiter",
@@ -346,7 +348,9 @@
     "weeklyHoursRequired": "Wochenstunden sind erforderlich",
     "weeklyHoursMin": "Wochenstunden müssen mindestens 0 sein",
     "weeklyHoursMax": "Wochenstunden können 168 nicht überschreiten",
-    "fullTimeWeeklyHoursRequired": "Vollzeit-Wochenstunden sind erforderlich (0,1 - 80)"
+    "fullTimeWeeklyHoursRequired": "Vollzeit-Wochenstunden sind erforderlich (0,1 - 80)",
+    "defaultSectionNameRequired": "Name der Standardgruppe ist erforderlich",
+    "sectionRequired": "Bereich ist erforderlich"
   },
   "settings": {
     "title": "Einstellungen",
@@ -441,7 +445,8 @@
     "optional": "optional",
     "ageRangeError": "Höchstalter muss größer als Mindestalter sein",
     "ageMismatchWarning": "Altersabweichung",
-    "ageMismatchDescription": "Das Alter dieses Kindes liegt außerhalb des Altersbereichs des Zielbereichs."
+    "ageMismatchDescription": "Das Alter dieses Kindes liegt außerhalb des Altersbereichs des Zielbereichs.",
+    "selectSection": "Bereich auswählen"
   },
   "payPlans": {
     "title": "Entgelttabellen",

@@ -114,8 +114,8 @@ func TestSectionStore_FindByOrganization(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(sections) != 2 {
-		t.Errorf("expected 2 sections in org1, got %d", len(sections))
+	if len(sections) != 3 { // 1 auto-created default + 2 manually created
+		t.Errorf("expected 3 sections in org1, got %d", len(sections))
 	}
 
 	// Verify all sections belong to org1
@@ -131,8 +131,8 @@ func TestSectionStore_FindByOrganization(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(sections2) != 1 {
-		t.Errorf("expected 1 section in org2, got %d", len(sections2))
+	if len(sections2) != 2 { // 1 auto-created default + 1 manually created
+		t.Errorf("expected 2 sections in org2, got %d", len(sections2))
 	}
 }
 
@@ -153,8 +153,8 @@ func TestSectionStore_FindByOrganizationPaginated(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if total != 5 {
-		t.Errorf("expected total 5, got %d", total)
+	if total != 6 { // 1 auto-created default + 5 manually created
+		t.Errorf("expected total 6, got %d", total)
 	}
 
 	if len(sections) != 2 {
@@ -220,24 +220,14 @@ func TestSectionStore_FindDefaultSection(t *testing.T) {
 	// Create a non-default section
 	createTestSectionWithOrg(t, db, "Regular Section", org.ID)
 
-	// Create a default section
-	defaultSection := &models.Section{
-		Name:           "Unassigned",
-		OrganizationID: org.ID,
-		IsDefault:      true,
-	}
-	if err := db.Create(defaultSection).Error; err != nil {
-		t.Fatalf("failed to create default section: %v", err)
-	}
-
-	// Find the default section
+	// Find the default section (auto-created by createTestOrganization)
 	found, err := store.FindDefaultSection(context.Background(), org.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if found.ID != defaultSection.ID {
-		t.Errorf("expected default section ID %d, got %d", defaultSection.ID, found.ID)
+	if found.Name != "Default" {
+		t.Errorf("expected default section name 'Default', got '%s'", found.Name)
 	}
 	if !found.IsDefault {
 		t.Error("expected IsDefault to be true")
@@ -248,7 +238,11 @@ func TestSectionStore_FindDefaultSection_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewSectionStore(db)
 
-	org := createTestOrganization(t, db, "Test Org")
+	// Create org directly (without the default section that createTestOrganization adds)
+	org := &models.Organization{Name: "Test Org", Active: true, State: "berlin"}
+	if err := db.Create(org).Error; err != nil {
+		t.Fatalf("failed to create org: %v", err)
+	}
 
 	// Create only non-default sections
 	createTestSectionWithOrg(t, db, "Regular Section", org.ID)
@@ -287,12 +281,11 @@ func TestSectionStore_HasChildren(t *testing.T) {
 	if err := db.Create(child).Error; err != nil {
 		t.Fatalf("failed to create test child: %v", err)
 	}
-	secID := section.ID
 	if err := db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-			SectionID: &secID,
+			SectionID: section.ID,
 		},
 	}).Error; err != nil {
 		t.Fatalf("failed to create test child contract: %v", err)
@@ -335,12 +328,11 @@ func TestSectionStore_HasEmployees(t *testing.T) {
 	if err := db.Create(employee).Error; err != nil {
 		t.Fatalf("failed to create test employee: %v", err)
 	}
-	empSecID := section.ID
 	if err := db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
-			SectionID: &empSecID,
+			SectionID: section.ID,
 		},
 		StaffCategory: "qualified",
 		Grade:         "S8a",

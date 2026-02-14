@@ -15,12 +15,13 @@ import (
 type EmployeeService struct {
 	store        store.EmployeeStorer
 	payPlanStore store.PayPlanStorer
+	sectionStore store.SectionStorer
 	transactor   store.Transactor
 }
 
 // NewEmployeeService creates a new employee service
-func NewEmployeeService(store store.EmployeeStorer, payPlanStore store.PayPlanStorer, transactor store.Transactor) *EmployeeService {
-	return &EmployeeService{store: store, payPlanStore: payPlanStore, transactor: transactor}
+func NewEmployeeService(store store.EmployeeStorer, payPlanStore store.PayPlanStorer, sectionStore store.SectionStorer, transactor store.Transactor) *EmployeeService {
+	return &EmployeeService{store: store, payPlanStore: payPlanStore, sectionStore: sectionStore, transactor: transactor}
 }
 
 // List returns a paginated list of employees
@@ -242,6 +243,15 @@ func (s *EmployeeService) CreateContract(ctx context.Context, employeeID, orgID 
 		return nil, apperror.BadRequest("payplan does not belong to this organization")
 	}
 
+	// Validate section belongs to the same organization
+	section, err := s.sectionStore.FindByID(ctx, req.SectionID)
+	if err != nil {
+		return nil, apperror.BadRequest("section not found")
+	}
+	if section.OrganizationID != orgID {
+		return nil, apperror.BadRequest("section does not belong to this organization")
+	}
+
 	contract := &models.EmployeeContract{
 		EmployeeID: employeeID,
 		BaseContract: models.BaseContract{
@@ -378,7 +388,15 @@ func (s *EmployeeService) UpdateContract(ctx context.Context, contractID, employ
 		contract.Step = *req.Step
 	}
 	if req.SectionID != nil {
-		contract.SectionID = req.SectionID
+		// Validate section belongs to the same organization
+		section, err := s.sectionStore.FindByID(ctx, *req.SectionID)
+		if err != nil {
+			return nil, apperror.BadRequest("section not found")
+		}
+		if section.OrganizationID != orgID {
+			return nil, apperror.BadRequest("section does not belong to this organization")
+		}
+		contract.SectionID = *req.SectionID
 		contract.Section = nil // clear preloaded association
 	}
 	// Properties can be replaced entirely

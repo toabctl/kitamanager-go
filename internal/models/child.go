@@ -28,7 +28,7 @@ func (c ChildContract) GetPersonID() uint {
 type ChildContractCreateRequest struct {
 	From       time.Time          `json:"from" binding:"required" example:"2025-01-01"`
 	To         *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID  *uint              `json:"section_id,omitempty" example:"2"`
+	SectionID  uint               `json:"section_id" binding:"required" example:"2"`
 	Properties ContractProperties `json:"properties,omitempty"`
 }
 
@@ -101,7 +101,7 @@ type ChildContractResponse struct {
 	ChildID     uint               `json:"child_id" example:"1"`
 	From        time.Time          `json:"from" example:"2025-01-01"`
 	To          *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID   *uint              `json:"section_id,omitempty" example:"2"`
+	SectionID   uint               `json:"section_id" example:"2"`
 	SectionName *string            `json:"section_name,omitempty" example:"Krippe"`
 	Properties  ContractProperties `json:"properties,omitempty"`
 	CreatedAt   time.Time          `json:"created_at"`

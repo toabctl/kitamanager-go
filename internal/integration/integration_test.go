@@ -124,9 +124,10 @@ func setupRouter() *gin.Engine {
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
 	payPlanStore := store.NewPayPlanStore(testDB)
+	sectionStore := store.NewSectionStore(testDB)
 	transactor := store.NewTransactor(testDB)
-	employeeService := service.NewEmployeeService(employeeStore, payPlanStore, transactor)
-	childService := service.NewChildService(childStore, orgStore, fundingStore, transactor)
+	employeeService := service.NewEmployeeService(employeeStore, payPlanStore, sectionStore, transactor)
+	childService := service.NewChildService(childStore, orgStore, fundingStore, sectionStore, transactor)
 
 	// Setup handlers (passing nil for auditService in tests)
 	orgHandler := handlers.NewOrganizationHandler(orgService, nil)
@@ -246,9 +247,10 @@ func TestOrganizationCRUD(t *testing.T) {
 
 	// Create
 	createResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Test Organization",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Test Organization",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	if createResp.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d: %s", createResp.Code, createResp.Body.String())
@@ -316,9 +318,10 @@ func TestUserCreationWithOrganization(t *testing.T) {
 
 	// Create organization first
 	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "User Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "User Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	if orgResp.Code != http.StatusCreated {
 		t.Fatalf("failed to create org: %s", orgResp.Body.String())
@@ -350,9 +353,10 @@ func TestEmployeeWithContracts(t *testing.T) {
 
 	// Create organization
 	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Employee Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Employee Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	var org models.Organization
 	parseResponse(t, orgResp, &org)
@@ -385,9 +389,10 @@ func TestChildWithContracts(t *testing.T) {
 
 	// Create organization
 	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Child Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Child Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	var org models.Organization
 	parseResponse(t, orgResp, &org)
@@ -415,9 +420,10 @@ func TestGroupOperations(t *testing.T) {
 
 	// Create organization first
 	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":   "Group Test Org",
-		"active": true,
-		"state":  "berlin",
+		"name":                 "Group Test Org",
+		"active":               true,
+		"state":                "berlin",
+		"default_section_name": "Default",
 	})
 	if orgResp.Code != http.StatusCreated {
 		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
@@ -467,9 +473,10 @@ func TestConcurrentOrganizationCreation(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		go func(idx int) {
 			resp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-				"name":   fmt.Sprintf("Concurrent Org %d", idx),
-				"active": true,
-				"state":  "berlin",
+				"name":                 fmt.Sprintf("Concurrent Org %d", idx),
+				"active":               true,
+				"state":                "berlin",
+				"default_section_name": "Default",
 			})
 			if resp.Code != http.StatusCreated {
 				t.Errorf("concurrent creation %d failed: %d", idx, resp.Code)

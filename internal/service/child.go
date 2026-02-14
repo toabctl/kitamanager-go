@@ -16,15 +16,17 @@ type ChildService struct {
 	store        store.ChildStorer
 	orgStore     store.OrganizationStorer
 	fundingStore store.GovernmentFundingStorer
+	sectionStore store.SectionStorer
 	transactor   store.Transactor
 }
 
 // NewChildService creates a new child service
-func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer, transactor store.Transactor) *ChildService {
+func NewChildService(store store.ChildStorer, orgStore store.OrganizationStorer, fundingStore store.GovernmentFundingStorer, sectionStore store.SectionStorer, transactor store.Transactor) *ChildService {
 	return &ChildService{
 		store:        store,
 		orgStore:     orgStore,
 		fundingStore: fundingStore,
+		sectionStore: sectionStore,
 		transactor:   transactor,
 	}
 }
@@ -265,6 +267,15 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 		return nil, apperror.BadRequest("contract end date cannot be before child's birthdate")
 	}
 
+	// Validate section belongs to the same organization
+	section, err := s.sectionStore.FindByID(ctx, req.SectionID)
+	if err != nil {
+		return nil, apperror.BadRequest("section not found")
+	}
+	if section.OrganizationID != orgID {
+		return nil, apperror.BadRequest("section does not belong to this organization")
+	}
+
 	contract := &models.ChildContract{
 		ChildID: childID,
 		BaseContract: models.BaseContract{
@@ -322,7 +333,15 @@ func (s *ChildService) UpdateContract(ctx context.Context, contractID, childID, 
 		contract.To = req.To
 	}
 	if req.SectionID != nil {
-		contract.SectionID = req.SectionID
+		// Validate section belongs to the same organization
+		section, err := s.sectionStore.FindByID(ctx, *req.SectionID)
+		if err != nil {
+			return nil, apperror.BadRequest("section not found")
+		}
+		if section.OrganizationID != orgID {
+			return nil, apperror.BadRequest("section does not belong to this organization")
+		}
+		contract.SectionID = *req.SectionID
 		contract.Section = nil // clear preloaded association
 	}
 	// Properties can be replaced entirely

@@ -51,13 +51,17 @@ func (s *OrganizationStore) Create(ctx context.Context, organization *models.Org
 	return DBFromContext(ctx, s.db).Create(organization).Error
 }
 
-func (s *OrganizationStore) CreateWithDefaultGroup(ctx context.Context, org *models.Organization, defaultGroup *models.Group) error {
+func (s *OrganizationStore) CreateWithDefaults(ctx context.Context, org *models.Organization, defaultGroup *models.Group, defaultSection *models.Section) error {
 	db := DBFromContext(ctx, s.db)
 	if err := db.Create(org).Error; err != nil {
 		return err
 	}
 	defaultGroup.OrganizationID = org.ID
-	return db.Create(defaultGroup).Error
+	if err := db.Create(defaultGroup).Error; err != nil {
+		return err
+	}
+	defaultSection.OrganizationID = org.ID
+	return db.Create(defaultSection).Error
 }
 
 func (s *OrganizationStore) Update(ctx context.Context, organization *models.Organization) error {

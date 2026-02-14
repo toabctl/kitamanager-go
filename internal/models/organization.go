@@ -40,9 +40,10 @@ func (o *Organization) ToResponse() OrganizationResponse {
 
 // OrganizationCreateRequest represents the request body for creating an organization
 type OrganizationCreateRequest struct {
-	Name   string `json:"name" binding:"required,max=255" example:"Acme Corp"`
-	Active bool   `json:"active" example:"true"`
-	State  string `json:"state" binding:"required" example:"berlin"`
+	Name               string `json:"name" binding:"required,max=255" example:"Acme Corp"`
+	Active             bool   `json:"active" example:"true"`
+	State              string `json:"state" binding:"required" example:"berlin"`
+	DefaultSectionName string `json:"default_section_name" binding:"required,max=255" example:"Bären"`
 }
 
 // OrganizationUpdateRequest represents the request body for updating an organization

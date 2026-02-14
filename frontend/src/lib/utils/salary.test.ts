@@ -8,6 +8,7 @@ function makeContract(overrides: Partial<EmployeeContract> = {}): EmployeeContra
     employee_id: 1,
     from: '2024-01-01',
     to: null,
+    section_id: 1,
     staff_category: 'qualified',
     grade: 'S8a',
     step: 3,

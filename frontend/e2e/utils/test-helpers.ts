@@ -381,6 +381,7 @@ export async function createEmployeeContractViaApi(
   data: {
     from: string;
     to?: string | null;
+    section_id?: number;
     staff_category: string;
     grade: string;
     step: number;
@@ -428,6 +429,7 @@ export async function createChildContractViaApi(
   data: {
     from: string;
     to?: string | null;
+    section_id: number;
     properties?: Record<string, string>;
   }
 ): Promise<{ id: number }> {
@@ -588,35 +590,3 @@ export async function getSectionsViaApi(
   );
 }
 
-/**
- * Update a child's section via the API
- */
-export async function updateChildSectionViaApi(
-  page: Page,
-  token: string,
-  orgId: number,
-  childId: number,
-  sectionId: number | null
-): Promise<void> {
-  await page.evaluate(
-    async ({ token, orgId, childId, sectionId }) => {
-      const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
-      const csrfToken = csrfMatch ? csrfMatch[1] : null;
-
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
-
-      await fetch(`/api/v1/organizations/${orgId}/children/${childId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ section_id: sectionId }),
-      });
-    },
-    { token, orgId, childId, sectionId }
-  );
-}

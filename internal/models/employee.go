@@ -36,7 +36,7 @@ func (c EmployeeContract) GetPersonID() uint {
 type EmployeeContractCreateRequest struct {
 	From          time.Time          `json:"from" binding:"required" example:"2025-01-01"`
 	To            *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID     *uint              `json:"section_id,omitempty" example:"2"`
+	SectionID     uint               `json:"section_id" binding:"required" example:"2"`
 	StaffCategory string             `json:"staff_category" binding:"required" example:"qualified"`
 	Grade         string             `json:"grade" binding:"max=20" example:"S8a"`
 	Step          int                `json:"step" binding:"gte=0,lte=10" example:"3"`
@@ -121,7 +121,7 @@ type EmployeeContractResponse struct {
 	EmployeeID    uint               `json:"employee_id" example:"1"`
 	From          time.Time          `json:"from" example:"2025-01-01"`
 	To            *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID     *uint              `json:"section_id,omitempty" example:"2"`
+	SectionID     uint               `json:"section_id" example:"2"`
 	SectionName   *string            `json:"section_name,omitempty" example:"Krippe"`
 	StaffCategory string             `json:"staff_category" example:"qualified"`
 	Grade         string             `json:"grade" example:"S8a"`

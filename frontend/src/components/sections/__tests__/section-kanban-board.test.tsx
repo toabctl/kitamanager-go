@@ -66,7 +66,7 @@ describe('SectionKanbanBoard', () => {
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it('renders unassigned column and section columns after loading', async () => {
+  it('renders section columns after loading', async () => {
     mockApiClient.getSections.mockResolvedValue({
       data: [
         {
@@ -131,6 +131,7 @@ describe('SectionKanbanBoard', () => {
             child_id: 2,
             from: '2024-01-01T00:00:00Z',
             to: null,
+            section_id: 2,
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
           },
@@ -141,8 +142,7 @@ describe('SectionKanbanBoard', () => {
     render(<SectionKanbanBoard orgId={1} />, { wrapper: TestWrapper });
 
     // Wait for data to load
-    expect(await screen.findByText('sections.unassigned')).toBeInTheDocument();
-    expect(screen.getByText('Krippe')).toBeInTheDocument();
+    expect(await screen.findByText('Krippe')).toBeInTheDocument();
     expect(screen.getByText('Mäuse')).toBeInTheDocument();
   });
 
@@ -202,6 +202,7 @@ describe('SectionKanbanBoard', () => {
             child_id: 2,
             from: '2024-01-01T00:00:00Z',
             to: null,
+            section_id: 1,
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
           },

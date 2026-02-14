@@ -421,9 +421,8 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	employeeContractCount := 0
 
 	// empSection returns a section ID for the given employee index (round-robin).
-	empSection := func(i int) *uint {
-		id := allSections[i%len(allSections)].ID
-		return &id
+	empSection := func(i int) uint {
+		return allSections[i%len(allSections)].ID
 	}
 
 	// Employee 0: Single current contract (started 2 years ago) - supplementary staff
@@ -503,9 +502,9 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	employeeContractCount++
 
-	// Employee 8: Non-pedagogical staff (kitchen) - no section
+	// Employee 8: Non-pedagogical staff (kitchen)
 	if err := createEmployeeContract(db, employees[8].ID, "non_pedagogical", "S4", 4, 20,
-		now.AddDate(-1, 6, 0), nil, payPlan.ID, nil); err != nil {
+		now.AddDate(-1, 6, 0), nil, payPlan.ID, empSection(8)); err != nil {
 		return err
 	}
 	employeeContractCount++
@@ -633,18 +632,16 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 // - Under 36 months → Krippe (sections[0])
 // - 36-72 months → Kindergarten (sections[1])
 // - Over 72 months → Hort (sections[2])
-func sectionForAge(birthdate time.Time, sections []*models.Section) *uint {
+func sectionForAge(birthdate time.Time, sections []*models.Section) uint {
 	ageMonths := int(time.Since(birthdate).Hours() / 24 / 30)
-	var id uint
 	switch {
 	case ageMonths < 36:
-		id = sections[0].ID
+		return sections[0].ID
 	case ageMonths < 72:
-		id = sections[1].ID
+		return sections[1].ID
 	default:
-		id = sections[2].ID
+		return sections[2].ID
 	}
-	return &id
 }
 
 //nolint:gosec // G404: math/rand is fine for test data generation
@@ -713,7 +710,7 @@ func createTestChildren(orgID uint, count int) []models.Child {
 }
 
 // makeChildContract creates a ChildContract with the new BaseContract structure
-func makeChildContract(childID uint, from time.Time, to *time.Time, sectionID *uint) models.ChildContract {
+func makeChildContract(childID uint, from time.Time, to *time.Time, sectionID uint) models.ChildContract {
 	return models.ChildContract{
 		ChildID: childID,
 		BaseContract: models.BaseContract{
@@ -733,7 +730,7 @@ func makeChildContract(childID uint, from time.Time, to *time.Time, sectionID *u
 // - ~30% of children have multiple contracts (contract history)
 //
 //nolint:gosec // G404: math/rand is fine for test data generation
-func createTestContractsDistributed(childID uint, birthdate time.Time, childIndex int, sectionID *uint) []models.ChildContract {
+func createTestContractsDistributed(childID uint, birthdate time.Time, childIndex int, sectionID uint) []models.ChildContract {
 	now := time.Now()
 
 	// Determine when this child's contract should start based on their index
@@ -903,7 +900,7 @@ func createTestEmployees(orgID uint, count int) []models.Employee {
 }
 
 // createEmployeeContract is a helper to create an employee contract
-func createEmployeeContract(db *gorm.DB, employeeID uint, staffCategory, grade string, step int, weeklyHours float64, from time.Time, to *time.Time, payPlanID uint, sectionID *uint) error {
+func createEmployeeContract(db *gorm.DB, employeeID uint, staffCategory, grade string, step int, weeklyHours float64, from time.Time, to *time.Time, payPlanID uint, sectionID uint) error {
 	contract := models.EmployeeContract{
 		EmployeeID: employeeID,
 		BaseContract: models.BaseContract{

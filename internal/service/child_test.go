@@ -347,6 +347,7 @@ func TestChildService_CreateContract(t *testing.T) {
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 
 	req := &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from,
 		To:         &to,
 		Properties: models.ContractProperties{"care_type": "ganztag", "supplements": []string{"ndh"}},
@@ -377,7 +378,8 @@ func TestChildService_CreateContract_ChildNotFound(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	req := &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	}
 
 	_, err := svc.CreateContract(ctx, 999, org.ID, req)
@@ -402,7 +404,8 @@ func TestChildService_CreateContract_WrongOrg(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	req := &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	}
 
 	// Try to create contract via wrong organization
@@ -428,8 +431,9 @@ func TestChildService_CreateContract_InvalidPeriod(t *testing.T) {
 	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC) // Before from
 
 	req := &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	}
 
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, req)
@@ -454,6 +458,7 @@ func TestChildService_CreateContract_OverlappingContract(t *testing.T) {
 	from1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	req1 := &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from1,
 		To:         &to1,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
@@ -467,6 +472,7 @@ func TestChildService_CreateContract_OverlappingContract(t *testing.T) {
 	from2 := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC) // Overlaps with first
 	to2 := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 	req2 := &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from2,
 		To:         &to2,
 		Properties: models.ContractProperties{"care_type": "halbtag"},
@@ -493,8 +499,9 @@ func TestChildService_CreateContract_OngoingContract(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	// No 'to' date means ongoing contract
 	req := &models.ChildContractCreateRequest{
-		From: from,
-		To:   nil,
+		SectionID: 1,
+		From:      from,
+		To:        nil,
 	}
 
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, req)
@@ -521,7 +528,8 @@ func TestChildService_CreateContract_BeforeBirthdate(t *testing.T) {
 	// Contract start date before birthdate should fail
 	fromBeforeBirth := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: fromBeforeBirth,
+		SectionID: 1,
+		From:      fromBeforeBirth,
 	})
 	if err == nil {
 		t.Fatal("expected error for contract start before birthdate, got nil")
@@ -533,13 +541,59 @@ func TestChildService_CreateContract_BeforeBirthdate(t *testing.T) {
 	// Contract start date on birthdate should succeed
 	fromOnBirth := time.Date(2022, 6, 15, 0, 0, 0, 0, time.UTC)
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: fromOnBirth,
+		SectionID: 1,
+		From:      fromOnBirth,
 	})
 	if err != nil {
 		t.Fatalf("expected no error for contract on birthdate, got %v", err)
 	}
 	if contract == nil {
 		t.Fatal("expected contract, got nil")
+	}
+}
+
+func TestChildService_CreateContract_SectionNotFound(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID: 99999,
+		From:      time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	})
+	if err == nil {
+		t.Fatal("expected error for non-existent section, got nil")
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestChildService_CreateContract_SectionFromWrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	child := createTestChild(t, db, "John", "Doe", org1.ID)
+
+	// Get org2's default section
+	var org2Section models.Section
+	db.Where("organization_id = ?", org2.ID).First(&org2Section)
+
+	_, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{
+		SectionID: org2Section.ID,
+		From:      time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	})
+	if err == nil {
+		t.Fatal("expected error for section from wrong org, got nil")
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
 
@@ -554,11 +608,11 @@ func TestChildService_ListContracts(t *testing.T) {
 	// Create two contracts
 	from1 := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2022, 12, 31, 0, 0, 0, 0, time.UTC)
-	req1 := &models.ChildContractCreateRequest{From: from1, To: &to1, Properties: models.ContractProperties{"care_type": "halbtag"}}
+	req1 := &models.ChildContractCreateRequest{SectionID: 1, From: from1, To: &to1, Properties: models.ContractProperties{"care_type": "halbtag"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, req1)
 
 	from2 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req2 := &models.ChildContractCreateRequest{From: from2, Properties: models.ContractProperties{"care_type": "ganztag"}}
+	req2 := &models.ChildContractCreateRequest{SectionID: 1, From: from2, Properties: models.ContractProperties{"care_type": "ganztag"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, req2)
 
 	contracts, _, err := svc.ListContracts(ctx, child.ID, org.ID, 100, 0)
@@ -600,7 +654,7 @@ func TestChildService_ListContracts_WrongOrg(t *testing.T) {
 
 	// Create a contract for child in org1
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
+	req := &models.ChildContractCreateRequest{SectionID: 1, From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to list contracts from wrong organization
@@ -624,7 +678,7 @@ func TestChildService_ListByOrganizationAndSection_ActiveOn(t *testing.T) {
 	// Child with active contract
 	childActive := createTestChild(t, db, "Active", "Child", org.ID)
 	from := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	_, err := svc.CreateContract(ctx, childActive.ID, org.ID, &models.ChildContractCreateRequest{From: from})
+	_, err := svc.CreateContract(ctx, childActive.ID, org.ID, &models.ChildContractCreateRequest{SectionID: 1, From: from})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -633,7 +687,7 @@ func TestChildService_ListByOrganizationAndSection_ActiveOn(t *testing.T) {
 	childExpired := createTestChild(t, db, "Expired", "Child", org.ID)
 	fromExpired := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	toExpired := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
-	_, err = svc.CreateContract(ctx, childExpired.ID, org.ID, &models.ChildContractCreateRequest{From: fromExpired, To: &toExpired})
+	_, err = svc.CreateContract(ctx, childExpired.ID, org.ID, &models.ChildContractCreateRequest{SectionID: 1, From: fromExpired, To: &toExpired})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -739,7 +793,7 @@ func TestChildService_DeleteContract_WrongOrg(t *testing.T) {
 
 	// Create a contract
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
+	req := &models.ChildContractCreateRequest{SectionID: 1, From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
 	contract, _ := svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to delete contract from wrong organization
@@ -771,7 +825,7 @@ func TestChildService_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	// Create an ongoing contract
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	req := &models.ChildContractCreateRequest{From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
+	req := &models.ChildContractCreateRequest{SectionID: 1, From: from, Properties: models.ContractProperties{"care_type": "ganztag"}}
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, req)
 
 	// Try to get current contract from wrong organization
@@ -816,6 +870,7 @@ func TestChildService_CalculateFunding_BasicCalculation(t *testing.T) {
 	// Create contract with attributes
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag", "supplements": []string{"ndh"}},
 	})
@@ -872,6 +927,7 @@ func TestChildService_CalculateFunding_NoFundingAssigned(t *testing.T) {
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag", "supplements": []string{"ndh"}},
 	})
@@ -920,6 +976,7 @@ func TestChildService_CalculateFunding_NoMatchingPeriod(t *testing.T) {
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -960,6 +1017,7 @@ func TestChildService_CalculateFunding_NoMatchingAgeProperty(t *testing.T) {
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -999,6 +1057,7 @@ func TestChildService_CalculateFunding_PartialAttributeMatch(t *testing.T) {
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag", "unknown_key": "xyz"}, // unknown_key doesn't match any funding property
 	})
@@ -1039,6 +1098,7 @@ func TestChildService_CalculateFunding_SingleProperty(t *testing.T) {
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1076,6 +1136,7 @@ func TestChildService_CalculateFunding_ChildNoActiveOnDate(t *testing.T) {
 	db.Save(childActive)
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, childActive.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1121,6 +1182,7 @@ func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
 	db.Save(child1)
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child1.ID, org1.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1130,6 +1192,7 @@ func TestChildService_CalculateFunding_WrongOrg(t *testing.T) {
 	child2.Birthdate = time.Date(2022, 1, 15, 0, 0, 0, 0, time.UTC)
 	db.Save(child2)
 	_, _ = svc.CreateContract(ctx, child2.ID, org2.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1170,6 +1233,7 @@ func TestChildService_CalculateFunding_WeeklyHoursFromFundingPeriod(t *testing.T
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1206,6 +1270,7 @@ func TestChildService_CalculateFunding_NoMatchingPeriod_WeeklyHoursZero(t *testi
 
 	fromDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       fromDate,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -1236,7 +1301,8 @@ func TestChildService_GetContractCountByMonth_BasicCounting(t *testing.T) {
 	// Create contract starting 2025-01-01
 	from := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1275,8 +1341,9 @@ func TestChildService_GetContractCountByMonth_ContractEndsJuly(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2025, 7, 31, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1312,7 +1379,8 @@ func TestChildService_GetContractCountByMonth_MultipleYears(t *testing.T) {
 	// Create ongoing contract
 	from := time.Date(2023, 6, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 
 	stats, err := svc.GetContractCountByMonth(ctx, org.ID, 2023, 2025)
@@ -1399,7 +1467,8 @@ func TestChildService_GetContractCountByMonth_WrongOrg(t *testing.T) {
 	child := createTestChild(t, db, "John", "Doe", org1.ID)
 	from := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 
 	// Query stats for org2 - should not include org1's children
@@ -1427,22 +1496,25 @@ func TestChildService_GetContractCountByMonth_MultipleChildrenDifferentContracts
 	from1 := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2025, 7, 31, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from1,
-		To:   &to1,
+		SectionID: 1,
+		From:      from1,
+		To:        &to1,
 	})
 
 	// Child 2: contract Aug 2025 onwards
 	child2 := createTestChild(t, db, "Child2", "Test", org.ID)
 	from2 := time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child2.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from2,
+		SectionID: 1,
+		From:      from2,
 	})
 
 	// Child 3: contract all year
 	child3 := createTestChild(t, db, "Child3", "Test", org.ID)
 	from3 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child3.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from3,
+		SectionID: 1,
+		From:      from3,
 	})
 
 	stats, err := svc.GetContractCountByMonth(ctx, org.ID, 2025, 2025)
@@ -1524,7 +1596,8 @@ func TestChildService_GetAgeDistribution_BasicDistribution(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	for _, childID := range []uint{child1.ID, child2.ID, child3.ID} {
 		_, err := svc.CreateContract(ctx, childID, org.ID, &models.ChildContractCreateRequest{
-			From: from,
+			SectionID: 1,
+			From:      from,
 		})
 		if err != nil {
 			t.Fatalf("failed to create contract: %v", err)
@@ -1631,8 +1704,9 @@ func TestChildService_GetAgeDistribution_ContractExpiredBeforeDate(t *testing.T)
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC) // Expired before refDate
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1663,7 +1737,8 @@ func TestChildService_GetAgeDistribution_ContractStartsAfterDate(t *testing.T) {
 
 	from := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC) // Starts after refDate
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1697,7 +1772,8 @@ func TestChildService_GetAgeDistribution_OldestBucket(t *testing.T) {
 		db.Save(child)
 
 		_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-			From: from,
+			SectionID: 1,
+			From:      from,
 		})
 		if err != nil {
 			t.Fatalf("failed to create contract: %v", err)
@@ -1750,7 +1826,8 @@ func TestChildService_GetAgeDistribution_YoungestBucket(t *testing.T) {
 
 	from := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -1793,7 +1870,8 @@ func TestChildService_GetAgeDistribution_BirthdayEdgeCase(t *testing.T) {
 
 	from := time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 
 	// Test day before birthday - should be age 2
@@ -1854,7 +1932,8 @@ func TestChildService_GetAgeDistribution_WrongOrg(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{
-		From: from,
+		SectionID: 1,
+		From:      from,
 	})
 
 	// Query stats for org2 - should not include org1's children
@@ -1884,7 +1963,8 @@ func TestChildService_GetAgeDistribution_MultipleChildrenSameAge(t *testing.T) {
 		db.Save(child)
 
 		_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-			From: from,
+			SectionID: 1,
+			From:      from,
 		})
 	}
 
@@ -1972,8 +2052,9 @@ func TestChildService_GetAgeDistribution_HistoricalDate(t *testing.T) {
 	from := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
 	_, _ = svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	})
 
 	// Query for a date when contract was active
@@ -2013,6 +2094,7 @@ func TestChildService_GetContractByID(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	req := &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from,
 		To:         &to,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
@@ -2048,7 +2130,7 @@ func TestChildService_GetContractByID_WrongChild(t *testing.T) {
 	child2 := createTestChild(t, db, "Jane", "Doe", org.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{From: from})
+	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{SectionID: 1, From: from})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -2075,7 +2157,7 @@ func TestChildService_GetContractByID_WrongOrg(t *testing.T) {
 	child := createTestChild(t, db, "John", "Doe", org1.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{From: from})
+	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{SectionID: 1, From: from})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -2124,6 +2206,7 @@ func TestChildService_GetCurrentContract(t *testing.T) {
 	// Create ongoing contract (no end date)
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})
@@ -2159,8 +2242,9 @@ func TestChildService_GetCurrentContract_NoActiveContract(t *testing.T) {
 	from := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -2191,6 +2275,7 @@ func TestChildService_UpdateContract(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from,
 		To:         &to,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
@@ -2235,8 +2320,9 @@ func TestChildService_UpdateContract_InvalidPeriod(t *testing.T) {
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from,
-		To:   &to,
+		SectionID: 1,
+		From:      from,
+		To:        &to,
 	})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
@@ -2270,8 +2356,9 @@ func TestChildService_UpdateContract_OverlapConflict(t *testing.T) {
 	from1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	to1 := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
 	_, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from1,
-		To:   &to1,
+		SectionID: 1,
+		From:      from1,
+		To:        &to1,
 	})
 	if err != nil {
 		t.Fatalf("failed to create first contract: %v", err)
@@ -2281,8 +2368,9 @@ func TestChildService_UpdateContract_OverlapConflict(t *testing.T) {
 	from2 := time.Date(2024, 8, 1, 0, 0, 0, 0, time.UTC)
 	to2 := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	contract2, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
-		From: from2,
-		To:   &to2,
+		SectionID: 1,
+		From:      from2,
+		To:        &to2,
 	})
 	if err != nil {
 		t.Fatalf("failed to create second contract: %v", err)
@@ -2315,7 +2403,7 @@ func TestChildService_UpdateContract_WrongOrg(t *testing.T) {
 	child := createTestChild(t, db, "John", "Doe", org1.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{From: from})
+	contract, err := svc.CreateContract(ctx, child.ID, org1.ID, &models.ChildContractCreateRequest{SectionID: 1, From: from})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -2345,7 +2433,7 @@ func TestChildService_UpdateContract_WrongChild(t *testing.T) {
 	child2 := createTestChild(t, db, "Jane", "Doe", org.ID)
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{From: from})
+	contract, err := svc.CreateContract(ctx, child1.ID, org.ID, &models.ChildContractCreateRequest{SectionID: 1, From: from})
 	if err != nil {
 		t.Fatalf("failed to create contract: %v", err)
 	}
@@ -2379,6 +2467,7 @@ func TestChildService_DeleteContract(t *testing.T) {
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
 		From:       from,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
 	})

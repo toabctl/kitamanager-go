@@ -2,10 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
 	"strings"
-
-	"gorm.io/gorm"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -182,29 +179,3 @@ func (s *SectionService) DeleteByIDAndOrg(ctx context.Context, id, orgID uint) e
 	return nil
 }
 
-// GetOrCreateDefaultSection gets or creates the default "Unassigned" section for an organization
-func (s *SectionService) GetOrCreateDefaultSection(ctx context.Context, orgID uint, createdBy string) (*models.Section, error) {
-	// Try to find existing default section
-	section, err := s.store.FindDefaultSection(ctx, orgID)
-	if err == nil {
-		return section, nil
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, apperror.InternalWrap(err, "failed to check for default section")
-	}
-
-	// Create default section
-	section = &models.Section{
-		Name:           "Unassigned",
-		OrganizationID: orgID,
-		IsDefault:      true,
-		CreatedBy:      createdBy,
-	}
-
-	if err := s.store.Create(ctx, section); err != nil {
-		return nil, apperror.InternalWrap(err, "failed to create default section")
-	}
-
-	return section, nil
-}

@@ -126,9 +126,10 @@ func TestOrganizationService_Create(t *testing.T) {
 	ctx := context.Background()
 
 	req := &models.OrganizationCreateRequest{
-		Name:   "New Organization",
-		Active: true,
-		State:  "berlin",
+		Name:               "New Organization",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Bären",
 	}
 
 	org, err := svc.Create(ctx, req, "creator@example.com")
@@ -157,9 +158,10 @@ func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
 	ctx := context.Background()
 
 	req := &models.OrganizationCreateRequest{
-		Name:   "New Organization",
-		Active: true,
-		State:  "berlin",
+		Name:               "New Organization",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Bären",
 	}
 
 	org, err := svc.Create(ctx, req, "creator@example.com")
@@ -177,6 +179,58 @@ func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
 	}
 	if !groups[0].IsDefault {
 		t.Error("expected default group to have IsDefault = true")
+	}
+}
+
+func TestOrganizationService_Create_CreatesDefaultSection(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	sectionSvc := createSectionService(db)
+	ctx := context.Background()
+
+	req := &models.OrganizationCreateRequest{
+		Name:               "New Organization",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Bären",
+	}
+
+	org, err := svc.Create(ctx, req, "creator@example.com")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Check that default section was created with the correct name
+	sections, total, _ := sectionSvc.ListByOrganization(ctx, org.ID, "", 10, 0)
+	if total != 1 {
+		t.Fatalf("expected 1 section (default), got %d", total)
+	}
+	if sections[0].Name != "Bären" {
+		t.Errorf("default section name = %v, want Bären", sections[0].Name)
+	}
+	if !sections[0].IsDefault {
+		t.Error("expected default section to have IsDefault = true")
+	}
+}
+
+func TestOrganizationService_Create_EmptyDefaultSectionName(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createOrganizationService(db)
+	ctx := context.Background()
+
+	req := &models.OrganizationCreateRequest{
+		Name:               "New Organization",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "",
+	}
+
+	_, err := svc.Create(ctx, req, "creator@example.com")
+	if err == nil {
+		t.Fatal("expected error for empty default_section_name, got nil")
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
 
@@ -219,9 +273,10 @@ func TestOrganizationService_Create_TrimmedName(t *testing.T) {
 	ctx := context.Background()
 
 	req := &models.OrganizationCreateRequest{
-		Name:   "  Trimmed Name  ",
-		Active: true,
-		State:  "berlin",
+		Name:               "  Trimmed Name  ",
+		Active:             true,
+		State:              "berlin",
+		DefaultSectionName: "Default",
 	}
 
 	org, err := svc.Create(ctx, req, "test@example.com")

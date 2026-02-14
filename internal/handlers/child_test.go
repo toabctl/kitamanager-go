@@ -163,6 +163,7 @@ func TestChildHandler_ListContracts(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -171,7 +172,8 @@ func TestChildHandler_ListContracts(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -198,6 +200,7 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -206,6 +209,7 @@ func TestChildHandler_GetCurrentContract(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
+			SectionID:  sectionID,
 			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 			Properties: models.ContractProperties{"care_type": "ganztag"},
 		},
@@ -255,6 +259,7 @@ func TestChildHandler_CreateContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -264,6 +269,7 @@ func TestChildHandler_CreateContract(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
+		SectionID:  sectionID,
 		From:       time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		To:         nil,
 		Properties: models.ContractProperties{"care_type": "ganztag", "supplements": []string{"ndh"}},
@@ -289,6 +295,7 @@ func TestChildHandler_CreateContract_SameDay(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -300,6 +307,7 @@ func TestChildHandler_CreateContract_SameDay(t *testing.T) {
 	// Create a same-day contract (from == to)
 	sameDay := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
 	body := models.ChildContractCreateRequest{
+		SectionID:  sectionID,
 		From:       sameDay,
 		To:         &sameDay,
 		Properties: models.ContractProperties{"care_type": "ganztag"},
@@ -328,6 +336,7 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -337,6 +346,7 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
+			SectionID:  sectionID,
 			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 			Properties: models.ContractProperties{"care_type": "ganztag"},
 		},
@@ -347,6 +357,7 @@ func TestChildHandler_CreateContract_Overlap(t *testing.T) {
 
 	// Try to create overlapping contract
 	body := models.ChildContractCreateRequest{
+		SectionID:  sectionID,
 		From:       time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		To:         nil,
 		Properties: models.ContractProperties{"care_type": "halbtag"},
@@ -365,6 +376,7 @@ func TestChildHandler_DeleteContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -373,7 +385,8 @@ func TestChildHandler_DeleteContract(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -660,13 +673,15 @@ func TestChildHandler_CreateContract_ChildNotFound(t *testing.T) {
 	childService := createChildService(db)
 	handler := NewChildHandler(childService, createAuditService(db))
 
-	createTestOrganization(t, db, "Test Org")
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		SectionID: sectionID,
+		From:      time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/999/contracts", body)
@@ -681,13 +696,15 @@ func TestChildHandler_CreateContract_InvalidChildID(t *testing.T) {
 	childService := createChildService(db)
 	handler := NewChildHandler(childService, createAuditService(db))
 
-	createTestOrganization(t, db, "Test Org")
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	r := setupTestRouter()
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		SectionID: sectionID,
+		From:      time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/invalid/contracts", body)
@@ -705,6 +722,7 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -715,6 +733,7 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
+			SectionID:  sectionID,
 			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 			Properties: models.ContractProperties{"care_type": "ganztag"},
 		},
@@ -725,6 +744,7 @@ func TestChildHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 
 	// Create contract starting Jan 1, 2025 (day after previous ends) - should succeed
 	body := models.ChildContractCreateRequest{
+		SectionID:  sectionID,
 		From:       time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		Properties: models.ContractProperties{"care_type": "halbtag"},
 	}
@@ -746,6 +766,7 @@ func TestChildHandler_CreateContract_SameDayTransitionRejected(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -756,6 +777,7 @@ func TestChildHandler_CreateContract_SameDayTransitionRejected(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
+			SectionID:  sectionID,
 			Period:     models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 			Properties: models.ContractProperties{"care_type": "ganztag"},
 		},
@@ -766,6 +788,7 @@ func TestChildHandler_CreateContract_SameDayTransitionRejected(t *testing.T) {
 
 	// Try to create contract starting Jan 31, 2025 (same day as previous ends) - should fail
 	body := models.ChildContractCreateRequest{
+		SectionID:  sectionID,
 		From:       time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC),
 		Properties: models.ContractProperties{"care_type": "halbtag"},
 	}
@@ -915,6 +938,7 @@ func TestChildHandler_CreateContract_FromAfterTo(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -925,8 +949,9 @@ func TestChildHandler_CreateContract_FromAfterTo(t *testing.T) {
 
 	toDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	body := models.ChildContractCreateRequest{
-		From: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
-		To:   &toDate,
+		SectionID: sectionID,
+		From:      time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
+		To:        &toDate,
 	}
 
 	w := performRequest(r, "POST", "/organizations/1/children/1/contracts", body)
@@ -1049,6 +1074,7 @@ func TestChildHandler_CreateContract_WrongOrg(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create child in org1
@@ -1061,7 +1087,8 @@ func TestChildHandler_CreateContract_WrongOrg(t *testing.T) {
 	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
 
 	body := models.ChildContractCreateRequest{
-		From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		SectionID: sectionID,
+		From:      time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	// Try to create contract for org1's child via org2's URL
@@ -1078,6 +1105,7 @@ func TestChildHandler_DeleteContract_WrongOrg(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create child in org1
@@ -1090,7 +1118,8 @@ func TestChildHandler_DeleteContract_WrongOrg(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -1112,6 +1141,7 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create child in org1
@@ -1124,7 +1154,8 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -1136,6 +1167,133 @@ func TestChildHandler_GetCurrentContract_WrongOrg(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("SECURITY: expected status %d when getting current contract from wrong org, got %d", http.StatusNotFound, w.Code)
+	}
+}
+
+// CROSS-ORG SECTION TESTS: Ensure sections from one org can't be used in another
+
+func TestChildHandler_CreateContract_SectionFromWrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService, createAuditService(db))
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	org2SectionID := ensureTestSection(t, db, org2.ID)
+
+	// Create child in org1
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
+
+	// Try to create contract with org2's section for org1's child
+	body := models.ChildContractCreateRequest{
+		SectionID: org2SectionID,
+		From:      time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/children/%d/contracts", org1.ID, child.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("SECURITY: expected status %d when using section from wrong org, got %d: %s",
+			http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestChildHandler_UpdateContract_SectionFromWrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService, createAuditService(db))
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org1SectionID := ensureTestSection(t, db, org1.ID)
+	org2 := createTestOrganization(t, db, "Org 2")
+	org2SectionID := ensureTestSection(t, db, org2.ID)
+
+	// Create child in org1 with a valid contract
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	db.Create(child)
+
+	contract := &models.ChildContract{
+		ChildID: child.ID,
+		BaseContract: models.BaseContract{
+			SectionID: org1SectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+		},
+	}
+	db.Create(contract)
+
+	r := setupTestRouter()
+	r.PUT("/organizations/:orgId/children/:id/contracts/:contractId", handler.UpdateContract)
+
+	// Try to update contract to use org2's section
+	body := models.ChildContractUpdateRequest{
+		SectionID: &org2SectionID,
+	}
+
+	w := performRequest(r, "PUT", fmt.Sprintf("/organizations/%d/children/%d/contracts/%d", org1.ID, child.ID, contract.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("SECURITY: expected status %d when updating to section from wrong org, got %d: %s",
+			http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestChildHandler_CreateContract_MissingSectionID(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
+
+	// Send request without section_id (required field)
+	body := map[string]interface{}{
+		"from": "2025-01-01",
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/children/%d/contracts", org.ID, child.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for missing section_id, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+func TestChildHandler_CreateContract_NonExistentSection(t *testing.T) {
+	db := setupTestDB(t)
+	childService := createChildService(db)
+	handler := NewChildHandler(childService, createAuditService(db))
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := &models.Child{
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	db.Create(child)
+
+	r := setupTestRouter()
+	r.POST("/organizations/:orgId/children/:id/contracts", handler.CreateContract)
+
+	body := models.ChildContractCreateRequest{
+		SectionID: 99999, // Non-existent section
+		From:      time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	w := performRequest(r, "POST", fmt.Sprintf("/organizations/%d/children/%d/contracts", org.ID, child.ID), body)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d for non-existent section, got %d: %s", http.StatusBadRequest, w.Code, w.Body.String())
 	}
 }
 
@@ -1591,6 +1749,7 @@ func TestChildHandler_GetContractCountByMonth(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with contract
 	child := &models.Child{
@@ -1607,7 +1766,8 @@ func TestChildHandler_GetContractCountByMonth(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -1767,6 +1927,7 @@ func TestChildHandler_GetContractCountByMonth_ChildrenWithExpiredContracts(t *te
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with expired contract
 	child := &models.Child{
@@ -1784,7 +1945,8 @@ func TestChildHandler_GetContractCountByMonth_ChildrenWithExpiredContracts(t *te
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
 	})
 
@@ -1817,6 +1979,7 @@ func TestChildHandler_GetContractCountByMonth_ContractStartMidYear(t *testing.T)
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with contract starting in July
 	child := &models.Child{
@@ -1832,7 +1995,8 @@ func TestChildHandler_GetContractCountByMonth_ContractStartMidYear(t *testing.T)
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)}, // Starts July 2025
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)}, // Starts July 2025
 		},
 	})
 
@@ -1869,6 +2033,7 @@ func TestChildHandler_GetContractCountByMonth_WrongOrg(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create child in org1
@@ -1884,7 +2049,8 @@ func TestChildHandler_GetContractCountByMonth_WrongOrg(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -1915,6 +2081,7 @@ func TestChildHandler_GetContractCountByMonth_MultipleChildren(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create 3 children with different contract periods
 	for i := 1; i <= 3; i++ {
@@ -1932,7 +2099,8 @@ func TestChildHandler_GetContractCountByMonth_MultipleChildren(t *testing.T) {
 		db.Create(&models.ChildContract{
 			ChildID: child.ID,
 			BaseContract: models.BaseContract{
-				Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+				SectionID: sectionID,
+				Period:    models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
 			},
 		})
 	}
@@ -1991,6 +2159,7 @@ func TestChildHandler_GetContractCountByMonth_FutureYears(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with ongoing contract
 	child := &models.Child{
@@ -2005,7 +2174,8 @@ func TestChildHandler_GetContractCountByMonth_FutureYears(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}, // No end date
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}, // No end date
 		},
 	})
 
@@ -2040,6 +2210,7 @@ func TestChildHandler_GetAgeDistribution(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create children with different ages
 	refDate := time.Date(2025, 1, 28, 0, 0, 0, 0, time.UTC)
@@ -2057,7 +2228,8 @@ func TestChildHandler_GetAgeDistribution(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -2182,6 +2354,7 @@ func TestChildHandler_GetAgeDistribution_WrongOrg(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org1 := createTestOrganization(t, db, "Org 1")
+	sectionID := ensureTestSection(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create child in org1
@@ -2197,7 +2370,8 @@ func TestChildHandler_GetAgeDistribution_WrongOrg(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	})
 
@@ -2225,6 +2399,7 @@ func TestChildHandler_GetAgeDistribution_AllBuckets(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	refDate := time.Date(2025, 1, 28, 0, 0, 0, 0, time.UTC)
 
 	// Create one child for each age bucket (0-6+)
@@ -2242,7 +2417,8 @@ func TestChildHandler_GetAgeDistribution_AllBuckets(t *testing.T) {
 		db.Create(&models.ChildContract{
 			ChildID: child.ID,
 			BaseContract: models.BaseContract{
-				Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+				SectionID: sectionID,
+				Period:    models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 			},
 		})
 	}
@@ -2288,6 +2464,7 @@ func TestChildHandler_GetAgeDistribution_ExpiredContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with expired contract
 	child := &models.Child{
@@ -2303,7 +2480,8 @@ func TestChildHandler_GetAgeDistribution_ExpiredContract(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
 		},
 	})
 
@@ -2331,6 +2509,7 @@ func TestChildHandler_GetAgeDistribution_FutureContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with future contract
 	child := &models.Child{
@@ -2345,7 +2524,8 @@ func TestChildHandler_GetAgeDistribution_FutureContract(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)}, // Starts in future
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)}, // Starts in future
 		},
 	})
 
@@ -2373,6 +2553,7 @@ func TestChildHandler_GetAgeDistribution_HistoricalDate(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with historical contract
 	child := &models.Child{
@@ -2388,7 +2569,8 @@ func TestChildHandler_GetAgeDistribution_HistoricalDate(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC), To: &to},
 		},
 	})
 
@@ -2427,6 +2609,7 @@ func TestChildHandler_GetContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -2435,7 +2618,8 @@ func TestChildHandler_GetContract(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -2505,6 +2689,7 @@ func TestChildHandler_GetContract_WrongChild(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child1 := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Child", LastName: "One", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -2519,7 +2704,8 @@ func TestChildHandler_GetContract_WrongChild(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child1.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -2545,6 +2731,7 @@ func TestChildHandler_UpdateContract(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -2553,7 +2740,8 @@ func TestChildHandler_UpdateContract(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -2612,6 +2800,7 @@ func TestChildHandler_UpdateContract_Overlap(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -2622,14 +2811,16 @@ func TestChildHandler_UpdateContract_Overlap(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1},
 		},
 	})
 
 	contract2 := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract2)
@@ -2656,6 +2847,7 @@ func TestChildHandler_UpdateContract_InvalidBody(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 	child := &models.Child{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Child", Gender: "female", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
@@ -2664,7 +2856,8 @@ func TestChildHandler_UpdateContract_InvalidBody(t *testing.T) {
 	contract := &models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
-			Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID: sectionID,
+			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 	}
 	db.Create(contract)
@@ -2693,6 +2886,7 @@ func TestChildHandler_GetFunding(t *testing.T) {
 	handler := NewChildHandler(childService, createAuditService(db))
 
 	org := createTestOrganization(t, db, "Test Org")
+	sectionID := ensureTestSection(t, db, org.ID)
 
 	// Create child with active contract
 	child := &models.Child{
@@ -2702,6 +2896,7 @@ func TestChildHandler_GetFunding(t *testing.T) {
 	db.Create(&models.ChildContract{
 		ChildID: child.ID,
 		BaseContract: models.BaseContract{
+			SectionID:  sectionID,
 			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 			Properties: models.ContractProperties{"care_type": "ganztag"},
 		},

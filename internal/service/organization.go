@@ -101,6 +101,11 @@ func (s *OrganizationService) Create(ctx context.Context, req *models.Organizati
 		return nil, apperror.BadRequest("invalid state, must be one of: berlin")
 	}
 
+	sectionName, err := validateRequiredName(req.DefaultSectionName)
+	if err != nil {
+		return nil, apperror.BadRequest("default_section_name is required")
+	}
+
 	org := &models.Organization{
 		Name:      name,
 		Active:    req.Active,
@@ -116,8 +121,15 @@ func (s *OrganizationService) Create(ctx context.Context, req *models.Organizati
 		CreatedBy: createdBy,
 	}
 
-	// Create organization and default group in a single transaction
-	if err := s.store.CreateWithDefaultGroup(ctx, org, defaultGroup); err != nil {
+	// Create default section for the organization
+	defaultSection := &models.Section{
+		Name:      sectionName,
+		IsDefault: true,
+		CreatedBy: createdBy,
+	}
+
+	// Create organization, default group, and default section in a single transaction
+	if err := s.store.CreateWithDefaults(ctx, org, defaultGroup, defaultSection); err != nil {
 		return nil, apperror.InternalWrap(err, "failed to create organization")
 	}
 

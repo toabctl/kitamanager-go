@@ -7,8 +7,8 @@ import {
   deleteSectionViaApi,
   getSectionsViaApi,
   createChildViaApi,
+  createChildContractViaApi,
   deleteChildViaApi,
-  updateChildSectionViaApi,
   uniqueName,
 } from './utils/test-helpers';
 
@@ -25,12 +25,12 @@ test.describe('Sections', () => {
     orgId = org.id;
   });
 
-  test('should display sections board with Unassigned column', async ({ page }) => {
+  test('should display sections board', async ({ page }) => {
     await page.goto(`/organizations/${orgId}/sections`);
     await page.waitForLoadState('networkidle');
 
-    // Board tab should be active by default
-    await expect(page.getByText(/unassigned/i)).toBeVisible({ timeout: 10000 });
+    // Board tab should be active by default and show drag hint
+    await expect(page.getByText(/drag/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('should switch to Manage tab and create a section', async ({ page }) => {
@@ -102,8 +102,11 @@ test.describe('Sections', () => {
       gender: 'female',
     });
 
-    // Assign child to section
-    await updateChildSectionViaApi(page, token, orgId, child.id, section.id);
+    // Create a contract with the section so the child appears on the board
+    await createChildContractViaApi(page, token, orgId, child.id, {
+      from: '2020-02-01',
+      section_id: section.id,
+    });
 
     await page.goto(`/organizations/${orgId}/sections`);
     await page.waitForLoadState('networkidle');
@@ -117,23 +120,4 @@ test.describe('Sections', () => {
     await deleteSectionViaApi(page, token, orgId, section.id);
   });
 
-  test('should show Unassigned column with unassigned children', async ({ page }) => {
-    // Create a child without section assignment
-    const child = await createChildViaApi(page, token, orgId, {
-      first_name: 'Unassigned',
-      last_name: uniqueName('Child'),
-      birthdate: '2021-05-10',
-      gender: 'male',
-    });
-
-    await page.goto(`/organizations/${orgId}/sections`);
-    await page.waitForLoadState('networkidle');
-
-    // Unassigned column should contain the child
-    await expect(page.getByText(/unassigned/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Unassigned')).toBeVisible({ timeout: 10000 });
-
-    // Cleanup
-    await deleteChildViaApi(page, token, orgId, child.id);
-  });
 });

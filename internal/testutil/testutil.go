@@ -46,6 +46,8 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 }
 
 // CreateTestOrganization creates an organization for testing.
+// It also creates a default section ("Default") for the organization,
+// mirroring what the real org creation endpoint does.
 func CreateTestOrganization(t *testing.T, db *gorm.DB, name string) *models.Organization {
 	t.Helper()
 
@@ -57,6 +59,18 @@ func CreateTestOrganization(t *testing.T, db *gorm.DB, name string) *models.Orga
 	if err := db.Create(org).Error; err != nil {
 		t.Fatalf("failed to create test organization: %v", err)
 	}
+
+	// Auto-create a default section (mirrors production behavior)
+	section := &models.Section{
+		OrganizationID: org.ID,
+		Name:           "Default",
+		IsDefault:      true,
+		CreatedBy:      "test",
+	}
+	if err := db.Create(section).Error; err != nil {
+		t.Fatalf("failed to create default section for test organization: %v", err)
+	}
+
 	return org
 }
 

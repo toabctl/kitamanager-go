@@ -203,6 +203,7 @@ definitions:
         type: string
     required:
     - from
+    - section_id
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildContractResponse:
     properties:
@@ -475,6 +476,7 @@ definitions:
     required:
     - from
     - payplan_id
+    - section_id
     - staff_category
     - weekly_hours
     type: object
@@ -1026,6 +1028,10 @@ definitions:
       active:
         example: true
         type: boolean
+      default_section_name:
+        example: Bären
+        maxLength: 255
+        type: string
       name:
         example: Acme Corp
         maxLength: 255
@@ -1034,6 +1040,7 @@ definitions:
         example: berlin
         type: string
     required:
+    - default_section_name
     - name
     - state
     type: object

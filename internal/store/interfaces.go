@@ -46,7 +46,7 @@ type OrganizationStorer interface {
 	FindAll(ctx context.Context, search string, limit, offset int) ([]models.Organization, int64, error)
 	FindByID(ctx context.Context, id uint) (*models.Organization, error)
 	Create(ctx context.Context, org *models.Organization) error
-	CreateWithDefaultGroup(ctx context.Context, org *models.Organization, defaultGroup *models.Group) error
+	CreateWithDefaults(ctx context.Context, org *models.Organization, defaultGroup *models.Group, defaultSection *models.Section) error
 	Update(ctx context.Context, org *models.Organization) error
 	Delete(ctx context.Context, id uint) error
 }

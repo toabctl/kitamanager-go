@@ -75,6 +75,13 @@ export default function EmployeeContractsPage() {
   });
   const payPlans = payPlansData?.data ?? [];
 
+  const { data: sectionsData } = useQuery({
+    queryKey: queryKeys.sections.list(orgId),
+    queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+  const sections = sectionsData?.data ?? [];
+
   const createMutation = useMutation({
     mutationFn: (data: EmployeeContractCreateRequest) =>
       apiClient.createEmployeeContract(orgId, employeeId, data),
@@ -151,6 +158,7 @@ export default function EmployeeContractsPage() {
     defaultValues: {
       from: '',
       to: '',
+      section_id: 0,
       payplan_id: 0,
       staff_category: 'qualified',
       grade: '',
@@ -165,6 +173,7 @@ export default function EmployeeContractsPage() {
     reset({
       from: '',
       to: '',
+      section_id: 0,
       payplan_id: defaultPayPlanId,
       staff_category: 'qualified',
       grade: '',
@@ -179,6 +188,7 @@ export default function EmployeeContractsPage() {
     reset({
       from: formatDateForInput(contract.from),
       to: contract.to ? formatDateForInput(contract.to) : '',
+      section_id: contract.section_id,
       payplan_id: contract.payplan_id || 0,
       staff_category: contract.staff_category as 'qualified' | 'supplementary' | 'non_pedagogical',
       grade: contract.grade,
@@ -211,6 +221,7 @@ export default function EmployeeContractsPage() {
       createMutation.mutate({
         from: formatDateForApi(data.from) || data.from,
         to: formatDateForApi(data.to),
+        section_id: data.section_id,
         payplan_id: data.payplan_id,
         staff_category: data.staff_category,
         grade: data.grade,
@@ -369,6 +380,7 @@ export default function EmployeeContractsPage() {
         setValue={setValue}
         isSaving={createMutation.isPending || updateMutation.isPending}
         payPlans={payPlans}
+        sections={sections}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

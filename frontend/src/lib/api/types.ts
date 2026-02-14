@@ -125,6 +125,7 @@ export interface OrganizationCreateRequest {
   name: string;
   active?: boolean;
   state: string;
+  default_section_name: string;
 }
 
 export interface OrganizationUpdateRequest {
@@ -207,7 +208,7 @@ export interface EmployeeContract {
   employee_id: number;
   from: string;
   to?: string | null;
-  section_id?: number | null;
+  section_id: number;
   section_name?: string | null;
   staff_category: string;
   grade: string;
@@ -237,7 +238,7 @@ export interface EmployeeUpdateRequest {
 export interface EmployeeContractCreateRequest {
   from: string;
   to?: string | null;
-  section_id?: number | null;
+  section_id: number;
   staff_category: string;
   grade: string;
   step: number;
@@ -297,7 +298,7 @@ export interface ChildContract {
   child_id: number;
   from: string;
   to?: string | null;
-  section_id?: number | null;
+  section_id: number;
   section_name?: string | null;
   properties?: ContractProperties;
   created_at: string;
@@ -322,7 +323,7 @@ export interface ChildUpdateRequest {
 export interface ChildContractCreateRequest {
   from: string;
   to?: string | null;
-  section_id?: number | null;
+  section_id: number;
   properties?: ContractProperties;
 }
 

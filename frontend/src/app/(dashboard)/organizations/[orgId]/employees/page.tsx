@@ -86,6 +86,13 @@ export default function EmployeesPage() {
   });
   const payPlans = useMemo(() => payPlansData?.data ?? [], [payPlansData?.data]);
 
+  const { data: sectionsData } = useQuery({
+    queryKey: queryKeys.sections.list(orgId),
+    queryFn: () => apiClient.getSections(orgId, { limit: 100 }),
+    enabled: !!orgId,
+  });
+  const sections = useMemo(() => sectionsData?.data ?? [], [sectionsData?.data]);
+
   // Collect unique payplan IDs from employee contracts to fetch details for salary calc
   const payPlanIds = Array.from(
     new Set(
@@ -179,6 +186,7 @@ export default function EmployeesPage() {
     defaultValues: {
       from: '',
       to: '',
+      section_id: 0,
       payplan_id: 0,
       staff_category: 'qualified',
       grade: '',
@@ -231,6 +239,7 @@ export default function EmployeesPage() {
         resetContract({
           from: tomorrowStr,
           to: '',
+          section_id: active.section_id,
           payplan_id: active.payplan_id || defaultPayPlanId,
           staff_category: active.staff_category as
             | 'qualified'
@@ -244,6 +253,7 @@ export default function EmployeesPage() {
         resetContract({
           from: '',
           to: '',
+          section_id: 0,
           payplan_id: defaultPayPlanId,
           staff_category: 'qualified',
           grade: '',
@@ -276,6 +286,7 @@ export default function EmployeesPage() {
 
   const contractDetailsChanged = (
     newData: {
+      section_id: number;
       staff_category: string;
       grade: string;
       step: number;
@@ -285,6 +296,7 @@ export default function EmployeesPage() {
     oldContract: EmployeeContract
   ): boolean => {
     return (
+      newData.section_id !== oldContract.section_id ||
       newData.staff_category !== oldContract.staff_category ||
       newData.grade !== oldContract.grade ||
       newData.step !== oldContract.step ||
@@ -299,6 +311,7 @@ export default function EmployeesPage() {
         if (activeContract && endCurrentContract) {
           const hasChanges = contractDetailsChanged(
             {
+              section_id: data.section_id,
               staff_category: data.staff_category,
               grade: data.grade,
               step: data.step,
@@ -322,6 +335,7 @@ export default function EmployeesPage() {
           data: {
             from: formatDateForApi(data.from) || data.from,
             to: formatDateForApi(data.to),
+            section_id: data.section_id,
             staff_category: data.staff_category,
             grade: data.grade,
             step: data.step,
@@ -450,6 +464,7 @@ export default function EmployeesPage() {
         setValue={setValueContract}
         isSaving={createContractMutation.isPending}
         payPlans={payPlans}
+        sections={sections}
         activeContractInfo={
           activeContract
             ? {
