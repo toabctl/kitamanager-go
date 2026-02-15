@@ -108,7 +108,7 @@
   "statistics": {
     "title": "Statistics",
     "selectOrgForStats": "Select an organization to view statistics",
-    "childrenContractCount": "Children with Active Contracts",
+    "childrenContractCount": "Children",
     "chartError": "Failed to load chart data",
     "ageDistribution": "Children Age Distribution (Today)",
     "childrenCount": "Children",

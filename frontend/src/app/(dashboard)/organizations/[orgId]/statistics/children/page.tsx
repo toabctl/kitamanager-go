@@ -40,9 +40,9 @@ export default function ChildrenStatisticsPage() {
     enabled: !!orgId,
   });
 
-  const { data: contractCounts, isLoading: isLoadingContracts } = useQuery({
-    queryKey: queryKeys.statistics.contractCounts(orgId),
-    queryFn: () => apiClient.getChildrenContractCountByMonth(orgId),
+  const { data: staffingHours, isLoading: isLoadingContracts } = useQuery({
+    queryKey: queryKeys.statistics.staffingHours(orgId),
+    queryFn: () => apiClient.getStaffingHours(orgId),
     enabled: !!orgId,
   });
 
@@ -58,6 +58,22 @@ export default function ChildrenStatisticsPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('nav.statisticsChildren')}</h1>
       </div>
 
+      {/* Monthly Contract Counts (full width) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('statistics.childrenContractCount')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingContracts ? (
+            <Skeleton className="h-[350px] w-full" />
+          ) : staffingHours ? (
+            <MonthlyContractChart data={staffingHours} />
+          ) : (
+            <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Age Distribution */}
         <Card>
@@ -69,22 +85,6 @@ export default function ChildrenStatisticsPage() {
               <Skeleton className="h-[300px] w-full" />
             ) : ageDistribution ? (
               <AgeDistributionChart data={ageDistribution} />
-            ) : (
-              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Monthly Contract Counts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('statistics.childrenContractCount')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingContracts ? (
-              <Skeleton className="h-[300px] w-full" />
-            ) : contractCounts ? (
-              <MonthlyContractChart data={contractCounts} />
             ) : (
               <p className="text-muted-foreground">{t('statistics.chartError')}</p>
             )}

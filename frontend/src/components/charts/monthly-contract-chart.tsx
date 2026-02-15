@@ -1,50 +1,70 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ResponsiveLine } from '@nivo/line';
-import type { ChildrenContractCountByMonthResponse } from '@/lib/api/types';
+import type { StaffingHoursResponse } from '@/lib/api/types';
+import {
+  buildKitaYearBands,
+  formatDateLabel,
+  createKitaYearBackgroundLayer,
+  createTodayMarker,
+  chartTheme,
+} from './chart-utils';
 
 interface MonthlyContractChartProps {
-  data: ChildrenContractCountByMonthResponse;
+  data: StaffingHoursResponse;
 }
-
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
   const t = useTranslations();
 
-  const monthKeys = [
-    'jan',
-    'feb',
-    'mar',
-    'apr',
-    'may',
-    'jun',
-    'jul',
-    'aug',
-    'sep',
-    'oct',
-    'nov',
-    'dec',
+  const rawDates = data.data_points.map((dp) => dp.date);
+  const xLabels = rawDates.map(formatDateLabel);
+  const kitaYearBands = useMemo(() => buildKitaYearBands(rawDates), [rawDates]);
+
+  const KitaYearBackgroundLayer = useMemo(
+    () =>
+      createKitaYearBackgroundLayer(kitaYearBands, xLabels, (label) =>
+        t('statistics.kitaYear', { year: label })
+      ),
+    [kitaYearBands, xLabels, t]
+  );
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayLabel = formatDateLabel(todayStr);
+
+  const chartData = [
+    {
+      id: t('statistics.childrenContractCount'),
+      color: '#3b82f6',
+      data: data.data_points.map((dp) => ({
+        x: formatDateLabel(dp.date),
+        y: dp.child_count,
+      })),
+    },
   ];
 
-  // Transform data for Nivo line chart
-  const chartData = data.years.map((year, index) => ({
-    id: year.year.toString(),
-    color: COLORS[index % COLORS.length],
-    data: monthKeys.map((month, monthIndex) => ({
-      x: t(`months.${month}`),
-      y: year.counts[monthIndex] || 0,
-    })),
-  }));
-
   return (
-    <div className="h-[300px]">
+    <div className="h-[350px]">
       <ResponsiveLine
         data={chartData}
-        margin={{ top: 20, right: 110, bottom: 50, left: 60 }}
+        margin={{ top: 20, right: 30, bottom: 50, left: 60 }}
         xScale={{ type: 'point' }}
         yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false }}
+        layers={[
+          KitaYearBackgroundLayer,
+          'grid',
+          'markers',
+          'axes',
+          'areas',
+          'crosshair',
+          'lines',
+          'points',
+          'slices',
+          'mesh',
+          'legends',
+        ]}
         curve="monotoneX"
         axisTop={null}
         axisRight={null}
@@ -58,7 +78,7 @@ export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
           tickPadding: 5,
           tickRotation: 0,
         }}
-        colors={COLORS}
+        colors={['#3b82f6']}
         pointSize={8}
         pointColor={{ theme: 'background' }}
         pointBorderWidth={2}
@@ -66,56 +86,24 @@ export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
         pointLabelYOffset={-12}
         useMesh={true}
         enableSlices="x"
+        markers={[createTodayMarker(todayLabel, t('common.today'))]}
         legends={[
           {
-            anchor: 'bottom-right',
-            direction: 'column',
+            anchor: 'top-left',
+            direction: 'row',
             justify: false,
-            translateX: 100,
-            translateY: 0,
-            itemsSpacing: 0,
+            translateX: 0,
+            translateY: -20,
+            itemsSpacing: 16,
             itemDirection: 'left-to-right',
-            itemWidth: 80,
+            itemWidth: 200,
             itemHeight: 20,
             itemOpacity: 0.85,
             symbolSize: 12,
             symbolShape: 'circle',
           },
         ]}
-        theme={{
-          axis: {
-            ticks: {
-              text: {
-                fill: 'hsl(var(--muted-foreground))',
-              },
-            },
-          },
-          grid: {
-            line: {
-              stroke: 'hsl(var(--border))',
-            },
-          },
-          legends: {
-            text: {
-              fill: 'hsl(var(--foreground))',
-            },
-          },
-          crosshair: {
-            line: {
-              stroke: 'hsl(var(--foreground))',
-              strokeWidth: 1,
-              strokeOpacity: 0.35,
-            },
-          },
-          tooltip: {
-            container: {
-              background: 'hsl(var(--background))',
-              color: 'hsl(var(--foreground))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '6px',
-            },
-          },
-        }}
+        theme={chartTheme}
       />
     </div>
   );

@@ -108,7 +108,7 @@
   "statistics": {
     "title": "Statistiken",
     "selectOrgForStats": "Wählen Sie eine Organisation, um Statistiken anzuzeigen",
-    "childrenContractCount": "Kinder mit aktiven Verträgen",
+    "childrenContractCount": "Kinder",
     "chartError": "Fehler beim Laden der Diagrammdaten",
     "ageDistribution": "Kinder-Altersverteilung (Heute)",
     "childrenCount": "Kinder",
