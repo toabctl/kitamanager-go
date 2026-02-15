@@ -129,10 +129,12 @@ func (s *CostService) Delete(ctx context.Context, id, orgID uint) error {
 		return err
 	}
 
-	if err := s.store.Delete(ctx, id); err != nil {
-		return apperror.InternalWrap(err, "failed to delete cost")
-	}
-	return nil
+	return s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.store.Delete(txCtx, id); err != nil {
+			return apperror.InternalWrap(err, "failed to delete cost")
+		}
+		return nil
+	})
 }
 
 // CostEntry CRUD
