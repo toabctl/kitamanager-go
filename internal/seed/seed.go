@@ -577,7 +577,7 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 	tp := func(t time.Time) *time.Time { return &t }
 
 	employees := []empDef{
-		// ===== Nest section (6 active) =====
+		// ===== Nest section (8 active) =====
 		{"Anna", "Müller", 1988, []empContractDef{
 			{"qualified", "S8a", 4, 39, d(2020, 3, 1), nil, 0},
 		}},
@@ -596,8 +596,14 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 		{"Sandra", "Schmitz", 1989, []empContractDef{
 			{"supplementary", "S4", 2, 30, d(2024, 8, 1), nil, 0},
 		}},
+		{"Karolin", "Berger", 1994, []empContractDef{
+			{"qualified", "S8a", 2, 39, d(2023, 9, 1), nil, 0},
+		}},
+		{"Stefanie", "Frank", 1997, []empContractDef{
+			{"qualified", "S8a", 1, 30, d(2025, 8, 1), nil, 0},
+		}},
 
-		// ===== Nestflüchter section (6 active) =====
+		// ===== Nestflüchter section (9 active) =====
 		{"Stefan", "Meyer", 1980, []empContractDef{
 			{"qualified", "S8a", 5, 39, d(2018, 8, 1), nil, 1},
 		}},
@@ -616,8 +622,17 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 		{"Robert", "Lange", 1996, []empContractDef{
 			{"qualified", "S8b", 1, 30, d(2025, 1, 1), nil, 1},
 		}},
+		{"Tanja", "Horn", 1990, []empContractDef{
+			{"qualified", "S8a", 3, 39, d(2023, 8, 1), nil, 1},
+		}},
+		{"Dirk", "Winkler", 1993, []empContractDef{
+			{"qualified", "S8b", 1, 39, d(2024, 3, 1), nil, 1},
+		}},
+		{"Silke", "Pohl", 1987, []empContractDef{
+			{"supplementary", "S4", 2, 30, d(2025, 8, 1), nil, 1},
+		}},
 
-		// ===== Große section (9 active) =====
+		// ===== Große section (12 active) =====
 		{"Andreas", "Hoffmann", 1975, []empContractDef{
 			{"qualified", "S8a", 6, 39, d(2015, 8, 1), nil, 2},
 		}},
@@ -641,6 +656,15 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 		}},
 		{"Nicole", "Krüger", 1988, []empContractDef{
 			{"qualified", "S8a", 4, 39, d(2019, 8, 1), nil, 2},
+		}},
+		{"Kerstin", "Haas", 1986, []empContractDef{
+			{"qualified", "S8a", 4, 39, d(2023, 1, 1), nil, 2},
+		}},
+		{"Rainer", "Lorenz", 1992, []empContractDef{
+			{"qualified", "S8a", 2, 39, d(2024, 8, 1), nil, 2},
+		}},
+		{"Anke", "Vogel", 1995, []empContractDef{
+			{"supplementary", "S4", 1, 39, d(2025, 2, 1), nil, 2},
 		}},
 		// Deputy/coordinator
 		{"Katrin", "Klein", 1982, []empContractDef{
