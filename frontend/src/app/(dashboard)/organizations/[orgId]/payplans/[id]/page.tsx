@@ -47,7 +47,7 @@ import type {
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { formatDate, formatCurrency, formatPeriod } from '@/lib/utils/formatting';
+import { formatDate, formatDateForApi, formatCurrency, formatPeriod } from '@/lib/utils/formatting';
 import { PayPlanGrid } from '@/components/payplans/payplan-grid';
 import {
   payPlanPeriodSchema,
@@ -224,7 +224,8 @@ export default function PayPlanDetailPage() {
   const onSubmitPeriod = (data: PayPlanPeriodFormData) => {
     const payload = {
       ...data,
-      to: data.to || null,
+      from: formatDateForApi(data.from)!,
+      to: formatDateForApi(data.to) || null,
       employer_contribution_rate: Math.round(data.employer_contribution_rate * 100),
     };
     if (editingPeriod) {
@@ -318,13 +319,9 @@ export default function PayPlanDetailPage() {
                     {formatPeriod(period.from, period.to, 'en', t('common.ongoing'))}
                     {' \u2014 '}
                     {period.weekly_hours}h / {t('payPlans.weeklyHours')}
-                    {period.employer_contribution_rate > 0 && (
-                      <>
-                        {' \u2014 '}
-                        {t('payPlans.employerContributionRate')}:{' '}
-                        {(period.employer_contribution_rate / 100).toFixed(2)}%
-                      </>
-                    )}
+                    {' \u2014 '}
+                    {t('payPlans.employerContributionRate')}:{' '}
+                    {(period.employer_contribution_rate / 100).toFixed(2)}%
                   </h3>
                   <PayPlanGrid period={period} />
                 </div>
@@ -341,13 +338,9 @@ export default function PayPlanDetailPage() {
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {period.weekly_hours}h / {t('payPlans.weeklyHours')}
-                        {period.employer_contribution_rate > 0 && (
-                          <>
-                            {' \u2014 '}
-                            {t('payPlans.employerContributionRate')}:{' '}
-                            {(period.employer_contribution_rate / 100).toFixed(2)}%
-                          </>
-                        )}
+                        {' \u2014 '}
+                        {t('payPlans.employerContributionRate')}:{' '}
+                        {(period.employer_contribution_rate / 100).toFixed(2)}%
                       </p>
                     </div>
                     <div className="flex gap-2">
