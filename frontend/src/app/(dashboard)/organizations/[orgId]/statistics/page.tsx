@@ -106,7 +106,12 @@ export default function StatisticsPage() {
         {/* Staffing Hours */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>{t('statistics.staffingHours')}</CardTitle>
+            <div>
+              <CardTitle>{t('statistics.staffingHours')}</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('statistics.staffingHoursDescription')}
+              </p>
+            </div>
             {sections && sections.data.length > 0 && (
               <Select
                 value={selectedSectionId?.toString() ?? 'all'}

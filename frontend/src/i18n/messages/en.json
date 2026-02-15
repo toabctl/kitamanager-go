@@ -109,6 +109,7 @@
     "ageYears": "{age} years",
     "ageSixPlus": "6+ years",
     "staffingHours": "Staffing Hours",
+    "staffingHoursDescription": "Based on active contracts on the 1st of each month",
     "requiredHours": "Required Hours",
     "availableHours": "Available Hours",
     "filterBySection": "Filter by Section",

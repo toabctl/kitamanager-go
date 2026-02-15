@@ -109,6 +109,7 @@
     "ageYears": "{age} Jahre",
     "ageSixPlus": "6+ Jahre",
     "staffingHours": "Personalstunden",
+    "staffingHoursDescription": "Basierend auf aktiven Verträgen am 1. jedes Monats",
     "requiredHours": "Benötigte Stunden",
     "availableHours": "Verfügbare Stunden",
     "filterBySection": "Nach Bereich filtern",
