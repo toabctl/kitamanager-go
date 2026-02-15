@@ -1,18 +1,22 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { CircleDollarSign, Users, Baby } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { formatCurrency } from '@/lib/utils/formatting';
 
-export default function StatisticsPage() {
+const FinancialsChart = dynamic(
+  () => import('@/components/charts/financials-chart').then((mod) => mod.FinancialsChart),
+  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full" /> }
+);
+
+export default function FinancialsPage() {
   const params = useParams();
   const orgId = Number(params.orgId);
   const t = useTranslations();
@@ -23,7 +27,6 @@ export default function StatisticsPage() {
     enabled: !!orgId,
   });
 
-  // Get the current month's financial data point for summary cards
   const currentFinancials = useMemo(() => {
     if (!financials?.data_points?.length) return null;
     const now = new Date();
@@ -32,48 +35,14 @@ export default function StatisticsPage() {
     return exact ?? financials.data_points[financials.data_points.length - 1];
   }, [financials]);
 
-  const subPages = [
-    {
-      href: `/organizations/${orgId}/statistics/financials`,
-      icon: CircleDollarSign,
-      title: t('nav.statisticsFinancials'),
-      description: t('statistics.financialOverviewDescription'),
-    },
-    {
-      href: `/organizations/${orgId}/statistics/staffing`,
-      icon: Users,
-      title: t('nav.statisticsStaffing'),
-      description: t('statistics.staffingHoursDescription'),
-    },
-    {
-      href: `/organizations/${orgId}/statistics/children`,
-      icon: Baby,
-      title: t('nav.statisticsChildren'),
-      description: t('statistics.ageDistribution'),
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('statistics.title')}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('nav.statisticsFinancials')}</h1>
       </div>
 
       {/* Financial Summary Cards */}
-      {isLoadingFinancials ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : currentFinancials ? (
+      {currentFinancials && (
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
@@ -118,29 +87,26 @@ export default function StatisticsPage() {
             </CardContent>
           </Card>
         </div>
-      ) : null}
+      )}
 
-      {/* Sub-page Link Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {subPages.map((page) => {
-          const Icon = page.icon;
-          return (
-            <Link key={page.href} href={page.href}>
-              <Card className="transition-colors hover:bg-muted/50">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <CardTitle className="text-base">{page.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{page.description}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
+      {/* Financial Overview Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('statistics.financialOverview')}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('statistics.financialOverviewDescription')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {isLoadingFinancials ? (
+            <Skeleton className="h-[350px] w-full" />
+          ) : financials ? (
+            <FinancialsChart data={financials} />
+          ) : (
+            <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

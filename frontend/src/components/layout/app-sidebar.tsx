@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -17,13 +18,29 @@ import {
   Receipt,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/stores/ui-store';
 import { OrgSelector } from './org-selector';
 
-const navigation = [
+interface NavChild {
+  name: string;
+  href: string;
+  exact?: boolean;
+}
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  requiresOrg?: boolean;
+  children?: NavChild[];
+}
+
+const navigation: NavItem[] = [
   { name: 'nav.organizations', href: '/organizations', icon: Building2, requiresOrg: false },
   {
     name: 'nav.governmentFundings',
@@ -33,14 +50,24 @@ const navigation = [
   },
 ];
 
-const orgNavigation = [
+const orgNavigation: NavItem[] = [
   { name: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'nav.users', href: '/users', icon: UserCog },
   { name: 'nav.groups', href: '/groups', icon: UsersRound },
   { name: 'nav.employees', href: '/employees', icon: Users },
   { name: 'nav.children', href: '/children', icon: Baby },
   { name: 'nav.sections', href: '/sections', icon: LayoutGrid },
-  { name: 'nav.statistics', href: '/statistics', icon: BarChart3 },
+  {
+    name: 'nav.statistics',
+    href: '/statistics',
+    icon: BarChart3,
+    children: [
+      { name: 'nav.statisticsOverview', href: '/statistics', exact: true },
+      { name: 'nav.statisticsFinancials', href: '/statistics/financials' },
+      { name: 'nav.statisticsStaffing', href: '/statistics/staffing' },
+      { name: 'nav.statisticsChildren', href: '/statistics/children' },
+    ],
+  },
   { name: 'nav.payPlans', href: '/payplans', icon: CircleDollarSign },
   { name: 'nav.costs', href: '/costs', icon: Receipt },
 ];
@@ -49,6 +76,7 @@ export function AppSidebar() {
   const t = useTranslations();
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar, selectedOrganizationId } = useUiStore();
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const isActive = (href: string) => {
     return pathname.startsWith(href);
@@ -58,6 +86,46 @@ export function AppSidebar() {
     if (!selectedOrganizationId) return '#';
     return `/organizations/${selectedOrganizationId}${path}`;
   };
+
+  const isChildActive = (child: NavChild) => {
+    const fullHref = getOrgHref(child.href);
+    if (child.exact) {
+      return pathname === fullHref;
+    }
+    return pathname.startsWith(fullHref);
+  };
+
+  const isAnyChildActive = (item: NavItem) => {
+    if (!item.children) return false;
+    return item.children.some((child) => isChildActive(child));
+  };
+
+  const toggleExpanded = (name: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  // Auto-expand parent when a child route is active
+  useEffect(() => {
+    for (const item of orgNavigation) {
+      if (item.children && isAnyChildActive(item)) {
+        setExpandedItems((prev) => {
+          if (prev.has(item.name)) return prev;
+          const next = new Set(prev);
+          next.add(item.name);
+          return next;
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, selectedOrganizationId]);
 
   return (
     <aside
@@ -126,16 +194,75 @@ export function AppSidebar() {
             {orgNavigation.map((item) => {
               const Icon = item.icon;
               const href = getOrgHref(item.href);
-              const active = pathname.includes(
+              const hasChildren = item.children && item.children.length > 0;
+              const anyChildActive = isAnyChildActive(item);
+              const isExpanded = expandedItems.has(item.name);
+              const parentActive = pathname.includes(
                 `/organizations/${selectedOrganizationId}${item.href}`
               );
+
+              if (hasChildren && !sidebarCollapsed) {
+                return (
+                  <li key={item.name}>
+                    {/* Parent item: clicking toggles expand, but also navigates */}
+                    <div className="flex items-center">
+                      <Link
+                        href={href}
+                        className={cn(
+                          'flex flex-1 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                          anyChildActive
+                            ? 'bg-primary/10 text-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span className="flex-1">{t(item.name)}</span>
+                      </Link>
+                      <button
+                        onClick={() => toggleExpanded(item.name)}
+                        className="mr-1 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <ChevronDown
+                          className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')}
+                        />
+                      </button>
+                    </div>
+                    {/* Children */}
+                    {isExpanded && (
+                      <ul className="ml-6 mt-1 space-y-1">
+                        {item.children!.map((child) => {
+                          const childHref = getOrgHref(child.href);
+                          const childActive = isChildActive(child);
+                          return (
+                            <li key={child.name}>
+                              <Link
+                                href={childHref}
+                                className={cn(
+                                  'flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                                  childActive
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                )}
+                              >
+                                {t(child.name)}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
+
+              // Regular item (no children) or collapsed sidebar
               return (
                 <li key={item.name}>
                   <Link
                     href={href}
                     className={cn(
                       'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      active
+                      parentActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}

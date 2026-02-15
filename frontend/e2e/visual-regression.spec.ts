@@ -76,16 +76,29 @@ test.describe('Visual Regression - Dashboard', () => {
     });
   });
 
-  test('statistics page', async ({ page }) => {
+  test('statistics overview page', async ({ page }) => {
     const token = await getApiToken(page);
     const org = await getFirstOrganization(page, token);
 
     await page.goto(`/organizations/${org.id}/statistics`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+
+    await expect(page).toHaveScreenshot('statistics-overview.png', {
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
+  test('statistics financials page', async ({ page }) => {
+    const token = await getApiToken(page);
+    const org = await getFirstOrganization(page, token);
+
+    await page.goto(`/organizations/${org.id}/statistics/financials`);
+    await page.waitForLoadState('networkidle');
     // Wait for charts to render (dynamically loaded)
     await page.waitForTimeout(2000);
 
-    await expect(page).toHaveScreenshot('statistics-page.png', {
+    await expect(page).toHaveScreenshot('statistics-financials.png', {
       maxDiffPixelRatio: 0.02, // Slightly higher tolerance for chart rendering
     });
   });

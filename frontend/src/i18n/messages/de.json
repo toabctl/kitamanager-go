@@ -82,6 +82,10 @@
     "payPlans": "Entgelttabellen",
     "sections": "Bereiche",
     "statistics": "Statistiken",
+    "statisticsOverview": "Übersicht",
+    "statisticsFinancials": "Finanzen",
+    "statisticsStaffing": "Personal",
+    "statisticsChildren": "Kinder",
     "settings": "Einstellungen",
     "costs": "Kosten"
   },

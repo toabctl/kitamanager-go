@@ -82,6 +82,10 @@
     "payPlans": "Pay Plans",
     "sections": "Sections",
     "statistics": "Statistics",
+    "statisticsOverview": "Overview",
+    "statisticsFinancials": "Financials",
+    "statisticsStaffing": "Staffing",
+    "statisticsChildren": "Children",
     "settings": "Settings",
     "costs": "Costs"
   },
