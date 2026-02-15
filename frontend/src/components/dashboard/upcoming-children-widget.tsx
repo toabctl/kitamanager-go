@@ -48,12 +48,19 @@ export function UpcomingChildrenWidget({ orgId }: UpcomingChildrenWidgetProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((child) => {
-              // Pick the earliest future contract (contracts are preloaded, find the one starting soonest)
-              const futureContract = child.contracts
-                ?.filter((c) => toUTCDate(c.from) > Date.now())
-                .sort((a, b) => compareDates(a.from, b.from))[0];
-              return (
+            {data
+              .map((child) => {
+                const futureContract = child.contracts
+                  ?.filter((c) => toUTCDate(c.from) > Date.now())
+                  .sort((a, b) => compareDates(a.from, b.from))[0];
+                return { child, futureContract };
+              })
+              .sort((a, b) => {
+                if (!a.futureContract) return 1;
+                if (!b.futureContract) return -1;
+                return compareDates(a.futureContract.from, b.futureContract.from);
+              })
+              .map(({ child, futureContract }) => (
                 <TableRow key={child.id}>
                   <TableCell className="font-medium">
                     {child.first_name} {child.last_name}
@@ -61,8 +68,7 @@ export function UpcomingChildrenWidget({ orgId }: UpcomingChildrenWidgetProps) {
                   <TableCell>{futureContract?.section_name ?? '-'}</TableCell>
                   <TableCell>{futureContract ? formatDate(futureContract.from) : '-'}</TableCell>
                 </TableRow>
-              );
-            })}
+              ))}
           </TableBody>
         </Table>
       </CardContent>
