@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useMemo } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -18,10 +17,7 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { Cost, CostCreateRequest, CostUpdateRequest } from '@/lib/api/types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
-import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { costSchema, type CostFormData } from '@/lib/schemas';
@@ -31,53 +27,25 @@ const defaultValues: CostFormData = {
 };
 
 export default function CostsPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const orgId = Number(params.orgId);
   const t = useTranslations();
-  const [page, setPage] = useState(1);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CostFormData>({
-    resolver: zodResolver(costSchema),
-    defaultValues,
-  });
-
-  const { data: paginatedData, isLoading } = useQuery({
-    queryKey: queryKeys.costs.list(orgId, page),
-    queryFn: () => apiClient.getCosts(orgId, { page }),
-    enabled: !!orgId,
-  });
-
-  const costs = paginatedData?.data;
-
-  const dialogs = useCrudDialogs<Cost, CostFormData>({
-    reset,
-    itemToFormData: (cost) => ({ name: cost.name }),
-    defaultValues,
-  });
-
-  const mutations = useCrudMutations<Cost, CostCreateRequest, CostUpdateRequest>({
+  const crud = useCrudPage<Cost, CostFormData, CostCreateRequest, CostUpdateRequest>({
     resourceName: 'costs',
-    queryKey: queryKeys.costs.all(orgId),
-    createFn: (data) => apiClient.createCost(orgId, data),
-    updateFn: (id, data) => apiClient.updateCost(orgId, id, data),
-    deleteFn: (id) => apiClient.deleteCost(orgId, id),
-    onSuccess: dialogs.closeDialog,
-    onDeleteSuccess: dialogs.closeDeleteDialog,
+    schema: costSchema,
+    defaultValues,
+    itemToFormData: (cost) => ({ name: cost.name }),
+    listFn: (orgId, params) => apiClient.getCosts(orgId, params),
+    createFn: (orgId, data) => apiClient.createCost(orgId, data),
+    updateFn: (orgId, id, data) => apiClient.updateCost(orgId, id, data),
+    deleteFn: (orgId, id) => apiClient.deleteCost(orgId, id),
+    queryKeys: {
+      list: (orgId, page) => queryKeys.costs.list(orgId, page),
+      invalidate: (orgId) => queryKeys.costs.all(orgId),
+    },
   });
-
-  const onSubmit = (data: CostFormData) => {
-    if (dialogs.editingItem) {
-      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data });
-    } else {
-      mutations.createMutation.mutate(data);
-    }
-  };
 
   const handleView = (cost: Cost) => {
     router.push(`/organizations/${orgId}/costs/${cost.id}`);
@@ -100,7 +68,7 @@ export default function CostsPage() {
     <div className="space-y-6">
       <CrudPageHeader
         title="costs.title"
-        onNew={dialogs.handleCreate}
+        onNew={crud.dialogs.handleCreate}
         newButtonText="costs.newCost"
       />
 
@@ -110,37 +78,39 @@ export default function CostsPage() {
         </CardHeader>
         <CardContent>
           <ResourceTable
-            items={costs}
+            items={crud.items}
             columns={columns}
             getItemKey={(cost) => cost.id}
-            isLoading={isLoading}
+            isLoading={crud.isLoading}
             onView={handleView}
-            onEdit={dialogs.handleEdit}
-            onDelete={dialogs.handleDelete}
+            onEdit={crud.dialogs.handleEdit}
+            onDelete={crud.dialogs.handleDelete}
           />
-          {paginatedData && (
+          {crud.paginatedData && (
             <Pagination
-              page={paginatedData.page}
-              totalPages={paginatedData.total_pages}
-              total={paginatedData.total}
-              limit={paginatedData.limit}
-              onPageChange={setPage}
-              isLoading={isLoading}
+              page={crud.paginatedData.page}
+              totalPages={crud.paginatedData.total_pages}
+              total={crud.paginatedData.total}
+              limit={crud.paginatedData.limit}
+              onPageChange={crud.setPage}
+              isLoading={crud.isLoading}
             />
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={dialogs.isDialogOpen} onOpenChange={dialogs.setIsDialogOpen}>
+      <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialogs.isEditing ? t('costs.edit') : t('costs.create')}</DialogTitle>
+            <DialogTitle>
+              {crud.dialogs.isEditing ? t('costs.edit') : t('costs.create')}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && (
+              <Input id="name" {...crud.register('name')} />
+              {crud.errors.name && (
                 <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
               )}
             </div>
@@ -149,11 +119,11 @@ export default function CostsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => dialogs.setIsDialogOpen(false)}
+                onClick={() => crud.dialogs.setIsDialogOpen(false)}
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={mutations.isMutating}>
+              <Button type="submit" disabled={crud.mutations.isMutating}>
                 {t('common.save')}
               </Button>
             </DialogFooter>
@@ -162,12 +132,13 @@ export default function CostsPage() {
       </Dialog>
 
       <DeleteConfirmDialog
-        open={dialogs.isDeleteDialogOpen}
-        onOpenChange={dialogs.setIsDeleteDialogOpen}
+        open={crud.dialogs.isDeleteDialogOpen}
+        onOpenChange={crud.dialogs.setIsDeleteDialogOpen}
         onConfirm={() =>
-          dialogs.deletingItem && mutations.deleteMutation.mutate(dialogs.deletingItem.id)
+          crud.dialogs.deletingItem &&
+          crud.mutations.deleteMutation.mutate(crud.dialogs.deletingItem.id)
         }
-        isLoading={mutations.deleteMutation.isPending}
+        isLoading={crud.mutations.deleteMutation.isPending}
         resourceName="costs"
       />
     </div>
