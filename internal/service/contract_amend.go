@@ -41,5 +41,5 @@ func determineAmendMode(contractFrom time.Time, contractTo *time.Time) (amendMod
 
 // truncateToDate truncates a time to date-only (midnight UTC).
 func truncateToDate(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }

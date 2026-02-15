@@ -19,6 +19,14 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to connect to test database: %v", err)
 	}
 
+	// SQLite :memory: databases are per-connection. Limit to 1 connection
+	// so all operations use the same database with the migrated schema.
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	err = db.AutoMigrate(
 		&models.Organization{},
 		&models.User{},
