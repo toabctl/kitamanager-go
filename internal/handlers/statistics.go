@@ -99,7 +99,6 @@ func (h *StatisticsHandler) GetStaffingHours(c *gin.Context) {
 // @Param orgId path int true "Organization ID"
 // @Param from query string false "Start date (YYYY-MM-DD), defaults to 12 months ago"
 // @Param to query string false "End date (YYYY-MM-DD), defaults to 6 months ahead"
-// @Param section_id query int false "Filter by section ID"
 // @Success 200 {object} models.FinancialResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
@@ -136,12 +135,7 @@ func (h *StatisticsHandler) GetFinancials(c *gin.Context) {
 		}
 	}
 
-	sectionID, ok := parseOptionalUint(c, "section_id")
-	if !ok {
-		return
-	}
-
-	result, err := h.service.GetFinancials(c.Request.Context(), orgID, from, to, sectionID)
+	result, err := h.service.GetFinancials(c.Request.Context(), orgID, from, to)
 	if err != nil {
 		respondError(c, err)
 		return

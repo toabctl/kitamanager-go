@@ -142,7 +142,7 @@ func (s *StatisticsService) GetStaffingHours(ctx context.Context, orgID uint, fr
 }
 
 // GetFinancials calculates monthly financial data points (income, expenses, balance)
-func (s *StatisticsService) GetFinancials(ctx context.Context, orgID uint, from, to *time.Time, sectionID *uint) (*models.FinancialResponse, error) {
+func (s *StatisticsService) GetFinancials(ctx context.Context, orgID uint, from, to *time.Time) (*models.FinancialResponse, error) {
 	rangeStart, rangeEnd := snapDateRange(from, to)
 
 	// Fetch organization for state
@@ -159,13 +159,13 @@ func (s *StatisticsService) GetFinancials(ctx context.Context, orgID uint, from,
 	}
 
 	// Fetch children with contracts in range
-	children, err := s.childStore.FindByOrganizationInDateRange(ctx, orgID, rangeStart, rangeEnd, sectionID)
+	children, err := s.childStore.FindByOrganizationInDateRange(ctx, orgID, rangeStart, rangeEnd, nil)
 	if err != nil {
 		return nil, apperror.InternalWrap(err, "failed to fetch children")
 	}
 
 	// Fetch ALL employee contracts in range (salaries apply to all staff, not just pedagogical)
-	employeeContracts, err := s.employeeStore.FindContractsByOrganizationInDateRange(ctx, orgID, rangeStart, rangeEnd, nil, sectionID)
+	employeeContracts, err := s.employeeStore.FindContractsByOrganizationInDateRange(ctx, orgID, rangeStart, rangeEnd, nil, nil)
 	if err != nil {
 		return nil, apperror.InternalWrap(err, "failed to fetch employee contracts")
 	}
