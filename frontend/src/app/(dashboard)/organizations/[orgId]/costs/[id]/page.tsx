@@ -41,7 +41,7 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import type { CostEntry, CostEntryCreateRequest, CostEntryUpdateRequest } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { formatCurrency, formatPeriod } from '@/lib/utils/formatting';
+import { formatCurrency, formatPeriod, formatDateForApi } from '@/lib/utils/formatting';
 import { costEntrySchema, type CostEntryFormData } from '@/lib/schemas';
 
 export default function CostDetailPage() {
@@ -147,8 +147,8 @@ export default function CostDetailPage() {
 
   const onSubmitEntry = (data: CostEntryFormData) => {
     const payload = {
-      from: data.from,
-      to: data.to || null,
+      from: formatDateForApi(data.from) || data.from,
+      to: formatDateForApi(data.to) || null,
       amount_cents: data.amount_cents,
       notes: data.notes || '',
     };
