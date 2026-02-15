@@ -33,6 +33,11 @@ interface UseCrudPageConfig<
   createFn: (orgId: number, data: TCreate) => Promise<TItem>;
   updateFn: (orgId: number, id: number, data: TUpdate) => Promise<TItem>;
   deleteFn: (orgId: number, id: number) => Promise<void>;
+  /** Optional query key functions for proper cache alignment with queryKeys factory */
+  queryKeys?: {
+    list: (orgId: number, page: number) => readonly unknown[];
+    invalidate: (orgId: number) => readonly unknown[];
+  };
 }
 
 interface UseCrudPageResult<
@@ -81,10 +86,15 @@ export function useCrudPage<
     defaultValues: config.defaultValues as DefaultValues<TFormData>,
   });
 
-  const queryKey: readonly (string | number | undefined)[] = [config.resourceName, orgId];
+  const listQueryKey = config.queryKeys
+    ? config.queryKeys.list(orgId, page)
+    : [config.resourceName, orgId, page];
+  const invalidateQueryKey: readonly (string | number | undefined)[] = config.queryKeys
+    ? (config.queryKeys.invalidate(orgId) as readonly (string | number | undefined)[])
+    : [config.resourceName, orgId];
 
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: [...queryKey, page],
+    queryKey: listQueryKey,
     queryFn: () => config.listFn(orgId, { page }),
     enabled: !!orgId,
   });
@@ -99,7 +109,7 @@ export function useCrudPage<
 
   const mutations = useCrudMutations<TItem, TCreate, TUpdate>({
     resourceName: config.resourceName,
-    queryKey,
+    queryKey: invalidateQueryKey,
     createFn: (data) => config.createFn(orgId, data),
     updateFn: (id, data) => config.updateFn(orgId, id, data),
     deleteFn: (id) => config.deleteFn(orgId, id),
