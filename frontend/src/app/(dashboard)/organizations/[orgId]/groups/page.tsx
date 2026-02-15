@@ -3,22 +3,20 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
 import type { Group, GroupCreateRequest, GroupUpdateRequest } from '@/lib/api/types';
 import { useCrudPage } from '@/lib/hooks/use-crud-page';
-import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
+import {
+  CrudPageHeader,
+  ResourceTable,
+  DeleteConfirmDialog,
+  CrudFormDialog,
+  Column,
+} from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { groupSchema, type GroupFormData } from '@/lib/schemas';
 
@@ -98,46 +96,31 @@ export default function GroupsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {crud.dialogs.isEditing ? t('groups.edit') : t('groups.create')}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...crud.register('name')} />
-              {crud.errors.name && (
-                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
-              )}
-            </div>
+      <CrudFormDialog
+        open={crud.dialogs.isDialogOpen}
+        onOpenChange={crud.dialogs.setIsDialogOpen}
+        isEditing={crud.dialogs.isEditing}
+        translationPrefix="groups"
+        onSubmit={crud.handleSubmit(crud.onSubmit)}
+        isSaving={crud.mutations.isMutating}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="name">{t('common.name')}</Label>
+          <Input id="name" {...crud.register('name')} />
+          {crud.errors.name && (
+            <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+          )}
+        </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="active"
-                checked={activeValue}
-                onCheckedChange={(checked) => crud.setValue('active', checked)}
-              />
-              <Label htmlFor="active">{t('common.active')}</Label>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => crud.dialogs.setIsDialogOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={crud.mutations.isMutating}>
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="active"
+            checked={activeValue}
+            onCheckedChange={(checked) => crud.setValue('active', checked)}
+          />
+          <Label htmlFor="active">{t('common.active')}</Label>
+        </div>
+      </CrudFormDialog>
 
       <DeleteConfirmDialog
         open={crud.dialogs.isDeleteDialogOpen}

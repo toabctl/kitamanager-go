@@ -4,21 +4,19 @@ import { useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { Cost, CostCreateRequest, CostUpdateRequest } from '@/lib/api/types';
 import { useCrudPage } from '@/lib/hooks/use-crud-page';
-import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
+import {
+  CrudPageHeader,
+  ResourceTable,
+  DeleteConfirmDialog,
+  CrudFormDialog,
+  Column,
+} from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { costSchema, type CostFormData } from '@/lib/schemas';
 
@@ -99,37 +97,22 @@ export default function CostsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {crud.dialogs.isEditing ? t('costs.edit') : t('costs.create')}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...crud.register('name')} />
-              {crud.errors.name && (
-                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => crud.dialogs.setIsDialogOpen(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={crud.mutations.isMutating}>
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CrudFormDialog
+        open={crud.dialogs.isDialogOpen}
+        onOpenChange={crud.dialogs.setIsDialogOpen}
+        isEditing={crud.dialogs.isEditing}
+        translationPrefix="costs"
+        onSubmit={crud.handleSubmit(crud.onSubmit)}
+        isSaving={crud.mutations.isMutating}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="name">{t('common.name')}</Label>
+          <Input id="name" {...crud.register('name')} />
+          {crud.errors.name && (
+            <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+          )}
+        </div>
+      </CrudFormDialog>
 
       <DeleteConfirmDialog
         open={crud.dialogs.isDeleteDialogOpen}
