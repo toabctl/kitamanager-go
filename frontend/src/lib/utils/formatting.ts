@@ -130,6 +130,17 @@ export function formatAgeRange(
 }
 
 /**
+ * Format an age range in months (e.g., "12–36", "12+", "0–24").
+ * Returns null if both min and max are absent.
+ */
+export function formatMonthRange(min?: number | null, max?: number | null): string | null {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `${min}\u2013${max}`;
+  if (min != null) return `${min}+`;
+  return `0\u2013${max}`;
+}
+
+/**
  * Contract properties utilities
  * Properties are stored as {key: value} where key is the category
  * and value is the selected option. Keys are mutually exclusive

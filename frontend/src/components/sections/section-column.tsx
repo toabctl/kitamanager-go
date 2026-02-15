@@ -4,6 +4,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatMonthRange } from '@/lib/utils/formatting';
 import type { Child, Employee } from '@/lib/api/types';
 import { ChildCard } from './child-card';
 import { EmployeeCard } from './employee-card';
@@ -16,13 +17,6 @@ export interface SectionColumnProps {
   isDefault?: boolean;
   minAgeMonths?: number | null;
   maxAgeMonths?: number | null;
-}
-
-function formatAgeRange(min?: number | null, max?: number | null): string | null {
-  if (min == null && max == null) return null;
-  if (min != null && max != null) return `${min}–${max}`;
-  if (min != null) return `${min}+`;
-  return `0–${max}`;
 }
 
 export function SectionColumn({
@@ -38,7 +32,7 @@ export function SectionColumn({
   const { setNodeRef, isOver } = useDroppable({ id });
 
   const totalCount = employees.length + items.length;
-  const ageRange = formatAgeRange(minAgeMonths, maxAgeMonths);
+  const ageRange = formatMonthRange(minAgeMonths, maxAgeMonths);
 
   return (
     <div

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api/client';
+import { formatMonthRange } from '@/lib/utils/formatting';
 import type { Section, SectionCreateRequest, SectionUpdateRequest } from '@/lib/api/types';
 import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
@@ -28,13 +29,6 @@ const defaultValues: SectionFormData = {
   min_age_months: null,
   max_age_months: null,
 };
-
-function formatAgeRange(min?: number | null, max?: number | null): string | null {
-  if (min == null && max == null) return null;
-  if (min != null && max != null) return `${min}–${max}`;
-  if (min != null) return `${min}+`;
-  return `0–${max}`;
-}
 
 export default function SectionsPage() {
   const t = useTranslations();
@@ -74,7 +68,7 @@ export default function SectionsPage() {
         key: 'ageRange',
         header: 'sections.ageRange',
         render: (section) => {
-          const range = formatAgeRange(section.min_age_months, section.max_age_months);
+          const range = formatMonthRange(section.min_age_months, section.max_age_months);
           return range ? (
             <span className="text-muted-foreground">
               {range} {t('sections.months')}
