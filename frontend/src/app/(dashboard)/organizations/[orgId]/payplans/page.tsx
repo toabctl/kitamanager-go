@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useMemo } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -18,10 +17,7 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest } from '@/lib/api/types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
-import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { useCrudPage } from '@/lib/hooks/use-crud-page';
 import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { payPlanSchema, type PayPlanFormData } from '@/lib/schemas';
@@ -31,53 +27,25 @@ const defaultValues: PayPlanFormData = {
 };
 
 export default function PayPlansPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const orgId = Number(params.orgId);
   const t = useTranslations();
-  const [page, setPage] = useState(1);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<PayPlanFormData>({
-    resolver: zodResolver(payPlanSchema),
-    defaultValues,
-  });
-
-  const { data: paginatedData, isLoading } = useQuery({
-    queryKey: queryKeys.payPlans.list(orgId, page),
-    queryFn: () => apiClient.getPayPlans(orgId, { page }),
-    enabled: !!orgId,
-  });
-
-  const payPlans = paginatedData?.data;
-
-  const dialogs = useCrudDialogs<PayPlan, PayPlanFormData>({
-    reset,
-    itemToFormData: (payPlan) => ({ name: payPlan.name }),
-    defaultValues,
-  });
-
-  const mutations = useCrudMutations<PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest>({
+  const crud = useCrudPage<PayPlan, PayPlanFormData, PayPlanCreateRequest, PayPlanUpdateRequest>({
     resourceName: 'payPlans',
-    queryKey: queryKeys.payPlans.all(orgId),
-    createFn: (data) => apiClient.createPayPlan(orgId, data),
-    updateFn: (id, data) => apiClient.updatePayPlan(orgId, id, data),
-    deleteFn: (id) => apiClient.deletePayPlan(orgId, id),
-    onSuccess: dialogs.closeDialog,
-    onDeleteSuccess: dialogs.closeDeleteDialog,
+    schema: payPlanSchema,
+    defaultValues,
+    itemToFormData: (payPlan) => ({ name: payPlan.name }),
+    listFn: (orgId, params) => apiClient.getPayPlans(orgId, params),
+    createFn: (orgId, data) => apiClient.createPayPlan(orgId, data),
+    updateFn: (orgId, id, data) => apiClient.updatePayPlan(orgId, id, data),
+    deleteFn: (orgId, id) => apiClient.deletePayPlan(orgId, id),
+    queryKeys: {
+      list: (orgId, page) => queryKeys.payPlans.list(orgId, page),
+      invalidate: (orgId) => queryKeys.payPlans.all(orgId),
+    },
   });
-
-  const onSubmit = (data: PayPlanFormData) => {
-    if (dialogs.editingItem) {
-      mutations.updateMutation.mutate({ id: dialogs.editingItem.id, data });
-    } else {
-      mutations.createMutation.mutate(data);
-    }
-  };
 
   const handleView = (payPlan: PayPlan) => {
     router.push(`/organizations/${orgId}/payplans/${payPlan.id}`);
@@ -105,7 +73,7 @@ export default function PayPlansPage() {
     <div className="space-y-6">
       <CrudPageHeader
         title="payPlans.title"
-        onNew={dialogs.handleCreate}
+        onNew={crud.dialogs.handleCreate}
         newButtonText="payPlans.newPayPlan"
       />
 
@@ -115,39 +83,39 @@ export default function PayPlansPage() {
         </CardHeader>
         <CardContent>
           <ResourceTable
-            items={payPlans}
+            items={crud.items}
             columns={columns}
             getItemKey={(payPlan) => payPlan.id}
-            isLoading={isLoading}
+            isLoading={crud.isLoading}
             onView={handleView}
-            onEdit={dialogs.handleEdit}
-            onDelete={dialogs.handleDelete}
+            onEdit={crud.dialogs.handleEdit}
+            onDelete={crud.dialogs.handleDelete}
           />
-          {paginatedData && (
+          {crud.paginatedData && (
             <Pagination
-              page={paginatedData.page}
-              totalPages={paginatedData.total_pages}
-              total={paginatedData.total}
-              limit={paginatedData.limit}
-              onPageChange={setPage}
-              isLoading={isLoading}
+              page={crud.paginatedData.page}
+              totalPages={crud.paginatedData.total_pages}
+              total={crud.paginatedData.total}
+              limit={crud.paginatedData.limit}
+              onPageChange={crud.setPage}
+              isLoading={crud.isLoading}
             />
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={dialogs.isDialogOpen} onOpenChange={dialogs.setIsDialogOpen}>
+      <Dialog open={crud.dialogs.isDialogOpen} onOpenChange={crud.dialogs.setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialogs.isEditing ? t('payPlans.edit') : t('payPlans.create')}
+              {crud.dialogs.isEditing ? t('payPlans.edit') : t('payPlans.create')}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={crud.handleSubmit(crud.onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && (
+              <Input id="name" {...crud.register('name')} />
+              {crud.errors.name && (
                 <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
               )}
             </div>
@@ -156,11 +124,11 @@ export default function PayPlansPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => dialogs.setIsDialogOpen(false)}
+                onClick={() => crud.dialogs.setIsDialogOpen(false)}
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={mutations.isMutating}>
+              <Button type="submit" disabled={crud.mutations.isMutating}>
                 {t('common.save')}
               </Button>
             </DialogFooter>
@@ -169,12 +137,13 @@ export default function PayPlansPage() {
       </Dialog>
 
       <DeleteConfirmDialog
-        open={dialogs.isDeleteDialogOpen}
-        onOpenChange={dialogs.setIsDeleteDialogOpen}
+        open={crud.dialogs.isDeleteDialogOpen}
+        onOpenChange={crud.dialogs.setIsDeleteDialogOpen}
         onConfirm={() =>
-          dialogs.deletingItem && mutations.deleteMutation.mutate(dialogs.deletingItem.id)
+          crud.dialogs.deletingItem &&
+          crud.mutations.deleteMutation.mutate(crud.dialogs.deletingItem.id)
         }
-        isLoading={mutations.deleteMutation.isPending}
+        isLoading={crud.mutations.deleteMutation.isPending}
         resourceName="payPlans"
       />
     </div>
