@@ -7,6 +7,7 @@ jest.mock('@/lib/api/client', () => ({
   apiClient: {
     getAgeDistribution: jest.fn(),
     getChildrenContractCountByMonth: jest.fn(),
+    getContractPropertiesDistribution: jest.fn(),
   },
   getErrorMessage: jest.fn((error, fallback) => fallback),
 }));
@@ -35,6 +36,12 @@ jest.mock('@/components/charts/monthly-contract-chart', () => ({
   MonthlyContractChart: () => <div data-testid="contract-chart">Contract Chart</div>,
 }));
 
+jest.mock('@/components/charts/contract-properties-chart', () => ({
+  ContractPropertiesChart: () => (
+    <div data-testid="contract-properties-chart">Contract Properties Chart</div>
+  ),
+}));
+
 const mockAgeDistribution = [
   { age: 1, count: 5 },
   { age: 2, count: 8 },
@@ -46,6 +53,15 @@ const mockContractCounts = [
   { month: '2024-02', count: 22 },
 ];
 
+const mockContractProperties = {
+  date: '2024-01-01',
+  total_children: 20,
+  properties: [
+    { key: 'care_type', value: 'ganztag', count: 15 },
+    { key: 'care_type', value: 'halbtag', count: 5 },
+  ],
+};
+
 describe('StatisticsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -54,6 +70,9 @@ describe('StatisticsPage', () => {
   it('renders page title', async () => {
     (apiClient.getAgeDistribution as jest.Mock).mockResolvedValue(mockAgeDistribution);
     (apiClient.getChildrenContractCountByMonth as jest.Mock).mockResolvedValue(mockContractCounts);
+    (apiClient.getContractPropertiesDistribution as jest.Mock).mockResolvedValue(
+      mockContractProperties
+    );
 
     renderWithProviders(<StatisticsPage />);
 
@@ -63,16 +82,23 @@ describe('StatisticsPage', () => {
   it('renders card titles', async () => {
     (apiClient.getAgeDistribution as jest.Mock).mockResolvedValue(mockAgeDistribution);
     (apiClient.getChildrenContractCountByMonth as jest.Mock).mockResolvedValue(mockContractCounts);
+    (apiClient.getContractPropertiesDistribution as jest.Mock).mockResolvedValue(
+      mockContractProperties
+    );
 
     renderWithProviders(<StatisticsPage />);
 
     expect(screen.getByText('statistics.ageDistribution')).toBeInTheDocument();
     expect(screen.getByText('statistics.childrenContractCount')).toBeInTheDocument();
+    expect(screen.getByText('statistics.contractProperties')).toBeInTheDocument();
   });
 
   it('shows loading skeletons while fetching', async () => {
     (apiClient.getAgeDistribution as jest.Mock).mockImplementation(() => new Promise(() => {}));
     (apiClient.getChildrenContractCountByMonth as jest.Mock).mockImplementation(
+      () => new Promise(() => {})
+    );
+    (apiClient.getContractPropertiesDistribution as jest.Mock).mockImplementation(
       () => new Promise(() => {})
     );
 
@@ -85,6 +111,9 @@ describe('StatisticsPage', () => {
   it('renders charts when data is loaded', async () => {
     (apiClient.getAgeDistribution as jest.Mock).mockResolvedValue(mockAgeDistribution);
     (apiClient.getChildrenContractCountByMonth as jest.Mock).mockResolvedValue(mockContractCounts);
+    (apiClient.getContractPropertiesDistribution as jest.Mock).mockResolvedValue(
+      mockContractProperties
+    );
 
     renderWithProviders(<StatisticsPage />);
 
@@ -93,5 +122,19 @@ describe('StatisticsPage', () => {
     });
 
     expect(screen.getByTestId('contract-chart')).toBeInTheDocument();
+  });
+
+  it('renders contract properties chart when data is loaded', async () => {
+    (apiClient.getAgeDistribution as jest.Mock).mockResolvedValue(mockAgeDistribution);
+    (apiClient.getChildrenContractCountByMonth as jest.Mock).mockResolvedValue(mockContractCounts);
+    (apiClient.getContractPropertiesDistribution as jest.Mock).mockResolvedValue(
+      mockContractProperties
+    );
+
+    renderWithProviders(<StatisticsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('contract-properties-chart')).toBeInTheDocument();
+    });
   });
 });

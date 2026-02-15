@@ -11,13 +11,11 @@ interface ContractPropertiesChartProps {
 export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) {
   const t = useTranslations();
 
-  const chartData = data.properties
-    .map((p) => ({
-      id: `${p.key}: ${p.value}`,
-      label: `${p.key}: ${p.value}`,
-      value: p.count,
-    }))
-    .reverse(); // reverse for horizontal so top-most is first alphabetically
+  const chartData = data.properties.map((p) => ({
+    id: `${p.key}: ${p.value}`,
+    label: `${p.key}: ${p.value}`,
+    value: p.count,
+  }));
 
   return (
     <div className="space-y-4">
@@ -29,8 +27,7 @@ export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) 
           data={chartData}
           keys={['value']}
           indexBy="id"
-          layout="horizontal"
-          margin={{ top: 10, right: 20, bottom: 50, left: 180 }}
+          margin={{ top: 20, right: 20, bottom: 60, left: 60 }}
           padding={0.3}
           colors={['#3b82f6']}
           borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
@@ -39,7 +36,7 @@ export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) 
           axisBottom={{
             tickSize: 5,
             tickPadding: 5,
-            tickRotation: 0,
+            tickRotation: -45,
           }}
           axisLeft={{
             tickSize: 5,

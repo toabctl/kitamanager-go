@@ -105,7 +105,7 @@
     "selectOrgForStats": "Select an organization to view statistics",
     "childrenContractCount": "Children with Active Contracts",
     "chartError": "Failed to load chart data",
-    "ageDistribution": "Age Distribution (Today)",
+    "ageDistribution": "Children Age Distribution (Today)",
     "childrenCount": "Children",
     "totalChildren": "{count} children total",
     "ageYears": "{age} years",
@@ -120,7 +120,7 @@
     "staffingBalance": "Staffing Balance",
     "balancePercentage": "Balance",
     "sectionStaffing": "Staffing by Section (Today)",
-    "contractProperties": "Contract Properties (Today)"
+    "contractProperties": "Children Contract Properties (Today)"
   },
   "months": {
     "jan": "Jan",

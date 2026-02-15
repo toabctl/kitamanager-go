@@ -105,7 +105,7 @@
     "selectOrgForStats": "Wählen Sie eine Organisation, um Statistiken anzuzeigen",
     "childrenContractCount": "Kinder mit aktiven Verträgen",
     "chartError": "Fehler beim Laden der Diagrammdaten",
-    "ageDistribution": "Altersverteilung (Heute)",
+    "ageDistribution": "Kinder-Altersverteilung (Heute)",
     "childrenCount": "Kinder",
     "totalChildren": "{count} Kinder insgesamt",
     "ageYears": "{age} Jahre",
@@ -120,7 +120,7 @@
     "staffingBalance": "Personalabgleich",
     "balancePercentage": "Abgleich",
     "sectionStaffing": "Personal nach Bereich (Heute)",
-    "contractProperties": "Vertragseigenschaften (Heute)"
+    "contractProperties": "Kinder-Vertragseigenschaften (Heute)"
   },
   "months": {
     "jan": "Jan",
