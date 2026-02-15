@@ -22,12 +22,12 @@ export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) 
       <p className="text-sm text-muted-foreground">
         {t('statistics.totalChildren', { count: data.total_children })}
       </p>
-      <div className="h-[300px]">
+      <div className="h-[400px]">
         <ResponsiveBar
           data={chartData}
           keys={['value']}
           indexBy="id"
-          margin={{ top: 20, right: 20, bottom: 60, left: 60 }}
+          margin={{ top: 20, right: 20, bottom: 140, left: 60 }}
           padding={0.3}
           colors={['#3b82f6']}
           borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}

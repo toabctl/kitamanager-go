@@ -129,72 +129,6 @@ export default function StatisticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Age Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('statistics.ageDistribution')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingAge ? (
-              <Skeleton className="h-[300px] w-full" />
-            ) : ageDistribution ? (
-              <AgeDistributionChart data={ageDistribution} />
-            ) : (
-              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Monthly Contract Counts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('statistics.childrenContractCount')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingContracts ? (
-              <Skeleton className="h-[300px] w-full" />
-            ) : contractCounts ? (
-              <MonthlyContractChart data={contractCounts} />
-            ) : (
-              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Contract Properties Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('statistics.contractProperties')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingContractProperties ? (
-              <Skeleton className="h-[300px] w-full" />
-            ) : contractProperties ? (
-              <ContractPropertiesChart data={contractProperties} />
-            ) : (
-              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Staffing by Section */}
-        {sections && sections.data.length > 0 && (
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>{t('statistics.sectionStaffing')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingSectionStaffing ? (
-                <Skeleton className="h-[300px] w-full" />
-              ) : sectionStaffingData.length > 0 ? (
-                <SectionStaffingChart data={sectionStaffingData} />
-              ) : (
-                <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Staffing Hours */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -230,6 +164,72 @@ export default function StatisticsPage() {
               <Skeleton className="h-[300px] w-full" />
             ) : staffingHours ? (
               <StaffingHoursChart data={staffingHours} />
+            ) : (
+              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Age Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('statistics.ageDistribution')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAge ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : ageDistribution ? (
+              <AgeDistributionChart data={ageDistribution} />
+            ) : (
+              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Monthly Contract Counts */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('statistics.childrenContractCount')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingContracts ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : contractCounts ? (
+              <MonthlyContractChart data={contractCounts} />
+            ) : (
+              <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Staffing by Section */}
+        {sections && sections.data.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>{t('statistics.sectionStaffing')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingSectionStaffing ? (
+                <Skeleton className="h-[300px] w-full" />
+              ) : sectionStaffingData.length > 0 ? (
+                <SectionStaffingChart data={sectionStaffingData} />
+              ) : (
+                <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Contract Properties Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('statistics.contractProperties')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingContractProperties ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : contractProperties ? (
+              <ContractPropertiesChart data={contractProperties} />
             ) : (
               <p className="text-muted-foreground">{t('statistics.chartError')}</p>
             )}
