@@ -262,6 +262,46 @@ func createTestCostEntry(t *testing.T, db *gorm.DB, costID uint, from time.Time,
 	return entry
 }
 
+// createTestFundingPropertyFull creates a funding property with both payment and requirement.
+func createTestFundingPropertyFull(t *testing.T, db *gorm.DB, periodID uint, key, value string, payment int, requirement float64, minAge, maxAge int) *models.GovernmentFundingProperty {
+	t.Helper()
+	var minAgePtr, maxAgePtr *int
+	if minAge >= 0 {
+		minAgePtr = &minAge
+	}
+	if maxAge >= 0 {
+		maxAgePtr = &maxAge
+	}
+	prop := &models.GovernmentFundingProperty{
+		PeriodID:    periodID,
+		Key:         key,
+		Value:       value,
+		Payment:     payment,
+		Requirement: requirement,
+		MinAge:      minAgePtr,
+		MaxAge:      maxAgePtr,
+	}
+	if err := db.Create(prop).Error; err != nil {
+		t.Fatalf("failed to create test funding property: %v", err)
+	}
+	return prop
+}
+
+// createTestPayPlanPeriodWithContrib creates a pay plan period with employer contribution rate.
+func createTestPayPlanPeriodWithContrib(t *testing.T, db *gorm.DB, payplanID uint, from time.Time, to *time.Time, weeklyHours float64, contribRate int) *models.PayPlanPeriod {
+	t.Helper()
+	period := &models.PayPlanPeriod{
+		PayPlanID:                payplanID,
+		Period:                   models.Period{From: from, To: to},
+		WeeklyHours:              weeklyHours,
+		EmployerContributionRate: contribRate,
+	}
+	if err := db.Create(period).Error; err != nil {
+		t.Fatalf("failed to create test pay plan period: %v", err)
+	}
+	return period
+}
+
 // createTestGovernmentFunding creates a government funding plan for testing.
 func createTestGovernmentFunding(t *testing.T, db *gorm.DB, name string) *models.GovernmentFunding {
 	t.Helper()
