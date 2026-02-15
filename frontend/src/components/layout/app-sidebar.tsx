@@ -14,6 +14,7 @@ import {
   BarChart3,
   Landmark,
   CircleDollarSign,
+  Receipt,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -41,6 +42,7 @@ const orgNavigation = [
   { name: 'nav.sections', href: '/sections', icon: LayoutGrid },
   { name: 'nav.statistics', href: '/statistics', icon: BarChart3 },
   { name: 'nav.payPlans', href: '/payplans', icon: CircleDollarSign },
+  { name: 'nav.costs', href: '/costs', icon: Receipt },
 ];
 
 export function AppSidebar() {

@@ -519,6 +519,49 @@ export interface PayPlanEntryUpdateRequest {
   step_min_years?: number | null;
 }
 
+// Cost (organization-scoped operating costs)
+export interface Cost {
+  id: number;
+  organization_id: number;
+  name: string;
+  entries?: CostEntry[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CostEntry {
+  id: number;
+  cost_id: number;
+  from: string;
+  to?: string | null;
+  amount_cents: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CostCreateRequest {
+  name: string;
+}
+
+export interface CostUpdateRequest {
+  name: string;
+}
+
+export interface CostEntryCreateRequest {
+  from: string;
+  to?: string | null;
+  amount_cents: number;
+  notes?: string;
+}
+
+export interface CostEntryUpdateRequest {
+  from: string;
+  to?: string | null;
+  amount_cents: number;
+  notes?: string;
+}
+
 // Step Promotions
 export interface StepPromotion {
   employee_id: number;

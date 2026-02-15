@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -13,7 +14,8 @@ import {
 } from '@/components/ui/table';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
-import { formatDate } from '@/lib/utils/formatting';
+import type { ContractProperties } from '@/lib/api/types';
+import { calculateAge, formatDate, propertiesToValues } from '@/lib/utils/formatting';
 import { compareDates, toUTCDate } from '@/lib/utils/contracts';
 
 interface UpcomingChildrenWidgetProps {
@@ -22,6 +24,7 @@ interface UpcomingChildrenWidgetProps {
 
 export function UpcomingChildrenWidget({ orgId }: UpcomingChildrenWidgetProps) {
   const t = useTranslations('upcomingChildren');
+  const tGender = useTranslations('gender');
 
   const { data } = useQuery({
     queryKey: queryKeys.children.upcoming(orgId),
@@ -43,7 +46,10 @@ export function UpcomingChildrenWidget({ orgId }: UpcomingChildrenWidgetProps) {
           <TableHeader>
             <TableRow>
               <TableHead>{t('name')}</TableHead>
+              <TableHead>{t('gender')}</TableHead>
+              <TableHead>{t('age')}</TableHead>
               <TableHead>{t('section')}</TableHead>
+              <TableHead>{t('properties')}</TableHead>
               <TableHead>{t('startDate')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -65,7 +71,25 @@ export function UpcomingChildrenWidget({ orgId }: UpcomingChildrenWidgetProps) {
                   <TableCell className="font-medium">
                     {child.first_name} {child.last_name}
                   </TableCell>
+                  <TableCell>{tGender(child.gender)}</TableCell>
+                  <TableCell>{calculateAge(child.birthdate)}</TableCell>
                   <TableCell>{futureContract?.section_name ?? '-'}</TableCell>
+                  <TableCell>
+                    {futureContract?.properties &&
+                    Object.keys(futureContract.properties).length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {propertiesToValues(futureContract.properties as ContractProperties).map(
+                          (value) => (
+                            <Badge key={value} variant="outline" className="text-xs">
+                              {value}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell>{futureContract ? formatDate(futureContract.from) : '-'}</TableCell>
                 </TableRow>
               ))}

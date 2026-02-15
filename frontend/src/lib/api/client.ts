@@ -47,6 +47,12 @@ import type {
   PayPlanEntry,
   PayPlanEntryCreateRequest,
   PayPlanEntryUpdateRequest,
+  Cost,
+  CostCreateRequest,
+  CostUpdateRequest,
+  CostEntry,
+  CostEntryCreateRequest,
+  CostEntryUpdateRequest,
   StepPromotionsResponse,
   StaffingHoursResponse,
   Section,
@@ -680,6 +686,44 @@ class ApiClient {
     await this.client.delete(
       `/organizations/${orgId}/payplans/${payplanId}/periods/${periodId}/entries/${entryId}`
     );
+  }
+
+  // Costs (organization-scoped)
+  private _costs = this.orgScopedCrud<Cost, CostCreateRequest, CostUpdateRequest>('costs');
+  getCosts = this._costs.list;
+  getCost = this._costs.get;
+  createCost = this._costs.create;
+  updateCost = this._costs.update;
+  deleteCost = this._costs.delete;
+
+  // Cost Entries
+  async createCostEntry(
+    orgId: number,
+    costId: number,
+    data: CostEntryCreateRequest
+  ): Promise<CostEntry> {
+    const response = await this.client.post<CostEntry>(
+      `/organizations/${orgId}/costs/${costId}/entries`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateCostEntry(
+    orgId: number,
+    costId: number,
+    entryId: number,
+    data: CostEntryUpdateRequest
+  ): Promise<CostEntry> {
+    const response = await this.client.put<CostEntry>(
+      `/organizations/${orgId}/costs/${costId}/entries/${entryId}`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteCostEntry(orgId: number, costId: number, entryId: number): Promise<void> {
+    await this.client.delete(`/organizations/${orgId}/costs/${costId}/entries/${entryId}`);
   }
 
   // Sections (organization-scoped)

@@ -82,7 +82,8 @@
     "payPlans": "Pay Plans",
     "sections": "Sections",
     "statistics": "Statistics",
-    "settings": "Settings"
+    "settings": "Settings",
+    "costs": "Costs"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -511,7 +512,10 @@
   "upcomingChildren": {
     "title": "Upcoming Children",
     "name": "Name",
+    "gender": "Gender",
+    "age": "Age",
     "section": "Section",
+    "properties": "Properties",
     "startDate": "Start Date",
     "noUpcoming": "No upcoming children"
   },
@@ -525,6 +529,31 @@
     "yearsOfService": "Years of Service",
     "monthlyCostDelta": "Monthly Delta",
     "totalCost": "Total extra: {amount}/mo"
+  },
+  "costs": {
+    "title": "Costs",
+    "create": "Create Cost",
+    "edit": "Edit Cost",
+    "newCost": "New Cost",
+    "deleteConfirm": "Are you sure you want to delete this cost? All entries will also be deleted.",
+    "deleteSuccess": "Cost deleted successfully",
+    "createSuccess": "Cost created successfully",
+    "updateSuccess": "Cost updated successfully",
+    "addEntry": "Add Entry",
+    "editEntry": "Edit Entry",
+    "deleteEntry": "Delete Entry",
+    "fromDate": "From Date",
+    "toDateOptional": "To Date (leave empty for ongoing)",
+    "amountInCents": "Amount (in cents)",
+    "notes": "Notes",
+    "entryCreated": "Entry created",
+    "entryUpdated": "Entry updated",
+    "entryDeleted": "Entry deleted",
+    "failedToSaveEntry": "Failed to save entry",
+    "failedToDeleteEntry": "Failed to delete entry",
+    "failedToLoadCost": "Failed to load cost",
+    "deleteEntryConfirm": "Are you sure you want to delete this entry?",
+    "noEntriesDefined": "No entries defined. Click \"Add Entry\" to get started."
   },
   "sectionAgeAlerts": {
     "title": "Children Over Section Age Limit",

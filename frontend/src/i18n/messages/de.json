@@ -82,7 +82,8 @@
     "payPlans": "Entgelttabellen",
     "sections": "Bereiche",
     "statistics": "Statistiken",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "costs": "Kosten"
   },
   "dashboard": {
     "title": "Übersicht",
@@ -511,7 +512,10 @@
   "upcomingChildren": {
     "title": "Bevorstehende Aufnahmen",
     "name": "Name",
+    "gender": "Geschlecht",
+    "age": "Alter",
     "section": "Bereich",
+    "properties": "Eigenschaften",
     "startDate": "Startdatum",
     "noUpcoming": "Keine bevorstehenden Aufnahmen"
   },
@@ -525,6 +529,31 @@
     "yearsOfService": "Dienstjahre",
     "monthlyCostDelta": "Monatliche Differenz",
     "totalCost": "Gesamt-Mehrkosten: {amount}/Monat"
+  },
+  "costs": {
+    "title": "Kosten",
+    "create": "Kosten erstellen",
+    "edit": "Kosten bearbeiten",
+    "newCost": "Neue Kosten",
+    "deleteConfirm": "Möchten Sie diese Kosten wirklich löschen? Alle Einträge werden ebenfalls gelöscht.",
+    "deleteSuccess": "Kosten erfolgreich gelöscht",
+    "createSuccess": "Kosten erfolgreich erstellt",
+    "updateSuccess": "Kosten erfolgreich aktualisiert",
+    "addEntry": "Eintrag hinzufügen",
+    "editEntry": "Eintrag bearbeiten",
+    "deleteEntry": "Eintrag löschen",
+    "fromDate": "Von-Datum",
+    "toDateOptional": "Bis-Datum (leer lassen für laufend)",
+    "amountInCents": "Betrag (in Cent)",
+    "notes": "Notizen",
+    "entryCreated": "Eintrag erstellt",
+    "entryUpdated": "Eintrag aktualisiert",
+    "entryDeleted": "Eintrag gelöscht",
+    "failedToSaveEntry": "Fehler beim Speichern des Eintrags",
+    "failedToDeleteEntry": "Fehler beim Löschen des Eintrags",
+    "failedToLoadCost": "Fehler beim Laden der Kosten",
+    "deleteEntryConfirm": "Möchten Sie diesen Eintrag wirklich löschen?",
+    "noEntriesDefined": "Keine Einträge definiert. Klicken Sie auf \"Eintrag hinzufügen\", um zu beginnen."
   },
   "sectionAgeAlerts": {
     "title": "Kinder über Altersgrenze des Bereichs",
