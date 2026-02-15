@@ -10,11 +10,10 @@ import {
   Building2,
   Users,
   Baby,
-  UserCog,
-  UsersRound,
   BarChart3,
   Landmark,
   Wallet,
+  Settings,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -51,8 +50,6 @@ const navigation: NavItem[] = [
 
 const orgNavigation: NavItem[] = [
   { name: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'nav.users', href: '/users', icon: UserCog },
-  { name: 'nav.groups', href: '/groups', icon: UsersRound },
   {
     name: 'nav.employees',
     href: '/employees',
@@ -74,6 +71,15 @@ const orgNavigation: NavItem[] = [
     ],
   },
   { name: 'nav.budgetItems', href: '/budget-items', icon: Wallet },
+  {
+    name: 'nav.admin',
+    href: '/users',
+    icon: Settings,
+    children: [
+      { name: 'nav.users', href: '/users' },
+      { name: 'nav.groups', href: '/groups' },
+    ],
+  },
 ];
 
 export function AppSidebar() {

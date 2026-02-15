@@ -88,7 +88,8 @@
     "statisticsChildren": "Children",
     "statisticsOccupancy": "Occupancy",
     "settings": "Settings",
-    "budgetItems": "Budget Items"
+    "budgetItems": "Budget Items",
+    "admin": "Admin"
   },
   "dashboard": {
     "title": "Dashboard",

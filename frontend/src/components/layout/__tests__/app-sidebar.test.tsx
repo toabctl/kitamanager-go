@@ -69,14 +69,16 @@ describe('AppSidebar', () => {
     render(<AppSidebar />);
 
     expect(screen.getByText('nav.dashboard')).toBeInTheDocument();
-    expect(screen.getByText('nav.users')).toBeInTheDocument();
     expect(screen.getByText('nav.employees')).toBeInTheDocument();
     expect(screen.getByText('nav.children')).toBeInTheDocument();
-    expect(screen.getByText('nav.groups')).toBeInTheDocument();
     expect(screen.getByText('nav.sections')).toBeInTheDocument();
     expect(screen.getByText('nav.statistics')).toBeInTheDocument();
+    expect(screen.getByText('nav.admin')).toBeInTheDocument();
     // Pay Plans is nested under Employees (collapsed by default)
     expect(screen.queryByText('nav.payPlans')).not.toBeInTheDocument();
+    // Users and Groups are nested under Admin (collapsed by default)
+    expect(screen.queryByText('nav.users')).not.toBeInTheDocument();
+    expect(screen.queryByText('nav.groups')).not.toBeInTheDocument();
   });
 
   it('renders collapse/toggle sidebar button', () => {

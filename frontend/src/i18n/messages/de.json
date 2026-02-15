@@ -88,7 +88,8 @@
     "statisticsChildren": "Kinder",
     "statisticsOccupancy": "Belegung",
     "settings": "Einstellungen",
-    "budgetItems": "Budgetposten"
+    "budgetItems": "Budgetposten",
+    "admin": "Verwaltung"
   },
   "dashboard": {
     "title": "Übersicht",
