@@ -64,7 +64,7 @@ func (s *UserStore) FindByOrganization(ctx context.Context, orgID uint, search s
 	}
 
 	// Get users with their groups (filtered to this org's groups)
-	dataQuery := s.db.
+	dataQuery := DBFromContext(ctx, s.db).
 		Distinct().
 		Joins("JOIN user_groups ON user_groups.user_id = users.id").
 		Joins("JOIN groups ON groups.id = user_groups.group_id").
@@ -156,7 +156,7 @@ func (s *UserStore) RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID 
 
 func (s *UserStore) GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error) {
 	var orgs []models.Organization
-	err := s.db.Distinct().
+	err := DBFromContext(ctx, s.db).Distinct().
 		Joins("JOIN groups ON groups.organization_id = organizations.id").
 		Joins("JOIN user_groups ON user_groups.group_id = groups.id").
 		Where("user_groups.user_id = ?", userID).
