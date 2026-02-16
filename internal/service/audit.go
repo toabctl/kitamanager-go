@@ -26,6 +26,9 @@ var (
 	})
 )
 
+// auditBufferSize is the capacity of the asynchronous audit log channel.
+const auditBufferSize = 4096
+
 // AuditService handles audit logging operations
 type AuditService struct {
 	store         store.AuditStorer
@@ -39,7 +42,7 @@ type AuditService struct {
 func NewAuditService(store store.AuditStorer) *AuditService {
 	s := &AuditService{
 		store: store,
-		logCh: make(chan *models.AuditLog, 4096),
+		logCh: make(chan *models.AuditLog, auditBufferSize),
 		done:  make(chan struct{}),
 	}
 	go s.processLogs()
@@ -81,6 +84,16 @@ func (s *AuditService) FallbackCount() int64 {
 	return s.fallbackCount.Load()
 }
 
+// mustMarshalJSON marshals v to JSON, returning "{}" on error.
+func mustMarshalJSON(v any) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("Failed to marshal audit details", "error", err)
+		return "{}"
+	}
+	return string(data)
+}
+
 // LogLogin logs a successful login attempt
 func (s *AuditService) LogLogin(userID uint, email, ipAddress, userAgent string) {
 	s.log(&models.AuditLog{
@@ -95,16 +108,12 @@ func (s *AuditService) LogLogin(userID uint, email, ipAddress, userAgent string)
 
 // LogLoginFailed logs a failed login attempt
 func (s *AuditService) LogLoginFailed(email, ipAddress, userAgent, reason string) {
-	details, err := json.Marshal(map[string]string{"reason": reason})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
 	s.log(&models.AuditLog{
 		UserEmail: email,
 		Action:    models.AuditActionLoginFailed,
 		IPAddress: ipAddress,
 		UserAgent: userAgent,
-		Details:   string(details),
+		Details:   mustMarshalJSON(map[string]string{"reason": reason}),
 		Success:   false,
 	})
 }
@@ -116,98 +125,69 @@ func (s *AuditService) LogSuperAdminChange(actorID, targetUserID uint, targetEma
 		action = models.AuditActionSuperAdminRevoke
 	}
 
-	details, err := json.Marshal(map[string]interface{}{
-		"target_user_id":    targetUserID,
-		"target_user_email": targetEmail,
-		"granted":           granted,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       action,
 		ResourceType: "user",
 		ResourceID:   &targetUserID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details: mustMarshalJSON(map[string]any{
+			"target_user_id":    targetUserID,
+			"target_user_email": targetEmail,
+			"granted":           granted,
+		}),
 		Success:      true,
 	})
 }
 
 // LogUserAddToGroup logs adding a user to a group
 func (s *AuditService) LogUserAddToGroup(actorID, userID, groupID uint, role string, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"group_id": groupID,
-		"role":     role,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       models.AuditActionUserAddToGroup,
 		ResourceType: "user_group",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details: mustMarshalJSON(map[string]any{
+			"group_id": groupID,
+			"role":     role,
+		}),
 		Success:      true,
 	})
 }
 
 // LogUserRemoveFromGroup logs removing a user from a group
 func (s *AuditService) LogUserRemoveFromGroup(actorID, userID, groupID uint, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"group_id": groupID,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       models.AuditActionUserRemoveFromGroup,
 		ResourceType: "user_group",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details:      mustMarshalJSON(map[string]any{"group_id": groupID}),
 		Success:      true,
 	})
 }
 
 // LogRoleChange logs a role change for a user in a group
 func (s *AuditService) LogRoleChange(actorID, userID, groupID uint, oldRole, newRole string, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"group_id": groupID,
-		"old_role": oldRole,
-		"new_role": newRole,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       models.AuditActionRoleChange,
 		ResourceType: "user_group",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details: mustMarshalJSON(map[string]any{
+			"group_id": groupID,
+			"old_role": oldRole,
+			"new_role": newRole,
+		}),
 		Success:      true,
 	})
 }
 
 // LogResourceDelete logs deletion of a resource (employee, child, org, etc.)
 func (s *AuditService) LogResourceDelete(actorID uint, resourceType string, resourceID uint, resourceName, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"resource_name": resourceName,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	var action models.AuditAction
 	switch resourceType {
 	case "employee":
@@ -228,20 +208,13 @@ func (s *AuditService) LogResourceDelete(actorID uint, resourceType string, reso
 		ResourceType: resourceType,
 		ResourceID:   &resourceID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details:      mustMarshalJSON(map[string]any{"resource_name": resourceName}),
 		Success:      true,
 	})
 }
 
 // LogResourceCreate logs creation of a resource
 func (s *AuditService) LogResourceCreate(actorID uint, resourceType string, resourceID uint, resourceName, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"resource_name": resourceName,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
 	var action models.AuditAction
 	switch resourceType {
 	case "user":
@@ -258,26 +231,20 @@ func (s *AuditService) LogResourceCreate(actorID uint, resourceType string, reso
 		ResourceType: resourceType,
 		ResourceID:   &resourceID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details:      mustMarshalJSON(map[string]any{"resource_name": resourceName}),
 		Success:      true,
 	})
 }
 
 // LogResourceUpdate logs update of a resource
 func (s *AuditService) LogResourceUpdate(actorID uint, resourceType string, resourceID uint, resourceName, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"resource_name": resourceName,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       models.AuditAction(resourceType + "_update"),
 		ResourceType: resourceType,
 		ResourceID:   &resourceID,
 		IPAddress:    ipAddress,
-		Details:      string(details),
+		Details:      mustMarshalJSON(map[string]any{"resource_name": resourceName}),
 		Success:      true,
 	})
 }
