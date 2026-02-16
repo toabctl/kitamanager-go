@@ -8,15 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/service"
 )
-
-// contractAuditConfig holds audit configuration for contract operations.
-type contractAuditConfig struct {
-	auditService *service.AuditService
-	resourceType string // e.g. "child_contract", "employee_contract"
-	parentName   string // e.g. "child", "employee"
-}
 
 // handleListContracts handles paginated listing of contracts for a parent resource.
 func handleListContracts[Resp any](
@@ -83,7 +75,7 @@ func handleGetContract[Resp any](
 // handleCreateContract handles creating a new contract with audit logging.
 func handleCreateContract[Req any, Resp any](
 	c *gin.Context,
-	audit contractAuditConfig,
+	audit auditConfig,
 	createFn func(context.Context, uint, uint, *Req) (*Resp, error),
 	getAuditInfo func(*Resp) (uint, uint), // returns (contractID, parentID)
 ) {
@@ -104,7 +96,7 @@ func handleCreateContract[Req any, Resp any](
 	}
 
 	id, parentID := getAuditInfo(resp)
-	auditCreate(c, audit.auditService, audit.resourceType, id, fmt.Sprintf("%s=%d", audit.parentName, parentID))
+	auditCreate(c, audit.auditService, audit.resourceType, id, fmt.Sprintf("%s=%d", audit.parentLabel, parentID))
 
 	c.JSON(http.StatusCreated, resp)
 }
@@ -112,7 +104,7 @@ func handleCreateContract[Req any, Resp any](
 // handleUpdateContract handles updating an existing contract with audit logging.
 func handleUpdateContract[Req any, Resp any](
 	c *gin.Context,
-	audit contractAuditConfig,
+	audit auditConfig,
 	updateFn func(context.Context, uint, uint, uint, *Req) (*Resp, error),
 	getAuditInfo func(*Resp) (uint, uint), // returns (contractID, parentID)
 ) {
@@ -133,7 +125,7 @@ func handleUpdateContract[Req any, Resp any](
 	}
 
 	id, parentID := getAuditInfo(resp)
-	auditUpdate(c, audit.auditService, audit.resourceType, id, fmt.Sprintf("%s=%d", audit.parentName, parentID))
+	auditUpdate(c, audit.auditService, audit.resourceType, id, fmt.Sprintf("%s=%d", audit.parentLabel, parentID))
 
 	c.JSON(http.StatusOK, resp)
 }
@@ -141,7 +133,7 @@ func handleUpdateContract[Req any, Resp any](
 // handleDeleteContract handles deleting a contract with audit logging.
 func handleDeleteContract(
 	c *gin.Context,
-	audit contractAuditConfig,
+	audit auditConfig,
 	deleteFn func(context.Context, uint, uint, uint) error,
 ) {
 	orgID, resourceID, contractID, ok := parseOrgResourceAndContractID(c)
@@ -154,7 +146,7 @@ func handleDeleteContract(
 		return
 	}
 
-	auditDelete(c, audit.auditService, audit.resourceType, contractID, fmt.Sprintf("%s=%d", audit.parentName, resourceID))
+	auditDelete(c, audit.auditService, audit.resourceType, contractID, fmt.Sprintf("%s=%d", audit.parentLabel, resourceID))
 
 	c.Status(http.StatusNoContent)
 }

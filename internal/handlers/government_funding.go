@@ -227,7 +227,7 @@ func (h *GovernmentFundingHandler) Delete(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods [post]
 func (h *GovernmentFundingHandler) CreatePeriod(c *gin.Context) {
 	handleGlobalNestedCreate(c,
-		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		auditConfig{h.auditService, "gov_funding_period", "funding"},
 		h.service.CreatePeriod,
 		func(r *models.GovernmentFundingPeriodResponse) uint { return r.ID },
 	)
@@ -252,7 +252,7 @@ func (h *GovernmentFundingHandler) CreatePeriod(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods/{periodId} [put]
 func (h *GovernmentFundingHandler) UpdatePeriod(c *gin.Context) {
 	handleGlobalNestedUpdate(c, "periodId",
-		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		auditConfig{h.auditService, "gov_funding_period", "funding"},
 		h.service.UpdatePeriod,
 		func(r *models.GovernmentFundingPeriodResponse) uint { return r.ID },
 	)
@@ -275,7 +275,7 @@ func (h *GovernmentFundingHandler) UpdatePeriod(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods/{periodId} [delete]
 func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
 	handleGlobalNestedDelete(c, "periodId",
-		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		auditConfig{h.auditService, "gov_funding_period", "funding"},
 		h.service.DeletePeriod,
 	)
 }
@@ -301,7 +301,7 @@ func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties [post]
 func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 	handleGlobalDeepNestedCreate(c, "periodId",
-		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		auditConfig{h.auditService, "gov_funding_property", "period"},
 		h.service.CreateProperty,
 		func(r *models.GovernmentFundingPropertyResponse) uint { return r.ID },
 	)
@@ -327,7 +327,7 @@ func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [put]
 func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 	handleGlobalDeepNestedUpdate(c, "periodId", "propId",
-		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		auditConfig{h.auditService, "gov_funding_property", "period"},
 		h.service.UpdateProperty,
 		func(r *models.GovernmentFundingPropertyResponse) uint { return r.ID },
 	)
@@ -351,7 +351,7 @@ func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [delete]
 func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
 	handleGlobalDeepNestedDelete(c, "periodId", "propId",
-		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		auditConfig{h.auditService, "gov_funding_property", "period"},
 		h.service.DeleteProperty,
 	)
 }

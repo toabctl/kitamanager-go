@@ -208,6 +208,13 @@ func bindJSON[T any](c *gin.Context) (*T, bool) {
 	return &req, true
 }
 
+// auditConfig holds audit configuration for resource operations (contracts, nested resources).
+type auditConfig struct {
+	auditService *service.AuditService
+	resourceType string // e.g. "child_contract", "pay_plan_period"
+	parentLabel  string // e.g. "child", "payplan" — used in audit message: "child=123"
+}
+
 // auditCreate logs a resource creation audit event.
 func auditCreate(c *gin.Context, svc *service.AuditService, resourceType string, id uint, name string) {
 	svc.LogResourceCreate(getUserID(c), resourceType, id, name, c.ClientIP())

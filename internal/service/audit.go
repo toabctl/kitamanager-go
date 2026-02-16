@@ -4,25 +4,42 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"sync/atomic"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
+var (
+	auditFallbackTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "audit_entries_fallback_total",
+		Help: "Total number of audit entries written via synchronous fallback",
+	})
+	auditDroppedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "audit_entries_dropped_total",
+		Help: "Total number of audit entries dropped (both async and fallback failed)",
+	})
+)
+
 // AuditService handles audit logging operations
 type AuditService struct {
-	store store.AuditStorer
-	logCh chan *models.AuditLog
-	done  chan struct{}
+	store         store.AuditStorer
+	logCh         chan *models.AuditLog
+	done          chan struct{}
+	fallbackCount atomic.Int64
+	droppedCount  atomic.Int64
 }
 
 // NewAuditService creates a new AuditService
 func NewAuditService(store store.AuditStorer) *AuditService {
 	s := &AuditService{
 		store: store,
-		logCh: make(chan *models.AuditLog, 256),
+		logCh: make(chan *models.AuditLog, 4096),
 		done:  make(chan struct{}),
 	}
 	go s.processLogs()
@@ -46,6 +63,22 @@ func (s *AuditService) Shutdown() {
 	}
 	close(s.logCh)
 	<-s.done
+}
+
+// DroppedCount returns the number of audit entries that were dropped.
+func (s *AuditService) DroppedCount() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.droppedCount.Load()
+}
+
+// FallbackCount returns the number of audit entries written via synchronous fallback.
+func (s *AuditService) FallbackCount() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.fallbackCount.Load()
 }
 
 // LogLogin logs a successful login attempt
@@ -97,46 +130,6 @@ func (s *AuditService) LogSuperAdminChange(actorID, targetUserID uint, targetEma
 		Action:       action,
 		ResourceType: "user",
 		ResourceID:   &targetUserID,
-		IPAddress:    ipAddress,
-		Details:      string(details),
-		Success:      true,
-	})
-}
-
-// LogUserCreate logs a user creation
-func (s *AuditService) LogUserCreate(actorID, newUserID uint, newUserEmail, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"new_user_email": newUserEmail,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
-	s.log(&models.AuditLog{
-		UserID:       &actorID,
-		Action:       models.AuditActionUserCreate,
-		ResourceType: "user",
-		ResourceID:   &newUserID,
-		IPAddress:    ipAddress,
-		Details:      string(details),
-		Success:      true,
-	})
-}
-
-// LogUserDelete logs a user deletion
-func (s *AuditService) LogUserDelete(actorID, deletedUserID uint, deletedUserEmail, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"deleted_user_email": deletedUserEmail,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
-	s.log(&models.AuditLog{
-		UserID:       &actorID,
-		Action:       models.AuditActionUserDelete,
-		ResourceType: "user",
-		ResourceID:   &deletedUserID,
 		IPAddress:    ipAddress,
 		Details:      string(details),
 		Success:      true,
@@ -223,6 +216,8 @@ func (s *AuditService) LogResourceDelete(actorID uint, resourceType string, reso
 		action = models.AuditActionChildDelete
 	case "organization":
 		action = models.AuditActionOrgDelete
+	case "user":
+		action = models.AuditActionUserDelete
 	default:
 		action = models.AuditAction(resourceType + "_delete")
 	}
@@ -238,26 +233,6 @@ func (s *AuditService) LogResourceDelete(actorID uint, resourceType string, reso
 	})
 }
 
-// LogOrgCreate logs organization creation
-func (s *AuditService) LogOrgCreate(actorID, orgID uint, orgName, ipAddress string) {
-	details, err := json.Marshal(map[string]interface{}{
-		"org_name": orgName,
-	})
-	if err != nil {
-		slog.Error("Failed to marshal audit details", "error", err)
-	}
-
-	s.log(&models.AuditLog{
-		UserID:       &actorID,
-		Action:       models.AuditActionOrgCreate,
-		ResourceType: "organization",
-		ResourceID:   &orgID,
-		IPAddress:    ipAddress,
-		Details:      string(details),
-		Success:      true,
-	})
-}
-
 // LogResourceCreate logs creation of a resource
 func (s *AuditService) LogResourceCreate(actorID uint, resourceType string, resourceID uint, resourceName, ipAddress string) {
 	details, err := json.Marshal(map[string]interface{}{
@@ -266,9 +241,20 @@ func (s *AuditService) LogResourceCreate(actorID uint, resourceType string, reso
 	if err != nil {
 		slog.Error("Failed to marshal audit details", "error", err)
 	}
+
+	var action models.AuditAction
+	switch resourceType {
+	case "user":
+		action = models.AuditActionUserCreate
+	case "organization":
+		action = models.AuditActionOrgCreate
+	default:
+		action = models.AuditAction(resourceType + "_create")
+	}
+
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
-		Action:       models.AuditAction(resourceType + "_create"),
+		Action:       action,
 		ResourceType: resourceType,
 		ResourceID:   &resourceID,
 		IPAddress:    ipAddress,
@@ -334,7 +320,8 @@ func (s *AuditService) CountRecentFailedLogins(ctx context.Context, email string
 	return s.store.CountFailedLoginsSince(ctx, email, since)
 }
 
-// log sends an audit log entry to the worker channel
+// log sends an audit log entry to the worker channel.
+// If the channel is full, falls back to synchronous write with a timeout.
 func (s *AuditService) log(entry *models.AuditLog) {
 	if s == nil || s.logCh == nil {
 		return
@@ -345,6 +332,15 @@ func (s *AuditService) log(entry *models.AuditLog) {
 	select {
 	case s.logCh <- entry:
 	default:
-		slog.Warn("Audit log channel full, dropping entry", "action", entry.Action)
+		s.fallbackCount.Add(1)
+		auditFallbackTotal.Inc()
+		// Synchronous fallback with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.store.Create(ctx, entry); err != nil {
+			s.droppedCount.Add(1)
+			auditDroppedTotal.Inc()
+			slog.Error("Audit log dropped", "action", entry.Action, "error", err)
+		}
 	}
 }

@@ -249,7 +249,7 @@ func (h *BudgetItemHandler) ListEntries(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries [post]
 func (h *BudgetItemHandler) CreateEntry(c *gin.Context) {
 	handleOrgNestedCreate(c,
-		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		auditConfig{h.auditService, "budget_item_entry", "budget_item"},
 		h.service.CreateEntry,
 		func(r *models.BudgetItemEntryResponse) uint { return r.ID },
 	)
@@ -297,7 +297,7 @@ func (h *BudgetItemHandler) GetEntry(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries/{entryId} [put]
 func (h *BudgetItemHandler) UpdateEntry(c *gin.Context) {
 	handleOrgNestedUpdate(c, "entryId",
-		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		auditConfig{h.auditService, "budget_item_entry", "budget_item"},
 		h.service.UpdateEntry,
 		func(r *models.BudgetItemEntryResponse) uint { return r.ID },
 	)
@@ -322,7 +322,7 @@ func (h *BudgetItemHandler) UpdateEntry(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries/{entryId} [delete]
 func (h *BudgetItemHandler) DeleteEntry(c *gin.Context) {
 	handleOrgNestedDelete(c, "entryId",
-		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		auditConfig{h.auditService, "budget_item_entry", "budget_item"},
 		h.service.DeleteEntry,
 	)
 }

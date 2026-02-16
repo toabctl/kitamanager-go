@@ -109,9 +109,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Audit log organization creation
-	actorID := getUserID(c)
-	h.auditService.LogOrgCreate(actorID, organization.ID, organization.Name, c.ClientIP())
+	auditCreate(c, h.auditService, "organization", organization.ID, organization.Name)
 
 	c.JSON(http.StatusCreated, organization)
 }

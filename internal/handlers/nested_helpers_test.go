@@ -25,12 +25,12 @@ type testNestedResp struct {
 	Name string `json:"name"`
 }
 
-// testAuditConfig returns a nestedAuditConfig with a real audit service backed by an in-memory DB.
-func testAuditConfig(t *testing.T, resourceType, parentLabel string) nestedAuditConfig {
+// testAuditConfig returns a auditConfig with a real audit service backed by an in-memory DB.
+func testAuditConfig(t *testing.T, resourceType, parentLabel string) auditConfig {
 	t.Helper()
 	db := setupTestDB(t)
 	createTestSuperAdmin(t, db)
-	return nestedAuditConfig{
+	return auditConfig{
 		auditService: createAuditService(db),
 		resourceType: resourceType,
 		parentLabel:  parentLabel,
@@ -96,7 +96,7 @@ func TestHandleOrgNestedCreate_InvalidOrgID(t *testing.T) {
 		{Key: "id", Value: "2"},
 	}, testNestedReq{Name: "test"})
 
-	handleOrgNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgNestedCreate(c, auditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -112,7 +112,7 @@ func TestHandleOrgNestedCreate_InvalidParentID(t *testing.T) {
 		{Key: "id", Value: "abc"},
 	}, testNestedReq{Name: "test"})
 
-	handleOrgNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgNestedCreate(c, auditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -129,7 +129,7 @@ func TestHandleOrgNestedCreate_InvalidJSON(t *testing.T) {
 	c.Request = httptest.NewRequest("POST", "/", bytes.NewBufferString(`{invalid`))
 	c.Request.Header.Set("Content-Type", "application/json")
 
-	handleOrgNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgNestedCreate(c, auditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -145,7 +145,7 @@ func TestHandleOrgNestedCreate_ServiceError(t *testing.T) {
 		{Key: "id", Value: "2"},
 	}, testNestedReq{Name: "test"})
 
-	handleOrgNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgNestedCreate(c, auditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		return nil, apperror.NotFound("item")
 	}, func(r *testNestedResp) uint { return r.ID })
 
@@ -273,7 +273,7 @@ func TestHandleOrgNestedDelete_ServiceError(t *testing.T) {
 		{Key: "subId", Value: "3"},
 	}, nil)
 
-	handleOrgNestedDelete(c, "subId", nestedAuditConfig{}, func(_ context.Context, _, _, _ uint) error {
+	handleOrgNestedDelete(c, "subId", auditConfig{}, func(_ context.Context, _, _, _ uint) error {
 		return apperror.NotFound("sub item")
 	})
 
@@ -349,7 +349,7 @@ func TestHandleOrgDeepNestedCreate_InvalidMidID(t *testing.T) {
 		{Key: "midId", Value: "abc"},
 	}, testNestedReq{Name: "deep"})
 
-	handleOrgDeepNestedCreate(c, "midId", nestedAuditConfig{}, func(_ context.Context, _, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgDeepNestedCreate(c, "midId", auditConfig{}, func(_ context.Context, _, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -415,7 +415,7 @@ func TestHandleGlobalNestedCreate_InvalidID(t *testing.T) {
 		{Key: "id", Value: "abc"},
 	}, testNestedReq{Name: "global"})
 
-	handleGlobalNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleGlobalNestedCreate(c, auditConfig{}, func(_ context.Context, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -535,7 +535,7 @@ func TestHandleOrgNestedDelete_ErrorMessagePreserved(t *testing.T) {
 		{Key: "subId", Value: "3"},
 	}, nil)
 
-	handleOrgNestedDelete(c, "subId", nestedAuditConfig{}, func(_ context.Context, _, _, _ uint) error {
+	handleOrgNestedDelete(c, "subId", auditConfig{}, func(_ context.Context, _, _, _ uint) error {
 		return apperror.Conflict("period overlaps")
 	})
 
@@ -560,7 +560,7 @@ func TestHandleOrgNestedCreate_MissingRequiredField(t *testing.T) {
 		{Key: "id", Value: "2"},
 	}, map[string]string{}) // empty body, missing required "name"
 
-	handleOrgNestedCreate(c, nestedAuditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
+	handleOrgNestedCreate(c, auditConfig{}, func(_ context.Context, _, _ uint, _ *testNestedReq) (*testNestedResp, error) {
 		t.Fatal("createFn should not be called for validation failure")
 		return nil, nil
 	}, func(r *testNestedResp) uint { return r.ID })
@@ -607,7 +607,7 @@ func TestHandleOrgNestedCreate_WithAuditService(t *testing.T) {
 		{Key: "id", Value: "2"},
 	}, testNestedReq{Name: "audited"})
 
-	audit := nestedAuditConfig{
+	audit := auditConfig{
 		auditService: auditSvc,
 		resourceType: "test_resource",
 		parentLabel:  "item",

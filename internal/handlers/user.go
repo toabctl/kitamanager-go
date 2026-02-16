@@ -151,9 +151,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Audit log user creation
-	actorID := getUserID(c)
-	h.auditService.LogUserCreate(actorID, user.ID, user.Email, c.ClientIP())
+	auditCreate(c, h.auditService, "user", user.ID, user.Email)
 
 	c.JSON(http.StatusCreated, user)
 }
@@ -229,9 +227,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Audit log user deletion
-	actorID := getUserID(c)
-	h.auditService.LogUserDelete(actorID, id, user.Email, c.ClientIP())
+	auditDelete(c, h.auditService, "user", id, user.Email)
 
 	c.Status(http.StatusNoContent)
 }

@@ -231,7 +231,7 @@ func (h *PayPlanHandler) Delete(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods [post]
 func (h *PayPlanHandler) CreatePeriod(c *gin.Context) {
 	handleOrgNestedCreate(c,
-		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		auditConfig{h.auditService, "pay_plan_period", "payplan"},
 		h.service.CreatePeriod,
 		func(r *models.PayPlanPeriodResponse) uint { return r.ID },
 	)
@@ -278,7 +278,7 @@ func (h *PayPlanHandler) GetPeriod(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId} [put]
 func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
 	handleOrgNestedUpdate(c, "periodId",
-		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		auditConfig{h.auditService, "pay_plan_period", "payplan"},
 		h.service.UpdatePeriod,
 		func(r *models.PayPlanPeriodResponse) uint { return r.ID },
 	)
@@ -303,7 +303,7 @@ func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId} [delete]
 func (h *PayPlanHandler) DeletePeriod(c *gin.Context) {
 	handleOrgNestedDelete(c, "periodId",
-		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		auditConfig{h.auditService, "pay_plan_period", "payplan"},
 		h.service.DeletePeriod,
 	)
 }
@@ -330,7 +330,7 @@ func (h *PayPlanHandler) DeletePeriod(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries [post]
 func (h *PayPlanHandler) CreateEntry(c *gin.Context) {
 	handleOrgDeepNestedCreate(c, "periodId",
-		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		auditConfig{h.auditService, "pay_plan_entry", "period"},
 		h.service.CreateEntry,
 		func(r *models.PayPlanEntryResponse) uint { return r.ID },
 	)
@@ -379,7 +379,7 @@ func (h *PayPlanHandler) GetEntry(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries/{entryId} [put]
 func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
 	handleOrgDeepNestedUpdate(c, "periodId", "entryId",
-		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		auditConfig{h.auditService, "pay_plan_entry", "period"},
 		h.service.UpdateEntry,
 		func(r *models.PayPlanEntryResponse) uint { return r.ID },
 	)
@@ -405,7 +405,7 @@ func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries/{entryId} [delete]
 func (h *PayPlanHandler) DeleteEntry(c *gin.Context) {
 	handleOrgDeepNestedDelete(c, "periodId", "entryId",
-		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		auditConfig{h.auditService, "pay_plan_entry", "period"},
 		h.service.DeleteEntry,
 	)
 }

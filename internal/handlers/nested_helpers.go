@@ -8,15 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
-	"github.com/eenemeene/kitamanager-go/internal/service"
 )
-
-// nestedAuditConfig holds audit configuration for nested resource operations.
-type nestedAuditConfig struct {
-	auditService *service.AuditService
-	resourceType string // e.g., "pay_plan_period"
-	parentLabel  string // e.g., "payplan" — used in audit message: "payplan=123"
-}
 
 // --- Org-scoped nested helpers (routes: /organizations/:orgId/resource/:id/nested) ---
 
@@ -47,7 +39,7 @@ func handleOrgNestedList[Resp any](
 // handleOrgNestedCreate handles creating a nested resource with audit logging.
 func handleOrgNestedCreate[Req any, Resp any](
 	c *gin.Context,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	createFn func(context.Context, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -102,7 +94,7 @@ func handleOrgNestedGet[Resp any](
 func handleOrgNestedUpdate[Req any, Resp any](
 	c *gin.Context,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	updateFn func(context.Context, uint, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -137,7 +129,7 @@ func handleOrgNestedUpdate[Req any, Resp any](
 func handleOrgNestedDelete(
 	c *gin.Context,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	deleteFn func(context.Context, uint, uint, uint) error,
 ) {
 	orgID, parentID, ok := parseOrgAndResourceID(c, "id")
@@ -167,7 +159,7 @@ func handleOrgNestedDelete(
 func handleOrgDeepNestedCreate[Req any, Resp any](
 	c *gin.Context,
 	midParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	createFn func(context.Context, uint, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -236,7 +228,7 @@ func handleOrgDeepNestedUpdate[Req any, Resp any](
 	c *gin.Context,
 	midParam string,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	updateFn func(context.Context, uint, uint, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -278,7 +270,7 @@ func handleOrgDeepNestedDelete(
 	c *gin.Context,
 	midParam string,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	deleteFn func(context.Context, uint, uint, uint, uint) error,
 ) {
 	orgID, parentID, ok := parseOrgAndResourceID(c, "id")
@@ -313,7 +305,7 @@ func handleOrgDeepNestedDelete(
 // handleGlobalNestedCreate handles creating a nested resource under a global parent.
 func handleGlobalNestedCreate[Req any, Resp any](
 	c *gin.Context,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	createFn func(context.Context, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -343,7 +335,7 @@ func handleGlobalNestedCreate[Req any, Resp any](
 func handleGlobalNestedUpdate[Req any, Resp any](
 	c *gin.Context,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	updateFn func(context.Context, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -379,7 +371,7 @@ func handleGlobalNestedUpdate[Req any, Resp any](
 func handleGlobalNestedDelete(
 	c *gin.Context,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	deleteFn func(context.Context, uint, uint) error,
 ) {
 	parentID, err := parseID(c, "id")
@@ -410,7 +402,7 @@ func handleGlobalNestedDelete(
 func handleGlobalDeepNestedCreate[Req any, Resp any](
 	c *gin.Context,
 	midParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	createFn func(context.Context, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -447,7 +439,7 @@ func handleGlobalDeepNestedUpdate[Req any, Resp any](
 	c *gin.Context,
 	midParam string,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	updateFn func(context.Context, uint, uint, uint, *Req) (*Resp, error),
 	getID func(*Resp) uint,
 ) {
@@ -490,7 +482,7 @@ func handleGlobalDeepNestedDelete(
 	c *gin.Context,
 	midParam string,
 	nestedParam string,
-	audit nestedAuditConfig,
+	audit auditConfig,
 	deleteFn func(context.Context, uint, uint, uint) error,
 ) {
 	parentID, err := parseID(c, "id")

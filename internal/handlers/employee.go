@@ -21,11 +21,11 @@ func NewEmployeeHandler(service *service.EmployeeService, auditService *service.
 	}
 }
 
-func (h *EmployeeHandler) contractAudit() contractAuditConfig {
-	return contractAuditConfig{
+func (h *EmployeeHandler) contractAudit() auditConfig {
+	return auditConfig{
 		auditService: h.auditService,
 		resourceType: "employee_contract",
-		parentName:   "employee",
+		parentLabel:  "employee",
 	}
 }
 

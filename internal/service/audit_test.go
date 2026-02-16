@@ -3,12 +3,45 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
+
+// mockAuditStore implements store.AuditStorer for testing resilience behavior.
+type mockAuditStore struct {
+	createErr   error
+	createCount atomic.Int64
+}
+
+func (m *mockAuditStore) Create(_ context.Context, _ *models.AuditLog) error {
+	m.createCount.Add(1)
+	return m.createErr
+}
+
+func (m *mockAuditStore) FindAll(context.Context, int, int) ([]models.AuditLog, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockAuditStore) FindByUser(context.Context, uint, int, int) ([]models.AuditLog, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockAuditStore) FindByAction(context.Context, models.AuditAction, int, int) ([]models.AuditLog, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockAuditStore) FindByDateRange(context.Context, time.Time, time.Time, int, int) ([]models.AuditLog, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockAuditStore) FindFailedLogins(context.Context, string, time.Time, int) ([]models.AuditLog, error) {
+	return nil, nil
+}
+func (m *mockAuditStore) CountFailedLoginsSince(context.Context, string, time.Time) (int64, error) {
+	return 0, nil
+}
+func (m *mockAuditStore) Cleanup(context.Context, time.Time) (int64, error) { return 0, nil }
 
 func TestAuditService_NewAndShutdown(t *testing.T) {
 	db := setupTestDB(t)
@@ -150,75 +183,6 @@ func TestAuditService_LogSuperAdminChange(t *testing.T) {
 	})
 }
 
-func TestAuditService_LogUserCreate(t *testing.T) {
-	db := setupTestDB(t)
-	auditStore := store.NewAuditStore(db)
-	svc := NewAuditService(auditStore)
-	ctx := context.Background()
-
-	svc.LogUserCreate(1, 10, "new@example.com", "127.0.0.1")
-	svc.Shutdown()
-
-	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if total != 1 {
-		t.Fatalf("expected total 1, got %d", total)
-	}
-
-	log := logs[0]
-	if log.Action != models.AuditActionUserCreate {
-		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserCreate)
-	}
-	if log.ResourceType != "user" {
-		t.Errorf("ResourceType = %v, want user", log.ResourceType)
-	}
-	if log.ResourceID == nil || *log.ResourceID != 10 {
-		t.Errorf("ResourceID = %v, want 10", log.ResourceID)
-	}
-	if !log.Success {
-		t.Error("expected Success = true")
-	}
-}
-
-func TestAuditService_LogUserDelete(t *testing.T) {
-	db := setupTestDB(t)
-	auditStore := store.NewAuditStore(db)
-	svc := NewAuditService(auditStore)
-	ctx := context.Background()
-
-	svc.LogUserDelete(1, 20, "deleted@example.com", "10.0.0.1")
-	svc.Shutdown()
-
-	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if total != 1 {
-		t.Fatalf("expected total 1, got %d", total)
-	}
-
-	log := logs[0]
-	if log.Action != models.AuditActionUserDelete {
-		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserDelete)
-	}
-	if log.ResourceType != "user" {
-		t.Errorf("ResourceType = %v, want user", log.ResourceType)
-	}
-	if log.ResourceID == nil || *log.ResourceID != 20 {
-		t.Errorf("ResourceID = %v, want 20", log.ResourceID)
-	}
-
-	var details map[string]interface{}
-	if err := json.Unmarshal([]byte(log.Details), &details); err != nil {
-		t.Fatalf("failed to unmarshal details: %v", err)
-	}
-	if details["deleted_user_email"] != "deleted@example.com" {
-		t.Errorf("details[deleted_user_email] = %v, want deleted@example.com", details["deleted_user_email"])
-	}
-}
-
 func TestAuditService_LogUserAddToGroup(t *testing.T) {
 	db := setupTestDB(t)
 	auditStore := store.NewAuditStore(db)
@@ -333,6 +297,7 @@ func TestAuditService_LogResourceDelete(t *testing.T) {
 		{"employee", "employee", models.AuditActionEmployeeDelete},
 		{"child", "child", models.AuditActionChildDelete},
 		{"organization", "organization", models.AuditActionOrgDelete},
+		{"user", "user", models.AuditActionUserDelete},
 		{"unknown type", "widget", "widget_delete"},
 	}
 
@@ -377,31 +342,46 @@ func TestAuditService_LogResourceDelete(t *testing.T) {
 }
 
 func TestAuditService_LogResourceCreate(t *testing.T) {
-	db := setupTestDB(t)
-	auditStore := store.NewAuditStore(db)
-	svc := NewAuditService(auditStore)
-	ctx := context.Background()
-
-	svc.LogResourceCreate(1, "employee", 50, "John Doe", "127.0.0.1")
-	svc.Shutdown()
-
-	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if total != 1 {
-		t.Fatalf("expected total 1, got %d", total)
+	tests := []struct {
+		name         string
+		resourceType string
+		wantAction   models.AuditAction
+	}{
+		{"employee (default)", "employee", "employee_create"},
+		{"user", "user", models.AuditActionUserCreate},
+		{"organization", "organization", models.AuditActionOrgCreate},
+		{"unknown type", "widget", "widget_create"},
 	}
 
-	log := logs[0]
-	if log.Action != "employee_create" {
-		t.Errorf("Action = %v, want employee_create", log.Action)
-	}
-	if log.ResourceType != "employee" {
-		t.Errorf("ResourceType = %v, want employee", log.ResourceType)
-	}
-	if log.ResourceID == nil || *log.ResourceID != 50 {
-		t.Errorf("ResourceID = %v, want 50", log.ResourceID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			auditStore := store.NewAuditStore(db)
+			svc := NewAuditService(auditStore)
+			ctx := context.Background()
+
+			svc.LogResourceCreate(1, tt.resourceType, 50, "Test Resource", "127.0.0.1")
+			svc.Shutdown()
+
+			logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if total != 1 {
+				t.Fatalf("expected total 1, got %d", total)
+			}
+
+			log := logs[0]
+			if log.Action != tt.wantAction {
+				t.Errorf("Action = %v, want %v", log.Action, tt.wantAction)
+			}
+			if log.ResourceType != tt.resourceType {
+				t.Errorf("ResourceType = %v, want %v", log.ResourceType, tt.resourceType)
+			}
+			if log.ResourceID == nil || *log.ResourceID != 50 {
+				t.Errorf("ResourceID = %v, want 50", log.ResourceID)
+			}
+		})
 	}
 }
 
@@ -431,43 +411,6 @@ func TestAuditService_LogResourceUpdate(t *testing.T) {
 	}
 	if log.ResourceID == nil || *log.ResourceID != 30 {
 		t.Errorf("ResourceID = %v, want 30", log.ResourceID)
-	}
-}
-
-func TestAuditService_LogOrgCreate(t *testing.T) {
-	db := setupTestDB(t)
-	auditStore := store.NewAuditStore(db)
-	svc := NewAuditService(auditStore)
-	ctx := context.Background()
-
-	svc.LogOrgCreate(1, 100, "Test Org", "127.0.0.1")
-	svc.Shutdown()
-
-	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if total != 1 {
-		t.Fatalf("expected total 1, got %d", total)
-	}
-
-	log := logs[0]
-	if log.Action != models.AuditActionOrgCreate {
-		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionOrgCreate)
-	}
-	if log.ResourceType != "organization" {
-		t.Errorf("ResourceType = %v, want organization", log.ResourceType)
-	}
-	if log.ResourceID == nil || *log.ResourceID != 100 {
-		t.Errorf("ResourceID = %v, want 100", log.ResourceID)
-	}
-
-	var details map[string]interface{}
-	if err := json.Unmarshal([]byte(log.Details), &details); err != nil {
-		t.Fatalf("failed to unmarshal details: %v", err)
-	}
-	if details["org_name"] != "Test Org" {
-		t.Errorf("details[org_name] = %v, want Test Org", details["org_name"])
 	}
 }
 
@@ -621,6 +564,89 @@ func TestAuditService_CountRecentFailedLogins(t *testing.T) {
 	}
 }
 
+func TestAuditService_FallbackOnFullChannel(t *testing.T) {
+	mock := &mockAuditStore{}
+	svc := &AuditService{
+		store: mock,
+		logCh: make(chan *models.AuditLog, 1), // tiny buffer
+		done:  make(chan struct{}),
+	}
+	// Do NOT start processLogs — the channel will stay full after 1 entry.
+
+	// First entry fills the channel (async path).
+	svc.log(&models.AuditLog{Action: "test1"})
+	if svc.FallbackCount() != 0 {
+		t.Fatalf("expected 0 fallbacks, got %d", svc.FallbackCount())
+	}
+
+	// Second entry should trigger synchronous fallback.
+	svc.log(&models.AuditLog{Action: "test2"})
+	if svc.FallbackCount() != 1 {
+		t.Errorf("expected 1 fallback, got %d", svc.FallbackCount())
+	}
+	if svc.DroppedCount() != 0 {
+		t.Errorf("expected 0 dropped, got %d", svc.DroppedCount())
+	}
+	// The fallback entry was written via Create.
+	if mock.createCount.Load() != 1 {
+		t.Errorf("expected 1 store.Create call (fallback), got %d", mock.createCount.Load())
+	}
+
+	// Drain the channel so we can close cleanly.
+	<-svc.logCh
+	// Start worker so Shutdown completes.
+	go svc.processLogs()
+	svc.Shutdown()
+}
+
+func TestAuditService_DroppedOnStoreFailure(t *testing.T) {
+	mock := &mockAuditStore{createErr: errors.New("db down")}
+	svc := &AuditService{
+		store: mock,
+		logCh: make(chan *models.AuditLog, 1),
+		done:  make(chan struct{}),
+	}
+	// Do NOT start processLogs.
+
+	// Fill the channel.
+	svc.log(&models.AuditLog{Action: "fill"})
+
+	// This should fallback AND fail the store write.
+	svc.log(&models.AuditLog{Action: "drop"})
+
+	if svc.FallbackCount() != 1 {
+		t.Errorf("expected 1 fallback, got %d", svc.FallbackCount())
+	}
+	if svc.DroppedCount() != 1 {
+		t.Errorf("expected 1 dropped, got %d", svc.DroppedCount())
+	}
+
+	// Drain and shutdown cleanly.
+	<-svc.logCh
+	go svc.processLogs()
+	svc.Shutdown()
+}
+
+func TestAuditService_ShutdownDrainsChannel(t *testing.T) {
+	mock := &mockAuditStore{}
+	svc := NewAuditService(mock)
+
+	// Send several entries.
+	for i := 0; i < 10; i++ {
+		svc.log(&models.AuditLog{Action: models.AuditAction("test")})
+	}
+
+	svc.Shutdown()
+
+	// All 10 should have been written via the async worker.
+	if mock.createCount.Load() != 10 {
+		t.Errorf("expected 10 store.Create calls, got %d", mock.createCount.Load())
+	}
+	if svc.FallbackCount() != 0 {
+		t.Errorf("expected 0 fallbacks, got %d", svc.FallbackCount())
+	}
+}
+
 func TestAuditService_NilSafety(t *testing.T) {
 	ctx := context.Background()
 
@@ -671,15 +697,12 @@ func TestAuditService_NilSafety(t *testing.T) {
 		svc.LogLogin(1, "test@example.com", "127.0.0.1", "Agent")
 		svc.LogLoginFailed("test@example.com", "127.0.0.1", "Agent", "reason")
 		svc.LogSuperAdminChange(1, 2, "test@example.com", true, "127.0.0.1")
-		svc.LogUserCreate(1, 2, "test@example.com", "127.0.0.1")
-		svc.LogUserDelete(1, 2, "test@example.com", "127.0.0.1")
 		svc.LogUserAddToGroup(1, 2, 3, "admin", "127.0.0.1")
 		svc.LogUserRemoveFromGroup(1, 2, 3, "127.0.0.1")
 		svc.LogRoleChange(1, 2, 3, "old", "new", "127.0.0.1")
 		svc.LogResourceDelete(1, "employee", 2, "name", "127.0.0.1")
 		svc.LogResourceCreate(1, "employee", 2, "name", "127.0.0.1")
 		svc.LogResourceUpdate(1, "employee", 2, "name", "127.0.0.1")
-		svc.LogOrgCreate(1, 2, "org", "127.0.0.1")
 
 		// Shutdown doesn't panic
 		svc.Shutdown()

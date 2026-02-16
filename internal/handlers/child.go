@@ -22,11 +22,11 @@ func NewChildHandler(service *service.ChildService, auditService *service.AuditS
 	}
 }
 
-func (h *ChildHandler) contractAudit() contractAuditConfig {
-	return contractAuditConfig{
+func (h *ChildHandler) contractAudit() auditConfig {
+	return auditConfig{
 		auditService: h.auditService,
 		resourceType: "child_contract",
-		parentName:   "child",
+		parentLabel:  "child",
 	}
 }
 
