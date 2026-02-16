@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -107,8 +107,12 @@ export default function ChildrenPage() {
   });
 
   // Create a map for quick lookup of funding by child ID
-  const fundingByChildId = new Map<number, ChildFundingResponse>(
-    fundingData?.children?.map((f) => [f.child_id, f]) ?? []
+  const fundingByChildId = useMemo(
+    () =>
+      new Map<number, ChildFundingResponse>(
+        fundingData?.children?.map((f) => [f.child_id, f]) ?? []
+      ),
+    [fundingData]
   );
 
   // Fetch sections for section selector in dialogs
