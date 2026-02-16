@@ -17,12 +17,12 @@ func TestEmployeeHandler_List(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	emp1 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Emp1", LastName: "Last", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Emp1", LastName: "Last", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp1)
 	createActiveEmployeeContract(t, db, emp1.ID)
 	emp2 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Emp2", LastName: "Last", Gender: "female", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Emp2", LastName: "Last", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp2)
 	createActiveEmployeeContract(t, db, emp2.ID)
@@ -51,7 +51,7 @@ func TestEmployeeHandler_Get(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -82,7 +82,7 @@ func TestEmployeeHandler_Get_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -138,7 +138,7 @@ func TestEmployeeHandler_Update(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -174,7 +174,7 @@ func TestEmployeeHandler_Update_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -208,7 +208,7 @@ func TestEmployeeHandler_Delete(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "ToDelete", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "ToDelete", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -232,7 +232,7 @@ func TestEmployeeHandler_Delete_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Protected", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Protected", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -262,7 +262,7 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -306,7 +306,7 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -341,7 +341,7 @@ func TestEmployeeHandler_GetCurrentRecord(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -385,7 +385,7 @@ func TestEmployeeHandler_GetCurrentRecord_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -418,7 +418,7 @@ func TestEmployeeHandler_GetCurrentRecord_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -440,7 +440,7 @@ func TestEmployeeHandler_CreateContract(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -482,7 +482,7 @@ func TestEmployeeHandler_CreateContract_SameDay(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -535,7 +535,7 @@ func TestEmployeeHandler_CreateContract_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -579,7 +579,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -627,7 +627,7 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -664,7 +664,7 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -707,12 +707,12 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 
 	// Create two employees in same org
 	employee1 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee1)
 
 	employee2 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "Two", Gender: "female", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "Two", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee2)
 
@@ -758,7 +758,7 @@ func TestEmployeeHandler_CreateContract_SectionFromWrongOrg(t *testing.T) {
 
 	// Create employee in org1
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -801,7 +801,7 @@ func TestEmployeeHandler_UpdateContract_SectionFromWrongOrg(t *testing.T) {
 
 	// Create employee in org1 with a valid contract
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -840,7 +840,7 @@ func TestEmployeeHandler_CreateContract_MissingSectionID(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -874,7 +874,7 @@ func TestEmployeeHandler_CreateContract_NonExistentSection(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1103,7 +1103,7 @@ func TestEmployeeHandler_Update_EmptyBody(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Original", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1196,17 +1196,17 @@ func TestEmployeeHandler_List_IsolatesOrganizations(t *testing.T) {
 
 	// Create employees in different orgs with active contracts
 	emp1 := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp1", LastName: "Org1", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp1", LastName: "Org1", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp1)
 	createActiveEmployeeContract(t, db, emp1.ID)
 	emp2 := &models.Employee{
-		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp2", LastName: "Org1", Gender: "female", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org1.ID, FirstName: "Emp2", LastName: "Org1", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp2)
 	createActiveEmployeeContract(t, db, emp2.ID)
 	emp3 := &models.Employee{
-		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp1", LastName: "Org2", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org2.ID, FirstName: "Emp1", LastName: "Org2", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp3)
 	createActiveEmployeeContract(t, db, emp3.ID)
@@ -1274,7 +1274,7 @@ func TestEmployeeHandler_ListContracts_Empty(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1362,7 +1362,7 @@ func TestEmployeeHandler_CreateContract_MissingStaffCategory(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1390,7 +1390,7 @@ func TestEmployeeHandler_CreateContract_ZeroWeeklyHours(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1425,7 +1425,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1476,7 +1476,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1523,7 +1523,7 @@ func TestEmployeeHandler_DeleteContract_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1545,7 +1545,7 @@ func TestEmployeeHandler_DeleteContract_InvalidContractID(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1658,7 +1658,7 @@ func TestEmployeeHandler_CreateContract_FromAfterTo(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1694,7 +1694,7 @@ func TestEmployeeHandler_CreateContract_NegativeWeeklyHours(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1728,7 +1728,7 @@ func TestEmployeeHandler_CreateContract_WeeklyHoursOver168(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1762,7 +1762,7 @@ func TestEmployeeHandler_CreateContract_InvalidStaffCategory(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1806,7 +1806,7 @@ func TestEmployeeHandler_List_Search(t *testing.T) {
 		{"Lisa", "Fischer"},
 	} {
 		emp := &models.Employee{
-			Person: models.Person{OrganizationID: org.ID, FirstName: name.first, LastName: name.last, Gender: "male", Birthdate: time.Now()},
+			Person: models.Person{OrganizationID: org.ID, FirstName: name.first, LastName: name.last, Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 		}
 		db.Create(emp)
 		createActiveEmployeeContract(t, db, emp.ID)
@@ -1858,14 +1858,14 @@ func TestEmployeeHandler_List_SearchWithPagination(t *testing.T) {
 	// Create 5 matching employees and 2 non-matching
 	for i := 1; i <= 5; i++ {
 		emp := &models.Employee{
-			Person: models.Person{OrganizationID: org.ID, FirstName: fmt.Sprintf("Max%d", i), LastName: "Mustermann", Gender: "male", Birthdate: time.Now()},
+			Person: models.Person{OrganizationID: org.ID, FirstName: fmt.Sprintf("Max%d", i), LastName: "Mustermann", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 		}
 		db.Create(emp)
 		createActiveEmployeeContract(t, db, emp.ID)
 	}
 	for _, name := range []string{"Lisa", "Anna"} {
 		emp := &models.Employee{
-			Person: models.Person{OrganizationID: org.ID, FirstName: name, LastName: "Other", Gender: "female", Birthdate: time.Now()},
+			Person: models.Person{OrganizationID: org.ID, FirstName: name, LastName: "Other", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 		}
 		db.Create(emp)
 		createActiveEmployeeContract(t, db, emp.ID)
@@ -1915,7 +1915,7 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1958,7 +1958,7 @@ func TestEmployeeHandler_GetContract_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -1979,7 +1979,7 @@ func TestEmployeeHandler_GetContract_InvalidContractID(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -2002,12 +2002,12 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	emp1 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp1)
 
 	emp2 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "Two", Gender: "female", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "Two", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp2)
 
@@ -2048,7 +2048,7 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -2093,7 +2093,7 @@ func TestEmployeeHandler_UpdateContract_NotFound(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -2121,7 +2121,7 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -2176,7 +2176,7 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 	sectionID := ensureTestSection(t, db, org.ID)
 	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(employee)
 
@@ -2221,7 +2221,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 
 	// Create employee with qualified contract
 	emp1 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Fach", LastName: "Kraft", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Fach", LastName: "Kraft", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp1)
 	db.Create(&models.EmployeeContract{
@@ -2234,7 +2234,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 
 	// Create employee with supplementary contract
 	emp2 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Ergaenz", LastName: "Kraft", Gender: "female", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Ergaenz", LastName: "Kraft", Gender: "female", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp2)
 	db.Create(&models.EmployeeContract{
@@ -2247,7 +2247,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 
 	// Create employee with non_pedagogical contract
 	emp3 := &models.Employee{
-		Person: models.Person{OrganizationID: org.ID, FirstName: "Non", LastName: "Ped", Gender: "male", Birthdate: time.Now()},
+		Person: models.Person{OrganizationID: org.ID, FirstName: "Non", LastName: "Ped", Gender: "male", Birthdate: time.Date(1990, 5, 15, 0, 0, 0, 0, time.UTC)},
 	}
 	db.Create(emp3)
 	db.Create(&models.EmployeeContract{
