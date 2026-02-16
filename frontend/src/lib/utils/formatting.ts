@@ -113,15 +113,14 @@ export function formatFte(ratio: number): string {
 }
 
 /**
- * Format age range
+ * Format age range. Callers should pass the translated "years" label
+ * via the yearsText parameter (e.g. t('common.years')).
  */
 export function formatAgeRange(
   minAge: number | null | undefined,
   maxAge: number | null | undefined,
-  locale = 'en'
+  yearsText = 'years'
 ): string {
-  const yearsText = locale === 'de' ? 'Jahre' : 'years';
-
   if (minAge === null && maxAge === null) return '-';
   if (minAge === null || minAge === undefined) return `< ${maxAge} ${yearsText}`;
   if (maxAge === null || maxAge === undefined) return `${minAge}+ ${yearsText}`;

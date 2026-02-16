@@ -257,29 +257,29 @@ describe('formatAgeRange', () => {
   });
 
   it('formats max-only range with null min', () => {
-    expect(formatAgeRange(null, 3, 'en')).toBe('< 3 years');
+    expect(formatAgeRange(null, 3, 'years')).toBe('< 3 years');
   });
 
   it('formats max-only range with undefined min', () => {
-    expect(formatAgeRange(undefined, 3, 'en')).toBe('< 3 years');
+    expect(formatAgeRange(undefined, 3, 'years')).toBe('< 3 years');
   });
 
   it('formats min-only range with null max', () => {
-    expect(formatAgeRange(3, null, 'en')).toBe('3+ years');
+    expect(formatAgeRange(3, null, 'years')).toBe('3+ years');
   });
 
   it('formats min-only range with undefined max', () => {
-    expect(formatAgeRange(3, undefined, 'en')).toBe('3+ years');
+    expect(formatAgeRange(3, undefined, 'years')).toBe('3+ years');
   });
 
   it('formats full range', () => {
-    expect(formatAgeRange(3, 6, 'en')).toBe('3-6 years');
+    expect(formatAgeRange(3, 6, 'years')).toBe('3-6 years');
   });
 
-  it('uses German locale text', () => {
-    expect(formatAgeRange(3, 6, 'de')).toBe('3-6 Jahre');
-    expect(formatAgeRange(null, 3, 'de')).toBe('< 3 Jahre');
-    expect(formatAgeRange(3, null, 'de')).toBe('3+ Jahre');
+  it('accepts translated text', () => {
+    expect(formatAgeRange(3, 6, 'Jahre')).toBe('3-6 Jahre');
+    expect(formatAgeRange(null, 3, 'Jahre')).toBe('< 3 Jahre');
+    expect(formatAgeRange(3, null, 'Jahre')).toBe('3+ Jahre');
   });
 });
 

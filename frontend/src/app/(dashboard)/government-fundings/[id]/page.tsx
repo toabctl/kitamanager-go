@@ -121,7 +121,9 @@ function PropertiesGroupedByKey({
                   <TableBody>
                     {properties.map((property) => (
                       <TableRow key={property.id}>
-                        <TableCell>{formatAgeRange(property.min_age, property.max_age)}</TableCell>
+                        <TableCell>
+                          {formatAgeRange(property.min_age, property.max_age, t('common.years'))}
+                        </TableCell>
                         <TableCell>{formatCurrency(property.payment)}</TableCell>
                         <TableCell>{formatFte(property.requirement)}</TableCell>
                         <TableCell className="text-right">
