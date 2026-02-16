@@ -37,6 +37,7 @@ import (
 var (
 	testDB     *gorm.DB
 	testRouter *gin.Engine
+	testUserID uint
 	openAPIDoc *openapi3.T
 	apiRouter  routers.Router
 )
@@ -111,7 +112,7 @@ func setupRouter() *gin.Engine {
 
 	// Add middleware to set user context (simulating authenticated user)
 	r.Use(func(c *gin.Context) {
-		c.Set(ctxkeys.UserID, uint(1))
+		c.Set(ctxkeys.UserID, testUserID)
 		c.Set(ctxkeys.UserEmail, "admin@test.com")
 		c.Next()
 	})
@@ -191,7 +192,7 @@ func cleanupDatabase() {
 
 func cleanupBetweenTests() {
 	cleanupDatabase()
-	// Create superadmin user with ID 1 to match the userID set in middleware
+	// Create superadmin user; let the DB assign the ID via auto-increment.
 	user := &models.User{
 		Name:         "Test Admin",
 		Email:        "admin@test.com",
@@ -199,10 +200,8 @@ func cleanupBetweenTests() {
 		Active:       true,
 		IsSuperAdmin: true,
 	}
-	user.ID = 1
 	testDB.Create(user)
-	// Reset the sequence so the next auto-generated ID is 2, not 1
-	testDB.Exec("SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT MAX(id) FROM users))")
+	testUserID = user.ID
 }
 
 // validateResponse validates an HTTP response against the OpenAPI spec
