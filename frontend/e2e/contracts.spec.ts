@@ -18,27 +18,30 @@ import {
 // Ensure English locale for all tests
 test.use({ locale: 'en-US' });
 
+// Shared state across all describe blocks
+let token: string;
+let orgId: number;
+let defaultSectionId: number;
+let payplanId: number;
+
+test.beforeAll(async ({ browser }) => {
+  const page = await browser.newPage();
+  await login(page);
+  token = await getApiToken(page);
+  const org = await getFirstOrganization(page, token);
+  orgId = org.id;
+  const sections = await getSectionsViaApi(page, token, orgId);
+  defaultSectionId = sections[0].id;
+  const payplans = await getPayPlansViaApi(page, token, orgId);
+  payplanId = payplans[0].id;
+  await page.close();
+});
+
+test.beforeEach(async ({ page }) => {
+  await login(page);
+});
+
 test.describe('Child Contracts - CRUD Operations', () => {
-  let token: string;
-  let orgId: number;
-  let defaultSectionId: number;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    await login(page);
-    token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-    orgId = org.id;
-    // Get the default section for creating contracts
-    const sections = await getSectionsViaApi(page, token, orgId);
-    defaultSectionId = sections[0].id;
-    await page.close();
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
   test('should add a new contract from history page', async ({ page }) => {
     // Create a fresh child without any contracts
     const childName = uniqueName('AddContract');
@@ -258,25 +261,6 @@ test.describe('Child Contracts - CRUD Operations', () => {
 });
 
 test.describe('Child Contract Workflow - create child, add contract, move section', () => {
-  let token: string;
-  let orgId: number;
-  let defaultSectionId: number;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    await login(page);
-    token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-    orgId = org.id;
-    const sections = await getSectionsViaApi(page, token, orgId);
-    defaultSectionId = sections[0].id;
-    await page.close();
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
   test('should create child, add new contract (ending previous), move section, and verify', async ({
     page,
   }, testInfo) => {
@@ -365,28 +349,6 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
 });
 
 test.describe('Employee Contracts - CRUD Operations', () => {
-  let token: string;
-  let orgId: number;
-  let defaultSectionId: number;
-  let payplanId: number;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    await login(page);
-    token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-    orgId = org.id;
-    const sections = await getSectionsViaApi(page, token, orgId);
-    defaultSectionId = sections[0].id;
-    const payplans = await getPayPlansViaApi(page, token, orgId);
-    payplanId = payplans[0].id;
-    await page.close();
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
   test('should add a new contract from history page', async ({ page }) => {
     // Create a fresh employee without any contracts
     const employeeName = uniqueName('AddContract');
