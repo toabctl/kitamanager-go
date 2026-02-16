@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import { isDateBefore } from '@/lib/utils/contracts';
+import { personBaseSchema } from './person';
 
-export const childSchema = z.object({
-  first_name: z.string().min(1),
-  last_name: z.string().min(1),
-  gender: z.enum(['male', 'female', 'diverse']),
-  birthdate: z.string().min(1),
-});
+export const childSchema = personBaseSchema;
 
 export const childContractSchema = z
   .object({
@@ -23,8 +19,8 @@ export const childContractSchema = z
 // Combined schema for creating a child with an initial contract
 export const childWithContractSchema = z
   .object({
-    first_name: z.string().min(1),
-    last_name: z.string().min(1),
+    first_name: z.string().min(1).max(255),
+    last_name: z.string().min(1).max(255),
     gender: z.enum(['male', 'female', 'diverse']),
     birthdate: z.string().min(1),
     contract_from: z.string().min(1),

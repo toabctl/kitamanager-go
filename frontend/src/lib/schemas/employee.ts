@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import { isDateBefore } from '@/lib/utils/contracts';
+import { personBaseSchema } from './person';
 
-export const employeeSchema = z.object({
-  first_name: z.string().min(1).max(255),
-  last_name: z.string().min(1).max(255),
-  gender: z.enum(['male', 'female', 'diverse']),
-  birthdate: z.string().min(1),
-});
+export const employeeSchema = personBaseSchema;
 
 export const employeeContractSchema = z
   .object({
