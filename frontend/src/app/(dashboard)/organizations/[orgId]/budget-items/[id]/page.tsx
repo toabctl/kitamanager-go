@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +36,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { useResourceMutation } from '@/lib/hooks/use-resource-mutation';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   BudgetItemEntry,
@@ -61,8 +61,6 @@ export default function BudgetItemDetailPage() {
   const orgId = Number(params.orgId);
   const budgetItemId = Number(params.id);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<BudgetItemEntry | null>(null);
@@ -85,64 +83,42 @@ export default function BudgetItemDetailPage() {
     defaultValues: { from: '', to: '', amount_euros: 0, notes: '' },
   });
 
-  const createEntryMutation = useMutation({
+  const detailQueryKey = queryKeys.budgetItems.detail(orgId, budgetItemId);
+
+  const createEntryMutation = useResourceMutation({
     mutationFn: (data: BudgetItemEntryCreateRequest) =>
       apiClient.createBudgetItemEntry(orgId, budgetItemId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('budgetItems.entryCreated'),
+    errorMessage: t('budgetItems.failedToSaveEntry'),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgetItems.detail(orgId, budgetItemId),
-      });
-      toast({ title: t('budgetItems.entryCreated') });
       setIsEntryDialogOpen(false);
       setEditingEntry(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('budgetItems.failedToSaveEntry')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const updateEntryMutation = useMutation({
+  const updateEntryMutation = useResourceMutation({
     mutationFn: ({ entryId, data }: { entryId: number; data: BudgetItemEntryUpdateRequest }) =>
       apiClient.updateBudgetItemEntry(orgId, budgetItemId, entryId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('budgetItems.entryUpdated'),
+    errorMessage: t('budgetItems.failedToSaveEntry'),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgetItems.detail(orgId, budgetItemId),
-      });
-      toast({ title: t('budgetItems.entryUpdated') });
       setIsEntryDialogOpen(false);
       setEditingEntry(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('budgetItems.failedToSaveEntry')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deleteEntryMutation = useMutation({
+  const deleteEntryMutation = useResourceMutation({
     mutationFn: (entryId: number) => apiClient.deleteBudgetItemEntry(orgId, budgetItemId, entryId),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('budgetItems.entryDeleted'),
+    errorMessage: t('budgetItems.failedToDeleteEntry'),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgetItems.detail(orgId, budgetItemId),
-      });
-      toast({ title: t('budgetItems.entryDeleted') });
       setIsDeleteEntryDialogOpen(false);
       setDeletingEntry(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('budgetItems.failedToDeleteEntry')),
-        variant: 'destructive',
-      });
     },
   });
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +35,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { useResourceMutation } from '@/lib/hooks/use-resource-mutation';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   PayPlanPeriod,
@@ -68,8 +68,6 @@ export default function PayPlanDetailPage() {
   const orgId = Number(params.orgId);
   const payPlanId = Number(params.id);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [view, setView] = useState<'panels' | 'table'>('table');
   const [isPeriodDialogOpen, setIsPeriodDialogOpen] = useState(false);
@@ -91,95 +89,67 @@ export default function PayPlanDetailPage() {
     enabled: !!orgId && !!payPlanId,
   });
 
+  const detailQueryKey = queryKeys.payPlans.detail(orgId, payPlanId);
+
   // Period mutations
-  const createPeriodMutation = useMutation({
+  const createPeriodMutation = useResourceMutation({
     mutationFn: (data: PayPlanPeriodCreateRequest) =>
       apiClient.createPayPlanPeriod(orgId, payPlanId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('payPlans.periodCreated'),
+    errorMessage: t('payPlans.failedToSavePeriod'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
-      toast({ title: t('payPlans.periodCreated') });
       setIsPeriodDialogOpen(false);
       resetPeriod();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('payPlans.failedToSavePeriod')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const updatePeriodMutation = useMutation({
+  const updatePeriodMutation = useResourceMutation({
     mutationFn: ({ periodId, data }: { periodId: number; data: PayPlanPeriodUpdateRequest }) =>
       apiClient.updatePayPlanPeriod(orgId, payPlanId, periodId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('payPlans.periodUpdated'),
+    errorMessage: t('payPlans.failedToSavePeriod'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
-      toast({ title: t('payPlans.periodUpdated') });
       setIsPeriodDialogOpen(false);
       setEditingPeriod(null);
       resetPeriod();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('payPlans.failedToSavePeriod')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deletePeriodMutation = useMutation({
+  const deletePeriodMutation = useResourceMutation({
     mutationFn: (periodId: number) => apiClient.deletePayPlanPeriod(orgId, payPlanId, periodId),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('payPlans.periodDeleted'),
+    errorMessage: t('payPlans.failedToDeletePeriod'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
-      toast({ title: t('payPlans.periodDeleted') });
       setIsDeletePeriodDialogOpen(false);
       setDeletingPeriod(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('payPlans.failedToDeletePeriod')),
-        variant: 'destructive',
-      });
     },
   });
 
   // Entry mutations
-  const createEntryMutation = useMutation({
+  const createEntryMutation = useResourceMutation({
     mutationFn: ({ periodId, data }: { periodId: number; data: PayPlanEntryCreateRequest }) =>
       apiClient.createPayPlanEntry(orgId, payPlanId, periodId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('payPlans.entryCreated'),
+    errorMessage: t('payPlans.failedToSaveEntry'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
-      toast({ title: t('payPlans.entryCreated') });
       setIsEntryDialogOpen(false);
       resetEntry();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('payPlans.failedToSaveEntry')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deleteEntryMutation = useMutation({
+  const deleteEntryMutation = useResourceMutation({
     mutationFn: ({ periodId, entryId }: { periodId: number; entryId: number }) =>
       apiClient.deletePayPlanEntry(orgId, payPlanId, periodId, entryId),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('payPlans.entryDeleted'),
+    errorMessage: t('payPlans.failedToDeleteEntry'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.detail(orgId, payPlanId) });
-      toast({ title: t('payPlans.entryDeleted') });
       setIsDeleteEntryDialogOpen(false);
       setDeletingEntry(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('payPlans.failedToDeleteEntry')),
-        variant: 'destructive',
-      });
     },
   });
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +35,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { useResourceMutation } from '@/lib/hooks/use-resource-mutation';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   GovernmentFundingPeriod,
@@ -151,8 +151,6 @@ export default function GovernmentFundingDetailPage() {
   const router = useRouter();
   const fundingId = Number(params.id);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [isPeriodDialogOpen, setIsPeriodDialogOpen] = useState(false);
   const [isPropertyDialogOpen, setIsPropertyDialogOpen] = useState(false);
@@ -171,44 +169,34 @@ export default function GovernmentFundingDetailPage() {
     enabled: !!fundingId,
   });
 
+  const detailQueryKey = queryKeys.governmentFundings.detail(fundingId);
+
   // Period mutations
-  const createPeriodMutation = useMutation({
+  const createPeriodMutation = useResourceMutation({
     mutationFn: (data: GovernmentFundingPeriodCreateRequest) =>
       apiClient.createGovernmentFundingPeriod(fundingId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('governmentFundings.periodCreated'),
+    errorMessage: t('governmentFundings.failedToSavePeriod'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
-      toast({ title: t('governmentFundings.periodCreated') });
       setIsPeriodDialogOpen(false);
       resetPeriod();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('governmentFundings.failedToSavePeriod')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deletePeriodMutation = useMutation({
+  const deletePeriodMutation = useResourceMutation({
     mutationFn: (periodId: number) => apiClient.deleteGovernmentFundingPeriod(fundingId, periodId),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('governmentFundings.periodDeleted'),
+    errorMessage: t('governmentFundings.failedToDeletePeriod'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
-      toast({ title: t('governmentFundings.periodDeleted') });
       setIsDeletePeriodDialogOpen(false);
       setDeletingPeriod(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('governmentFundings.failedToDeletePeriod')),
-        variant: 'destructive',
-      });
     },
   });
 
   // Property mutations
-  const createPropertyMutation = useMutation({
+  const createPropertyMutation = useResourceMutation({
     mutationFn: ({
       periodId,
       data,
@@ -216,36 +204,24 @@ export default function GovernmentFundingDetailPage() {
       periodId: number;
       data: GovernmentFundingPropertyCreateRequest;
     }) => apiClient.createGovernmentFundingProperty(fundingId, periodId, data),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('governmentFundings.propertyCreated'),
+    errorMessage: t('governmentFundings.failedToSaveProperty'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
-      toast({ title: t('governmentFundings.propertyCreated') });
       setIsPropertyDialogOpen(false);
       resetProperty();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('governmentFundings.failedToSaveProperty')),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deletePropertyMutation = useMutation({
+  const deletePropertyMutation = useResourceMutation({
     mutationFn: ({ periodId, propertyId }: { periodId: number; propertyId: number }) =>
       apiClient.deleteGovernmentFundingProperty(fundingId, periodId, propertyId),
+    invalidateQueryKey: detailQueryKey,
+    successMessage: t('governmentFundings.propertyDeleted'),
+    errorMessage: t('governmentFundings.failedToDeleteProperty'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.governmentFundings.detail(fundingId) });
-      toast({ title: t('governmentFundings.propertyDeleted') });
       setIsDeletePropertyDialogOpen(false);
       setDeletingProperty(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('governmentFundings.failedToDeleteProperty')),
-        variant: 'destructive',
-      });
     },
   });
 
