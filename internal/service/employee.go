@@ -24,12 +24,7 @@ func NewEmployeeService(store store.EmployeeStorer, payPlanStore store.PayPlanSt
 
 // List returns a paginated list of employees
 func (s *EmployeeService) List(ctx context.Context, limit, offset int) ([]models.EmployeeResponse, int64, error) {
-	employees, total, err := s.store.FindAll(ctx, limit, offset)
-	if err != nil {
-		return nil, 0, apperror.InternalWrap(err, "failed to fetch employees")
-	}
-
-	return toResponseList(employees, (*models.Employee).ToResponse), total, nil
+	return personList(ctx, s.store.FindAll, (*models.Employee).ToResponse, "employees", limit, offset)
 }
 
 // ListByOrganization returns a paginated list of employees for an organization
@@ -54,97 +49,27 @@ func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgI
 
 // GetByID returns an employee by ID, validating it belongs to the specified organization
 func (s *EmployeeService) GetByID(ctx context.Context, id, orgID uint) (*models.EmployeeResponse, error) {
-	employee, err := s.store.FindByID(ctx, id)
-	if err != nil {
-		return nil, apperror.NotFound("employee")
-	}
-	if err := verifyOrgOwnership(employee, orgID, "employee"); err != nil {
-		return nil, err
-	}
-	resp := employee.ToResponse()
-	return &resp, nil
+	return personGetByID(ctx, s.store.FindByID, (*models.Employee).ToResponse, id, orgID, "employee")
 }
 
 // Create creates a new employee
 func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.EmployeeCreateRequest) (*models.EmployeeResponse, error) {
-	// Trim and validate input
-	person, err := validation.ValidatePersonCreate(&validation.PersonCreateFields{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Gender:    req.Gender,
-		Birthdate: req.Birthdate,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	employee := &models.Employee{
-		Person: models.Person{
-			OrganizationID: orgID,
-			FirstName:      person.FirstName,
-			LastName:       person.LastName,
-			Gender:         person.Gender,
-			Birthdate:      person.Birthdate,
-		},
-	}
-
-	if err := s.store.Create(ctx, employee); err != nil {
-		return nil, apperror.InternalWrap(err, "failed to create employee")
-	}
-
-	resp := employee.ToResponse()
-	return &resp, nil
+	return personCreate(ctx,
+		&validation.PersonCreateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
+		func(p models.Person) *models.Employee { return &models.Employee{Person: p} },
+		s.store.Create, (*models.Employee).ToResponse, orgID, "employee")
 }
 
 // Update updates an existing employee, validating it belongs to the specified organization
 func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *models.EmployeeUpdateRequest) (*models.EmployeeResponse, error) {
-	employee, err := s.store.FindByID(ctx, id)
-	if err != nil {
-		return nil, apperror.NotFound("employee")
-	}
-	if err := verifyOrgOwnership(employee, orgID, "employee"); err != nil {
-		return nil, err
-	}
-
-	if err := applyPersonUpdates(&employee.Person, personUpdateFields{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Gender:    req.Gender,
-		Birthdate: req.Birthdate,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err := s.store.Update(ctx, employee); err != nil {
-		return nil, apperror.InternalWrap(err, "failed to update employee")
-	}
-
-	// Reload to get fresh associations
-	employee, err = s.store.FindByID(ctx, id)
-	if err != nil {
-		return nil, apperror.InternalWrap(err, "failed to reload employee after update")
-	}
-
-	resp := employee.ToResponse()
-	return &resp, nil
+	return personUpdate(ctx, s.store.FindByID, func(e *models.Employee) *models.Person { return &e.Person },
+		s.store.Update, (*models.Employee).ToResponse, id, orgID,
+		personUpdateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
+		"employee")
 }
 
 // Delete deletes an employee and its contracts, validating it belongs to the specified organization.
 // The ownership check and deletion run in a single transaction.
 func (s *EmployeeService) Delete(ctx context.Context, id, orgID uint) error {
-	return s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
-		// Security: Validate employee belongs to the specified organization
-		employee, err := s.store.FindByID(txCtx, id)
-		if err != nil {
-			return apperror.NotFound("employee")
-		}
-		if err := verifyOrgOwnership(employee, orgID, "employee"); err != nil {
-			return err
-		}
-
-		if err := s.store.Delete(txCtx, id); err != nil {
-			return apperror.InternalWrap(err, "failed to delete employee")
-		}
-		return nil
-	})
+	return personDelete(ctx, s.transactor, s.store.FindByID, s.store.Delete, id, orgID, "employee")
 }
