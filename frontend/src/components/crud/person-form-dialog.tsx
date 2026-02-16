@@ -12,13 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { GenderSelect } from '@/components/ui/gender-select';
 import type { Gender } from '@/lib/api/types';
 
 export interface PersonFormData {
@@ -97,22 +91,12 @@ export function PersonFormDialog({
 
           <div className="space-y-2">
             <Label htmlFor="gender">{t('gender.label')}</Label>
-            <Select
+            <GenderSelect
               value={watch('gender')}
               onValueChange={(value: Gender) => setValue('gender', value)}
-            >
-              <SelectTrigger
-                aria-invalid={!!errors.gender}
-                aria-describedby={errors.gender ? 'gender-error' : undefined}
-              >
-                <SelectValue placeholder={t('gender.selectGender')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">{t('gender.male')}</SelectItem>
-                <SelectItem value="female">{t('gender.female')}</SelectItem>
-                <SelectItem value="diverse">{t('gender.diverse')}</SelectItem>
-              </SelectContent>
-            </Select>
+              aria-invalid={!!errors.gender}
+              aria-describedby={errors.gender ? 'gender-error' : undefined}
+            />
             {errors.gender && (
               <p id="gender-error" className="text-sm text-destructive">
                 {t('validation.genderRequired')}

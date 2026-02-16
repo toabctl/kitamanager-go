@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { GenderSelect } from '@/components/ui/gender-select';
 import { PropertyTagInput } from '@/components/ui/tag-input';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
 import { calculateContractEndDate } from '@/lib/utils/school-enrollment';
@@ -132,19 +133,10 @@ export function ChildCreateDialog({
 
           <div className="space-y-2">
             <Label htmlFor="create_gender">{t('gender.label')}</Label>
-            <Select
+            <GenderSelect
               value={watch('gender')}
               onValueChange={(value: Gender) => setValue('gender', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('gender.selectGender')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">{t('gender.male')}</SelectItem>
-                <SelectItem value="female">{t('gender.female')}</SelectItem>
-                <SelectItem value="diverse">{t('gender.diverse')}</SelectItem>
-              </SelectContent>
-            </Select>
+            />
             {errors.gender && (
               <p className="text-sm text-destructive">{t('validation.genderRequired')}</p>
             )}
