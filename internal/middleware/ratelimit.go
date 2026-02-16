@@ -21,6 +21,7 @@ type RateLimiter struct {
 	limit    int           // Maximum requests allowed
 	window   time.Duration // Time window for rate limiting
 	cleanup  time.Duration // Interval to clean up old entries
+	stop     chan struct{} // Signal to stop the cleanup goroutine
 }
 
 type requestInfo struct {
@@ -37,6 +38,7 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 		limit:    limit,
 		window:   window,
 		cleanup:  window * 2,
+		stop:     make(chan struct{}),
 	}
 
 	// Start cleanup goroutine
@@ -50,16 +52,26 @@ func (rl *RateLimiter) cleanupLoop() {
 	ticker := time.NewTicker(rl.cleanup)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		rl.mu.Lock()
-		now := time.Now()
-		for ip, info := range rl.requests {
-			if now.After(info.windowEnd) {
-				delete(rl.requests, ip)
+	for {
+		select {
+		case <-rl.stop:
+			return
+		case <-ticker.C:
+			rl.mu.Lock()
+			now := time.Now()
+			for ip, info := range rl.requests {
+				if now.After(info.windowEnd) {
+					delete(rl.requests, ip)
+				}
 			}
+			rl.mu.Unlock()
 		}
-		rl.mu.Unlock()
 	}
+}
+
+// Stop terminates the cleanup goroutine. Call during graceful shutdown.
+func (rl *RateLimiter) Stop() {
+	close(rl.stop)
 }
 
 // Allow checks if a request from the given IP is allowed

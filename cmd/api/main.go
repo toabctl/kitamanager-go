@@ -288,6 +288,13 @@ func main() {
 
 	close(tokenCleanupDone)
 
+	if loginRateLimiter != nil {
+		loginRateLimiter.Stop()
+	}
+	if apiRateLimiter != nil {
+		apiRateLimiter.Stop()
+	}
+
 	slog.Info("Draining audit logs...")
 	auditService.Shutdown()
 
