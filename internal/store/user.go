@@ -123,24 +123,12 @@ func (s *UserStore) RemoveFromGroup(ctx context.Context, userID, groupID uint) e
 }
 
 func (s *UserStore) RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID uint) error {
-	// Find all groups in the organization that the user belongs to
-	var groups []models.Group
-	err := DBFromContext(ctx, s.db).Joins("JOIN user_groups ON user_groups.group_id = groups.id").
-		Where("user_groups.user_id = ? AND groups.organization_id = ?", userID, orgID).
-		Find(&groups).Error
-	if err != nil {
-		return err
-	}
-
-	// Remove user from each group
-	user := &models.User{ID: userID}
-	for _, group := range groups {
-		g := group // avoid closure issue
-		if err := DBFromContext(ctx, s.db).Model(user).Association("Groups").Delete(&g); err != nil {
-			return err
-		}
-	}
-	return nil
+	return DBFromContext(ctx, s.db).
+		Where("user_id = ? AND group_id IN (?)",
+			userID,
+			DBFromContext(ctx, s.db).Model(&models.Group{}).Select("id").Where("organization_id = ?", orgID),
+		).
+		Delete(&models.UserGroup{}).Error
 }
 
 func (s *UserStore) GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error) {
