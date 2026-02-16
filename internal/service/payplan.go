@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/validation"
 )
 
 // PayPlanService handles business logic for pay plans.
@@ -68,9 +70,14 @@ func (s *PayPlanService) verifyEntryOwnership(ctx context.Context, entryID, peri
 
 // Create creates a new pay plan.
 func (s *PayPlanService) Create(ctx context.Context, orgID uint, req *models.PayPlanCreateRequest) (*models.PayPlanResponse, error) {
+	name, err := validateRequiredName(req.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	payplan := &models.PayPlan{
 		OrganizationID: orgID,
-		Name:           req.Name,
+		Name:           name,
 	}
 
 	if err := s.store.Create(ctx, payplan); err != nil {
@@ -117,7 +124,11 @@ func (s *PayPlanService) Update(ctx context.Context, id, orgID uint, req *models
 		return nil, err
 	}
 
-	payplan.Name = req.Name
+	name := strings.TrimSpace(req.Name)
+	if validation.IsWhitespaceOnly(name) {
+		return nil, apperror.BadRequest("name cannot be empty or whitespace only")
+	}
+	payplan.Name = name
 
 	if err := s.store.Update(ctx, payplan); err != nil {
 		return nil, apperror.InternalWrap(err, "failed to update pay plan")
@@ -141,9 +152,47 @@ func (s *PayPlanService) Delete(ctx context.Context, id, orgID uint) error {
 
 // Period operations
 
+// payPlanPeriodsOverlap checks if two date ranges overlap.
+// A period with nil To date extends indefinitely into the future.
+func payPlanPeriodsOverlap(from1 time.Time, to1 *time.Time, from2 time.Time, to2 *time.Time) bool {
+	// Period 1 ends before period 2 starts (no overlap)
+	if to1 != nil && to1.Before(from2) {
+		return false
+	}
+	// Period 2 ends before period 1 starts (no overlap)
+	if to2 != nil && to2.Before(from1) {
+		return false
+	}
+	return true
+}
+
+// validatePayPlanPeriodNoOverlap checks that the new/updated period doesn't overlap with existing periods.
+// excludeID is used when updating to exclude the period being updated from the check.
+func (s *PayPlanService) validatePayPlanPeriodNoOverlap(ctx context.Context, payplanID uint, from time.Time, to *time.Time, excludeID *uint) error {
+	existingPeriods, err := s.store.FindPeriodsByPayPlan(ctx, payplanID)
+	if err != nil {
+		return apperror.InternalWrap(err, "failed to check for period overlaps")
+	}
+
+	for _, existing := range existingPeriods {
+		if excludeID != nil && existing.ID == *excludeID {
+			continue
+		}
+		if payPlanPeriodsOverlap(from, to, existing.From, existing.To) {
+			return apperror.BadRequest("period overlaps with existing period")
+		}
+	}
+
+	return nil
+}
+
 // CreatePeriod creates a new period for a pay plan.
 func (s *PayPlanService) CreatePeriod(ctx context.Context, payplanID, orgID uint, req *models.PayPlanPeriodCreateRequest) (*models.PayPlanPeriodResponse, error) {
 	if _, err := s.verifyPayPlanOwnership(ctx, payplanID, orgID); err != nil {
+		return nil, err
+	}
+
+	if err := s.validatePayPlanPeriodNoOverlap(ctx, payplanID, req.From, req.To, nil); err != nil {
 		return nil, err
 	}
 
@@ -192,6 +241,10 @@ func (s *PayPlanService) UpdatePeriod(ctx context.Context, periodID, payplanID, 
 
 	period, err := s.verifyPeriodOwnership(ctx, periodID, payplanID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validatePayPlanPeriodNoOverlap(ctx, payplanID, req.From, req.To, &periodID); err != nil {
 		return nil, err
 	}
 
