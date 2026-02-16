@@ -31,6 +31,9 @@ const (
 	csrfTokenCookie    = "csrf_token"
 )
 
+// refreshCookiePath restricts the refresh cookie to only be sent to the refresh endpoint.
+const refreshCookiePath = "/api/v1/refresh"
+
 type AuthHandler struct {
 	userStore    store.UserStorer
 	tokenStore   store.TokenStorer
@@ -363,12 +366,12 @@ func (h *AuthHandler) setAuthCookies(c *gin.Context, accessToken, refreshToken, 
 		true,   // httpOnly
 	)
 
-	// Refresh token cookie - HttpOnly (not accessible from JavaScript)
+	// Refresh token cookie - HttpOnly, scoped to refresh endpoint only
 	c.SetCookie(
 		refreshTokenCookie,
 		refreshToken,
 		int(refreshTokenExpiry.Seconds()),
-		"/",
+		refreshCookiePath,
 		"",
 		secure,
 		true, // httpOnly
@@ -395,8 +398,8 @@ func (h *AuthHandler) clearAuthCookies(c *gin.Context) {
 	// Clear access token
 	c.SetCookie(accessTokenCookie, "", -1, "/", "", secure, true)
 
-	// Clear refresh token
-	c.SetCookie(refreshTokenCookie, "", -1, "/", "", secure, true)
+	// Clear refresh token (must match the path used when setting)
+	c.SetCookie(refreshTokenCookie, "", -1, refreshCookiePath, "", secure, true)
 
 	// Clear CSRF token
 	c.SetCookie(csrfTokenCookie, "", -1, "/", "", secure, false)

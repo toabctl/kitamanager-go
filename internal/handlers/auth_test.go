@@ -421,7 +421,7 @@ func TestAuthHandler_Login_SetsCookies(t *testing.T) {
 		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
 	}
 
-	// Check that cookies are set
+	// Check that cookies are set with correct attributes
 	cookies := w.Result().Cookies()
 	cookieNames := make(map[string]bool)
 	for _, cookie := range cookies {
@@ -429,6 +429,14 @@ func TestAuthHandler_Login_SetsCookies(t *testing.T) {
 		// Verify HttpOnly flag on access_token
 		if cookie.Name == "access_token" && !cookie.HttpOnly {
 			t.Error("access_token cookie should be HttpOnly")
+		}
+		// Verify access_token path is "/"
+		if cookie.Name == "access_token" && cookie.Path != "/" {
+			t.Errorf("access_token cookie path should be '/', got '%s'", cookie.Path)
+		}
+		// Verify refresh_token is scoped to refresh endpoint
+		if cookie.Name == "refresh_token" && cookie.Path != "/api/v1/refresh" {
+			t.Errorf("refresh_token cookie path should be '/api/v1/refresh', got '%s'", cookie.Path)
 		}
 		// CSRF token should NOT be HttpOnly
 		if cookie.Name == "csrf_token" && cookie.HttpOnly {
