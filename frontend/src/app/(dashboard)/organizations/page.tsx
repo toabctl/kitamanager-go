@@ -166,16 +166,26 @@ export default function OrganizationsPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...register('name')} />
+              <Input
+                id="name"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+                {...register('name')}
+              />
               {errors.name && (
-                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+                <p id="name-error" className="text-sm text-destructive">
+                  {t('validation.nameRequired')}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="state">{t('states.state')}</Label>
               <Select value={watch('state')} onValueChange={(value) => setValue('state', value)}>
-                <SelectTrigger>
+                <SelectTrigger
+                  aria-invalid={!!errors.state}
+                  aria-describedby={errors.state ? 'state-error' : undefined}
+                >
                   <SelectValue placeholder={t('states.selectState')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,7 +197,9 @@ export default function OrganizationsPage() {
                 </SelectContent>
               </Select>
               {errors.state && (
-                <p className="text-sm text-destructive">{t('validation.stateRequired')}</p>
+                <p id="state-error" className="text-sm text-destructive">
+                  {t('validation.stateRequired')}
+                </p>
               )}
             </div>
 

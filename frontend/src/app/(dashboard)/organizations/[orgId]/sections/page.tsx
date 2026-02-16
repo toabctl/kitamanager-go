@@ -134,9 +134,16 @@ export default function SectionsPage() {
           >
             <div className="space-y-2">
               <Label htmlFor="name">{t('common.name')}</Label>
-              <Input id="name" {...crud.register('name')} />
+              <Input
+                id="name"
+                aria-invalid={!!crud.errors.name}
+                aria-describedby={crud.errors.name ? 'name-error' : undefined}
+                {...crud.register('name')}
+              />
               {crud.errors.name && (
-                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+                <p id="name-error" className="text-sm text-destructive">
+                  {t('validation.nameRequired')}
+                </p>
               )}
             </div>
 
@@ -165,13 +172,17 @@ export default function SectionsPage() {
                   id="max_age_months"
                   type="number"
                   min={0}
+                  aria-invalid={!!crud.errors.max_age_months}
+                  aria-describedby={crud.errors.max_age_months ? 'max-age-error' : undefined}
                   {...crud.register('max_age_months', {
                     setValueAs: (v: unknown) =>
                       v === '' || v === null || v === undefined ? null : Number(v),
                   })}
                 />
                 {crud.errors.max_age_months && (
-                  <p className="text-sm text-destructive">{t('sections.ageRangeError')}</p>
+                  <p id="max-age-error" className="text-sm text-destructive">
+                    {t('sections.ageRangeError')}
+                  </p>
                 )}
               </div>
             </div>
