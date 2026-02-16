@@ -14,6 +14,7 @@ func TestPeriodStore_GetCurrentRecord(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -40,6 +41,7 @@ func TestPeriodStore_GetCurrentRecord(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contract)
 
@@ -87,6 +89,7 @@ func TestPeriodStore_GetRecordOn(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -113,6 +116,7 @@ func TestPeriodStore_GetRecordOn(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contract)
 
@@ -175,6 +179,7 @@ func TestPeriodStore_ListRecords(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -199,6 +204,7 @@ func TestPeriodStore_ListRecords(t *testing.T) {
 			},
 		},
 		StaffCategory: "supplementary",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(contract2)
 
@@ -212,6 +218,7 @@ func TestPeriodStore_ListRecords(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(contract1)
 
@@ -265,6 +272,7 @@ func TestPeriodStore_ValidateNoOverlap_Overlapping(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -287,6 +295,7 @@ func TestPeriodStore_ValidateNoOverlap_Overlapping(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(existing)
 
@@ -381,6 +390,7 @@ func TestPeriodStore_ValidateNoOverlap_ExcludeID(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -403,6 +413,7 @@ func TestPeriodStore_ValidateNoOverlap_ExcludeID(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(existing)
 
@@ -425,6 +436,7 @@ func TestPeriodStore_ValidateNoOverlap_OngoingContracts(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -447,6 +459,7 @@ func TestPeriodStore_ValidateNoOverlap_OngoingContracts(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(existing)
 
@@ -502,6 +515,7 @@ func TestPeriodStore_HasActiveRecord(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -524,6 +538,7 @@ func TestPeriodStore_HasActiveRecord(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(contract)
 
@@ -569,6 +584,7 @@ func TestPeriodStore_GetRecordOn_ConsecutiveContracts(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -595,6 +611,7 @@ func TestPeriodStore_GetRecordOn_ConsecutiveContracts(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contractA)
 
@@ -611,6 +628,7 @@ func TestPeriodStore_GetRecordOn_ConsecutiveContracts(t *testing.T) {
 		StaffCategory: "supplementary",
 		WeeklyHours:   30,
 		Grade:         "S8b", Step: 1,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contractB)
 
@@ -673,6 +691,7 @@ func TestPeriodStore_GetRecordOn_GapBetweenContracts(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -699,6 +718,7 @@ func TestPeriodStore_GetRecordOn_GapBetweenContracts(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contractA)
 
@@ -715,6 +735,7 @@ func TestPeriodStore_GetRecordOn_GapBetweenContracts(t *testing.T) {
 		StaffCategory: "supplementary",
 		WeeklyHours:   30,
 		Grade:         "S8b", Step: 1,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contractB)
 
@@ -777,6 +798,7 @@ func TestPeriodStore_HasActiveRecord_GapBetweenContracts(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -799,6 +821,7 @@ func TestPeriodStore_HasActiveRecord_GapBetweenContracts(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	})
 
 	// Contract B: Jan 4 onwards
@@ -812,6 +835,7 @@ func TestPeriodStore_HasActiveRecord_GapBetweenContracts(t *testing.T) {
 			},
 		},
 		StaffCategory: "supplementary",
+		PayPlanID:     payPlan.ID,
 	})
 
 	store := NewEmployeeStore(db)
@@ -843,6 +867,7 @@ func TestPeriodStore_CloseCurrentRecord(t *testing.T) {
 	db := setupTestDB(t)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -865,6 +890,7 @@ func TestPeriodStore_CloseCurrentRecord(t *testing.T) {
 			},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	}
 	db.Create(contract)
 

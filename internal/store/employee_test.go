@@ -185,6 +185,7 @@ func TestEmployeeStore_CreateContract(t *testing.T) {
 	store := NewEmployeeStore(db)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -208,6 +209,7 @@ func TestEmployeeStore_CreateContract(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 
 	err := store.CreateContract(ctx, contract)
@@ -225,6 +227,7 @@ func TestEmployeeStore_DeleteContract(t *testing.T) {
 	store := NewEmployeeStore(db)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -247,6 +250,7 @@ func TestEmployeeStore_DeleteContract(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contract)
 
@@ -266,6 +270,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 	store := NewEmployeeStore(db)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	refDate := time.Date(2025, 1, 27, 0, 0, 0, 0, time.UTC)
 
@@ -279,6 +284,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlan.ID,
 	})
 
 	// Employee with expired contract
@@ -292,6 +298,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), To: &to}},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlan.ID,
 	})
 
 	// Employee with future contract
@@ -304,6 +311,7 @@ func TestEmployeeStore_FindByOrganizationAndSection_ActiveOn(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlan.ID,
 	})
 
 	// Employee with no contract
@@ -443,13 +451,14 @@ func TestEmployeeStore_FindByOrganizationAndSection_SearchWithActiveOn(t *testin
 	store := NewEmployeeStore(db)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	refDate := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 
 	// Max with active contract
 	max := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Max", LastName: "Mustermann", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
 	db.Create(max)
-	db.Create(&models.EmployeeContract{EmployeeID: max.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 40})
+	db.Create(&models.EmployeeContract{EmployeeID: max.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 40, PayPlanID: payPlan.ID})
 
 	// Maria without contract
 	db.Create(&models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Maria", LastName: "Mueller", Birthdate: time.Date(1985, 1, 1, 0, 0, 0, 0, time.UTC)}})
@@ -472,6 +481,7 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 	store := NewEmployeeStore(db)
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := getDefaultSectionID(t, db, org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	employee := &models.Employee{
 		Person: models.Person{
@@ -494,6 +504,7 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		Grade:         "S8a", Step: 3,
+		PayPlanID: payPlan.ID,
 	}
 	db.Create(contract)
 	contractID := contract.ID

@@ -142,6 +142,21 @@ func createTestGroupWithOrgAndDefault(t *testing.T, db *gorm.DB, name string, or
 	return testutil.CreateTestGroupWithOrgAndDefault(t, db, name, orgID, isDefault)
 }
 
+// ensureTestPayPlan finds or creates a pay plan for the given organization.
+func ensureTestPayPlan(t *testing.T, db *gorm.DB, orgID uint) uint {
+	t.Helper()
+	var payPlan models.PayPlan
+	result := db.Where("organization_id = ?", orgID).First(&payPlan)
+	if result.Error == nil {
+		return payPlan.ID
+	}
+	payPlan = models.PayPlan{Name: "Test Pay Plan", OrganizationID: orgID}
+	if err := db.Create(&payPlan).Error; err != nil {
+		t.Fatalf("failed to create test pay plan: %v", err)
+	}
+	return payPlan.ID
+}
+
 // ensureTestSection finds or creates a default section for the given organization.
 func ensureTestSection(t *testing.T, db *gorm.DB, orgID uint) uint {
 	t.Helper()
@@ -175,11 +190,13 @@ func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 	var emp models.Employee
 	db.First(&emp, employeeID)
 	sectionID := ensureTestSection(t, db, emp.OrganizationID)
+	payPlanID := ensureTestPayPlan(t, db, emp.OrganizationID)
 	db.Create(&models.EmployeeContract{
 		EmployeeID:    employeeID,
 		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}, SectionID: sectionID},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	})
 }
 

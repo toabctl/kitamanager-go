@@ -496,6 +496,7 @@ func TestSectionService_DeleteByIDAndOrg_CannotDeleteWithEmployees(t *testing.T)
 
 	// Create an employee with a contract assigned to this section
 	employee := createTestEmployee(t, db, "Jane", "Smith", org.ID)
+	payPlan := createTestPayPlan(t, db, "Test Pay Plan", org.ID)
 	db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
@@ -506,7 +507,7 @@ func TestSectionService_DeleteByIDAndOrg_CannotDeleteWithEmployees(t *testing.T)
 		Grade:         "S8a",
 		Step:          1,
 		WeeklyHours:   39,
-		PayPlanID:     1,
+		PayPlanID:     payPlan.ID,
 	})
 
 	err := svc.DeleteByIDAndOrg(ctx, section.ID, org.ID)

@@ -45,6 +45,12 @@ func createTestUserGroup(t *testing.T, db *gorm.DB, userID, groupID uint, role m
 	return testutil.CreateTestUserGroup(t, db, userID, groupID, role)
 }
 
+// createTestPayPlan creates a pay plan for the given organization.
+func createTestPayPlan(t *testing.T, db *gorm.DB, orgID uint) *models.PayPlan {
+	t.Helper()
+	return testutil.CreateTestPayPlan(t, db, "Test Pay Plan", orgID)
+}
+
 // getDefaultSectionID returns the ID of the default section for an organization.
 func getDefaultSectionID(t *testing.T, db *gorm.DB, orgID uint) uint {
 	t.Helper()

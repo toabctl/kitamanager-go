@@ -412,6 +412,7 @@ func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 	if err := db.Create(employee).Error; err != nil {
 		t.Fatalf("failed to create test employee: %v", err)
 	}
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	if err := db.Create(&models.EmployeeContract{
 		EmployeeID: employee.ID,
 		BaseContract: models.BaseContract{
@@ -422,7 +423,7 @@ func TestSectionHandler_Delete_WithEmployees(t *testing.T) {
 		Grade:         "S8a",
 		Step:          1,
 		WeeklyHours:   39,
-		PayPlanID:     1,
+		PayPlanID:     payPlanID,
 	}).Error; err != nil {
 		t.Fatalf("failed to create test employee contract: %v", err)
 	}

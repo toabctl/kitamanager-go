@@ -1212,8 +1212,8 @@ func TestStatisticsService_GetFinancials_UnmatchedChildProperty(t *testing.T) {
 	}
 }
 
-func TestStatisticsService_GetFinancials_EmployeeNoPayPlan(t *testing.T) {
-	// Employee with PayPlanID=0 should not cause errors
+func TestStatisticsService_GetFinancials_EmployeeNoPayPlanEntries(t *testing.T) {
+	// Employee with a pay plan that has no periods/entries should result in 0 salary
 	db := setupTestDB(t)
 	svc := createStatisticsService(db)
 	ctx := context.Background()
@@ -1223,7 +1223,10 @@ func TestStatisticsService_GetFinancials_EmployeeNoPayPlan(t *testing.T) {
 
 	section := getDefaultSection(t, db, org.ID)
 
-	// Create employee contract with PayPlanID=0 (no pay plan assigned)
+	// Create a pay plan with no periods or entries
+	emptyPayPlan := createTestPayPlan(t, db, "Empty Pay Plan", org.ID)
+
+	// Create employee contract with the empty pay plan
 	emp := createTestEmployee(t, db, "Emp", "NoPlan", org.ID)
 	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	contract := &models.EmployeeContract{
@@ -1234,11 +1237,10 @@ func TestStatisticsService_GetFinancials_EmployeeNoPayPlan(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   39.0,
-		PayPlanID:     0,
+		PayPlanID:     emptyPayPlan.ID,
 	}
 	if err := db.Create(contract).Error; err != nil {
-		// PayPlanID 0 may fail FK constraint - that's fine, skip
-		t.Skip("PayPlanID=0 not allowed by FK constraint")
+		t.Fatalf("failed to create employee contract: %v", err)
 	}
 
 	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -1250,7 +1252,7 @@ func TestStatisticsService_GetFinancials_EmployeeNoPayPlan(t *testing.T) {
 
 	dp := result.DataPoints[0]
 	if dp.GrossSalary != 0 {
-		t.Errorf("GrossSalary = %d, want 0 (no pay plan)", dp.GrossSalary)
+		t.Errorf("GrossSalary = %d, want 0 (no pay plan entries)", dp.GrossSalary)
 	}
 }
 

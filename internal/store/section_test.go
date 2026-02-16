@@ -308,6 +308,7 @@ func TestSectionStore_HasEmployees(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	section := createTestSectionWithOrg(t, db, "Test Section", org.ID)
+	payPlan := createTestPayPlan(t, db, org.ID)
 
 	// Section should have no employees initially
 	hasEmployees, err := store.HasEmployees(context.Background(), section.ID)
@@ -339,7 +340,7 @@ func TestSectionStore_HasEmployees(t *testing.T) {
 		Grade:         "S8a",
 		Step:          1,
 		WeeklyHours:   39,
-		PayPlanID:     1,
+		PayPlanID:     payPlan.ID,
 	}).Error; err != nil {
 		t.Fatalf("failed to create test employee contract: %v", err)
 	}

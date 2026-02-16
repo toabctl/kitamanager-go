@@ -2,8 +2,8 @@ package store
 
 import (
 	"errors"
-	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -22,10 +22,11 @@ func WrapNotFound(err error) error {
 	return err
 }
 
-// IsDuplicateKeyError checks if the error is a unique constraint violation.
+// IsDuplicateKeyError checks if the error is a PostgreSQL unique constraint violation (23505).
 func IsDuplicateKeyError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return strings.Contains(err.Error(), "duplicate key")
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }

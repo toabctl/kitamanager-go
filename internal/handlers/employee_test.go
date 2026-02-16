@@ -260,6 +260,7 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -273,6 +274,7 @@ func TestEmployeeHandler_ListContracts(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	})
 
 	r := setupTestRouter()
@@ -299,6 +301,7 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	sectionID := ensureTestSection(t, db, org1.ID)
+	payPlanID := ensureTestPayPlan(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -315,6 +318,7 @@ func TestEmployeeHandler_ListContracts_WrongOrg(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	})
 
 	r := setupTestRouter()
@@ -335,6 +339,7 @@ func TestEmployeeHandler_GetCurrentRecord(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -348,6 +353,7 @@ func TestEmployeeHandler_GetCurrentRecord(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	})
 
 	r := setupTestRouter()
@@ -374,6 +380,7 @@ func TestEmployeeHandler_GetCurrentRecord_WrongOrg(t *testing.T) {
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	sectionID := ensureTestSection(t, db, org1.ID)
+	payPlanID := ensureTestPayPlan(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -390,6 +397,7 @@ func TestEmployeeHandler_GetCurrentRecord_WrongOrg(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	})
 
 	r := setupTestRouter()
@@ -586,6 +594,7 @@ func TestEmployeeHandler_CreateContract_Overlap(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: nil},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	})
 
 	r := setupTestRouter()
@@ -616,6 +625,7 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -628,6 +638,7 @@ func TestEmployeeHandler_DeleteContract(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -648,6 +659,7 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	sectionID := ensureTestSection(t, db, org1.ID)
+	payPlanID := ensureTestPayPlan(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	// Create employee in org1
@@ -663,6 +675,7 @@ func TestEmployeeHandler_DeleteContract_WrongOrg(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -690,6 +703,7 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 
 	// Create two employees in same org
 	employee1 := &models.Employee{
@@ -710,6 +724,7 @@ func TestEmployeeHandler_DeleteContract_WrongEmployee(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -780,6 +795,7 @@ func TestEmployeeHandler_UpdateContract_SectionFromWrongOrg(t *testing.T) {
 
 	org1 := createTestOrganization(t, db, "Org 1")
 	org1SectionID := ensureTestSection(t, db, org1.ID)
+	org1PayPlanID := ensureTestPayPlan(t, db, org1.ID)
 	org2 := createTestOrganization(t, db, "Org 2")
 	org2SectionID := ensureTestSection(t, db, org2.ID)
 
@@ -797,6 +813,7 @@ func TestEmployeeHandler_UpdateContract_SectionFromWrongOrg(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   39,
+		PayPlanID:     org1PayPlanID,
 	}
 	db.Create(contract)
 
@@ -1424,6 +1441,7 @@ func TestEmployeeHandler_CreateContract_ContractBoundaryTouch(t *testing.T) {
 			Period:    models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	})
 
 	r := setupTestRouter()
@@ -1474,6 +1492,7 @@ func TestEmployeeHandler_CreateContract_SameDayTransitionRejected(t *testing.T) 
 			Period:    models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate},
 		},
 		StaffCategory: "qualified",
+		PayPlanID:     payPlan.ID,
 	})
 
 	r := setupTestRouter()
@@ -1894,6 +1913,7 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1907,6 +1927,7 @@ func TestEmployeeHandler_GetContract(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -1979,6 +2000,7 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	emp1 := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Employee", LastName: "One", Gender: "male", Birthdate: time.Now()},
 	}
@@ -1998,6 +2020,7 @@ func TestEmployeeHandler_GetContract_WrongEmployee(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -2023,6 +2046,7 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -2036,6 +2060,7 @@ func TestEmployeeHandler_UpdateContract(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -2094,6 +2119,7 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -2110,6 +2136,7 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	})
 
 	contract2 := &models.EmployeeContract{
@@ -2120,6 +2147,7 @@ func TestEmployeeHandler_UpdateContract_Overlap(t *testing.T) {
 		},
 		StaffCategory: "non_pedagogical",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract2)
 
@@ -2146,6 +2174,7 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 	employee := &models.Employee{
 		Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Gender: "male", Birthdate: time.Now()},
 	}
@@ -2159,6 +2188,7 @@ func TestEmployeeHandler_UpdateContract_InvalidBody(t *testing.T) {
 		},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	}
 	db.Create(contract)
 
@@ -2187,6 +2217,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 
 	org := createTestOrganization(t, db, "Test Org")
 	sectionID := ensureTestSection(t, db, org.ID)
+	payPlanID := ensureTestPayPlan(t, db, org.ID)
 
 	// Create employee with qualified contract
 	emp1 := &models.Employee{
@@ -2198,6 +2229,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	})
 
 	// Create employee with supplementary contract
@@ -2210,6 +2242,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "supplementary",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	})
 
 	// Create employee with non_pedagogical contract
@@ -2222,6 +2255,7 @@ func TestEmployeeHandler_ListByStaffCategory(t *testing.T) {
 		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
 		StaffCategory: "non_pedagogical",
 		WeeklyHours:   40,
+		PayPlanID:     payPlanID,
 	})
 
 	r := setupTestRouter()
