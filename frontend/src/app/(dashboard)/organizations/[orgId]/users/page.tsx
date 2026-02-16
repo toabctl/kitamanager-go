@@ -8,13 +8,6 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -29,7 +22,13 @@ import { formatDate } from '@/lib/utils/formatting';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
-import { CrudPageHeader, ResourceTable, DeleteConfirmDialog, Column } from '@/components/crud';
+import {
+  CrudPageHeader,
+  ResourceTable,
+  DeleteConfirmDialog,
+  CrudFormDialog,
+  Column,
+} from '@/components/crud';
 import {
   userCreateSchema,
   userUpdateSchema,
@@ -234,102 +233,82 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogs.isDialogOpen} onOpenChange={dialogs.setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{dialogs.isEditing ? t('users.edit') : t('users.create')}</DialogTitle>
-          </DialogHeader>
-          {dialogs.isEditing ? (
-            <form onSubmit={handleSubmitUpdate(onSubmitUpdate)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t('common.name')}</Label>
-                <Input id="name" {...registerUpdate('name')} />
-                {errorsUpdate.name && (
-                  <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
-                )}
-              </div>
+      <CrudFormDialog
+        open={dialogs.isDialogOpen}
+        onOpenChange={dialogs.setIsDialogOpen}
+        isEditing={dialogs.isEditing}
+        translationPrefix="users"
+        onSubmit={
+          dialogs.isEditing
+            ? handleSubmitUpdate(onSubmitUpdate)
+            : handleSubmitCreate(onSubmitCreate)
+        }
+        isSaving={mutations.isMutating}
+      >
+        {dialogs.isEditing ? (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="name">{t('common.name')}</Label>
+              <Input id="name" {...registerUpdate('name')} />
+              {errorsUpdate.name && (
+                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('common.email')}</Label>
-                <Input id="email" type="email" {...registerUpdate('email')} />
-                {errorsUpdate.email && (
-                  <p className="text-sm text-destructive">{t('validation.invalidEmail')}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t('common.email')}</Label>
+              <Input id="email" type="email" {...registerUpdate('email')} />
+              {errorsUpdate.email && (
+                <p className="text-sm text-destructive">{t('validation.invalidEmail')}</p>
+              )}
+            </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={watchUpdate('active')}
-                  onCheckedChange={(checked) => setValueUpdate('active', checked)}
-                />
-                <Label htmlFor="active">{t('common.active')}</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="active"
+                checked={watchUpdate('active')}
+                onCheckedChange={(checked) => setValueUpdate('active', checked)}
+              />
+              <Label htmlFor="active">{t('common.active')}</Label>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="name">{t('common.name')}</Label>
+              <Input id="name" {...registerCreate('name')} />
+              {errorsCreate.name && (
+                <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
+              )}
+            </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => dialogs.setIsDialogOpen(false)}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={mutations.updateMutation.isPending}>
-                  {t('common.save')}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : (
-            <form onSubmit={handleSubmitCreate(onSubmitCreate)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t('common.name')}</Label>
-                <Input id="name" {...registerCreate('name')} />
-                {errorsCreate.name && (
-                  <p className="text-sm text-destructive">{t('validation.nameRequired')}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t('common.email')}</Label>
+              <Input id="email" type="email" {...registerCreate('email')} />
+              {errorsCreate.email && (
+                <p className="text-sm text-destructive">{t('validation.invalidEmail')}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('common.email')}</Label>
-                <Input id="email" type="email" {...registerCreate('email')} />
-                {errorsCreate.email && (
-                  <p className="text-sm text-destructive">{t('validation.invalidEmail')}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t('users.password')}</Label>
+              <Input id="password" type="password" {...registerCreate('password')} />
+              {errorsCreate.password && (
+                <p className="text-sm text-destructive">{t('validation.passwordTooShort')}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('users.password')}</Label>
-                <Input id="password" type="password" {...registerCreate('password')} />
-                {errorsCreate.password && (
-                  <p className="text-sm text-destructive">{t('validation.passwordTooShort')}</p>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={watchCreate('active')}
-                  onCheckedChange={(checked) => setValueCreate('active', checked)}
-                />
-                <Label htmlFor="active">{t('common.active')}</Label>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => dialogs.setIsDialogOpen(false)}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={mutations.createMutation.isPending}>
-                  {t('common.save')}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="active"
+                checked={watchCreate('active')}
+                onCheckedChange={(checked) => setValueCreate('active', checked)}
+              />
+              <Label htmlFor="active">{t('common.active')}</Label>
+            </div>
+          </>
+        )}
+      </CrudFormDialog>
 
       <DeleteConfirmDialog
         open={dialogs.isDeleteDialogOpen}
