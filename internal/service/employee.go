@@ -49,7 +49,7 @@ func (s *EmployeeService) ListByOrganizationAndSection(ctx context.Context, orgI
 
 // GetByID returns an employee by ID, validating it belongs to the specified organization
 func (s *EmployeeService) GetByID(ctx context.Context, id, orgID uint) (*models.EmployeeResponse, error) {
-	return personGetByID(ctx, s.store.FindByID, (*models.Employee).ToResponse, id, orgID, "employee")
+	return personGetByID(ctx, s.store.FindByIDAndOrg, (*models.Employee).ToResponse, id, orgID, "employee")
 }
 
 // Create creates a new employee
@@ -62,7 +62,7 @@ func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.Em
 
 // Update updates an existing employee, validating it belongs to the specified organization
 func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *models.EmployeeUpdateRequest) (*models.EmployeeResponse, error) {
-	return personUpdate(ctx, s.store.FindByID, func(e *models.Employee) *models.Person { return &e.Person },
+	return personUpdate(ctx, s.store.FindByIDAndOrg, func(e *models.Employee) *models.Person { return &e.Person },
 		s.store.Update, (*models.Employee).ToResponse, id, orgID,
 		personUpdateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
 		"employee")
@@ -71,5 +71,5 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 // Delete deletes an employee and its contracts, validating it belongs to the specified organization.
 // The ownership check and deletion run in a single transaction.
 func (s *EmployeeService) Delete(ctx context.Context, id, orgID uint) error {
-	return personDelete(ctx, s.transactor, s.store.FindByID, s.store.Delete, id, orgID, "employee")
+	return personDelete(ctx, s.transactor, s.store.FindByIDMinimalAndOrg, s.store.Delete, id, orgID, "employee")
 }

@@ -69,7 +69,9 @@ type EmployeeStorer interface {
 	FindByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.Employee, int64, error)
 	FindByOrganizationAndSection(ctx context.Context, orgID uint, sectionID *uint, activeOn *time.Time, search string, staffCategory *string, limit, offset int) ([]models.Employee, int64, error)
 	FindByID(ctx context.Context, id uint) (*models.Employee, error)
+	FindByIDAndOrg(ctx context.Context, id, orgID uint) (*models.Employee, error)
 	FindByIDMinimal(ctx context.Context, id uint) (*models.Employee, error) // Without preloads, for org checks
+	FindByIDMinimalAndOrg(ctx context.Context, id, orgID uint) (*models.Employee, error)
 	Create(ctx context.Context, emp *models.Employee) error
 	Update(ctx context.Context, emp *models.Employee) error
 	Delete(ctx context.Context, id uint) error
@@ -93,7 +95,9 @@ type ChildStorer interface {
 	FindContractsByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time) ([]models.ChildContract, error)
 	FindByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, sectionID *uint) ([]models.Child, error)
 	FindByID(ctx context.Context, id uint) (*models.Child, error)
+	FindByIDAndOrg(ctx context.Context, id, orgID uint) (*models.Child, error)
 	FindByIDMinimal(ctx context.Context, id uint) (*models.Child, error) // Without preloads, for org checks
+	FindByIDMinimalAndOrg(ctx context.Context, id, orgID uint) (*models.Child, error)
 	Create(ctx context.Context, child *models.Child) error
 	Update(ctx context.Context, child *models.Child) error
 	Delete(ctx context.Context, id uint) error

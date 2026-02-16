@@ -56,7 +56,7 @@ func (s *ChildService) ListByOrganizationAndSection(ctx context.Context, orgID u
 
 // GetByID returns a child by ID, validating it belongs to the specified organization
 func (s *ChildService) GetByID(ctx context.Context, id, orgID uint) (*models.ChildResponse, error) {
-	return personGetByID(ctx, s.store.FindByID, (*models.Child).ToResponse, id, orgID, "child")
+	return personGetByID(ctx, s.store.FindByIDAndOrg, (*models.Child).ToResponse, id, orgID, "child")
 }
 
 // Create creates a new child
@@ -69,7 +69,7 @@ func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.Child
 
 // Update updates an existing child, validating it belongs to the specified organization
 func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.ChildUpdateRequest) (*models.ChildResponse, error) {
-	return personUpdate(ctx, s.store.FindByID, func(ch *models.Child) *models.Person { return &ch.Person },
+	return personUpdate(ctx, s.store.FindByIDAndOrg, func(ch *models.Child) *models.Person { return &ch.Person },
 		s.store.Update, (*models.Child).ToResponse, id, orgID,
 		personUpdateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
 		"child")
@@ -77,7 +77,6 @@ func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.C
 
 // Delete deletes a child and its contracts, validating it belongs to the specified organization.
 // The ownership check and deletion run in a single transaction.
-// Uses FindByIDMinimal for the ownership check (no preloads needed for delete).
 func (s *ChildService) Delete(ctx context.Context, id, orgID uint) error {
-	return personDelete(ctx, s.transactor, s.store.FindByIDMinimal, s.store.Delete, id, orgID, "child")
+	return personDelete(ctx, s.transactor, s.store.FindByIDMinimalAndOrg, s.store.Delete, id, orgID, "child")
 }

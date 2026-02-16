@@ -117,11 +117,30 @@ func (s *EmployeeStore) FindByID(ctx context.Context, id uint) (*models.Employee
 	return &employee, nil
 }
 
+// FindByIDAndOrg returns an employee by ID with full preloads, scoped to the given organization.
+func (s *EmployeeStore) FindByIDAndOrg(ctx context.Context, id, orgID uint) (*models.Employee, error) {
+	var employee models.Employee
+	if err := DBFromContext(ctx, s.db).Preload("Organization").Preload("Contracts.Section").Preload("Contracts").
+		Where("id = ? AND organization_id = ?", id, orgID).First(&employee).Error; err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &employee, nil
+}
+
 // FindByIDMinimal returns an employee without preloading relationships.
 // Useful for existence checks and org validation where relationships aren't needed.
 func (s *EmployeeStore) FindByIDMinimal(ctx context.Context, id uint) (*models.Employee, error) {
 	var employee models.Employee
 	if err := DBFromContext(ctx, s.db).First(&employee, id).Error; err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &employee, nil
+}
+
+// FindByIDMinimalAndOrg returns an employee without preloading, scoped to the given organization.
+func (s *EmployeeStore) FindByIDMinimalAndOrg(ctx context.Context, id, orgID uint) (*models.Employee, error) {
+	var employee models.Employee
+	if err := DBFromContext(ctx, s.db).Where("id = ? AND organization_id = ?", id, orgID).First(&employee).Error; err != nil {
 		return nil, WrapNotFound(err)
 	}
 	return &employee, nil

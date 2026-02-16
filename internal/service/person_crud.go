@@ -24,19 +24,16 @@ func personList[T any, R any](
 	return toResponseList(items, toResponse), total, nil
 }
 
-// personGetByID fetches an entity by ID with org ownership check.
-func personGetByID[T OrgOwned, R any](
+// personGetByID fetches an entity by ID scoped to the given organization.
+func personGetByID[T any, R any](
 	ctx context.Context,
-	findByID func(ctx context.Context, id uint) (*T, error),
+	findByIDAndOrg func(ctx context.Context, id, orgID uint) (*T, error),
 	toResponse func(*T) R,
 	id, orgID uint,
 	resourceName string,
 ) (*R, error) {
-	entity, err := findByID(ctx, id)
+	entity, err := findByIDAndOrg(ctx, id, orgID)
 	if err != nil {
-		return nil, apperror.NotFound(resourceName)
-	}
-	if (*entity).GetOrganizationID() != orgID {
 		return nil, apperror.NotFound(resourceName)
 	}
 	resp := toResponse(entity)
@@ -74,10 +71,10 @@ func personCreate[T any, R any](
 	return &resp, nil
 }
 
-// personUpdate validates and applies person field updates.
-func personUpdate[T OrgOwned, R any](
+// personUpdate validates and applies person field updates, scoped to the given organization.
+func personUpdate[T any, R any](
 	ctx context.Context,
-	findByID func(ctx context.Context, id uint) (*T, error),
+	findByIDAndOrg func(ctx context.Context, id, orgID uint) (*T, error),
 	getPerson func(*T) *models.Person,
 	updateFn func(ctx context.Context, entity *T) error,
 	toResponse func(*T) R,
@@ -85,11 +82,8 @@ func personUpdate[T OrgOwned, R any](
 	fields personUpdateFields,
 	resourceName string,
 ) (*R, error) {
-	entity, err := findByID(ctx, id)
+	entity, err := findByIDAndOrg(ctx, id, orgID)
 	if err != nil {
-		return nil, apperror.NotFound(resourceName)
-	}
-	if (*entity).GetOrganizationID() != orgID {
 		return nil, apperror.NotFound(resourceName)
 	}
 
@@ -102,7 +96,7 @@ func personUpdate[T OrgOwned, R any](
 	}
 
 	// Reload to get fresh associations
-	entity, err = findByID(ctx, id)
+	entity, err = findByIDAndOrg(ctx, id, orgID)
 	if err != nil {
 		return nil, apperror.InternalWrap(err, "failed to reload "+resourceName+" after update")
 	}
@@ -111,21 +105,17 @@ func personUpdate[T OrgOwned, R any](
 	return &resp, nil
 }
 
-// personDelete validates ownership and deletes within a transaction.
-func personDelete[T OrgOwned](
+// personDelete validates org ownership at DB level and deletes within a transaction.
+func personDelete[T any](
 	ctx context.Context,
 	transactor store.Transactor,
-	findByID func(ctx context.Context, id uint) (*T, error),
+	findByIDAndOrg func(ctx context.Context, id, orgID uint) (*T, error),
 	deleteFn func(ctx context.Context, id uint) error,
 	id, orgID uint,
 	resourceName string,
 ) error {
 	return transactor.InTransaction(ctx, func(txCtx context.Context) error {
-		entity, err := findByID(txCtx, id)
-		if err != nil {
-			return apperror.NotFound(resourceName)
-		}
-		if (*entity).GetOrganizationID() != orgID {
+		if _, err := findByIDAndOrg(txCtx, id, orgID); err != nil {
 			return apperror.NotFound(resourceName)
 		}
 		if err := deleteFn(txCtx, id); err != nil {

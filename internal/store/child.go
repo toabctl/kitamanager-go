@@ -110,11 +110,30 @@ func (s *ChildStore) FindByID(ctx context.Context, id uint) (*models.Child, erro
 	return &child, nil
 }
 
+// FindByIDAndOrg returns a child by ID with full preloads, scoped to the given organization.
+func (s *ChildStore) FindByIDAndOrg(ctx context.Context, id, orgID uint) (*models.Child, error) {
+	var child models.Child
+	if err := DBFromContext(ctx, s.db).Preload("Organization").Preload("Contracts.Section").Preload("Contracts").
+		Where("id = ? AND organization_id = ?", id, orgID).First(&child).Error; err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &child, nil
+}
+
 // FindByIDMinimal returns a child without preloading relationships.
 // Useful for existence checks and org validation where relationships aren't needed.
 func (s *ChildStore) FindByIDMinimal(ctx context.Context, id uint) (*models.Child, error) {
 	var child models.Child
 	if err := DBFromContext(ctx, s.db).First(&child, id).Error; err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &child, nil
+}
+
+// FindByIDMinimalAndOrg returns a child without preloading, scoped to the given organization.
+func (s *ChildStore) FindByIDMinimalAndOrg(ctx context.Context, id, orgID uint) (*models.Child, error) {
+	var child models.Child
+	if err := DBFromContext(ctx, s.db).Where("id = ? AND organization_id = ?", id, orgID).First(&child).Error; err != nil {
 		return nil, WrapNotFound(err)
 	}
 	return &child, nil
