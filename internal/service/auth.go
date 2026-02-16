@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -102,7 +103,9 @@ func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*Aut
 		oldHash := middleware.HashToken(refreshTokenStr)
 		revoked, err := s.tokenStore.IsRevoked(ctx, oldHash)
 		if err == nil && revoked {
-			_ = s.tokenStore.RevokeAllForUser(ctx, userID)
+			if err := s.tokenStore.RevokeAllForUser(ctx, userID); err != nil {
+				slog.Error("Failed to revoke all tokens after replay detection", "user_id", userID, "error", err)
+			}
 			return nil, apperror.Unauthorized("token reuse detected, all sessions have been revoked")
 		}
 
@@ -123,7 +126,9 @@ func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*Aut
 		expFloat, _ := claims["exp"].(float64)
 		oldExpiresAt := time.Unix(int64(expFloat), 0)
 		oldHash := middleware.HashToken(refreshTokenStr)
-		_ = s.tokenStore.RevokeToken(ctx, oldHash, user.ID, oldExpiresAt)
+		if err := s.tokenStore.RevokeToken(ctx, oldHash, user.ID, oldExpiresAt); err != nil {
+			slog.Error("Failed to revoke old refresh token", "user_id", user.ID, "error", err)
+		}
 	}
 
 	return s.issueTokens(user.ID, user.Email)
@@ -165,7 +170,9 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uint, currentPa
 
 	// Revoke all existing tokens
 	if s.tokenStore != nil {
-		_ = s.tokenStore.RevokeAllForUser(ctx, userID)
+		if err := s.tokenStore.RevokeAllForUser(ctx, userID); err != nil {
+			slog.Error("Failed to revoke all tokens after password change", "user_id", userID, "error", err)
+		}
 	}
 
 	s.auditService.LogResourceUpdate(userID, "user_password", userID, user.Email, ipAddress)
@@ -294,5 +301,7 @@ func (s *AuthService) revokeTokenString(ctx context.Context, tokenStr string) {
 	expFloat, _ := claims["exp"].(float64)
 	expiresAt := time.Unix(int64(expFloat), 0)
 	tokenHash := middleware.HashToken(tokenStr)
-	_ = s.tokenStore.RevokeToken(ctx, tokenHash, uint(userIDFloat), expiresAt)
+	if err := s.tokenStore.RevokeToken(ctx, tokenHash, uint(userIDFloat), expiresAt); err != nil {
+		slog.Error("Failed to revoke token during logout", "user_id", uint(userIDFloat), "error", err)
+	}
 }
