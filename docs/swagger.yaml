@@ -808,6 +808,30 @@ definitions:
     - name
     - state
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingDetailResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Berlin Kita Funding
+        type: string
+      periods:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod'
+        type: array
+      state:
+        example: berlin
+        type: string
+      total_periods:
+        type: integer
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod:
     properties:
       comment:
@@ -1047,30 +1071,6 @@ definitions:
       name:
         example: Berlin Updated
         maxLength: 255
-        type: string
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingWithDetailsResponse:
-    properties:
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      name:
-        example: Berlin Kita Funding
-        type: string
-      periods:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod'
-        type: array
-      state:
-        example: berlin
-        type: string
-      total_periods:
-        type: integer
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.Group:
@@ -2377,7 +2377,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingWithDetailsResponse'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingDetailResponse'
         "400":
           description: Bad Request
           schema:

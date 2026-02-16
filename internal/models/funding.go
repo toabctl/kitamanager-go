@@ -155,8 +155,8 @@ func (f *GovernmentFunding) ToResponse() GovernmentFundingResponse {
 	}
 }
 
-// GovernmentFundingWithDetailsResponse wraps the funding with metadata
-type GovernmentFundingWithDetailsResponse struct {
+// GovernmentFundingDetailResponse wraps the funding with metadata
+type GovernmentFundingDetailResponse struct {
 	*GovernmentFunding
 	TotalPeriods int64 `json:"total_periods"`
 }

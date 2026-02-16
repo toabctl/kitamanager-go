@@ -79,7 +79,7 @@ func (s *GovernmentFundingService) GetByID(ctx context.Context, id uint) (*model
 // GetByIDWithDetails returns a government funding by ID with nested periods and properties
 // periodsLimit controls how many periods are returned (0 = all)
 // activeOn filters periods to those active on the given date (nil = no filter)
-func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint, periodsLimit int, activeOn *time.Time) (*models.GovernmentFundingWithDetailsResponse, error) {
+func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id uint, periodsLimit int, activeOn *time.Time) (*models.GovernmentFundingDetailResponse, error) {
 	funding, err := s.store.FindByIDWithDetails(ctx, id, periodsLimit, activeOn)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -93,7 +93,7 @@ func (s *GovernmentFundingService) GetByIDWithDetails(ctx context.Context, id ui
 		return nil, apperror.InternalWrap(err, "failed to count periods")
 	}
 
-	return &models.GovernmentFundingWithDetailsResponse{
+	return &models.GovernmentFundingDetailResponse{
 		GovernmentFunding: funding,
 		TotalPeriods:      totalPeriods,
 	}, nil

@@ -184,7 +184,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingWithDetailsResponse"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingDetailResponse"
                         }
                     },
                     "400": {
@@ -8678,6 +8678,40 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingDetailResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Kita Funding"
+                },
+                "periods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod"
+                    }
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
+                },
+                "total_periods": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod": {
             "type": "object",
             "properties": {
@@ -9002,40 +9036,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Berlin Updated"
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingWithDetailsResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Berlin Kita Funding"
-                },
-                "periods": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriod"
-                    }
-                },
-                "state": {
-                    "type": "string",
-                    "example": "berlin"
-                },
-                "total_periods": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
