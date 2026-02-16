@@ -95,29 +95,36 @@ func (s *ChildAttendanceStore) Delete(ctx context.Context, id uint) error {
 
 // GetDailySummary returns attendance summary for a given date and organization.
 func (s *ChildAttendanceStore) GetDailySummary(ctx context.Context, orgID uint, date time.Time) (*models.ChildAttendanceDailySummaryResponse, error) {
-	var records []models.ChildAttendance
-	if err := DBFromContext(ctx, s.db).Where("organization_id = ? AND date = ?", orgID, date).
-		Find(&records).Error; err != nil {
+	var result struct {
+		Total    int
+		Present  int
+		Absent   int
+		Sick     int
+		Vacation int
+	}
+
+	err := DBFromContext(ctx, s.db).Model(&models.ChildAttendance{}).
+		Select(`COUNT(*) AS total,
+			COUNT(*) FILTER (WHERE status = ?) AS present,
+			COUNT(*) FILTER (WHERE status = ?) AS absent,
+			COUNT(*) FILTER (WHERE status = ?) AS sick,
+			COUNT(*) FILTER (WHERE status = ?) AS vacation`,
+			models.ChildAttendanceStatusPresent,
+			models.ChildAttendanceStatusAbsent,
+			models.ChildAttendanceStatusSick,
+			models.ChildAttendanceStatusVacation).
+		Where("organization_id = ? AND date = ?", orgID, date).
+		Scan(&result).Error
+	if err != nil {
 		return nil, err
 	}
 
-	summary := &models.ChildAttendanceDailySummaryResponse{
+	return &models.ChildAttendanceDailySummaryResponse{
 		Date:          date.Format(models.DateFormat),
-		TotalChildren: len(records),
-	}
-
-	for _, r := range records {
-		switch r.Status {
-		case models.ChildAttendanceStatusPresent:
-			summary.Present++
-		case models.ChildAttendanceStatusAbsent:
-			summary.Absent++
-		case models.ChildAttendanceStatusSick:
-			summary.Sick++
-		case models.ChildAttendanceStatusVacation:
-			summary.Vacation++
-		}
-	}
-
-	return summary, nil
+		TotalChildren: result.Total,
+		Present:       result.Present,
+		Absent:        result.Absent,
+		Sick:          result.Sick,
+		Vacation:      result.Vacation,
+	}, nil
 }
