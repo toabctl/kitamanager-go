@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
@@ -202,10 +204,44 @@ func parseOrgResourceAndContractID(c *gin.Context) (uint, uint, uint, bool) {
 func bindJSON[T any](c *gin.Context) (*T, bool) {
 	var req T
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apperror.BadRequest(err.Error()))
+		respondError(c, apperror.BadRequest(sanitizeBindError(err)))
 		return nil, false
 	}
 	return &req, true
+}
+
+// sanitizeBindError converts validator errors into user-friendly messages
+// without exposing Go struct field names or internal validation tags.
+func sanitizeBindError(err error) string {
+	var ve validator.ValidationErrors
+	if errors.As(err, &ve) {
+		msgs := make([]string, 0, len(ve))
+		for _, fe := range ve {
+			field := fe.Field()
+			// Use the JSON tag name if available
+			if fe.Namespace() != "" {
+				parts := strings.Split(fe.Namespace(), ".")
+				if len(parts) > 1 {
+					field = strings.Join(parts[1:], ".")
+				}
+			}
+			switch fe.Tag() {
+			case "required":
+				msgs = append(msgs, field+" is required")
+			case "email":
+				msgs = append(msgs, field+" must be a valid email address")
+			case "min":
+				msgs = append(msgs, field+" must be at least "+fe.Param()+" characters")
+			case "max":
+				msgs = append(msgs, field+" must be at most "+fe.Param()+" characters")
+			default:
+				msgs = append(msgs, field+" is invalid")
+			}
+		}
+		return strings.Join(msgs, "; ")
+	}
+	// For non-validation errors (e.g. malformed JSON), return a generic message
+	return "invalid request body"
 }
 
 // auditConfig holds audit configuration for resource operations (contracts, nested resources).
