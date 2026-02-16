@@ -377,3 +377,17 @@ func createTestFundingProperty(t *testing.T, db *gorm.DB, periodID uint, key, va
 	}
 	return prop
 }
+
+// createAuditService creates an audit service for testing.
+func createAuditService(db *gorm.DB) *AuditService {
+	auditStore := store.NewAuditStore(db)
+	return NewAuditService(auditStore)
+}
+
+// createAuthService creates an auth service for testing.
+func createAuthService(db *gorm.DB) *AuthService {
+	userStore := store.NewUserStore(db)
+	tokenStore := store.NewTokenStore(db)
+	auditService := createAuditService(db)
+	return NewAuthService(userStore, tokenStore, "test-jwt-secret", auditService)
+}
