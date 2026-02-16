@@ -43,7 +43,7 @@ func (h *EmployeeHandler) contractAudit() contractAuditConfig {
 // @Param staff_category query string false "Filter by staff category (qualified, supplementary, non_pedagogical)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
-// @Success 200 {object} models.PaginatedResponse[models.Employee]
+// @Success 200 {object} models.PaginatedResponse[models.EmployeeResponse]
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -103,7 +103,7 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param id path int true "Employee ID"
-// @Success 200 {object} models.Employee
+// @Success 200 {object} models.EmployeeResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
@@ -133,7 +133,7 @@ func (h *EmployeeHandler) Get(c *gin.Context) {
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param request body models.EmployeeCreateRequest true "Employee data"
-// @Success 201 {object} models.Employee
+// @Success 201 {object} models.EmployeeResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -170,7 +170,7 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 // @Param orgId path int true "Organization ID"
 // @Param id path int true "Employee ID"
 // @Param request body models.EmployeeUpdateRequest true "Employee data"
-// @Success 200 {object} models.Employee
+// @Success 200 {object} models.EmployeeResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse

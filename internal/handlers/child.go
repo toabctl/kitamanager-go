@@ -45,7 +45,7 @@ func (h *ChildHandler) contractAudit() contractAuditConfig {
 // @Param search query string false "Search by first or last name (case-insensitive)"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(20) maximum(100)
-// @Success 200 {object} models.PaginatedResponse[models.Child]
+// @Success 200 {object} models.PaginatedResponse[models.ChildResponse]
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -118,7 +118,7 @@ func (h *ChildHandler) List(c *gin.Context) {
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param id path int true "Child ID"
-// @Success 200 {object} models.Child
+// @Success 200 {object} models.ChildResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
@@ -148,7 +148,7 @@ func (h *ChildHandler) Get(c *gin.Context) {
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param request body models.ChildCreateRequest true "Child data"
-// @Success 201 {object} models.Child
+// @Success 201 {object} models.ChildResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -185,7 +185,7 @@ func (h *ChildHandler) Create(c *gin.Context) {
 // @Param orgId path int true "Organization ID"
 // @Param id path int true "Child ID"
 // @Param request body models.ChildUpdateRequest true "Child data"
-// @Success 200 {object} models.Child
+// @Success 200 {object} models.ChildResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse

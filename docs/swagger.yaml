@@ -180,37 +180,6 @@ definitions:
         example: true
         type: boolean
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.Child:
-    properties:
-      birthdate:
-        example: "1990-05-15"
-        type: string
-      contracts:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContract'
-        type: array
-      created_at:
-        type: string
-      first_name:
-        example: Max
-        type: string
-      gender:
-        example: male
-        type: string
-      id:
-        example: 1
-        type: integer
-      last_name:
-        example: Mustermann
-        type: string
-      organization:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
-      organization_id:
-        example: 1
-        type: integer
-      updated_at:
-        type: string
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildAttendanceCreateRequest:
     properties:
       check_in_time:
@@ -299,34 +268,6 @@ definitions:
         type: string
       status:
         example: present
-        type: string
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.ChildContract:
-    properties:
-      child_id:
-        example: 1
-        type: integer
-      created_at:
-        type: string
-      from:
-        type: string
-      id:
-        example: 1
-        type: integer
-      properties:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties'
-        description: |-
-          Properties stores flexible key-value data as JSON.
-          For children: {"care_type": "ganztag", "supplements": ["ndh", "mss"]}
-          For employees: {"benefits": ["christmas_bonus"], "employer_type": "normal"}
-      section:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Section'
-      section_id:
-        type: integer
-      to:
-        type: string
-      updated_at:
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildContractCreateRequest:
@@ -444,6 +385,35 @@ definitions:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildFundingMatchedProp'
         type: array
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.ChildResponse:
+    properties:
+      birthdate:
+        example: "2020-03-10"
+        type: string
+      contracts:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContractResponse'
+        type: array
+      created_at:
+        type: string
+      first_name:
+        example: Emma
+        type: string
+      gender:
+        example: female
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_name:
+        example: Schmidt
+        type: string
+      organization_id:
+        example: 1
+        type: integer
+      updated_at:
+        type: string
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildUpdateRequest:
     properties:
       birthdate:
@@ -501,81 +471,6 @@ definitions:
       value:
         example: ganztag
         type: string
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.Employee:
-    properties:
-      birthdate:
-        example: "1990-05-15"
-        type: string
-      contracts:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContract'
-        type: array
-      created_at:
-        type: string
-      first_name:
-        example: Max
-        type: string
-      gender:
-        example: male
-        type: string
-      id:
-        example: 1
-        type: integer
-      last_name:
-        example: Mustermann
-        type: string
-      organization:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
-      organization_id:
-        example: 1
-        type: integer
-      updated_at:
-        type: string
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.EmployeeContract:
-    properties:
-      created_at:
-        type: string
-      employee_id:
-        example: 1
-        type: integer
-      from:
-        type: string
-      grade:
-        example: S8a
-        type: string
-      id:
-        example: 1
-        type: integer
-      payplan_id:
-        example: 1
-        type: integer
-      properties:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties'
-        description: |-
-          Properties stores flexible key-value data as JSON.
-          For children: {"care_type": "ganztag", "supplements": ["ndh", "mss"]}
-          For employees: {"benefits": ["christmas_bonus"], "employer_type": "normal"}
-      section:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Section'
-      section_id:
-        type: integer
-      staff_category:
-        description: Employee-specific typed fields
-        example: qualified
-        type: string
-      step:
-        example: 3
-        type: integer
-      to:
-        type: string
-      updated_at:
-        type: string
-      weekly_hours:
-        example: 40
-        type: number
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractCreateRequest:
     properties:
@@ -714,6 +609,35 @@ definitions:
     - first_name
     - gender
     - last_name
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse:
+    properties:
+      birthdate:
+        example: "1990-05-15"
+        type: string
+      contracts:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractResponse'
+        type: array
+      created_at:
+        type: string
+      first_name:
+        example: Max
+        type: string
+      gender:
+        example: male
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_name:
+        example: Mustermann
+        type: string
+      organization_id:
+        example: 1
+        type: integer
+      updated_at:
+        type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.EmployeeUpdateRequest:
     properties:
@@ -1317,6 +1241,30 @@ definitions:
     - name
     - state
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse:
+    properties:
+      active:
+        example: true
+        type: boolean
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      created_by:
+        example: admin@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Acme Corp
+        type: string
+      state:
+        example: berlin
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.OrganizationUpdateRequest:
     properties:
       active:
@@ -1358,27 +1306,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.BudgetItemResponse'
-        type: array
-      limit:
-        example: 20
-        type: integer
-      page:
-        example: 1
-        type: integer
-      total:
-        example: 100
-        type: integer
-      total_pages:
-        example: 5
-        type: integer
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Child:
-    properties:
-      _links:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
-      data:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child'
         type: array
       limit:
         example: 20
@@ -1435,13 +1362,13 @@ definitions:
         example: 5
         type: integer
     type: object
-  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Employee
+  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_ChildResponse
   : properties:
       _links:
         $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
       data:
         items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee'
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse'
         type: array
       limit:
         example: 20
@@ -1463,6 +1390,27 @@ definitions:
       data:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 100
+        type: integer
+      total_pages:
+        example: 5
+        type: integer
+    type: object
+  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_EmployeeResponse
+  : properties:
+      _links:
+        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
+      data:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse'
         type: array
       limit:
         example: 20
@@ -1519,13 +1467,13 @@ definitions:
         example: 5
         type: integer
     type: object
-  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Organization
+  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_OrganizationResponse
   : properties:
       _links:
         $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
       data:
         items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse'
         type: array
       limit:
         example: 20
@@ -1831,38 +1779,6 @@ definitions:
     - RoleAdmin
     - RoleManager
     - RoleMember
-  github_com_eenemeene_kitamanager-go_internal_models.Section:
-    properties:
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      created_by:
-        example: admin@example.com
-        type: string
-      id:
-        example: 1
-        type: integer
-      is_default:
-        example: false
-        type: boolean
-      max_age_months:
-        example: 36
-        type: integer
-      min_age_months:
-        example: 0
-        type: integer
-      name:
-        example: Krippe
-        type: string
-      organization:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
-      organization_id:
-        example: 1
-        type: integer
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.SectionCreateRequest:
     properties:
       max_age_months:
@@ -2921,7 +2837,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Organization'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_OrganizationResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2952,7 +2868,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse'
         "400":
           description: Bad Request
           schema:
@@ -3019,7 +2935,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse'
         "400":
           description: Bad Request
           schema:
@@ -3063,7 +2979,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse'
         "400":
           description: Bad Request
           schema:
@@ -3661,7 +3577,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Child'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_ChildResponse'
         "400":
           description: Bad Request
           schema:
@@ -3701,7 +3617,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse'
         "400":
           description: Bad Request
           schema:
@@ -3782,7 +3698,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse'
         "400":
           description: Bad Request
           schema:
@@ -3831,7 +3747,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse'
         "400":
           description: Bad Request
           schema:
@@ -4696,7 +4612,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Employee'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_EmployeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -4736,7 +4652,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -4817,7 +4733,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -4866,7 +4782,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse'
         "400":
           description: Bad Request
           schema:

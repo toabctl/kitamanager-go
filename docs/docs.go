@@ -1078,7 +1078,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Organization"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_OrganizationResponse"
                         }
                     },
                     "401": {
@@ -1127,7 +1127,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse"
                         }
                     },
                     "400": {
@@ -1182,7 +1182,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse"
                         }
                     },
                     "400": {
@@ -1250,7 +1250,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse"
                         }
                     },
                     "400": {
@@ -2207,7 +2207,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Child"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_ChildResponse"
                         }
                     },
                     "400": {
@@ -2269,7 +2269,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse"
                         }
                     },
                     "400": {
@@ -2657,7 +2657,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse"
                         }
                     },
                     "400": {
@@ -2732,7 +2732,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse"
                         }
                     },
                     "400": {
@@ -3765,7 +3765,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Employee"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_EmployeeResponse"
                         }
                     },
                     "400": {
@@ -3827,7 +3827,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
                         }
                     },
                     "400": {
@@ -3944,7 +3944,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
                         }
                     },
                     "400": {
@@ -4019,7 +4019,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee"
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
                         }
                     },
                     "400": {
@@ -7813,50 +7813,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_eenemeene_kitamanager-go_internal_models.Child": {
-            "type": "object",
-            "properties": {
-                "birthdate": {
-                    "type": "string",
-                    "example": "1990-05-15"
-                },
-                "contracts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContract"
-                    }
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string",
-                    "example": "Max"
-                },
-                "gender": {
-                    "type": "string",
-                    "example": "male"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "last_name": {
-                    "type": "string",
-                    "example": "Mustermann"
-                },
-                "organization": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
-                },
-                "organization_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_eenemeene_kitamanager-go_internal_models.ChildAttendanceCreateRequest": {
             "type": "object",
             "required": [
@@ -7979,45 +7935,6 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "present"
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.ChildContract": {
-            "type": "object",
-            "properties": {
-                "child_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "from": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "properties": {
-                    "description": "Properties stores flexible key-value data as JSON.\nFor children: {\"care_type\": \"ganztag\", \"supplements\": [\"ndh\", \"mss\"]}\nFor employees: {\"benefits\": [\"christmas_bonus\"], \"employer_type\": \"normal\"}",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
-                        }
-                    ]
-                },
-                "section": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Section"
-                },
-                "section_id": {
-                    "type": "integer"
-                },
-                "to": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -8182,6 +8099,47 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.ChildResponse": {
+            "type": "object",
+            "properties": {
+                "birthdate": {
+                    "type": "string",
+                    "example": "2020-03-10"
+                },
+                "contracts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildContractResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "Emma"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "female"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Schmidt"
+                },
+                "organization_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.ChildUpdateRequest": {
             "type": "object",
             "properties": {
@@ -8261,110 +8219,6 @@ const docTemplate = `{
                 "value": {
                     "type": "string",
                     "example": "ganztag"
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.Employee": {
-            "type": "object",
-            "properties": {
-                "birthdate": {
-                    "type": "string",
-                    "example": "1990-05-15"
-                },
-                "contracts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContract"
-                    }
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string",
-                    "example": "Max"
-                },
-                "gender": {
-                    "type": "string",
-                    "example": "male"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "last_name": {
-                    "type": "string",
-                    "example": "Mustermann"
-                },
-                "organization": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
-                },
-                "organization_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.EmployeeContract": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "employee_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "from": {
-                    "type": "string"
-                },
-                "grade": {
-                    "type": "string",
-                    "example": "S8a"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "payplan_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "properties": {
-                    "description": "Properties stores flexible key-value data as JSON.\nFor children: {\"care_type\": \"ganztag\", \"supplements\": [\"ndh\", \"mss\"]}\nFor employees: {\"benefits\": [\"christmas_bonus\"], \"employer_type\": \"normal\"}",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ContractProperties"
-                        }
-                    ]
-                },
-                "section": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Section"
-                },
-                "section_id": {
-                    "type": "integer"
-                },
-                "staff_category": {
-                    "description": "Employee-specific typed fields",
-                    "type": "string",
-                    "example": "qualified"
-                },
-                "step": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "to": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "weekly_hours": {
-                    "type": "number",
-                    "example": 40
                 }
             }
         },
@@ -8549,6 +8403,47 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "example": "Mustermann"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse": {
+            "type": "object",
+            "properties": {
+                "birthdate": {
+                    "type": "string",
+                    "example": "1990-05-15"
+                },
+                "contracts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "Max"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Mustermann"
+                },
+                "organization_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -9385,6 +9280,39 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "created_by": {
+                    "type": "string",
+                    "example": "admin@example.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Acme Corp"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "berlin"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.OrganizationUpdateRequest": {
             "type": "object",
             "properties": {
@@ -9443,36 +9371,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.BudgetItemResponse"
-                    }
-                },
-                "limit": {
-                    "type": "integer",
-                    "example": 20
-                },
-                "page": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "total": {
-                    "type": "integer",
-                    "example": 100
-                },
-                "total_pages": {
-                    "type": "integer",
-                    "example": 5
-                }
-            }
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Child": {
-            "type": "object",
-            "properties": {
-                "_links": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks"
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Child"
                     }
                 },
                 "limit": {
@@ -9553,7 +9451,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Employee": {
+        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_ChildResponse": {
             "type": "object",
             "properties": {
                 "_links": {
@@ -9562,7 +9460,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Employee"
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ChildResponse"
                     }
                 },
                 "limit": {
@@ -9593,6 +9491,36 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeContractResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_EmployeeResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
                     }
                 },
                 "limit": {
@@ -9673,7 +9601,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_Organization": {
+        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_OrganizationResponse": {
             "type": "object",
             "properties": {
                 "_links": {
@@ -9682,7 +9610,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.OrganizationResponse"
                     }
                 },
                 "limit": {
@@ -10107,50 +10035,6 @@ const docTemplate = `{
                 "RoleManager",
                 "RoleMember"
             ]
-        },
-        "github_com_eenemeene_kitamanager-go_internal_models.Section": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "created_by": {
-                    "type": "string",
-                    "example": "admin@example.com"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "is_default": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "max_age_months": {
-                    "type": "integer",
-                    "example": 36
-                },
-                "min_age_months": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Krippe"
-                },
-                "organization": {
-                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization"
-                },
-                "organization_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                }
-            }
         },
         "github_com_eenemeene_kitamanager-go_internal_models.SectionCreateRequest": {
             "type": "object",
