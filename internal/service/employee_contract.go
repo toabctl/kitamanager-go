@@ -297,7 +297,7 @@ func (s *EmployeeService) updateContractInPlace(ctx context.Context, contract *m
 
 // amendContract closes the old employee contract and creates a new one with changes applied.
 func (s *EmployeeService) amendContract(ctx context.Context, contract *models.EmployeeContract, employeeID uint, req *models.EmployeeContractUpdateRequest) (*models.EmployeeContractResponse, error) {
-	today := truncateToDate(time.Now())
+	today := models.TruncateToDate(time.Now())
 	yesterday := today.AddDate(0, 0, -1)
 
 	// Clone contract with current values, new contract starts today

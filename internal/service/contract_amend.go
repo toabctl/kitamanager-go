@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/models"
 )
 
 // amendMode determines how a contract update should be handled.
@@ -19,12 +20,12 @@ const (
 // determineAmendMode decides whether to update in place or amend.
 // Returns an error if the contract has already ended (To date is in the past).
 func determineAmendMode(contractFrom time.Time, contractTo *time.Time) (amendMode, error) {
-	today := truncateToDate(time.Now())
-	from := truncateToDate(contractFrom)
+	today := models.TruncateToDate(time.Now())
+	from := models.TruncateToDate(contractFrom)
 
 	// Contract already ended → reject
 	if contractTo != nil {
-		to := truncateToDate(*contractTo)
+		to := models.TruncateToDate(*contractTo)
 		if to.Before(today) {
 			return 0, apperror.BadRequest("cannot update a contract that has already ended")
 		}
@@ -37,9 +38,4 @@ func determineAmendMode(contractFrom time.Time, contractTo *time.Time) (amendMod
 
 	// Contract started before today → amend (close old + create new)
 	return amendModeAmend, nil
-}
-
-// truncateToDate truncates a time to date-only (midnight UTC).
-func truncateToDate(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }

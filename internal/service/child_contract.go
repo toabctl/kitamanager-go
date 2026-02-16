@@ -218,7 +218,7 @@ func (s *ChildService) updateContractInPlace(ctx context.Context, contract *mode
 
 // amendContract closes the old contract and creates a new one with changes applied.
 func (s *ChildService) amendContract(ctx context.Context, contract *models.ChildContract, childID uint, req *models.ChildContractUpdateRequest) (*models.ChildContractResponse, error) {
-	today := truncateToDate(time.Now())
+	today := models.TruncateToDate(time.Now())
 	yesterday := today.AddDate(0, 0, -1)
 
 	// Clone contract with current values, new contract starts today

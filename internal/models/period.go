@@ -29,15 +29,15 @@ func (p Period) GetTo() *time.Time {
 
 // IsActiveOn checks if the given date falls within the period (inclusive).
 func (p Period) IsActiveOn(date time.Time) bool {
-	date = truncateToDate(date)
-	from := truncateToDate(p.From)
+	date = TruncateToDate(date)
+	from := TruncateToDate(p.From)
 	if date.Before(from) {
 		return false
 	}
 	if p.To == nil {
 		return true
 	}
-	to := truncateToDate(*p.To)
+	to := TruncateToDate(*p.To)
 	return !date.After(to) // date <= To
 }
 
@@ -51,19 +51,19 @@ func (p Period) Overlaps(other Period) bool {
 	// Two inclusive ranges [A.From, A.To] and [B.From, B.To] overlap if:
 	// A.From <= B.To AND B.From <= A.To
 
-	aFrom := truncateToDate(p.From)
-	bFrom := truncateToDate(other.From)
+	aFrom := TruncateToDate(p.From)
+	bFrom := TruncateToDate(other.From)
 
 	// A.From <= B.To (if B.To is nil, this is always true)
 	if other.To != nil {
-		bTo := truncateToDate(*other.To)
+		bTo := TruncateToDate(*other.To)
 		if aFrom.After(bTo) {
 			return false
 		}
 	}
 	// B.From <= A.To (if A.To is nil, this is always true)
 	if p.To != nil {
-		aTo := truncateToDate(*p.To)
+		aTo := TruncateToDate(*p.To)
 		if bFrom.After(aTo) {
 			return false
 		}
@@ -71,6 +71,7 @@ func (p Period) Overlaps(other Period) bool {
 	return true
 }
 
-func truncateToDate(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+// TruncateToDate truncates a time to date-only (midnight UTC).
+func TruncateToDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
