@@ -13,6 +13,12 @@ const MaxRequestBodySize = 1 << 20 // 1MB
 // SecurityHeaders adds common security headers to responses
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Enforce HTTPS via HSTS (1 year, include subdomains, allow preload)
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+
+		// Content Security Policy — restrict resource loading to same origin
+		c.Header("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
+
 		// Prevent clickjacking
 		c.Header("X-Frame-Options", "DENY")
 
