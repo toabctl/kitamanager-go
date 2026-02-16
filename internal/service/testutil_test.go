@@ -134,7 +134,8 @@ func createOrganizationService(db *gorm.DB) *OrganizationService {
 func createUserService(db *gorm.DB) *UserService {
 	userStore := store.NewUserStore(db)
 	groupStore := store.NewGroupStore(db)
-	return NewUserService(userStore, groupStore)
+	userGroupStore := store.NewUserGroupStore(db)
+	return NewUserService(userStore, groupStore, userGroupStore)
 }
 
 func createUserGroupService(db *gorm.DB) *UserGroupService {

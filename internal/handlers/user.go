@@ -49,7 +49,7 @@ func (h *UserHandler) List(c *gin.Context) {
 
 	search := c.Query("search")
 
-	users, total, err := h.service.List(c.Request.Context(), search, params.Limit, params.Offset())
+	users, total, err := h.service.List(c.Request.Context(), getUserID(c), search, params.Limit, params.Offset())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -117,7 +117,7 @@ func (h *UserHandler) Get(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetByID(c.Request.Context(), id)
+	user, err := h.service.GetByID(c.Request.Context(), id, getUserID(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -183,7 +183,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.Update(c.Request.Context(), id, req)
+	user, err := h.service.Update(c.Request.Context(), id, req, getUserID(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -216,13 +216,14 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	}
 
 	// Get user info before deletion for audit log
-	user, err := h.service.GetByID(c.Request.Context(), id)
+	requesterID := getUserID(c)
+	user, err := h.service.GetByID(c.Request.Context(), id, requesterID)
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+	if err := h.service.Delete(c.Request.Context(), id, requesterID); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -426,7 +427,8 @@ func (h *UserHandler) SetSuperAdmin(c *gin.Context) {
 	}
 
 	// Get user info before change for audit log
-	targetUser, err := h.service.GetByID(c.Request.Context(), userID)
+	actorID := getUserID(c)
+	targetUser, err := h.service.GetByID(c.Request.Context(), userID, actorID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -438,11 +440,10 @@ func (h *UserHandler) SetSuperAdmin(c *gin.Context) {
 	}
 
 	// Audit log superadmin change
-	actorID := getUserID(c)
 	h.auditService.LogSuperAdminChange(actorID, userID, targetUser.Email, req.IsSuperAdmin, c.ClientIP())
 
 	// Return updated user
-	user, err := h.service.GetByID(c.Request.Context(), userID)
+	user, err := h.service.GetByID(c.Request.Context(), userID, actorID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -567,7 +568,7 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 
 	// Audit log
 	actorID := getUserID(c)
-	targetUser, _ := h.service.GetByID(c.Request.Context(), targetUserID)
+	targetUser, _ := h.service.GetByID(c.Request.Context(), targetUserID, actorID)
 	email := ""
 	if targetUser != nil {
 		email = targetUser.Email

@@ -10,6 +10,7 @@ import (
 
 func TestUserHandler_List(t *testing.T) {
 	db := setupTestDB(t)
+	createTestSuperAdmin(t, db) // requester (userID=1 from setupTestRouter)
 	userService := createUserService(db)
 	userGroupService := createUserGroupService(db)
 	handler := NewUserHandler(userService, userGroupService, nil, nil)
@@ -29,8 +30,9 @@ func TestUserHandler_List(t *testing.T) {
 	var response models.PaginatedResponse[models.UserResponse]
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 2 {
-		t.Errorf("expected 2 users, got %d", len(response.Data))
+	// 3 users: superadmin + 2 test users
+	if len(response.Data) != 3 {
+		t.Errorf("expected 3 users, got %d", len(response.Data))
 	}
 }
 
@@ -1415,6 +1417,7 @@ func TestUserHandler_RemoveFromOrganization_UserNotFound(t *testing.T) {
 
 func TestUserHandler_List_Search(t *testing.T) {
 	db := setupTestDB(t)
+	createTestSuperAdmin(t, db) // requester (userID=1 from setupTestRouter)
 	userService := createUserService(db)
 	userGroupService := createUserGroupService(db)
 	handler := NewUserHandler(userService, userGroupService, nil, nil)
@@ -1440,19 +1443,19 @@ func TestUserHandler_List_Search(t *testing.T) {
 		t.Errorf("expected 1 user matching 'alice', got %d", len(response.Data))
 	}
 
-	// Search by email
-	w = performRequest(r, "GET", "/users?search=admin", nil)
+	// Search by email - "admin" matches both superadmin and Charlie Admin
+	w = performRequest(r, "GET", "/users?search=company.com", nil)
 	parseResponse(t, w, &response)
 
 	if len(response.Data) != 1 {
-		t.Errorf("expected 1 user matching 'admin', got %d", len(response.Data))
+		t.Errorf("expected 1 user matching 'company.com', got %d", len(response.Data))
 	}
 
-	// Empty search returns all
+	// Empty search returns all (4: superadmin + 3 test users)
 	w = performRequest(r, "GET", "/users", nil)
 	parseResponse(t, w, &response)
 
-	if len(response.Data) != 3 {
-		t.Errorf("expected 3 users without search, got %d", len(response.Data))
+	if len(response.Data) != 4 {
+		t.Errorf("expected 4 users without search, got %d", len(response.Data))
 	}
 }

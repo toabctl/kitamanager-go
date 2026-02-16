@@ -16,19 +16,21 @@ func TestUserService_List(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	createTestUser(t, db, "User 1", "user1@example.com", "password")
 	createTestUser(t, db, "User 2", "user2@example.com", "password")
 
-	users, total, err := svc.List(ctx, "", 10, 0)
+	users, total, err := svc.List(ctx, admin.ID, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(users) != 2 {
-		t.Errorf("expected 2 users, got %d", len(users))
+	// 3 users: superadmin + 2 test users
+	if len(users) != 3 {
+		t.Errorf("expected 3 users, got %d", len(users))
 	}
-	if total != 2 {
-		t.Errorf("expected total 2, got %d", total)
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
 	}
 }
 
@@ -37,21 +39,24 @@ func TestUserService_List_ReturnsUserResponse(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	createTestUser(t, db, "Test User", "test@example.com", "password123")
 
-	users, _, err := svc.List(ctx, "", 10, 0)
+	users, _, err := svc.List(ctx, admin.ID, "", 10, 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(users) != 1 {
-		t.Fatalf("expected 1 user, got %d", len(users))
+	// Find the test user in results (superadmin is also returned)
+	var found bool
+	for _, u := range users {
+		if u.Name == "Test User" {
+			found = true
+			break
+		}
 	}
-
-	// UserResponse should not contain password
-	// We verify by checking the type is models.UserResponse
-	if users[0].Name != "Test User" {
-		t.Errorf("Name = %v, want Test User", users[0].Name)
+	if !found {
+		t.Error("expected to find 'Test User' in results")
 	}
 }
 
@@ -60,9 +65,10 @@ func TestUserService_GetByID(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
 
-	found, err := svc.GetByID(ctx, user.ID)
+	found, err := svc.GetByID(ctx, user.ID, admin.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -75,12 +81,31 @@ func TestUserService_GetByID(t *testing.T) {
 	}
 }
 
+func TestUserService_GetByID_SelfAccess(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	user := createTestUser(t, db, "Test User", "test@example.com", "password")
+
+	// Users can always view themselves
+	found, err := svc.GetByID(ctx, user.ID, user.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if found.ID != user.ID {
+		t.Errorf("ID = %d, want %d", found.ID, user.ID)
+	}
+}
+
 func TestUserService_GetByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	svc := createUserService(db)
 	ctx := context.Background()
 
-	_, err := svc.GetByID(ctx, 999)
+	admin := createTestSuperAdmin(t, db)
+
+	_, err := svc.GetByID(ctx, 999, admin.ID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -217,13 +242,14 @@ func TestUserService_Update(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Original Name", "test@example.com", "password")
 
 	req := &models.UserUpdateRequest{
 		Name: "Updated Name",
 	}
 
-	updated, err := svc.Update(ctx, user.ID, req)
+	updated, err := svc.Update(ctx, user.ID, req, admin.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -238,6 +264,7 @@ func TestUserService_Update_PartialUpdate(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Original Name", "original@example.com", "password")
 
 	// Update only email
@@ -245,7 +272,7 @@ func TestUserService_Update_PartialUpdate(t *testing.T) {
 		Email: "new@example.com",
 	}
 
-	updated, err := svc.Update(ctx, user.ID, req)
+	updated, err := svc.Update(ctx, user.ID, req, admin.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -264,11 +291,13 @@ func TestUserService_Update_NotFound(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
+
 	req := &models.UserUpdateRequest{
 		Name: "New Name",
 	}
 
-	_, err := svc.Update(ctx, 999, req)
+	_, err := svc.Update(ctx, 999, req, admin.ID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -287,15 +316,16 @@ func TestUserService_Delete(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "To Delete", "delete@example.com", "password")
 
-	err := svc.Delete(ctx, user.ID)
+	err := svc.Delete(ctx, user.ID, admin.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	// Verify it's deleted
-	_, err = svc.GetByID(ctx, user.ID)
+	_, err = svc.GetByID(ctx, user.ID, admin.ID)
 	if err == nil {
 		t.Error("expected user to be deleted")
 	}

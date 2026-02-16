@@ -131,7 +131,7 @@ func main() {
 
 	// Initialize services
 	auditService := service.NewAuditService(auditStore)
-	userService := service.NewUserService(userStore, groupStore)
+	userService := service.NewUserService(userStore, groupStore, userGroupStore)
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
 	groupService := service.NewGroupService(groupStore)

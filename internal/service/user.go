@@ -14,18 +14,47 @@ import (
 
 // UserService handles business logic for user operations
 type UserService struct {
-	store      store.UserStorer
-	groupStore store.GroupStorer
+	store          store.UserStorer
+	groupStore     store.GroupStorer
+	userGroupStore store.UserGroupStorer
 }
 
 // NewUserService creates a new user service
-func NewUserService(store store.UserStorer, groupStore store.GroupStorer) *UserService {
-	return &UserService{store: store, groupStore: groupStore}
+func NewUserService(store store.UserStorer, groupStore store.GroupStorer, userGroupStore store.UserGroupStorer) *UserService {
+	return &UserService{store: store, groupStore: groupStore, userGroupStore: userGroupStore}
 }
 
-// List returns a paginated list of users
-func (s *UserService) List(ctx context.Context, search string, limit, offset int) ([]models.UserResponse, int64, error) {
-	users, total, err := s.store.FindAll(ctx, search, limit, offset)
+// List returns a paginated list of users visible to the requester.
+// Superadmins see all users; other users see only users who share at least one organization.
+func (s *UserService) List(ctx context.Context, requesterID uint, search string, limit, offset int) ([]models.UserResponse, int64, error) {
+	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, requesterID)
+	if err != nil {
+		return nil, 0, apperror.InternalWrap(err, "failed to check superadmin status")
+	}
+
+	if isSuperAdmin {
+		users, total, err := s.store.FindAll(ctx, search, limit, offset)
+		if err != nil {
+			return nil, 0, apperror.InternalWrap(err, "failed to fetch users")
+		}
+		return toResponseList(users, (*models.User).ToResponse), total, nil
+	}
+
+	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(ctx, requesterID)
+	if err != nil {
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch requester organizations")
+	}
+
+	orgIDs := make([]uint, 0, len(orgRoles))
+	for orgID := range orgRoles {
+		orgIDs = append(orgIDs, orgID)
+	}
+
+	if len(orgIDs) == 0 {
+		return []models.UserResponse{}, 0, nil
+	}
+
+	users, total, err := s.store.FindByOrganizations(ctx, orgIDs, search, limit, offset)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to fetch users")
 	}
@@ -43,12 +72,18 @@ func (s *UserService) ListByOrganization(ctx context.Context, orgID uint, search
 	return toResponseList(users, (*models.User).ToResponse), total, nil
 }
 
-// GetByID returns a user by ID
-func (s *UserService) GetByID(ctx context.Context, id uint) (*models.UserResponse, error) {
+// GetByID returns a user by ID. Users can always view themselves.
+// For other users, requester must be a superadmin or share an organization.
+func (s *UserService) GetByID(ctx context.Context, id uint, requesterID uint) (*models.UserResponse, error) {
 	user, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("user")
 	}
+
+	if err := s.verifyRequesterCanAccessUser(ctx, requesterID, id); err != nil {
+		return nil, apperror.NotFound("user")
+	}
+
 	resp := user.ToResponse()
 	return &resp, nil
 }
@@ -83,7 +118,11 @@ func (s *UserService) Create(ctx context.Context, req *models.UserCreateRequest,
 }
 
 // Update updates an existing user
-func (s *UserService) Update(ctx context.Context, id uint, req *models.UserUpdateRequest) (*models.UserResponse, error) {
+func (s *UserService) Update(ctx context.Context, id uint, req *models.UserUpdateRequest, requesterID uint) (*models.UserResponse, error) {
+	if err := s.verifyRequesterCanAccessUser(ctx, requesterID, id); err != nil {
+		return nil, apperror.NotFound("user")
+	}
+
 	user, err := s.store.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NotFound("user")
@@ -142,9 +181,39 @@ func (s *UserService) ResetPassword(ctx context.Context, userID uint, newPasswor
 }
 
 // Delete deletes a user
-func (s *UserService) Delete(ctx context.Context, id uint) error {
+func (s *UserService) Delete(ctx context.Context, id uint, requesterID uint) error {
+	if err := s.verifyRequesterCanAccessUser(ctx, requesterID, id); err != nil {
+		return apperror.NotFound("user")
+	}
+
 	if err := s.store.Delete(ctx, id); err != nil {
 		return apperror.InternalWrap(err, "failed to delete user")
+	}
+	return nil
+}
+
+// verifyRequesterCanAccessUser checks that the requester can access the target user.
+// Superadmins can access all users. A user can always access themselves.
+// Others can only access users who share at least one organization.
+func (s *UserService) verifyRequesterCanAccessUser(ctx context.Context, requesterID, targetUserID uint) error {
+	if requesterID == targetUserID {
+		return nil
+	}
+
+	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, requesterID)
+	if err != nil {
+		return apperror.InternalWrap(err, "failed to check superadmin status")
+	}
+	if isSuperAdmin {
+		return nil
+	}
+
+	shares, err := s.store.SharesOrganization(ctx, requesterID, targetUserID)
+	if err != nil {
+		return apperror.InternalWrap(err, "failed to check shared organization")
+	}
+	if !shares {
+		return apperror.NotFound("user")
 	}
 	return nil
 }

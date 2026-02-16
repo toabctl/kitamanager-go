@@ -166,7 +166,8 @@ func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 func createUserService(db *gorm.DB) *service.UserService {
 	userStore := store.NewUserStore(db)
 	groupStore := store.NewGroupStore(db)
-	return service.NewUserService(userStore, groupStore)
+	userGroupStore := store.NewUserGroupStore(db)
+	return service.NewUserService(userStore, groupStore, userGroupStore)
 }
 
 // createUserGroupService creates a user group service for testing.

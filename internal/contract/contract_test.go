@@ -133,7 +133,7 @@ func setupRouter() *gin.Engine {
 
 	// Setup services
 	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
-	userService := service.NewUserService(userStore, groupStore)
+	userService := service.NewUserService(userStore, groupStore, userGroupStore)
 	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore)
 	groupService := service.NewGroupService(groupStore)
 

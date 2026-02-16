@@ -163,3 +163,46 @@ func (s *UserStore) GetUserOrganizations(ctx context.Context, userID uint) ([]mo
 		Find(&orgs).Error
 	return orgs, err
 }
+
+func (s *UserStore) FindByOrganizations(ctx context.Context, orgIDs []uint, search string, limit, offset int) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+
+	baseQuery := func(q *gorm.DB) *gorm.DB {
+		q = q.Distinct().
+			Joins("JOIN user_groups ON user_groups.user_id = users.id").
+			Joins("JOIN groups ON groups.id = user_groups.group_id").
+			Where("groups.organization_id IN ?", orgIDs)
+		if search != "" {
+			pattern := "%" + strings.ToLower(search) + "%"
+			q = q.Where("LOWER(users.name) LIKE ? OR LOWER(users.email) LIKE ?", pattern, pattern)
+		}
+		return q
+	}
+
+	if err := baseQuery(DBFromContext(ctx, s.db).Model(&models.User{})).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := baseQuery(DBFromContext(ctx, s.db).Preload("Groups")).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
+func (s *UserStore) SharesOrganization(ctx context.Context, userID1, userID2 uint) (bool, error) {
+	var count int64
+	err := DBFromContext(ctx, s.db).Model(&models.UserGroup{}).
+		Select("COUNT(DISTINCT ug1.user_id)").
+		Table("user_groups ug1").
+		Joins("JOIN groups g1 ON g1.id = ug1.group_id").
+		Joins("JOIN groups g2 ON g2.organization_id = g1.organization_id").
+		Joins("JOIN user_groups ug2 ON ug2.group_id = g2.id").
+		Where("ug1.user_id = ? AND ug2.user_id = ?", userID1, userID2).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
