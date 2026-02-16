@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -227,23 +226,7 @@ func (h *BudgetItemHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries [get]
 func (h *BudgetItemHandler) ListEntries(c *gin.Context) {
-	orgID, itemID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	params, ok := parsePagination(c)
-	if !ok {
-		return
-	}
-
-	entries, total, err := h.service.ListEntries(c.Request.Context(), itemID, orgID, params.Limit, params.Offset())
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, models.NewPaginatedResponseWithLinks(entries, params.Page, params.Limit, total, c.Request.URL.Path))
+	handleOrgNestedList(c, h.service.ListEntries)
 }
 
 // CreateEntry godoc
@@ -265,25 +248,11 @@ func (h *BudgetItemHandler) ListEntries(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries [post]
 func (h *BudgetItemHandler) CreateEntry(c *gin.Context) {
-	orgID, itemID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	req, ok := bindJSON[models.BudgetItemEntryCreateRequest](c)
-	if !ok {
-		return
-	}
-
-	entry, err := h.service.CreateEntry(c.Request.Context(), itemID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditCreate(c, h.auditService, "budget_item_entry", entry.ID, fmt.Sprintf("budget_item=%d", itemID))
-
-	c.JSON(http.StatusCreated, entry)
+	handleOrgNestedCreate(c,
+		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		h.service.CreateEntry,
+		func(r *models.BudgetItemEntryResponse) uint { return r.ID },
+	)
 }
 
 // GetEntry godoc
@@ -304,24 +273,7 @@ func (h *BudgetItemHandler) CreateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries/{entryId} [get]
 func (h *BudgetItemHandler) GetEntry(c *gin.Context) {
-	orgID, itemID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entry, err := h.service.GetEntryByID(c.Request.Context(), entryID, itemID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, entry)
+	handleOrgNestedGet(c, "entryId", h.service.GetEntryByID)
 }
 
 // UpdateEntry godoc
@@ -344,31 +296,11 @@ func (h *BudgetItemHandler) GetEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries/{entryId} [put]
 func (h *BudgetItemHandler) UpdateEntry(c *gin.Context) {
-	orgID, itemID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.BudgetItemEntryUpdateRequest](c)
-	if !ok {
-		return
-	}
-
-	entry, err := h.service.UpdateEntry(c.Request.Context(), entryID, itemID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditUpdate(c, h.auditService, "budget_item_entry", entry.ID, fmt.Sprintf("budget_item=%d", itemID))
-
-	c.JSON(http.StatusOK, entry)
+	handleOrgNestedUpdate(c, "entryId",
+		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		h.service.UpdateEntry,
+		func(r *models.BudgetItemEntryResponse) uint { return r.ID },
+	)
 }
 
 // DeleteEntry godoc
@@ -389,24 +321,8 @@ func (h *BudgetItemHandler) UpdateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{id}/entries/{entryId} [delete]
 func (h *BudgetItemHandler) DeleteEntry(c *gin.Context) {
-	orgID, itemID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	err = h.service.DeleteEntry(c.Request.Context(), entryID, itemID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "budget_item_entry", entryID, fmt.Sprintf("budget_item=%d", itemID))
-
-	c.Status(http.StatusNoContent)
+	handleOrgNestedDelete(c, "entryId",
+		nestedAuditConfig{h.auditService, "budget_item_entry", "budget_item"},
+		h.service.DeleteEntry,
+	)
 }

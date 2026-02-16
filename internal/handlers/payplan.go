@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -231,25 +230,11 @@ func (h *PayPlanHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods [post]
 func (h *PayPlanHandler) CreatePeriod(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	req, ok := bindJSON[models.PayPlanPeriodCreateRequest](c)
-	if !ok {
-		return
-	}
-
-	period, err := h.service.CreatePeriod(c.Request.Context(), payplanID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditCreate(c, h.auditService, "pay_plan_period", period.ID, fmt.Sprintf("payplan=%d", payplanID))
-
-	c.JSON(http.StatusCreated, period)
+	handleOrgNestedCreate(c,
+		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		h.service.CreatePeriod,
+		func(r *models.PayPlanPeriodResponse) uint { return r.ID },
+	)
 }
 
 // GetPeriod godoc
@@ -270,24 +255,7 @@ func (h *PayPlanHandler) CreatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId} [get]
 func (h *PayPlanHandler) GetPeriod(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	period, err := h.service.GetPeriod(c.Request.Context(), periodID, payplanID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, period)
+	handleOrgNestedGet(c, "periodId", h.service.GetPeriod)
 }
 
 // UpdatePeriod godoc
@@ -309,31 +277,11 @@ func (h *PayPlanHandler) GetPeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId} [put]
 func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.PayPlanPeriodUpdateRequest](c)
-	if !ok {
-		return
-	}
-
-	period, err := h.service.UpdatePeriod(c.Request.Context(), periodID, payplanID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditUpdate(c, h.auditService, "pay_plan_period", period.ID, fmt.Sprintf("payplan=%d", payplanID))
-
-	c.JSON(http.StatusOK, period)
+	handleOrgNestedUpdate(c, "periodId",
+		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		h.service.UpdatePeriod,
+		func(r *models.PayPlanPeriodResponse) uint { return r.ID },
+	)
 }
 
 // DeletePeriod godoc
@@ -354,26 +302,10 @@ func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId} [delete]
 func (h *PayPlanHandler) DeletePeriod(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	err = h.service.DeletePeriod(c.Request.Context(), periodID, payplanID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "payplan_period", periodID, fmt.Sprintf("payplan=%d", payplanID))
-
-	c.Status(http.StatusNoContent)
+	handleOrgNestedDelete(c, "periodId",
+		nestedAuditConfig{h.auditService, "pay_plan_period", "payplan"},
+		h.service.DeletePeriod,
+	)
 }
 
 // Entry handlers
@@ -397,31 +329,11 @@ func (h *PayPlanHandler) DeletePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries [post]
 func (h *PayPlanHandler) CreateEntry(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.PayPlanEntryCreateRequest](c)
-	if !ok {
-		return
-	}
-
-	entry, err := h.service.CreateEntry(c.Request.Context(), periodID, payplanID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditCreate(c, h.auditService, "pay_plan_entry", entry.ID, fmt.Sprintf("period=%d", periodID))
-
-	c.JSON(http.StatusCreated, entry)
+	handleOrgDeepNestedCreate(c, "periodId",
+		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		h.service.CreateEntry,
+		func(r *models.PayPlanEntryResponse) uint { return r.ID },
+	)
 }
 
 // GetEntry godoc
@@ -443,30 +355,7 @@ func (h *PayPlanHandler) CreateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries/{entryId} [get]
 func (h *PayPlanHandler) GetEntry(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entry, err := h.service.GetEntry(c.Request.Context(), entryID, periodID, payplanID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, entry)
+	handleOrgDeepNestedGet(c, "periodId", "entryId", h.service.GetEntry)
 }
 
 // UpdateEntry godoc
@@ -489,37 +378,11 @@ func (h *PayPlanHandler) GetEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries/{entryId} [put]
 func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.PayPlanEntryUpdateRequest](c)
-	if !ok {
-		return
-	}
-
-	entry, err := h.service.UpdateEntry(c.Request.Context(), entryID, periodID, payplanID, orgID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditUpdate(c, h.auditService, "pay_plan_entry", entry.ID, fmt.Sprintf("period=%d", periodID))
-
-	c.JSON(http.StatusOK, entry)
+	handleOrgDeepNestedUpdate(c, "periodId", "entryId",
+		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		h.service.UpdateEntry,
+		func(r *models.PayPlanEntryResponse) uint { return r.ID },
+	)
 }
 
 // DeleteEntry godoc
@@ -541,30 +404,8 @@ func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/payplans/{id}/periods/{periodId}/entries/{entryId} [delete]
 func (h *PayPlanHandler) DeleteEntry(c *gin.Context) {
-	orgID, payplanID, ok := parseOrgAndResourceID(c, "id")
-	if !ok {
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	entryID, err := parseID(c, "entryId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	err = h.service.DeleteEntry(c.Request.Context(), entryID, periodID, payplanID, orgID)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "payplan_entry", entryID, fmt.Sprintf("period=%d", periodID))
-
-	c.Status(http.StatusNoContent)
+	handleOrgDeepNestedDelete(c, "periodId", "entryId",
+		nestedAuditConfig{h.auditService, "pay_plan_entry", "period"},
+		h.service.DeleteEntry,
+	)
 }

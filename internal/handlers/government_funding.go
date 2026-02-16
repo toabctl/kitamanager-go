@@ -226,26 +226,11 @@ func (h *GovernmentFundingHandler) Delete(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods [post]
 func (h *GovernmentFundingHandler) CreatePeriod(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.GovernmentFundingPeriodCreateRequest](c)
-	if !ok {
-		return
-	}
-
-	period, err := h.service.CreatePeriod(c.Request.Context(), fundingID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditCreate(c, h.auditService, "gov_funding_period", period.ID, fmt.Sprintf("funding=%d", fundingID))
-
-	c.JSON(http.StatusCreated, period)
+	handleGlobalNestedCreate(c,
+		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		h.service.CreatePeriod,
+		func(r *models.GovernmentFundingPeriodResponse) uint { return r.ID },
+	)
 }
 
 // UpdatePeriod godoc
@@ -266,32 +251,11 @@ func (h *GovernmentFundingHandler) CreatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods/{periodId} [put]
 func (h *GovernmentFundingHandler) UpdatePeriod(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.GovernmentFundingPeriodUpdateRequest](c)
-	if !ok {
-		return
-	}
-
-	period, err := h.service.UpdatePeriod(c.Request.Context(), fundingID, periodID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditUpdate(c, h.auditService, "gov_funding_period", period.ID, fmt.Sprintf("funding=%d", period.GovernmentFundingID))
-
-	c.JSON(http.StatusOK, period)
+	handleGlobalNestedUpdate(c, "periodId",
+		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		h.service.UpdatePeriod,
+		func(r *models.GovernmentFundingPeriodResponse) uint { return r.ID },
+	)
 }
 
 // DeletePeriod godoc
@@ -310,26 +274,10 @@ func (h *GovernmentFundingHandler) UpdatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods/{periodId} [delete]
 func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeletePeriod(c.Request.Context(), fundingID, periodID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "government_funding_period", periodID, fmt.Sprintf("funding=%d", fundingID))
-
-	c.Status(http.StatusNoContent)
+	handleGlobalNestedDelete(c, "periodId",
+		nestedAuditConfig{h.auditService, "gov_funding_period", "funding"},
+		h.service.DeletePeriod,
+	)
 }
 
 // Property handlers
@@ -352,32 +300,11 @@ func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties [post]
 func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.GovernmentFundingPropertyCreateRequest](c)
-	if !ok {
-		return
-	}
-
-	property, err := h.service.CreateProperty(c.Request.Context(), fundingID, periodID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditCreate(c, h.auditService, "gov_funding_property", property.ID, fmt.Sprintf("period=%d", periodID))
-
-	c.JSON(http.StatusCreated, property)
+	handleGlobalDeepNestedCreate(c, "periodId",
+		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		h.service.CreateProperty,
+		func(r *models.GovernmentFundingPropertyResponse) uint { return r.ID },
+	)
 }
 
 // UpdateProperty godoc
@@ -399,38 +326,11 @@ func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [put]
 func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	propID, err := parseID(c, "propId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.GovernmentFundingPropertyUpdateRequest](c)
-	if !ok {
-		return
-	}
-
-	property, err := h.service.UpdateProperty(c.Request.Context(), fundingID, periodID, propID, req)
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditUpdate(c, h.auditService, "gov_funding_property", property.ID, fmt.Sprintf("period=%d", property.PeriodID))
-
-	c.JSON(http.StatusOK, property)
+	handleGlobalDeepNestedUpdate(c, "periodId", "propId",
+		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		h.service.UpdateProperty,
+		func(r *models.GovernmentFundingPropertyResponse) uint { return r.ID },
+	)
 }
 
 // DeleteProperty godoc
@@ -450,30 +350,8 @@ func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-fundings/{id}/periods/{periodId}/properties/{propId} [delete]
 func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
-	fundingID, err := parseID(c, "id")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	periodID, err := parseID(c, "periodId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	propID, err := parseID(c, "propId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.service.DeleteProperty(c.Request.Context(), fundingID, periodID, propID); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "government_funding_property", propID, fmt.Sprintf("period=%d", periodID))
-
-	c.Status(http.StatusNoContent)
+	handleGlobalDeepNestedDelete(c, "periodId", "propId",
+		nestedAuditConfig{h.auditService, "gov_funding_property", "period"},
+		h.service.DeleteProperty,
+	)
 }
