@@ -228,7 +228,26 @@ func main() {
 	}
 
 	// Setup API routes
-	routes.Setup(r, authHandler, userHandler, groupHandler, sectionHandler, orgHandler, employeeHandler, childHandler, governmentFundingHandler, payPlanHandler, childAttendanceHandler, budgetItemHandler, stepPromotionHandler, statisticsHandler, authMiddleware, authzMiddleware, csrfMiddleware, loginRateLimiter, apiRateLimiter)
+	routes.Setup(r, routes.Deps{
+		Auth:              authHandler,
+		User:              userHandler,
+		Group:             groupHandler,
+		Section:           sectionHandler,
+		Organization:      orgHandler,
+		Employee:          employeeHandler,
+		Child:             childHandler,
+		GovernmentFunding: governmentFundingHandler,
+		PayPlan:           payPlanHandler,
+		ChildAttendance:   childAttendanceHandler,
+		BudgetItem:        budgetItemHandler,
+		StepPromotion:     stepPromotionHandler,
+		Statistics:        statisticsHandler,
+		AuthMiddleware:    authMiddleware,
+		AuthzMiddleware:   authzMiddleware,
+		CSRFMiddleware:    csrfMiddleware,
+		LoginRateLimiter:  loginRateLimiter,
+		APIRateLimiter:    apiRateLimiter,
+	})
 
 	// Create HTTP server
 	srv := &http.Server{

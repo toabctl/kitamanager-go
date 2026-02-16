@@ -8,27 +8,47 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/rbac"
 )
 
-func Setup(
-	r *gin.Engine,
-	authHandler *handlers.AuthHandler,
-	userHandler *handlers.UserHandler,
-	groupHandler *handlers.GroupHandler,
-	sectionHandler *handlers.SectionHandler,
-	orgHandler *handlers.OrganizationHandler,
-	employeeHandler *handlers.EmployeeHandler,
-	childHandler *handlers.ChildHandler,
-	governmentFundingHandler *handlers.GovernmentFundingHandler,
-	payPlanHandler *handlers.PayPlanHandler,
-	childAttendanceHandler *handlers.ChildAttendanceHandler,
-	budgetItemHandler *handlers.BudgetItemHandler,
-	stepPromotionHandler *handlers.StepPromotionHandler,
-	statisticsHandler *handlers.StatisticsHandler,
-	authMiddleware *middleware.AuthMiddleware,
-	authzMiddleware *middleware.AuthorizationMiddleware,
-	csrfMiddleware *middleware.CSRFMiddleware,
-	loginRateLimiter *middleware.RateLimiter,
-	apiRateLimiter *middleware.RateLimiter,
-) {
+// Deps groups all dependencies needed for route setup.
+type Deps struct {
+	Auth              *handlers.AuthHandler
+	User              *handlers.UserHandler
+	Group             *handlers.GroupHandler
+	Section           *handlers.SectionHandler
+	Organization      *handlers.OrganizationHandler
+	Employee          *handlers.EmployeeHandler
+	Child             *handlers.ChildHandler
+	GovernmentFunding *handlers.GovernmentFundingHandler
+	PayPlan           *handlers.PayPlanHandler
+	ChildAttendance   *handlers.ChildAttendanceHandler
+	BudgetItem        *handlers.BudgetItemHandler
+	StepPromotion     *handlers.StepPromotionHandler
+	Statistics        *handlers.StatisticsHandler
+	AuthMiddleware    *middleware.AuthMiddleware
+	AuthzMiddleware   *middleware.AuthorizationMiddleware
+	CSRFMiddleware    *middleware.CSRFMiddleware
+	LoginRateLimiter  *middleware.RateLimiter
+	APIRateLimiter    *middleware.RateLimiter
+}
+
+func Setup(r *gin.Engine, d Deps) {
+	authHandler := d.Auth
+	userHandler := d.User
+	groupHandler := d.Group
+	sectionHandler := d.Section
+	orgHandler := d.Organization
+	employeeHandler := d.Employee
+	childHandler := d.Child
+	governmentFundingHandler := d.GovernmentFunding
+	payPlanHandler := d.PayPlan
+	childAttendanceHandler := d.ChildAttendance
+	budgetItemHandler := d.BudgetItem
+	stepPromotionHandler := d.StepPromotion
+	statisticsHandler := d.Statistics
+	authMiddleware := d.AuthMiddleware
+	authzMiddleware := d.AuthzMiddleware
+	csrfMiddleware := d.CSRFMiddleware
+	loginRateLimiter := d.LoginRateLimiter
+	apiRateLimiter := d.APIRateLimiter
 	api := r.Group("/api/v1")
 	{
 		// Public endpoints with optional rate limiting
