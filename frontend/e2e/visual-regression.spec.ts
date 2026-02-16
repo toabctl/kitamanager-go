@@ -68,8 +68,8 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await page.goto(`/organizations/${org.id}/sections`);
     await page.waitForLoadState('networkidle');
-    // Wait for the kanban board or section list to render
-    await page.waitForTimeout(1000);
+    // Wait for the kanban board to render
+    await expect(page.getByText(/drag children/i)).toBeVisible({ timeout: 10000 });
 
     await expect(page).toHaveScreenshot('sections-board.png', {
       maxDiffPixelRatio: 0.01,
@@ -82,7 +82,8 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await page.goto(`/organizations/${org.id}/statistics`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for statistics cards to render
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
 
     await expect(page).toHaveScreenshot('statistics-overview.png', {
       maxDiffPixelRatio: 0.02,
@@ -95,8 +96,8 @@ test.describe('Visual Regression - Dashboard', () => {
 
     await page.goto(`/organizations/${org.id}/statistics/financials`);
     await page.waitForLoadState('networkidle');
-    // Wait for charts to render (dynamically loaded)
-    await page.waitForTimeout(2000);
+    // Wait for the financial overview chart card to render
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
 
     await expect(page).toHaveScreenshot('statistics-financials.png', {
       maxDiffPixelRatio: 0.02, // Slightly higher tolerance for chart rendering

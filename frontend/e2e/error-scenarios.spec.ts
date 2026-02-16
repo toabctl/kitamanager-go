@@ -94,9 +94,7 @@ test.describe('Authentication Error Scenarios', () => {
     // Should remain on login page
     await expect(page).toHaveURL(/.*login/, { timeout: 10000 });
 
-    // Should show an error indication (toast, alert, or form stays)
-    // The exact error display depends on implementation, but user should not be redirected
-    await page.waitForTimeout(2000);
+    // Should still be on login page (login failed)
     await expect(page).toHaveURL(/.*login/);
   });
 

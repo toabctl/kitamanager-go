@@ -10,7 +10,11 @@ export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'supersecret';
  * Login to the application via API and set up authentication state
  * This is more reliable than form-based login for E2E tests
  */
-export async function login(page: Page, email: string = ADMIN_EMAIL, password: string = ADMIN_PASSWORD) {
+export async function login(
+  page: Page,
+  email: string = ADMIN_EMAIL,
+  password: string = ADMIN_PASSWORD
+) {
   // Go to login page first to initialize browser context (won't redirect away)
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
@@ -64,7 +68,11 @@ export async function login(page: Page, email: string = ADMIN_EMAIL, password: s
 /**
  * Login via form (for testing the login form itself)
  */
-export async function loginViaForm(page: Page, email: string = ADMIN_EMAIL, password: string = ADMIN_PASSWORD) {
+export async function loginViaForm(
+  page: Page,
+  email: string = ADMIN_EMAIL,
+  password: string = ADMIN_PASSWORD
+) {
   await page.goto('/login');
 
   // Wait for the form to be fully loaded and React to hydrate
@@ -77,8 +85,8 @@ export async function loginViaForm(page: Page, email: string = ADMIN_EMAIL, pass
   await expect(submitButton).toBeVisible();
   await page.waitForLoadState('networkidle');
 
-  // Wait extra time for React hydration
-  await page.waitForTimeout(500);
+  // Wait for React hydration by ensuring submit button is enabled/interactive
+  await expect(submitButton).toBeEnabled({ timeout: 5000 });
 
   // Clear and type into email field (more reliable than fill for React forms)
   await emailInput.click();
@@ -191,7 +199,11 @@ export async function createOrganizationViaApi(
 /**
  * Delete an organization via the API
  */
-export async function deleteOrganizationViaApi(page: Page, token: string, orgId: number): Promise<void> {
+export async function deleteOrganizationViaApi(
+  page: Page,
+  token: string,
+  orgId: number
+): Promise<void> {
   await page.evaluate(
     async ({ token, orgId }) => {
       const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
@@ -218,13 +230,16 @@ export async function getOrganizationsViaApi(
   page: Page,
   token: string
 ): Promise<Array<{ id: number; name: string }>> {
-  return page.evaluate(async ({ token }) => {
-    const response = await fetch('/api/v1/organizations?limit=100', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json();
-    return data.data || [];
-  }, { token });
+  return page.evaluate(
+    async ({ token }) => {
+      const response = await fetch('/api/v1/organizations?limit=100', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      return data.data || [];
+    },
+    { token }
+  );
 }
 
 /**
@@ -453,14 +468,11 @@ export async function createChildContractViaApi(
         headers['X-CSRF-Token'] = csrfToken;
       }
 
-      const response = await fetch(
-        `/api/v1/organizations/${orgId}/children/${childId}/contracts`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await fetch(`/api/v1/organizations/${orgId}/children/${childId}/contracts`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+      });
       if (!response.ok) {
         throw new Error(`Failed to create child contract: ${response.status}`);
       }
@@ -477,16 +489,19 @@ export async function getFirstOrganization(
   page: Page,
   token: string
 ): Promise<{ id: number; name: string }> {
-  return page.evaluate(async ({ token }) => {
-    const response = await fetch('/api/v1/organizations?limit=1', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json();
-    if (!data.data || data.data.length === 0) {
-      throw new Error('No organizations found');
-    }
-    return data.data[0];
-  }, { token });
+  return page.evaluate(
+    async ({ token }) => {
+      const response = await fetch('/api/v1/organizations?limit=1', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!data.data || data.data.length === 0) {
+        throw new Error('No organizations found');
+      }
+      return data.data[0];
+    },
+    { token }
+  );
 }
 
 /**
@@ -616,4 +631,3 @@ export async function getPayPlansViaApi(
     { token, orgId }
   );
 }
-
