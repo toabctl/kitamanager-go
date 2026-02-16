@@ -106,32 +106,13 @@ func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *model
 		return nil, err
 	}
 
-	if req.FirstName != nil {
-		trimmed, err := validation.ValidateAndTrimName(*req.FirstName, "first_name")
-		if err != nil {
-			return nil, err
-		}
-		employee.FirstName = trimmed
-	}
-	if req.LastName != nil {
-		trimmed, err := validation.ValidateAndTrimName(*req.LastName, "last_name")
-		if err != nil {
-			return nil, err
-		}
-		employee.LastName = trimmed
-	}
-	if req.Gender != nil {
-		if err := validation.ValidateGender(*req.Gender); err != nil {
-			return nil, err
-		}
-		employee.Gender = *req.Gender
-	}
-	if req.Birthdate != nil {
-		bd, err := validation.ParseAndValidateBirthdate(*req.Birthdate)
-		if err != nil {
-			return nil, err
-		}
-		employee.Birthdate = bd
+	if err := applyPersonUpdates(&employee.Person, personUpdateFields{
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Gender:    req.Gender,
+		Birthdate: req.Birthdate,
+	}); err != nil {
+		return nil, err
 	}
 
 	if err := s.store.Update(ctx, employee); err != nil {

@@ -48,3 +48,43 @@ func validateRequiredName(name string) (string, error) {
 	}
 	return name, nil
 }
+
+// personUpdateFields describes the optional fields in a person update request.
+type personUpdateFields struct {
+	FirstName *string
+	LastName  *string
+	Gender    *string
+	Birthdate *string
+}
+
+// applyPersonUpdates validates and applies person field updates to a Person model.
+func applyPersonUpdates(person *models.Person, fields personUpdateFields) error {
+	if fields.FirstName != nil {
+		trimmed, err := validation.ValidateAndTrimName(*fields.FirstName, "first_name")
+		if err != nil {
+			return err
+		}
+		person.FirstName = trimmed
+	}
+	if fields.LastName != nil {
+		trimmed, err := validation.ValidateAndTrimName(*fields.LastName, "last_name")
+		if err != nil {
+			return err
+		}
+		person.LastName = trimmed
+	}
+	if fields.Gender != nil {
+		if err := validation.ValidateGender(*fields.Gender); err != nil {
+			return err
+		}
+		person.Gender = *fields.Gender
+	}
+	if fields.Birthdate != nil {
+		bd, err := validation.ParseAndValidateBirthdate(*fields.Birthdate)
+		if err != nil {
+			return err
+		}
+		person.Birthdate = bd
+	}
+	return nil
+}
