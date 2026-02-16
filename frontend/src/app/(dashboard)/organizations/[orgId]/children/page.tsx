@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -73,11 +74,7 @@ export default function ChildrenPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingChild, setEditingChild] = useState<Child | null>(null);
-  const [deletingChild, setDeletingChild] = useState<Child | null>(null);
   const [contractChild, setContractChild] = useState<Child | null>(null);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
@@ -146,7 +143,7 @@ export default function ChildrenPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.createSuccess') });
-      setIsChildDialogOpen(false);
+      dialogs.closeDialog();
     },
     onError: (error) => {
       toast({
@@ -163,9 +160,7 @@ export default function ChildrenPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.updateSuccess') });
-      setIsChildDialogOpen(false);
-      setEditingChild(null);
-      resetChild();
+      dialogs.closeDialog();
     },
     onError: (error) => {
       toast({
@@ -181,8 +176,7 @@ export default function ChildrenPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
       toast({ title: t('children.deleteSuccess') });
-      setIsDeleteDialogOpen(false);
-      setDeletingChild(null);
+      dialogs.closeDeleteDialog();
     },
     onError: (error) => {
       toast({
@@ -227,29 +221,16 @@ export default function ChildrenPage() {
     },
   });
 
-  const handleCreateChild = useCallback(() => {
-    setEditingChild(null);
-    setIsChildDialogOpen(true);
-  }, []);
-
-  const handleEditChild = useCallback(
-    (child: Child) => {
-      setEditingChild(child);
-      resetChild({
-        first_name: child.first_name,
-        last_name: child.last_name,
-        gender: child.gender,
-        birthdate: formatDateForInput(child.birthdate),
-      });
-      setIsChildDialogOpen(true);
-    },
-    [resetChild]
-  );
-
-  const handleDeleteChild = useCallback((child: Child) => {
-    setDeletingChild(child);
-    setIsDeleteDialogOpen(true);
-  }, []);
+  const dialogs = useCrudDialogs<Child, ChildFormData>({
+    reset: resetChild,
+    itemToFormData: (child) => ({
+      first_name: child.first_name,
+      last_name: child.last_name,
+      gender: child.gender,
+      birthdate: formatDateForInput(child.birthdate),
+    }),
+    defaultValues: { first_name: '', last_name: '', gender: 'male', birthdate: '' },
+  });
 
   const handleAddContract = useCallback((child: Child) => {
     setContractChild(child);
@@ -265,11 +246,11 @@ export default function ChildrenPage() {
 
   const onSubmitChild = useCallback(
     (data: ChildFormData) => {
-      if (editingChild) {
-        updateMutation.mutate({ id: editingChild.id, data });
+      if (dialogs.editingItem) {
+        updateMutation.mutate({ id: dialogs.editingItem.id, data });
       }
     },
-    [editingChild, updateMutation]
+    [dialogs.editingItem, updateMutation]
   );
 
   const onSubmitCreate = useCallback(
@@ -302,7 +283,7 @@ export default function ChildrenPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('children.title')}</h1>
         </div>
-        <Button onClick={handleCreateChild}>
+        <Button onClick={dialogs.handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
           {t('children.newChild')}
         </Button>
@@ -452,7 +433,7 @@ export default function ChildrenPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEditChild(child)}
+                          onClick={() => dialogs.handleEdit(child)}
                           aria-label={t('common.edit')}
                         >
                           <Pencil className="h-4 w-4" />
@@ -460,7 +441,7 @@ export default function ChildrenPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteChild(child)}
+                          onClick={() => dialogs.handleDelete(child)}
                           aria-label={t('common.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -493,10 +474,10 @@ export default function ChildrenPage() {
       </Card>
 
       {/* Child Edit Dialog (uses PersonFormDialog) */}
-      {editingChild && (
+      {dialogs.editingItem && (
         <PersonFormDialog
-          open={isChildDialogOpen}
-          onOpenChange={setIsChildDialogOpen}
+          open={dialogs.isDialogOpen}
+          onOpenChange={dialogs.setIsDialogOpen}
           isEditing={true}
           register={registerChild}
           onSubmit={handleSubmitChild(onSubmitChild)}
@@ -509,10 +490,10 @@ export default function ChildrenPage() {
       )}
 
       {/* Child Create Dialog (with initial contract) */}
-      {!editingChild && (
+      {!dialogs.editingItem && (
         <ChildCreateDialog
-          open={isChildDialogOpen}
-          onOpenChange={setIsChildDialogOpen}
+          open={dialogs.isDialogOpen}
+          onOpenChange={dialogs.setIsDialogOpen}
           orgId={orgId}
           orgState={orgState}
           sections={sections}
@@ -535,13 +516,15 @@ export default function ChildrenPage() {
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={() => deletingChild && deleteMutation.mutate(deletingChild.id)}
+        open={dialogs.isDeleteDialogOpen}
+        onOpenChange={dialogs.setIsDeleteDialogOpen}
+        onConfirm={() => dialogs.deletingItem && deleteMutation.mutate(dialogs.deletingItem.id)}
         isLoading={deleteMutation.isPending}
         resourceName="children"
         description={t('children.confirmDeleteMessage', {
-          name: deletingChild ? `${deletingChild.first_name} ${deletingChild.last_name}` : '',
+          name: dialogs.deletingItem
+            ? `${dialogs.deletingItem.first_name} ${dialogs.deletingItem.last_name}`
+            : '',
         })}
       />
     </div>
