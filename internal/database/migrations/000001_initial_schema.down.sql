@@ -1,0 +1,21 @@
+-- Reverse dependency order
+DROP TABLE IF EXISTS revoked_tokens;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS budget_item_entries;
+DROP TABLE IF EXISTS budget_items;
+DROP TABLE IF EXISTS child_attendances;
+DROP TABLE IF EXISTS pay_plan_entries;
+DROP TABLE IF EXISTS pay_plan_periods;
+DROP TABLE IF EXISTS pay_plans;
+DROP TABLE IF EXISTS government_funding_properties;
+DROP TABLE IF EXISTS government_funding_periods;
+DROP TABLE IF EXISTS government_fundings;
+DROP TABLE IF EXISTS child_contracts;
+DROP TABLE IF EXISTS children;
+DROP TABLE IF EXISTS employee_contracts;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS sections;
+DROP TABLE IF EXISTS user_groups;
+DROP TABLE IF EXISTS groups;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS organizations;
