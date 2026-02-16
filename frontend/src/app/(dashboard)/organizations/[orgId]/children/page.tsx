@@ -31,7 +31,6 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import {
   type Child,
   type ChildContract,
-  type Gender,
   type ChildContractCreateRequest,
   type ChildContractUpdateRequest,
   type ChildFundingResponse,
@@ -133,7 +132,7 @@ export default function ChildrenPage() {
       const child = await apiClient.createChild(orgId, {
         first_name: data.first_name,
         last_name: data.last_name,
-        gender: data.gender as Gender,
+        gender: data.gender,
         birthdate: data.birthdate,
       });
       await apiClient.createChildContract(orgId, child.id, {
