@@ -50,7 +50,9 @@
     "deleteSuccess": "{resource} deleted successfully",
     "retry": "Retry",
     "all": "All",
-    "today": "Today"
+    "today": "Today",
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again."
   },
   "pagination": {
     "navigation": "Pagination",

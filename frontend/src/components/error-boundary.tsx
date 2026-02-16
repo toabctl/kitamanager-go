@@ -8,6 +8,12 @@ import { AlertTriangle } from 'lucide-react';
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  /** Translated heading text (default: "Something went wrong") */
+  title?: string;
+  /** Translated body text (default: "An unexpected error occurred") */
+  message?: string;
+  /** Translated retry button label (default: "Try Again") */
+  retryLabel?: string;
 }
 
 interface ErrorBoundaryState {
@@ -25,6 +31,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, info.componentStack);
+  }
+
   handleRetry = () => {
     this.setState({ hasError: false, error: null });
   };
@@ -38,14 +48,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Something went wrong
+              {this.props.title || 'Something went wrong'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {this.state.error?.message || 'An unexpected error occurred'}
+              {this.props.message || 'An unexpected error occurred'}
             </p>
-            <Button onClick={this.handleRetry}>Try Again</Button>
+            <Button onClick={this.handleRetry}>{this.props.retryLabel || 'Try Again'}</Button>
           </CardContent>
         </Card>
       );

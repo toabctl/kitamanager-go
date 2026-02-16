@@ -50,7 +50,9 @@
     "deleteSuccess": "{resource} erfolgreich gelöscht",
     "retry": "Erneut versuchen",
     "all": "Alle",
-    "today": "Heute"
+    "today": "Heute",
+    "somethingWentWrong": "Etwas ist schiefgelaufen",
+    "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
   },
   "pagination": {
     "navigation": "Seitennavigation",

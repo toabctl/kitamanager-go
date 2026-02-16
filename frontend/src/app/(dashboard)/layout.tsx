@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppHeader } from '@/components/layout/app-header';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -11,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const t = useTranslations('common');
   const { isAuthenticated, checkAuth, loadUser, userLoaded, hasHydrated } = useAuthStore();
   const { sidebarCollapsed, fetchOrganizations } = useUiStore();
 
@@ -52,7 +54,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={cn('pt-16 transition-all duration-300', sidebarCollapsed ? 'ml-16' : 'ml-64')}
       >
         <div className="p-6">
-          <ErrorBoundary>{children}</ErrorBoundary>
+          <ErrorBoundary
+            title={t('somethingWentWrong')}
+            message={t('unexpectedError')}
+            retryLabel={t('retry')}
+          >
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>
