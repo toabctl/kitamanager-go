@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 )
 
@@ -54,8 +55,8 @@ func newTestContext(method, path string, params gin.Params, body interface{}) (*
 	c.Params = params
 	c.Request = req
 	// Set user context for audit helpers
-	c.Set("userID", uint(1))
-	c.Set("userEmail", "test@test.com")
+	c.Set(ctxkeys.UserID, uint(1))
+	c.Set(ctxkeys.UserEmail, "test@test.com")
 	return c, w
 }
 

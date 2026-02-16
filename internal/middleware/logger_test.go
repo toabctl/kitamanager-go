@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 )
 
 func init() {
@@ -62,7 +64,7 @@ func TestStructuredLogger(t *testing.T) {
 			r.Use(StructuredLogger())
 			r.GET("/api/test", func(c *gin.Context) {
 				if tt.setUserID {
-					c.Set("userID", uint(1))
+					c.Set(ctxkeys.UserID, uint(1))
 				}
 				if tt.setError {
 					_ = c.Error(gin.Error{

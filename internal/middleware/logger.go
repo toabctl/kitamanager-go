@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 )
 
 // StructuredLogger returns a gin middleware for structured logging using slog.
@@ -48,7 +50,7 @@ func StructuredLogger() gin.HandlerFunc {
 		}
 
 		// Get userID if available
-		if userID, exists := c.Get("userID"); exists {
+		if userID, exists := c.Get(ctxkeys.UserID); exists {
 			attrs = append(attrs, "user_id", userID)
 		}
 

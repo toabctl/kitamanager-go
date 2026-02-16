@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
@@ -156,8 +157,8 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			}
 		}
 
-		c.Set("userID", userID)
-		c.Set("userEmail", claims["email"])
+		c.Set(ctxkeys.UserID, userID)
+		c.Set(ctxkeys.UserEmail, claims["email"])
 		c.Next()
 	}
 }

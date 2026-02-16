@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/service"
 )
@@ -75,14 +76,14 @@ func parsePagination(c *gin.Context) (models.PaginationParams, bool) {
 
 // getCreatedBy extracts the user email from context for audit purposes.
 func getCreatedBy(c *gin.Context) string {
-	userEmail, _ := c.Get("userEmail")
+	userEmail, _ := c.Get(ctxkeys.UserEmail)
 	createdBy, _ := userEmail.(string)
 	return createdBy
 }
 
 // getUserID extracts the user ID from context (set by auth middleware).
 func getUserID(c *gin.Context) uint {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get(ctxkeys.UserID)
 	id, _ := userID.(uint)
 	return id
 }

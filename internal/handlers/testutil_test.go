@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/service"
 	"github.com/eenemeene/kitamanager-go/internal/store"
@@ -83,8 +84,8 @@ func setupTestRouter() *gin.Engine {
 	r := gin.New()
 	// Add middleware to set user context (simulating authenticated user)
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
-		c.Set("userEmail", "test@example.com")
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Set(ctxkeys.UserEmail, "test@example.com")
 		c.Next()
 	})
 	return r

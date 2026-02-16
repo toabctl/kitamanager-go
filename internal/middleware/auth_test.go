@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 )
 
 func TestAuthMiddleware_RequireAuth_UserIDConversion(t *testing.T) {
@@ -31,7 +33,7 @@ func TestAuthMiddleware_RequireAuth_UserIDConversion(t *testing.T) {
 	// Set up a test handler that checks the userID type
 	var capturedUserID interface{}
 	testHandler := func(c *gin.Context) {
-		capturedUserID, _ = c.Get("userID")
+		capturedUserID, _ = c.Get(ctxkeys.UserID)
 		c.Status(http.StatusOK)
 	}
 
@@ -281,7 +283,7 @@ func TestAuthMiddleware_RequireAuth_AcceptsCookieToken(t *testing.T) {
 	var capturedUserID interface{}
 	router := gin.New()
 	router.GET("/test", middleware.RequireAuth(), func(c *gin.Context) {
-		capturedUserID, _ = c.Get("userID")
+		capturedUserID, _ = c.Get(ctxkeys.UserID)
 		c.Status(http.StatusOK)
 	})
 
@@ -328,7 +330,7 @@ func TestAuthMiddleware_RequireAuth_PrefersCookieOverHeader(t *testing.T) {
 	var capturedUserID interface{}
 	router := gin.New()
 	router.GET("/test", middleware.RequireAuth(), func(c *gin.Context) {
-		capturedUserID, _ = c.Get("userID")
+		capturedUserID, _ = c.Get(ctxkeys.UserID)
 		c.Status(http.StatusOK)
 	})
 
@@ -367,7 +369,7 @@ func TestAuthMiddleware_RequireAuth_FallsBackToHeader(t *testing.T) {
 	var capturedUserID interface{}
 	router := gin.New()
 	router.GET("/test", middleware.RequireAuth(), func(c *gin.Context) {
-		capturedUserID, _ = c.Get("userID")
+		capturedUserID, _ = c.Get(ctxkeys.UserID)
 		c.Status(http.StatusOK)
 	})
 

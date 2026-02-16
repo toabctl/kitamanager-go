@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/rbac"
 )
@@ -26,7 +27,7 @@ func NewAuthorizationMiddleware(permissionService *rbac.PermissionService) *Auth
 // The organization ID is extracted from the "orgId" path parameter.
 func (m *AuthorizationMiddleware) RequirePermission(resource, action string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get(ctxkeys.UserID)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
@@ -98,7 +99,7 @@ func (m *AuthorizationMiddleware) RequirePermission(resource, action string) gin
 		}
 
 		// Store orgID in context for handlers to use
-		c.Set("orgID", uint(orgID))
+		c.Set(ctxkeys.OrgID, uint(orgID))
 		c.Next()
 	}
 }
@@ -106,7 +107,7 @@ func (m *AuthorizationMiddleware) RequirePermission(resource, action string) gin
 // RequireSuperAdmin returns a middleware that only allows superadmins.
 func (m *AuthorizationMiddleware) RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get(ctxkeys.UserID)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
@@ -150,7 +151,7 @@ func (m *AuthorizationMiddleware) RequireSuperAdmin() gin.HandlerFunc {
 // of their assigned organizations. This is for resources that aren't org-scoped in URLs.
 func (m *AuthorizationMiddleware) RequireGlobalPermission(resource, action string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get(ctxkeys.UserID)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
@@ -192,7 +193,7 @@ func (m *AuthorizationMiddleware) RequireGlobalPermission(resource, action strin
 // RequireOrgAccess returns a middleware that checks if the user has any role in the organization.
 func (m *AuthorizationMiddleware) RequireOrgAccess() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get(ctxkeys.UserID)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,
@@ -259,7 +260,7 @@ func (m *AuthorizationMiddleware) RequireOrgAccess() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("orgID", uint(orgID))
+		c.Set(ctxkeys.OrgID, uint(orgID))
 		c.Next()
 	}
 }

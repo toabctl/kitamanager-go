@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/rbac"
 	"github.com/eenemeene/kitamanager-go/internal/store"
@@ -159,7 +160,7 @@ func TestAuthorizationMiddleware_RequirePermission_Allowed(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId/employees",
@@ -187,7 +188,7 @@ func TestAuthorizationMiddleware_RequirePermission_Forbidden(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/organizations/:orgId/settings",
@@ -239,7 +240,7 @@ func TestAuthorizationMiddleware_RequirePermission_InvalidOrgID(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId/employees",
@@ -267,7 +268,7 @@ func TestAuthorizationMiddleware_RequirePermission_SuperAdminBypass(t *testing.T
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.DELETE("/organizations/:orgId/employees/:id",
@@ -296,7 +297,7 @@ func TestAuthorizationMiddleware_RequireSuperAdmin_Allowed(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/organizations",
@@ -324,7 +325,7 @@ func TestAuthorizationMiddleware_RequireSuperAdmin_Forbidden(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/organizations",
@@ -352,7 +353,7 @@ func TestAuthorizationMiddleware_RequireOrgAccess_Allowed(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId",
@@ -380,7 +381,7 @@ func TestAuthorizationMiddleware_RequireOrgAccess_Forbidden(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId",
@@ -410,13 +411,13 @@ func TestAuthorizationMiddleware_OrgIDSetInContext(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId/employees",
 		middleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
 		func(c *gin.Context) {
-			if orgID, exists := c.Get("orgID"); exists {
+			if orgID, exists := c.Get(ctxkeys.OrgID); exists {
 				capturedOrgID = orgID.(uint)
 			}
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
@@ -443,7 +444,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_SuperAdmin(t *testing.T
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/users",
@@ -471,7 +472,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_AdminCanCreateUsers(t *
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/users",
@@ -499,7 +500,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_ManagerCannotCreateUser
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/users",
@@ -527,7 +528,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_ManagerCanReadUsers(t *
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/users",
@@ -558,7 +559,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_NoRole(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(99)) // User with no roles
+		c.Set(ctxkeys.UserID, uint(99)) // User with no roles
 		c.Next()
 	})
 	r.GET("/users",
@@ -610,7 +611,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_ManagerCannotUpdateOrga
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/organizations/:orgId",
@@ -638,7 +639,7 @@ func TestAuthorizationMiddleware_RequireGlobalPermission_AdminCanUpdateOrganizat
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/organizations/:orgId",
@@ -667,7 +668,7 @@ func TestAuthorizationMiddleware_RequirePermission_MemberCanRead(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations/:orgId/employees",
@@ -695,7 +696,7 @@ func TestAuthorizationMiddleware_RequirePermission_MemberCannotCreate(t *testing
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/organizations/:orgId/employees",
@@ -726,7 +727,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanList(t *testing.
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/government-fundings",
@@ -754,7 +755,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanCreate(t *testin
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/government-fundings",
@@ -782,7 +783,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanUpdate(t *testin
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/government-fundings/:id",
@@ -810,7 +811,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanDelete(t *testin
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.DELETE("/government-fundings/:id",
@@ -838,7 +839,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotList(t *testing.T)
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/government-fundings",
@@ -866,7 +867,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotCreate(t *testing.
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/government-fundings",
@@ -894,7 +895,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotUpdate(t *testing.
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/government-fundings/:id",
@@ -922,7 +923,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotDelete(t *testing.
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.DELETE("/government-fundings/:id",
@@ -950,7 +951,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_ManagerCannotAccess(t *testin
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/government-fundings",
@@ -978,7 +979,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_MemberCannotAccess(t *testing
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/government-fundings",
@@ -1030,7 +1031,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanCreatePeriod(t *
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/government-fundings/:id/periods",
@@ -1058,7 +1059,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotCreatePeriod(t *te
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.POST("/government-fundings/:id/periods",
@@ -1086,7 +1087,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_SuperAdminCanAssignToOrg(t *t
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/organizations/:orgId/government-funding",
@@ -1114,7 +1115,7 @@ func TestAuthorizationMiddleware_GovernmentFunding_AdminCannotAssignToOrg(t *tes
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.PUT("/organizations/:orgId/government-funding",
@@ -1145,7 +1146,7 @@ func TestAuthorizationMiddleware_OrganizationList_SuperAdminCanList(t *testing.T
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations",
@@ -1173,7 +1174,7 @@ func TestAuthorizationMiddleware_OrganizationList_AdminCanList(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations",
@@ -1201,7 +1202,7 @@ func TestAuthorizationMiddleware_OrganizationList_ManagerCanList(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations",
@@ -1229,7 +1230,7 @@ func TestAuthorizationMiddleware_OrganizationList_MemberCanList(t *testing.T) {
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(1))
+		c.Set(ctxkeys.UserID, uint(1))
 		c.Next()
 	})
 	r.GET("/organizations",
@@ -1260,7 +1261,7 @@ func TestAuthorizationMiddleware_OrganizationList_NoRoleCannotList(t *testing.T)
 
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", uint(99)) // User with no roles
+		c.Set(ctxkeys.UserID, uint(99)) // User with no roles
 		c.Next()
 	})
 	r.GET("/organizations",

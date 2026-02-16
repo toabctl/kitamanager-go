@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
+	"github.com/eenemeene/kitamanager-go/internal/ctxkeys"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/service"
 )
@@ -121,7 +122,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get(ctxkeys.UserID)
 	if !exists {
 		respondError(c, apperror.Unauthorized("not authenticated"))
 		return
