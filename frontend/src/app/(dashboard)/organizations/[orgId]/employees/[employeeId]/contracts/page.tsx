@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,8 +18,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
-import { useToast } from '@/lib/hooks/use-toast';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { QueryError } from '@/components/crud/query-error';
+import { useResourceMutation } from '@/lib/hooks/use-resource-mutation';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   EmployeeContract,
@@ -39,21 +40,29 @@ export default function EmployeeContractsPage() {
   const orgId = Number(params.orgId);
   const employeeId = Number(params.employeeId);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<EmployeeContract | null>(null);
   const [deletingContract, setDeletingContract] = useState<EmployeeContract | null>(null);
 
-  const { data: employee, isLoading: employeeLoading } = useQuery({
+  const {
+    data: employee,
+    isLoading: employeeLoading,
+    error: employeeError,
+    refetch: refetchEmployee,
+  } = useQuery({
     queryKey: queryKeys.employees.detail(orgId, employeeId),
     queryFn: () => apiClient.getEmployee(orgId, employeeId),
     enabled: !!orgId && !!employeeId,
   });
 
-  const { data: contracts, isLoading: contractsLoading } = useQuery({
+  const {
+    data: contracts,
+    isLoading: contractsLoading,
+    error: contractsError,
+    refetch: refetchContracts,
+  } = useQuery({
     queryKey: queryKeys.employees.contracts(orgId, employeeId),
     queryFn: () => apiClient.getEmployeeContracts(orgId, employeeId),
     enabled: !!orgId && !!employeeId,
@@ -73,27 +82,25 @@ export default function EmployeeContractsPage() {
   });
   const sections = sectionsData?.data ?? [];
 
-  const createMutation = useMutation({
+  const invalidateKeys = [
+    queryKeys.employees.contracts(orgId, employeeId),
+    queryKeys.employees.detail(orgId, employeeId),
+  ];
+
+  const createMutation = useResourceMutation({
     mutationFn: (data: EmployeeContractCreateRequest) =>
       apiClient.createEmployeeContract(orgId, employeeId, data),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.createSuccess'),
+    errorMessage: t('common.failedToCreate', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
-      toast({ title: t('contracts.createSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: 'contract' })),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const updateMutation = useMutation({
+  const updateMutation = useResourceMutation({
     mutationFn: ({
       contractId,
       data,
@@ -101,39 +108,25 @@ export default function EmployeeContractsPage() {
       contractId: number;
       data: EmployeeContractUpdateRequest;
     }) => apiClient.updateEmployeeContract(orgId, employeeId, contractId, data),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.updateSuccess'),
+    errorMessage: t('common.failedToSave', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
-      toast({ title: t('contracts.updateSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToSave', { resource: 'contract' })),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useResourceMutation({
     mutationFn: (contractId: number) =>
       apiClient.deleteEmployeeContract(orgId, employeeId, contractId),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.deleteSuccess'),
+    errorMessage: t('common.failedToDelete', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.contracts(orgId, employeeId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(orgId, employeeId) });
-      toast({ title: t('contracts.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingContract(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToDelete', { resource: 'contract' })),
-        variant: 'destructive',
-      });
     },
   });
 
@@ -223,6 +216,7 @@ export default function EmployeeContractsPage() {
   };
 
   const isLoading = employeeLoading || contractsLoading;
+  const queryError = employeeError || contractsError;
 
   const sortedContracts = contracts
     ? [...contracts].sort((a, b) => compareDates(b.from, a.from))
@@ -253,6 +247,14 @@ export default function EmployeeContractsPage() {
           </Button>
         </div>
       </div>
+
+      <QueryError
+        error={queryError}
+        onRetry={() => {
+          refetchEmployee();
+          refetchContracts();
+        }}
+      />
 
       <Card>
         <CardHeader>

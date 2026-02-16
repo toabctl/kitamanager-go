@@ -6,8 +6,8 @@ import { getErrorMessage } from '@/lib/api/client';
 interface ResourceMutationConfig<TData, TResponse = unknown> {
   /** The mutation function to call. */
   mutationFn: (data: TData) => Promise<TResponse>;
-  /** Query key to invalidate on success. */
-  invalidateQueryKey: QueryKey;
+  /** Query key(s) to invalidate on success. Accepts a single key or an array of keys. */
+  invalidateQueryKey: QueryKey | QueryKey[];
   /** Toast message shown on success. */
   successMessage: string;
   /** Fallback error message shown on failure. */
@@ -31,7 +31,10 @@ export function useResourceMutation<TData, TResponse = unknown>(
   return useMutation({
     mutationFn: config.mutationFn,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: config.invalidateQueryKey });
+      const keys = Array.isArray(config.invalidateQueryKey[0])
+        ? (config.invalidateQueryKey as QueryKey[])
+        : [config.invalidateQueryKey as QueryKey];
+      keys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
       toast({ title: config.successMessage });
       config.onSuccess?.();
     },

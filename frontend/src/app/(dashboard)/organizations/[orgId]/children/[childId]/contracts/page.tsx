@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
+import { QueryError } from '@/components/crud/query-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -35,9 +36,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PropertyTagInput } from '@/components/ui/tag-input';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useResourceMutation } from '@/lib/hooks/use-resource-mutation';
 import { useFundingAttributes } from '@/lib/hooks/use-funding-attributes';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   ChildContract,
@@ -64,8 +65,6 @@ export default function ChildContractsPage() {
   const orgId = Number(params.orgId);
   const childId = Number(params.childId);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -73,14 +72,24 @@ export default function ChildContractsPage() {
   const [deletingContract, setDeletingContract] = useState<ChildContract | null>(null);
 
   // Fetch child data
-  const { data: child, isLoading: childLoading } = useQuery({
+  const {
+    data: child,
+    isLoading: childLoading,
+    error: childError,
+    refetch: refetchChild,
+  } = useQuery({
     queryKey: queryKeys.children.detail(orgId, childId),
     queryFn: () => apiClient.getChild(orgId, childId),
     enabled: !!orgId && !!childId,
   });
 
   // Fetch contracts
-  const { data: contracts, isLoading: contractsLoading } = useQuery({
+  const {
+    data: contracts,
+    isLoading: contractsLoading,
+    error: contractsError,
+    refetch: refetchContracts,
+  } = useQuery({
     queryKey: queryKeys.children.contracts(orgId, childId),
     queryFn: () => apiClient.getChildContracts(orgId, childId),
     enabled: !!orgId && !!childId,
@@ -93,61 +102,45 @@ export default function ChildContractsPage() {
     enabled: !!orgId,
   });
 
-  const createMutation = useMutation({
+  const invalidateKeys = [
+    queryKeys.children.contracts(orgId, childId),
+    queryKeys.children.detail(orgId, childId),
+  ];
+
+  const createMutation = useResourceMutation({
     mutationFn: (data: ChildContractCreateRequest) =>
       apiClient.createChildContract(orgId, childId, data),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.createSuccess'),
+    errorMessage: t('common.failedToCreate', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
-      toast({ title: t('contracts.createSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: 'contract' })),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const updateMutation = useMutation({
+  const updateMutation = useResourceMutation({
     mutationFn: ({ contractId, data }: { contractId: number; data: ChildContractUpdateRequest }) =>
       apiClient.updateChildContract(orgId, childId, contractId, data),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.updateSuccess'),
+    errorMessage: t('common.failedToSave', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
-      toast({ title: t('contracts.updateSuccess') });
       setIsContractDialogOpen(false);
       setEditingContract(null);
       reset();
     },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToSave', { resource: 'contract' })),
-        variant: 'destructive',
-      });
-    },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useResourceMutation({
     mutationFn: (contractId: number) => apiClient.deleteChildContract(orgId, childId, contractId),
+    invalidateQueryKey: invalidateKeys,
+    successMessage: t('contracts.deleteSuccess'),
+    errorMessage: t('common.failedToDelete', { resource: 'contract' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.contracts(orgId, childId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.detail(orgId, childId) });
-      toast({ title: t('contracts.deleteSuccess') });
       setIsDeleteDialogOpen(false);
       setDeletingContract(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToDelete', { resource: 'contract' })),
-        variant: 'destructive',
-      });
     },
   });
 
@@ -233,6 +226,7 @@ export default function ChildContractsPage() {
   };
 
   const isLoading = childLoading || contractsLoading;
+  const queryError = childError || contractsError;
 
   // Sort contracts by start date descending (most recent first)
   const sortedContracts = contracts
@@ -264,6 +258,14 @@ export default function ChildContractsPage() {
           </Button>
         </div>
       </div>
+
+      <QueryError
+        error={queryError}
+        onRetry={() => {
+          refetchChild();
+          refetchContracts();
+        }}
+      />
 
       <Card>
         <CardHeader>
