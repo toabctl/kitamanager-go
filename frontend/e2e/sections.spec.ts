@@ -81,7 +81,7 @@ test.describe('Sections', () => {
 
     // Find the row with the section and click delete button
     const row = page.getByRole('row').filter({ hasText: sectionName });
-    await row.getByRole('button').last().click();
+    await row.getByRole('button', { name: /delete/i }).click();
 
     // Confirm deletion in dialog
     await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 });
