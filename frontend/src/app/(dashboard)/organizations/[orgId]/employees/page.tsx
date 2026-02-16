@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -40,6 +40,7 @@ import { QueryError } from '@/components/crud/query-error';
 import { PersonFormDialog } from '@/components/crud/person-form-dialog';
 import { EmployeesTable } from '@/components/employees/employees-table';
 import { EmployeeContractDialog } from '@/components/employees/employee-contract-dialog';
+import { useToast } from '@/lib/hooks/use-toast';
 import {
   employeeSchema,
   employeeContractSchema,
@@ -52,6 +53,7 @@ export default function EmployeesPage() {
   const router = useRouter();
   const orgId = Number(params.orgId);
   const t = useTranslations();
+  const { toast } = useToast();
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [contractEmployee, setContractEmployee] = useState<Employee | null>(null);
@@ -79,19 +81,31 @@ export default function EmployeesPage() {
 
   const employees = paginatedData?.data;
 
-  const { data: payPlansData } = useQuery({
+  const { data: payPlansData, error: payPlansError } = useQuery({
     queryKey: queryKeys.payPlans.all(orgId),
     queryFn: () => apiClient.getPayPlans(orgId, { limit: LOOKUP_FETCH_LIMIT }),
     enabled: !!orgId,
   });
   const payPlans = useMemo(() => payPlansData?.data ?? [], [payPlansData?.data]);
 
-  const { data: sectionsData } = useQuery({
+  const { data: sectionsData, error: sectionsError } = useQuery({
     queryKey: queryKeys.sections.list(orgId),
     queryFn: () => apiClient.getSections(orgId, { limit: LOOKUP_FETCH_LIMIT }),
     enabled: !!orgId,
   });
   const sections = useMemo(() => sectionsData?.data ?? [], [sectionsData?.data]);
+
+  // Show toast on secondary query failures
+  useEffect(() => {
+    const err = payPlansError || sectionsError;
+    if (err) {
+      toast({
+        title: t('common.error'),
+        description: t('common.failedToLoad', { resource: t('common.data') }),
+        variant: 'destructive',
+      });
+    }
+  }, [payPlansError, sectionsError, toast, t]);
 
   // Collect unique payplan IDs from employee contracts to fetch details for salary calc
   const payPlanIds = useMemo(

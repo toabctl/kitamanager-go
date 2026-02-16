@@ -51,6 +51,7 @@
     "retry": "Retry",
     "all": "All",
     "today": "Today",
+    "data": "data",
     "somethingWentWrong": "Something went wrong",
     "unexpectedError": "An unexpected error occurred. Please try again."
   },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -58,6 +58,7 @@ import { QueryError } from '@/components/crud/query-error';
 import { PersonFormDialog } from '@/components/crud/person-form-dialog';
 import { ChildCreateDialog } from '@/components/children/child-create-dialog';
 import { ChildContractCreateDialog } from '@/components/children/child-contract-create-dialog';
+import { useToast } from '@/lib/hooks/use-toast';
 import { useUiStore } from '@/stores/ui-store';
 import {
   childSchema,
@@ -71,6 +72,7 @@ export default function ChildrenPage() {
   const router = useRouter();
   const orgId = Number(params.orgId);
   const t = useTranslations();
+  const { toast } = useToast();
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [contractChild, setContractChild] = useState<Child | null>(null);
   const [page, setPage] = useState(1);
@@ -97,7 +99,7 @@ export default function ChildrenPage() {
   const children = paginatedData?.data;
 
   // Fetch funding data for all children
-  const { data: fundingData } = useQuery({
+  const { data: fundingData, error: fundingError } = useQuery({
     queryKey: queryKeys.children.funding(orgId),
     queryFn: () => apiClient.getChildrenFunding(orgId),
     enabled: !!orgId,
@@ -110,13 +112,25 @@ export default function ChildrenPage() {
   );
 
   // Fetch sections for section selector in dialogs
-  const { data: sectionsData } = useQuery({
+  const { data: sectionsData, error: sectionsError } = useQuery({
     queryKey: queryKeys.sections.list(orgId),
     queryFn: () => apiClient.getSections(orgId, { limit: LOOKUP_FETCH_LIMIT }),
     enabled: !!orgId,
   });
 
   const sections = sectionsData?.data ?? [];
+
+  // Show toast on secondary query failures
+  useEffect(() => {
+    const err = fundingError || sectionsError;
+    if (err) {
+      toast({
+        title: t('common.error'),
+        description: t('common.failedToLoad', { resource: t('common.data') }),
+        variant: 'destructive',
+      });
+    }
+  }, [fundingError, sectionsError, toast, t]);
 
   // Get org state for school enrollment date calculation
   const orgState = useUiStore((state) => state.organizations.find((o) => o.id === orgId)?.state);
