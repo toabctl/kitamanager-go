@@ -2,6 +2,8 @@ const createNextIntlPlugin = require('next-intl/plugin');
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+const isDev = process.env.NODE_ENV === 'development';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Proxy API requests to the Go backend during development
@@ -16,6 +18,12 @@ const nextConfig = {
 
   // Security headers
   async headers() {
+    // unsafe-eval is only needed in development for Next.js hot reloading;
+    // unsafe-inline is required by Next.js for inline scripts/styles.
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+      : "script-src 'self' 'unsafe-inline'";
+
     return [
       {
         // Apply these headers to all routes
@@ -25,7 +33,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self'",
