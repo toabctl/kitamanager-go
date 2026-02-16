@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,15 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/lib/hooks/use-toast';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { useContractMutation } from '@/lib/hooks/use-contract-mutation';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   Employee,
   EmployeeContract,
   EmployeeContractCreateRequest,
+  EmployeeContractUpdateRequest,
   PayPlan,
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
@@ -50,8 +51,6 @@ export default function EmployeesPage() {
   const router = useRouter();
   const orgId = Number(params.orgId);
   const t = useTranslations();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [contractEmployee, setContractEmployee] = useState<Employee | null>(null);
@@ -117,50 +116,21 @@ export default function EmployeesPage() {
   });
   const payPlanMap = payPlanDetailsQueries.data ?? new Map<number, PayPlan>();
 
-  const createContractMutation = useMutation({
-    mutationFn: async ({
-      employeeId,
-      data,
-    }: {
-      employeeId: number;
-      data: EmployeeContractCreateRequest;
-    }) => {
-      // When ending current contract, use UPDATE (amend semantics) instead of two separate calls.
-      // The backend atomically closes the old contract and creates a new one.
-      if (contractEmployee && endCurrentContract) {
-        const active = getActiveContract(contractEmployee.contracts);
-        if (active) {
-          return apiClient.updateEmployeeContract(orgId, employeeId, active.id, {
-            section_id: data.section_id,
-            staff_category: data.staff_category,
-            grade: data.grade,
-            step: data.step,
-            weekly_hours: data.weekly_hours,
-            payplan_id: data.payplan_id,
-            to: data.to,
-          });
-        }
-      }
-      return apiClient.createEmployeeContract(orgId, employeeId, data);
-    },
+  const createContractMutation = useContractMutation<
+    EmployeeContractCreateRequest,
+    EmployeeContractUpdateRequest,
+    EmployeeContract
+  >({
+    createFn: (employeeId, data) => apiClient.createEmployeeContract(orgId, employeeId, data),
+    updateFn: (employeeId, contractId, data) =>
+      apiClient.updateEmployeeContract(orgId, employeeId, contractId, data),
+    toUpdateData: ({ from, ...rest }) => rest,
+    invalidateQueryKeys: [queryKeys.employees.all(orgId)],
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.all(orgId) });
-      toast({
-        title: endCurrentContract
-          ? t('contracts.previousContractEnded')
-          : t('contracts.createSuccess'),
-      });
       setIsContractDialogOpen(false);
       setContractEmployee(null);
       setEndCurrentContract(true);
       resetContract();
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: 'contract' })),
-        variant: 'destructive',
-      });
     },
   });
 
@@ -293,7 +263,7 @@ export default function EmployeesPage() {
     (data: EmployeeContractFormData) => {
       if (contractEmployee) {
         createContractMutation.mutate({
-          employeeId: contractEmployee.id,
+          entityId: contractEmployee.id,
           data: {
             from: formatDateForApi(data.from) || data.from,
             to: formatDateForApi(data.to),
@@ -304,10 +274,12 @@ export default function EmployeesPage() {
             weekly_hours: data.weekly_hours,
             payplan_id: data.payplan_id,
           },
+          entity: contractEmployee,
+          endCurrentContract,
         });
       }
     },
-    [contractEmployee, createContractMutation]
+    [contractEmployee, createContractMutation, endCurrentContract]
   );
 
   return (

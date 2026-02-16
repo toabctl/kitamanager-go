@@ -30,8 +30,10 @@ import { apiClient, getErrorMessage } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   Child,
+  ChildContract,
   Gender,
   ChildContractCreateRequest,
+  ChildContractUpdateRequest,
   ChildFundingResponse,
   ContractProperties,
 } from '@/lib/api/types';
@@ -46,7 +48,8 @@ import {
   formatFte,
   propertiesToValues,
 } from '@/lib/utils/formatting';
-import { getActiveContract, getCurrentContract } from '@/lib/utils/contracts';
+import { getCurrentContract } from '@/lib/utils/contracts';
+import { useContractMutation } from '@/lib/hooks/use-contract-mutation';
 import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
@@ -190,49 +193,20 @@ export default function ChildrenPage() {
     },
   });
 
-  const createContractMutation = useMutation({
-    mutationFn: async ({
-      childId,
-      data,
-      endCurrentContract,
-    }: {
-      childId: number;
-      data: ChildContractCreateRequest;
-      endCurrentContract: boolean;
-    }) => {
-      // When ending current contract, use UPDATE (amend semantics) instead of two separate calls.
-      // The backend atomically closes the old contract and creates a new one.
-      if (contractChild && endCurrentContract) {
-        const active = getActiveContract(contractChild.contracts);
-        if (active) {
-          return apiClient.updateChildContract(orgId, childId, active.id, {
-            section_id: data.section_id,
-            properties: data.properties,
-            to: data.to,
-          });
-        }
-      }
-      return apiClient.createChildContract(orgId, childId, data);
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.children.contracts(orgId, variables.childId),
-      });
-      toast({
-        title: variables.endCurrentContract
-          ? t('contracts.previousContractEnded')
-          : t('contracts.createSuccess'),
-      });
+  const createContractMutation = useContractMutation<
+    ChildContractCreateRequest,
+    ChildContractUpdateRequest,
+    ChildContract
+  >({
+    createFn: (childId, data) => apiClient.createChildContract(orgId, childId, data),
+    updateFn: (childId, contractId, data) =>
+      apiClient.updateChildContract(orgId, childId, contractId, data),
+    toUpdateData: ({ from, ...rest }) => rest,
+    invalidateQueryKeys: [queryKeys.children.all(orgId)],
+    extraInvalidateKeys: (childId) => [queryKeys.children.contracts(orgId, childId)],
+    onSuccess: () => {
       setIsContractDialogOpen(false);
       setContractChild(null);
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: 'contract' })),
-        variant: 'destructive',
-      });
     },
   });
 
@@ -308,13 +282,14 @@ export default function ChildrenPage() {
   const onSubmitContract = useCallback(
     (data: ChildContractFormData, child: Child, endCurrentContract: boolean) => {
       createContractMutation.mutate({
-        childId: child.id,
+        entityId: child.id,
         data: {
           from: formatDateForApi(data.from) || data.from,
           to: formatDateForApi(data.to),
           section_id: data.section_id,
           properties: data.properties,
         },
+        entity: child,
         endCurrentContract,
       });
     },
