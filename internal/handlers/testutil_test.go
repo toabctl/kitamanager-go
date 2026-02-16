@@ -203,28 +203,36 @@ func ensureTestSection(t *testing.T, db *gorm.DB, orgID uint) uint {
 func createActiveChildContract(t *testing.T, db *gorm.DB, childID uint) {
 	t.Helper()
 	var child models.Child
-	db.First(&child, childID)
+	if err := db.First(&child, childID).Error; err != nil {
+		t.Fatalf("failed to find child %d: %v", childID, err)
+	}
 	sectionID := ensureTestSection(t, db, child.OrganizationID)
-	db.Create(&models.ChildContract{
+	if err := db.Create(&models.ChildContract{
 		ChildID:      childID,
 		BaseContract: models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}, SectionID: sectionID},
-	})
+	}).Error; err != nil {
+		t.Fatalf("failed to create child contract: %v", err)
+	}
 }
 
 // createActiveEmployeeContract creates an open-ended contract for an employee (active today).
 func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 	t.Helper()
 	var emp models.Employee
-	db.First(&emp, employeeID)
+	if err := db.First(&emp, employeeID).Error; err != nil {
+		t.Fatalf("failed to find employee %d: %v", employeeID, err)
+	}
 	sectionID := ensureTestSection(t, db, emp.OrganizationID)
 	payPlanID := ensureTestPayPlan(t, db, emp.OrganizationID)
-	db.Create(&models.EmployeeContract{
+	if err := db.Create(&models.EmployeeContract{
 		EmployeeID:    employeeID,
 		BaseContract:  models.BaseContract{Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}, SectionID: sectionID},
 		StaffCategory: "qualified",
 		WeeklyHours:   40,
 		PayPlanID:     payPlanID,
-	})
+	}).Error; err != nil {
+		t.Fatalf("failed to create employee contract: %v", err)
+	}
 }
 
 // createUserService creates a user service for testing.
