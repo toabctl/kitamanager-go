@@ -36,7 +36,7 @@ export default defineConfig({
         webServer: [
           {
             // Start the API server
-            command: 'cd .. && LOGIN_RATE_LIMIT_PER_MINUTE=0 make dev',
+            command: 'cd .. && make dev',
             url: 'http://localhost:8080/api/v1/health',
             reuseExistingServer: true,
             timeout: 120000,

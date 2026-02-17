@@ -61,6 +61,7 @@ dev: api-build web-install
 		CORS_ALLOW_ORIGINS="http://localhost:3000,http://localhost:3001,http://localhost:8080,http://10.149.53.39:3000,http://10.149.53.39:8080" \
 		CORS_ALLOW_CREDENTIALS=true \
 		LOGIN_RATE_LIMIT_PER_MINUTE=0 \
+		API_RATE_LIMIT_PER_MINUTE=0 \
 		./bin/kitamanager-api > /tmp/kitamanager-api.log 2>&1 & echo $$! > /tmp/kitamanager-api.pid
 	@echo "   Waiting for API to be healthy..."
 	@until curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; do \
