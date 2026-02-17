@@ -1749,3 +1749,103 @@ func TestGetFinancials_BudgetPerChildCountChanges(t *testing.T) {
 		}
 	}
 }
+
+func TestGetFinancials_BudgetEntryEndsMidRange(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Entry active Jan-Mar 2024 only (to_date = 2024-03-31)
+	item := createTestBudgetItem(t, db, "Insurance", org.ID, "expense", false)
+	to := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	createTestBudgetItemEntry(t, db, item.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to, 25000, "")
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	toQuery := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &toQuery)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Jan-Mar: 25000
+	for i := 0; i < 3; i++ {
+		if result.DataPoints[i].BudgetExpenses != 25000 {
+			t.Errorf("dp %d: BudgetExpenses = %d, want 25000 (entry active)", i, result.DataPoints[i].BudgetExpenses)
+		}
+	}
+	// Apr-Jun: 0 (entry expired)
+	for i := 3; i < 6; i++ {
+		if result.DataPoints[i].BudgetExpenses != 0 {
+			t.Errorf("dp %d: BudgetExpenses = %d, want 0 (entry expired)", i, result.DataPoints[i].BudgetExpenses)
+		}
+	}
+}
+
+func TestGetFinancials_BudgetEntryExpiredBeforeRange(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Entry entirely in the past (2023), query range is 2024
+	item := createTestBudgetItem(t, db, "Old Insurance", org.ID, "expense", false)
+	to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
+	createTestBudgetItemEntry(t, db, item.ID, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), &to, 30000, "")
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	toQuery := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &toQuery)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	for i, dp := range result.DataPoints {
+		if dp.BudgetExpenses != 0 {
+			t.Errorf("dp %d: BudgetExpenses = %d, want 0 (entry expired before range)", i, dp.BudgetExpenses)
+		}
+	}
+}
+
+func TestGetFinancials_BudgetEntryTransition(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Budget item with two consecutive entries at different amounts
+	item := createTestBudgetItem(t, db, "Rent", org.ID, "expense", false)
+
+	// First entry: Jan-Mar at 40000
+	to1 := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	createTestBudgetItemEntry(t, db, item.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to1, 40000, "old rate")
+
+	// Second entry: Apr onward at 45000
+	createTestBudgetItemEntry(t, db, item.ID, time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC), nil, 45000, "new rate")
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	toQuery := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &toQuery)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Jan-Mar: 40000 (first entry)
+	for i := 0; i < 3; i++ {
+		if result.DataPoints[i].BudgetExpenses != 40000 {
+			t.Errorf("dp %d: BudgetExpenses = %d, want 40000 (old rate)", i, result.DataPoints[i].BudgetExpenses)
+		}
+	}
+	// Apr-Jun: 45000 (second entry)
+	for i := 3; i < 6; i++ {
+		if result.DataPoints[i].BudgetExpenses != 45000 {
+			t.Errorf("dp %d: BudgetExpenses = %d, want 45000 (new rate)", i, result.DataPoints[i].BudgetExpenses)
+		}
+	}
+}
