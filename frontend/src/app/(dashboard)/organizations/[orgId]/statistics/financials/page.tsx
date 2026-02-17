@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 import { apiClient } from '@/lib/api/client';
@@ -15,6 +15,18 @@ import { formatCurrency, getCurrentMonthStart } from '@/lib/utils/formatting';
 const FinancialsChart = dynamic(
   () => import('@/components/charts/financials-bar-chart').then((mod) => mod.FinancialsChart),
   { ssr: false, loading: () => <Skeleton className="h-[400px] w-full" /> }
+);
+
+const FundingBreakdownChart = dynamic(
+  () =>
+    import('@/components/charts/funding-breakdown-chart').then((mod) => mod.FundingBreakdownChart),
+  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full" /> }
+);
+
+const ExpenseBreakdownChart = dynamic(
+  () =>
+    import('@/components/charts/expense-breakdown-chart').then((mod) => mod.ExpenseBreakdownChart),
+  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full" /> }
 );
 
 export default function FinancialsPage() {
@@ -109,6 +121,34 @@ export default function FinancialsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Breakdown Pie Charts */}
+      {currentFinancials && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('statistics.fundingBreakdown')}</CardTitle>
+              <CardDescription>{t('statistics.fundingBreakdownDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartErrorBoundary>
+                <FundingBreakdownChart data={currentFinancials} />
+              </ChartErrorBoundary>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('statistics.expenseBreakdown')}</CardTitle>
+              <CardDescription>{t('statistics.expenseBreakdownDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartErrorBoundary>
+                <ExpenseBreakdownChart data={currentFinancials} />
+              </ChartErrorBoundary>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
