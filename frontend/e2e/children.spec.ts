@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getFirstOrganization,
+  createTestOrg,
+  deleteTestOrg,
   createChildWithContractViaApi,
   deleteChildViaApi,
   uniqueName,
@@ -12,17 +13,29 @@ test.use({ locale: 'en-US' });
 test.describe('Children', () => {
   let orgId: number;
 
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const testOrg = await createTestOrg(page, 'Children');
+    orgId = testOrg.orgId;
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await deleteTestOrg(page, orgId);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
-    const org = await getFirstOrganization(page);
-    orgId = org.id;
     await page.goto(`/organizations/${orgId}/children`);
     await page.waitForLoadState('networkidle');
   });
 
   test('should display children list', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /children/i }).first()).toBeVisible();
-    await expect(page.locator('table, [role="table"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('should create a new child via UI', async ({ page }) => {

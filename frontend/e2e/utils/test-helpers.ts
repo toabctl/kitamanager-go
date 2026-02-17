@@ -499,8 +499,8 @@ export async function deleteGovernmentFundingViaApi(
  */
 export async function getGovernmentFundingsViaApi(
   page: Page
-): Promise<Array<{ id: number; name: string }>> {
-  const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
+): Promise<Array<{ id: number; name: string; state: string }>> {
+  const data = await apiRequest<{ data: Array<{ id: number; name: string; state: string }> }>(
     page,
     'GET',
     '/api/v1/government-fundings?limit=100'
@@ -571,9 +571,8 @@ export async function createFundingPropertyViaApi(
  */
 export async function ensureFundingHasProperties(page: Page): Promise<void> {
   const fundings = await getGovernmentFundingsViaApi(page);
-  if (fundings.length === 0) return;
-
-  const funding = fundings[0];
+  const funding = fundings.find((f) => f.state === 'berlin');
+  if (!funding) return;
   const details = await getGovernmentFundingViaApi(page, funding.id);
 
   const defaultProperties = [
@@ -849,6 +848,37 @@ export async function createChildWithContractViaApi(
     section_id: sections[0].id,
   });
   return child;
+}
+
+/**
+ * Create an isolated test organization with a default section.
+ * Returns orgId and sectionId for use in tests.
+ */
+export async function createTestOrg(
+  page: Page,
+  prefix: string = 'TestOrg'
+): Promise<{ orgId: number; sectionId: number }> {
+  const orgName = uniqueName(prefix);
+  const org = await createOrganizationViaApi(page, orgName, 'berlin', 'Default');
+  const sections = await getSectionsViaApi(page, org.id);
+  return { orgId: org.id, sectionId: sections[0].id };
+}
+
+/**
+ * Delete a test organization and its resources.
+ * Deletes pay plans first (may not cascade from org deletion).
+ */
+export async function deleteTestOrg(
+  page: Page,
+  orgId: number
+): Promise<void> {
+  const payPlans = await getPayPlansViaApi(page, orgId).catch(
+    () => [] as Array<{ id: number; name: string }>
+  );
+  for (const pp of payPlans) {
+    await deletePayPlanViaApi(page, orgId, pp.id).catch(() => {});
+  }
+  await deleteOrganizationViaApi(page, orgId).catch(() => {});
 }
 
 /**

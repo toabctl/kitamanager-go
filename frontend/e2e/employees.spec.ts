@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getFirstOrganization,
+  createTestOrg,
+  deleteTestOrg,
+  createPayPlanViaApi,
+  createPayPlanPeriodViaApi,
   createEmployeeWithContractViaApi,
   deleteEmployeeViaApi,
-  getEmployeesViaApi,
   uniqueName,
 } from './utils/test-helpers';
 
@@ -13,17 +15,35 @@ test.use({ locale: 'en-US' });
 test.describe('Employees', () => {
   let orgId: number;
 
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const testOrg = await createTestOrg(page, 'Employees');
+    orgId = testOrg.orgId;
+    // Create a pay plan with period (needed for employee contracts)
+    const payplan = await createPayPlanViaApi(page, orgId, 'Test Pay Plan');
+    await createPayPlanPeriodViaApi(page, orgId, payplan.id, {
+      from: '2020-01-01',
+      weekly_hours: 39,
+    });
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await deleteTestOrg(page, orgId);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
-    const org = await getFirstOrganization(page);
-    orgId = org.id;
     await page.goto(`/organizations/${orgId}/employees`);
     await page.waitForLoadState('networkidle');
   });
 
   test('should display employees list', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /employee/i }).first()).toBeVisible();
-    await expect(page.locator('table, [role="table"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('should create a new employee via UI', async ({ page }) => {

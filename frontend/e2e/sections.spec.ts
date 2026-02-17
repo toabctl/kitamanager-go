@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getFirstOrganization,
+  createTestOrg,
+  deleteTestOrg,
   createSectionViaApi,
   deleteSectionViaApi,
   getSectionsViaApi,
@@ -17,10 +18,23 @@ test.use({ locale: 'en-US' });
 test.describe('Sections', () => {
   let orgId: number;
 
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const testOrg = await createTestOrg(page, 'Sections');
+    orgId = testOrg.orgId;
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await deleteTestOrg(page, orgId);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
-    const org = await getFirstOrganization(page);
-    orgId = org.id;
   });
 
   test('should display sections board', async ({ page }) => {
@@ -151,16 +165,10 @@ test.describe('Sections', () => {
 
     // Should see section column and child
     await expect(page.getByText(sectionName)).toBeVisible({ timeout: 10000 });
-    // Reload once if child not visible (concurrent tests can shift pagination boundaries)
-    if (!(await page.getByText(childFirstName).isVisible({ timeout: 5000 }).catch(() => false))) {
-      await page.reload();
-      await page.waitForLoadState('networkidle');
-    }
     await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
 
     // Cleanup
     await deleteChildViaApi(page, orgId, child.id);
     await deleteSectionViaApi(page, orgId, section.id);
   });
-
 });

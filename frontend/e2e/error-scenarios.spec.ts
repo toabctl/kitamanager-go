@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getFirstOrganization,
+  createTestOrg,
+  deleteTestOrg,
   getOrganizationsViaApi,
   deleteOrganizationViaApi,
   uniqueName,
@@ -11,6 +12,23 @@ import {
 test.use({ locale: 'en-US' });
 
 test.describe('Form Validation Errors', () => {
+  let orgId: number;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const testOrg = await createTestOrg(page, 'ErrorTests');
+    orgId = testOrg.orgId;
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await deleteTestOrg(page, orgId);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -33,9 +51,7 @@ test.describe('Form Validation Errors', () => {
   });
 
   test('should show validation error for invalid employee data', async ({ page }) => {
-    const org = await getFirstOrganization(page);
-
-    await page.goto(`/organizations/${org.id}/employees`);
+    await page.goto(`/organizations/${orgId}/employees`);
     await page.waitForLoadState('networkidle');
 
     // Open create dialog
@@ -50,9 +66,7 @@ test.describe('Form Validation Errors', () => {
   });
 
   test('should show validation error for invalid child data', async ({ page }) => {
-    const org = await getFirstOrganization(page);
-
-    await page.goto(`/organizations/${org.id}/children`);
+    await page.goto(`/organizations/${orgId}/children`);
     await page.waitForLoadState('networkidle');
 
     // Open create dialog
@@ -69,20 +83,14 @@ test.describe('Form Validation Errors', () => {
 
 test.describe('Authentication Error Scenarios', () => {
   test('should redirect to login when accessing protected page without auth', async ({ page }) => {
-    // Access protected page directly without logging in
     await page.goto('/organizations');
-
-    // Should redirect to login page
     await expect(page).toHaveURL(/.*login/, { timeout: 10000 });
   });
 
   test('should redirect to login when accessing nested protected page without auth', async ({
     page,
   }) => {
-    // Access deeply nested protected page
     await page.goto('/organizations/1/employees');
-
-    // Should redirect to login page
     await expect(page).toHaveURL(/.*login/, { timeout: 10000 });
   });
 
@@ -90,15 +98,11 @@ test.describe('Authentication Error Scenarios', () => {
     await page.goto('/login');
     await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 10000 });
 
-    // Fill form with invalid credentials
     await page.getByLabel(/email/i).fill('nonexistent@example.com');
     await page.getByLabel(/password/i).fill('wrongpassword123');
     await page.getByRole('button', { name: /sign in|login/i }).click();
 
-    // Should remain on login page
     await expect(page).toHaveURL(/.*login/, { timeout: 10000 });
-
-    // Should still be on login page (login failed)
     await expect(page).toHaveURL(/.*login/);
   });
 
@@ -106,55 +110,59 @@ test.describe('Authentication Error Scenarios', () => {
     await page.goto('/login');
     await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 10000 });
 
-    // Click login without filling fields
     await page.getByRole('button', { name: /sign in|login/i }).click();
-
-    // Should remain on login page
     await expect(page).toHaveURL(/.*login/);
   });
 });
 
 test.describe('Not Found Scenarios', () => {
+  let orgId: number;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const testOrg = await createTestOrg(page, 'NotFound');
+    orgId = testOrg.orgId;
+    await page.close();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await deleteTestOrg(page, orgId);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
 
   test('should handle non-existent organization gracefully', async ({ page }) => {
-    // Navigate to a non-existent organization
     await page.goto('/organizations/99999/employees');
     await page.waitForLoadState('networkidle');
 
-    // Page should either show an error/empty state or redirect
-    // It should NOT show an unhandled error or blank page
     const bodyText = await page.locator('body').textContent();
     expect(bodyText).toBeTruthy();
     expect(bodyText!.length).toBeGreaterThan(0);
 
-    // Should not show a raw error stack trace
     await expect(page.getByText(/TypeError|ReferenceError|Cannot read/i)).not.toBeVisible({
       timeout: 3000,
     });
   });
 
   test('should handle non-existent employee gracefully', async ({ page }) => {
-    const org = await getFirstOrganization(page);
-
-    await page.goto(`/organizations/${org.id}/employees/99999/contracts`);
+    await page.goto(`/organizations/${orgId}/employees/99999/contracts`);
     await page.waitForLoadState('networkidle');
 
-    // Should not show a raw error stack trace
     await expect(page.getByText(/TypeError|ReferenceError|Cannot read/i)).not.toBeVisible({
       timeout: 3000,
     });
   });
 
   test('should handle non-existent child gracefully', async ({ page }) => {
-    const org = await getFirstOrganization(page);
-
-    await page.goto(`/organizations/${org.id}/children/99999/contracts`);
+    await page.goto(`/organizations/${orgId}/children/99999/contracts`);
     await page.waitForLoadState('networkidle');
 
-    // Should not show a raw error stack trace
     await expect(page.getByText(/TypeError|ReferenceError|Cannot read/i)).not.toBeVisible({
       timeout: 3000,
     });
@@ -166,30 +174,40 @@ test.describe('Duplicate Resource Errors', () => {
     page,
   }) => {
     await login(page);
-    const org = await getFirstOrganization(page);
 
-    await page.goto('/organizations');
-    await page.waitForLoadState('networkidle');
+    // Create a temporary org to test duplication against
+    const testOrgName = uniqueName('DupTest');
+    const testOrg = await createTestOrg(page, 'DupTest');
 
-    // Create org with same name as existing one
-    await page.getByRole('button', { name: /new organization/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    try {
+      await page.goto('/organizations');
+      await page.waitForLoadState('networkidle');
 
-    await page.getByLabel('Name', { exact: true }).fill(org.name);
-    await page.getByLabel(/Default Section Name/i).fill('Default');
+      await page.getByRole('button', { name: /new organization/i }).click();
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
 
-    // Submit
-    await page.getByRole('button', { name: /save/i }).click();
+      // Get the test org's actual name for duplication
+      const orgs = await getOrganizationsViaApi(page);
+      const targetOrg = orgs.find((o) => o.id === testOrg.orgId);
+      const orgName = targetOrg?.name || testOrgName;
 
-    // Dialog should close - duplicate names are allowed
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
+      await page.getByLabel('Name', { exact: true }).fill(orgName);
+      await page.getByLabel(/Default Section Name/i).fill('Default');
 
-    // Cleanup: delete the duplicate org
-    const orgs = await getOrganizationsViaApi(page);
-    const duplicates = orgs.filter((o) => o.name === org.name);
-    if (duplicates.length > 1) {
-      const newest = duplicates[duplicates.length - 1];
-      await deleteOrganizationViaApi(page, newest.id);
+      await page.getByRole('button', { name: /save/i }).click();
+
+      // Dialog should close - duplicate names are allowed
+      await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
+
+      // Cleanup: delete the duplicate org
+      const allOrgs = await getOrganizationsViaApi(page);
+      const duplicates = allOrgs.filter((o) => o.name === orgName);
+      if (duplicates.length > 1) {
+        const newest = duplicates[duplicates.length - 1];
+        await deleteOrganizationViaApi(page, newest.id);
+      }
+    } finally {
+      await deleteTestOrg(page, testOrg.orgId);
     }
   });
 });
