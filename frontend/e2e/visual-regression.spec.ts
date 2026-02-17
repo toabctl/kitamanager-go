@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, getApiToken, getFirstOrganization } from './utils/test-helpers';
+import { login, getFirstOrganization } from './utils/test-helpers';
 
 // Ensure English locale for consistent text rendering
 test.use({ locale: 'en-US' });
@@ -26,8 +26,7 @@ test.describe('Visual Regression - Dashboard', () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await login(page);
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
     orgId = org.id;
     await page.close();
   });
@@ -107,8 +106,7 @@ test.describe('Visual Regression - Dialogs', () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await login(page);
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
     orgId = org.id;
     await page.close();
   });

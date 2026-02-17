@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getApiToken,
   getFirstOrganization,
   getOrganizationsViaApi,
   deleteOrganizationViaApi,
@@ -34,8 +33,7 @@ test.describe('Form Validation Errors', () => {
   });
 
   test('should show validation error for invalid employee data', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
 
     await page.goto(`/organizations/${org.id}/employees`);
     await page.waitForLoadState('networkidle');
@@ -52,8 +50,7 @@ test.describe('Form Validation Errors', () => {
   });
 
   test('should show validation error for invalid child data', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
 
     await page.goto(`/organizations/${org.id}/children`);
     await page.waitForLoadState('networkidle');
@@ -140,8 +137,7 @@ test.describe('Not Found Scenarios', () => {
   });
 
   test('should handle non-existent employee gracefully', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
 
     await page.goto(`/organizations/${org.id}/employees/99999/contracts`);
     await page.waitForLoadState('networkidle');
@@ -153,8 +149,7 @@ test.describe('Not Found Scenarios', () => {
   });
 
   test('should handle non-existent child gracefully', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
 
     await page.goto(`/organizations/${org.id}/children/99999/contracts`);
     await page.waitForLoadState('networkidle');
@@ -171,8 +166,7 @@ test.describe('Duplicate Resource Errors', () => {
     page,
   }) => {
     await login(page);
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
 
     await page.goto('/organizations');
     await page.waitForLoadState('networkidle');
@@ -191,11 +185,11 @@ test.describe('Duplicate Resource Errors', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
 
     // Cleanup: delete the duplicate org
-    const orgs = await getOrganizationsViaApi(page, token);
+    const orgs = await getOrganizationsViaApi(page);
     const duplicates = orgs.filter((o) => o.name === org.name);
     if (duplicates.length > 1) {
       const newest = duplicates[duplicates.length - 1];
-      await deleteOrganizationViaApi(page, token, newest.id);
+      await deleteOrganizationViaApi(page, newest.id);
     }
   });
 });

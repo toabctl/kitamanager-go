@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getApiToken,
   getFirstOrganization,
   createSectionViaApi,
   deleteSectionViaApi,
@@ -16,13 +15,11 @@ import {
 test.use({ locale: 'en-US' });
 
 test.describe('Sections', () => {
-  let token: string;
   let orgId: number;
 
   test.beforeEach(async ({ page }) => {
     await login(page);
-    token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
+    const org = await getFirstOrganization(page);
     orgId = org.id;
   });
 
@@ -58,17 +55,17 @@ test.describe('Sections', () => {
     await expect(page.getByText(sectionName)).toBeVisible({ timeout: 10000 });
 
     // Cleanup
-    const sections = await getSectionsViaApi(page, token, orgId);
+    const sections = await getSectionsViaApi(page, orgId);
     const created = sections.find((s) => s.name === sectionName);
     if (created) {
-      await deleteSectionViaApi(page, token, orgId, created.id);
+      await deleteSectionViaApi(page, orgId, created.id);
     }
   });
 
   test('should delete a section from Manage tab', async ({ page }) => {
     // Create section via API
     const sectionName = uniqueName('DeleteMe');
-    const section = await createSectionViaApi(page, token, orgId, sectionName);
+    const section = await createSectionViaApi(page, orgId, sectionName);
 
     await page.goto(`/organizations/${orgId}/sections`);
     await page.waitForLoadState('networkidle');
@@ -94,10 +91,10 @@ test.describe('Sections', () => {
   test('should show children grouped by section on board', async ({ page }) => {
     // Create section and child via API
     const sectionName = uniqueName('BoardSec');
-    const section = await createSectionViaApi(page, token, orgId, sectionName);
+    const section = await createSectionViaApi(page, orgId, sectionName);
 
     const childFirstName = uniqueName('BoardChild');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childFirstName,
       last_name: 'Test',
       birthdate: '2020-01-15',
@@ -105,7 +102,7 @@ test.describe('Sections', () => {
     });
 
     // Create a contract with the section so the child appears on the board
-    await createChildContractViaApi(page, token, orgId, child.id, {
+    await createChildContractViaApi(page, orgId, child.id, {
       from: formatDateForApi('2020-02-01'),
       section_id: section.id,
     });
@@ -123,8 +120,8 @@ test.describe('Sections', () => {
     await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
 
     // Cleanup
-    await deleteChildViaApi(page, token, orgId, child.id);
-    await deleteSectionViaApi(page, token, orgId, section.id);
+    await deleteChildViaApi(page, orgId, child.id);
+    await deleteSectionViaApi(page, orgId, section.id);
   });
 
 });

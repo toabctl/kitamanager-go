@@ -8,23 +8,21 @@ export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'supersecret';
 
 /**
  * Make an authenticated API request via page.evaluate.
- * Handles CSRF token extraction and auth headers in one place.
+ * Auth is handled via HttpOnly cookies (set during login).
+ * CSRF token is extracted from the non-HttpOnly csrf_token cookie.
  */
 async function apiRequest<T>(
   page: Page,
-  token: string,
   method: string,
   url: string,
   body?: unknown
 ): Promise<T> {
   return page.evaluate(
-    async ({ token, method, url, body }) => {
+    async ({ method, url, body }) => {
       const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
       const csrfToken = csrfMatch ? csrfMatch[1] : null;
 
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${token}`,
-      };
+      const headers: Record<string, string> = {};
       if (body !== undefined) {
         headers['Content-Type'] = 'application/json';
       }
@@ -35,6 +33,7 @@ async function apiRequest<T>(
       const response = await fetch(url, {
         method,
         headers,
+        credentials: 'same-origin',
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
 
@@ -49,63 +48,40 @@ async function apiRequest<T>(
       }
       return null as T;
     },
-    { token, method, url, body }
+    { method, url, body }
   );
 }
 
 /**
- * Login to the application via API and set up authentication state
- * This is more reliable than form-based login for E2E tests
+ * Login to the application via API and set up authentication state.
+ * The API sets HttpOnly cookies (access_token, refresh_token, csrf_token)
+ * which are automatically sent with subsequent requests.
  */
 export async function login(
   page: Page,
   email: string = ADMIN_EMAIL,
   password: string = ADMIN_PASSWORD
 ) {
-  // Go to login page first to initialize browser context (won't redirect away)
+  // Go to login page first to initialize browser context
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
 
-  // Login via API to get token
-  const authData = await page.evaluate(
+  // Login via API - cookies are set automatically by the browser
+  await page.evaluate(
     async ({ email, password }) => {
       const response = await fetch('/api/v1/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
         throw new Error(`Login failed: ${response.status}`);
       }
-
-      return response.json();
     },
     { email, password }
   );
-
-  if (!authData?.token) {
-    throw new Error('Failed to obtain auth token');
-  }
-
-  // Set cookie using Playwright's context API (more reliable than document.cookie)
-  await page.context().addCookies([
-    {
-      name: 'token',
-      value: authData.token,
-      domain: 'localhost',
-      path: '/',
-      httpOnly: false,
-      secure: false,
-      sameSite: 'Strict',
-    },
-  ]);
-
-  // Set localStorage for client-side auth state
-  await page.evaluate((token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('auth-storage', JSON.stringify({ state: { token }, version: 0 }));
-  }, authData.token);
 
   // Navigate to dashboard to confirm authentication
   await page.goto('/');
@@ -157,45 +133,15 @@ export async function loginViaForm(
 }
 
 /**
- * Get an API token by logging in via the API
- */
-export async function getApiToken(
-  page: Page,
-  email: string = ADMIN_EMAIL,
-  password: string = ADMIN_PASSWORD
-): Promise<string> {
-  return page.evaluate(
-    async ({ email, password }) => {
-      const response = await fetch('/api/v1/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`getApiToken login failed: ${response.status} - ${text}`);
-      }
-      const data = await response.json();
-      if (!data.token) {
-        throw new Error('getApiToken: response missing token field');
-      }
-      return data.token;
-    },
-    { email, password }
-  );
-}
-
-/**
  * Create an organization via the API
  */
 export async function createOrganizationViaApi(
   page: Page,
-  token: string,
   name: string,
   state: string = 'berlin',
   defaultSectionName: string = 'Default'
 ): Promise<{ id: number; name: string }> {
-  return apiRequest(page, token, 'POST', '/api/v1/organizations', {
+  return apiRequest(page, 'POST', '/api/v1/organizations', {
     name,
     state,
     active: true,
@@ -208,22 +154,19 @@ export async function createOrganizationViaApi(
  */
 export async function deleteOrganizationViaApi(
   page: Page,
-  token: string,
   orgId: number
 ): Promise<void> {
-  await apiRequest(page, token, 'DELETE', `/api/v1/organizations/${orgId}`);
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}`);
 }
 
 /**
  * Get organizations via the API
  */
 export async function getOrganizationsViaApi(
-  page: Page,
-  token: string
+  page: Page
 ): Promise<Array<{ id: number; name: string }>> {
   const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
     page,
-    token,
     'GET',
     '/api/v1/organizations?limit=100'
   );
@@ -238,11 +181,10 @@ export async function getOrganizationsViaApi(
  */
 export async function createEmployeeViaApi(
   page: Page,
-  token: string,
   orgId: number,
   data: { first_name: string; last_name: string; gender: string; birthdate: string }
 ): Promise<{ id: number }> {
-  return apiRequest(page, token, 'POST', `/api/v1/organizations/${orgId}/employees`, data);
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/employees`, data);
 }
 
 /**
@@ -250,11 +192,10 @@ export async function createEmployeeViaApi(
  */
 export async function createChildViaApi(
   page: Page,
-  token: string,
   orgId: number,
   data: { first_name: string; last_name: string; birthdate: string; gender: string }
 ): Promise<{ id: number }> {
-  return apiRequest(page, token, 'POST', `/api/v1/organizations/${orgId}/children`, data);
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/children`, data);
 }
 
 /**
@@ -269,11 +210,10 @@ export function uniqueName(prefix: string): string {
  */
 export async function deleteEmployeeViaApi(
   page: Page,
-  token: string,
   orgId: number,
   employeeId: number
 ): Promise<void> {
-  await apiRequest(page, token, 'DELETE', `/api/v1/organizations/${orgId}/employees/${employeeId}`);
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/employees/${employeeId}`);
 }
 
 /**
@@ -281,11 +221,10 @@ export async function deleteEmployeeViaApi(
  */
 export async function deleteChildViaApi(
   page: Page,
-  token: string,
   orgId: number,
   childId: number
 ): Promise<void> {
-  await apiRequest(page, token, 'DELETE', `/api/v1/organizations/${orgId}/children/${childId}`);
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/children/${childId}`);
 }
 
 /**
@@ -293,7 +232,6 @@ export async function deleteChildViaApi(
  */
 export async function createEmployeeContractViaApi(
   page: Page,
-  token: string,
   orgId: number,
   employeeId: number,
   data: {
@@ -309,7 +247,6 @@ export async function createEmployeeContractViaApi(
 ): Promise<{ id: number }> {
   return apiRequest(
     page,
-    token,
     'POST',
     `/api/v1/organizations/${orgId}/employees/${employeeId}/contracts`,
     data
@@ -321,7 +258,6 @@ export async function createEmployeeContractViaApi(
  */
 export async function createChildContractViaApi(
   page: Page,
-  token: string,
   orgId: number,
   childId: number,
   data: {
@@ -333,7 +269,6 @@ export async function createChildContractViaApi(
 ): Promise<{ id: number }> {
   return apiRequest(
     page,
-    token,
     'POST',
     `/api/v1/organizations/${orgId}/children/${childId}/contracts`,
     data
@@ -344,12 +279,10 @@ export async function createChildContractViaApi(
  * Get the first organization via API (assumes at least one exists from seeding)
  */
 export async function getFirstOrganization(
-  page: Page,
-  token: string
+  page: Page
 ): Promise<{ id: number; name: string }> {
   const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
     page,
-    token,
     'GET',
     '/api/v1/organizations?limit=1'
   );
@@ -371,11 +304,10 @@ export function formatDateForApi(dateStr: string): string {
  */
 export async function createSectionViaApi(
   page: Page,
-  token: string,
   orgId: number,
   name: string
 ): Promise<{ id: number; name: string }> {
-  return apiRequest(page, token, 'POST', `/api/v1/organizations/${orgId}/sections`, { name });
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/sections`, { name });
 }
 
 /**
@@ -383,11 +315,10 @@ export async function createSectionViaApi(
  */
 export async function deleteSectionViaApi(
   page: Page,
-  token: string,
   orgId: number,
   sectionId: number
 ): Promise<void> {
-  await apiRequest(page, token, 'DELETE', `/api/v1/organizations/${orgId}/sections/${sectionId}`);
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/sections/${sectionId}`);
 }
 
 /**
@@ -395,12 +326,10 @@ export async function deleteSectionViaApi(
  */
 export async function getSectionsViaApi(
   page: Page,
-  token: string,
   orgId: number
 ): Promise<Array<{ id: number; name: string }>> {
   const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
     page,
-    token,
     'GET',
     `/api/v1/organizations/${orgId}/sections?limit=100`
   );
@@ -415,12 +344,10 @@ export async function getSectionsViaApi(
  */
 export async function getPayPlansViaApi(
   page: Page,
-  token: string,
   orgId: number
 ): Promise<Array<{ id: number; name: string }>> {
   const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
     page,
-    token,
     'GET',
     `/api/v1/organizations/${orgId}/payplans?limit=100`
   );
@@ -428,4 +355,263 @@ export async function getPayPlansViaApi(
     throw new Error(`getPayPlansViaApi: response missing data array for org ${orgId}`);
   }
   return data.data;
+}
+
+/**
+ * Get employees via the API
+ */
+export async function getEmployeesViaApi(
+  page: Page,
+  orgId: number
+): Promise<Array<{ id: number; first_name: string; last_name: string }>> {
+  const data = await apiRequest<{
+    data: Array<{ id: number; first_name: string; last_name: string }>;
+  }>(page, 'GET', `/api/v1/organizations/${orgId}/employees?limit=100`);
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getEmployeesViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
+}
+
+/**
+ * Get children via the API
+ */
+export async function getChildrenViaApi(
+  page: Page,
+  orgId: number
+): Promise<Array<{ id: number; first_name: string; last_name: string }>> {
+  const data = await apiRequest<{
+    data: Array<{ id: number; first_name: string; last_name: string }>;
+  }>(page, 'GET', `/api/v1/organizations/${orgId}/children?limit=100`);
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getChildrenViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
+}
+
+/**
+ * Get users via the API
+ */
+export async function getUsersViaApi(
+  page: Page
+): Promise<Array<{ id: number; name: string; email: string }>> {
+  const data = await apiRequest<{
+    data: Array<{ id: number; name: string; email: string }>;
+  }>(page, 'GET', '/api/v1/users?limit=100');
+  if (!Array.isArray(data.data)) {
+    throw new Error('getUsersViaApi: response missing data array');
+  }
+  return data.data;
+}
+
+/**
+ * Create a user via the API
+ */
+export async function createUserViaApi(
+  page: Page,
+  data: { name: string; email: string; password: string; active?: boolean }
+): Promise<{ id: number; name: string; email: string }> {
+  return apiRequest(page, 'POST', '/api/v1/users', {
+    active: true,
+    ...data,
+  });
+}
+
+/**
+ * Delete a user via the API
+ */
+export async function deleteUserViaApi(
+  page: Page,
+  userId: number
+): Promise<void> {
+  await apiRequest(page, 'DELETE', `/api/v1/users/${userId}`);
+}
+
+/**
+ * Get groups via the API
+ */
+export async function getGroupsViaApi(
+  page: Page,
+  orgId: number
+): Promise<Array<{ id: number; name: string }>> {
+  const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
+    page,
+    'GET',
+    `/api/v1/organizations/${orgId}/groups?limit=100`
+  );
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getGroupsViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
+}
+
+/**
+ * Create a group via the API
+ */
+export async function createGroupViaApi(
+  page: Page,
+  orgId: number,
+  data: { name: string; active?: boolean }
+): Promise<{ id: number; name: string }> {
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/groups`, {
+    active: true,
+    ...data,
+  });
+}
+
+/**
+ * Delete a group via the API
+ */
+export async function deleteGroupViaApi(
+  page: Page,
+  orgId: number,
+  groupId: number
+): Promise<void> {
+  await apiRequest(
+    page,
+    'DELETE',
+    `/api/v1/organizations/${orgId}/groups/${groupId}`
+  );
+}
+
+/**
+ * Create a government funding via the API
+ */
+export async function createGovernmentFundingViaApi(
+  page: Page,
+  data: { name: string; state: string }
+): Promise<{ id: number; name: string }> {
+  return apiRequest(page, 'POST', '/api/v1/government-fundings', data);
+}
+
+/**
+ * Delete a government funding via the API
+ */
+export async function deleteGovernmentFundingViaApi(
+  page: Page,
+  fundingId: number
+): Promise<void> {
+  await apiRequest(page, 'DELETE', `/api/v1/government-fundings/${fundingId}`);
+}
+
+/**
+ * Get government fundings via the API
+ */
+export async function getGovernmentFundingsViaApi(
+  page: Page
+): Promise<Array<{ id: number; name: string }>> {
+  const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
+    page,
+    'GET',
+    '/api/v1/government-fundings?limit=100'
+  );
+  if (!Array.isArray(data.data)) {
+    throw new Error('getGovernmentFundingsViaApi: response missing data array');
+  }
+  return data.data;
+}
+
+/**
+ * Create a budget item via the API
+ */
+export async function createBudgetItemViaApi(
+  page: Page,
+  orgId: number,
+  data: { name: string; category: string; per_child?: boolean }
+): Promise<{ id: number; name: string }> {
+  return apiRequest(
+    page,
+    'POST',
+    `/api/v1/organizations/${orgId}/budget-items`,
+    data
+  );
+}
+
+/**
+ * Delete a budget item via the API
+ */
+export async function deleteBudgetItemViaApi(
+  page: Page,
+  orgId: number,
+  budgetItemId: number
+): Promise<void> {
+  await apiRequest(
+    page,
+    'DELETE',
+    `/api/v1/organizations/${orgId}/budget-items/${budgetItemId}`
+  );
+}
+
+/**
+ * Get budget items via the API
+ */
+export async function getBudgetItemsViaApi(
+  page: Page,
+  orgId: number
+): Promise<Array<{ id: number; name: string }>> {
+  const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
+    page,
+    'GET',
+    `/api/v1/organizations/${orgId}/budget-items?limit=100`
+  );
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getBudgetItemsViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
+}
+
+/**
+ * Create a pay plan via the API
+ */
+export async function createPayPlanViaApi(
+  page: Page,
+  orgId: number,
+  name: string
+): Promise<{ id: number; name: string }> {
+  return apiRequest(
+    page,
+    'POST',
+    `/api/v1/organizations/${orgId}/payplans`,
+    { name }
+  );
+}
+
+/**
+ * Delete a pay plan via the API
+ */
+export async function deletePayPlanViaApi(
+  page: Page,
+  orgId: number,
+  payPlanId: number
+): Promise<void> {
+  await apiRequest(
+    page,
+    'DELETE',
+    `/api/v1/organizations/${orgId}/payplans/${payPlanId}`
+  );
+}
+
+/**
+ * Create an employee with an active contract so it appears in the list.
+ * The employee list filters by active_on=today, so employees without
+ * an active contract won't show up.
+ */
+export async function createEmployeeWithContractViaApi(
+  page: Page,
+  orgId: number,
+  data: { first_name: string; last_name: string; gender: string; birthdate: string }
+): Promise<{ id: number }> {
+  const emp = await createEmployeeViaApi(page, orgId, data);
+  const sections = await getSectionsViaApi(page, orgId);
+  const payPlans = await getPayPlansViaApi(page, orgId);
+  await createEmployeeContractViaApi(page, orgId, emp.id, {
+    from: '2024-01-01T00:00:00Z',
+    section_id: sections[0].id,
+    staff_category: 'qualified',
+    grade: 'S8a',
+    step: 1,
+    weekly_hours: 39,
+    payplan_id: payPlans[0].id,
+  });
+  return emp;
 }

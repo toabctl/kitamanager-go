@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getApiToken,
   getFirstOrganization,
   createChildViaApi,
   createEmployeeViaApi,
@@ -19,7 +18,6 @@ import {
 test.use({ locale: 'en-US' });
 
 // Shared state across all describe blocks
-let token: string;
 let orgId: number;
 let defaultSectionId: number;
 let payplanId: number;
@@ -27,12 +25,11 @@ let payplanId: number;
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
   await login(page);
-  token = await getApiToken(page);
-  const org = await getFirstOrganization(page, token);
+  const org = await getFirstOrganization(page);
   orgId = org.id;
-  const sections = await getSectionsViaApi(page, token, orgId);
+  const sections = await getSectionsViaApi(page, orgId);
   defaultSectionId = sections[0].id;
-  const payplans = await getPayPlansViaApi(page, token, orgId);
+  const payplans = await getPayPlansViaApi(page, orgId);
   payplanId = payplans[0].id;
   await page.close();
 });
@@ -45,7 +42,7 @@ test.describe('Child Contracts - CRUD Operations', () => {
   test('should add a new contract from history page', async ({ page }) => {
     // Create a fresh child without any contracts
     const childName = uniqueName('AddContract');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childName,
       last_name: 'Test',
       birthdate: '2020-06-15',
@@ -101,14 +98,14 @@ test.describe('Child Contracts - CRUD Operations', () => {
       // Contract should appear in table with selected properties
       await expect(page.getByText(/ganztag/i)).toBeVisible({ timeout: 10000 });
     } finally {
-      await deleteChildViaApi(page, token, orgId, child.id);
+      await deleteChildViaApi(page, orgId, child.id);
     }
   });
 
   test('should show suggested properties from government funding', async ({ page }) => {
     // Create a child without contracts
     const childName = uniqueName('SuggestAttr');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childName,
       last_name: 'Test',
       birthdate: '2022-03-15',
@@ -161,21 +158,21 @@ test.describe('Child Contracts - CRUD Operations', () => {
       // Verify attributes appear in the table
       await expect(page.getByText(/ganztag/i)).toBeVisible({ timeout: 10000 });
     } finally {
-      await deleteChildViaApi(page, token, orgId, child.id);
+      await deleteChildViaApi(page, orgId, child.id);
     }
   });
 
   test('should update a contract from history page', async ({ page }) => {
     // Create a child with a contract
     const childName = uniqueName('UpdateContract');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childName,
       last_name: 'Test',
       birthdate: '2020-01-15',
       gender: 'female',
     });
 
-    await createChildContractViaApi(page, token, orgId, child.id, {
+    await createChildContractViaApi(page, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
       section_id: defaultSectionId,
       properties: { care_type: 'ganztag' },
@@ -211,21 +208,21 @@ test.describe('Child Contracts - CRUD Operations', () => {
       // Should show updated property
       await expect(page.getByText(/ndh/i)).toBeVisible({ timeout: 10000 });
     } finally {
-      await deleteChildViaApi(page, token, orgId, child.id);
+      await deleteChildViaApi(page, orgId, child.id);
     }
   });
 
   test('should delete a contract from history page', async ({ page }) => {
     // Create a child with a contract
     const childName = uniqueName('DeleteContract');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childName,
       last_name: 'Test',
       birthdate: '2019-08-20',
       gender: 'male',
     });
 
-    await createChildContractViaApi(page, token, orgId, child.id, {
+    await createChildContractViaApi(page, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
       section_id: defaultSectionId,
       properties: { care_type: 'halbtag' },
@@ -255,7 +252,7 @@ test.describe('Child Contracts - CRUD Operations', () => {
       await expect(page.getByText(/halbtag/i)).not.toBeVisible({ timeout: 10000 });
       await expect(page.getByText(/No contracts found/i).first()).toBeVisible();
     } finally {
-      await deleteChildViaApi(page, token, orgId, child.id);
+      await deleteChildViaApi(page, orgId, child.id);
     }
   });
 });
@@ -267,14 +264,14 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
     testInfo.setTimeout(60000);
     // 1. Create child with initial contract via API
     const childName = uniqueName('Workflow');
-    const child = await createChildViaApi(page, token, orgId, {
+    const child = await createChildViaApi(page, orgId, {
       first_name: childName,
       last_name: 'Test',
       birthdate: '2021-03-15',
       gender: 'female',
     });
 
-    await createChildContractViaApi(page, token, orgId, child.id, {
+    await createChildContractViaApi(page, orgId, child.id, {
       from: formatDateForApi('2024-01-01'),
       section_id: defaultSectionId,
       properties: { care_type: 'ganztag' },
@@ -343,7 +340,7 @@ test.describe('Child Contract Workflow - create child, add contract, move sectio
       await expect(contractRows.first().getByText(/2024/)).toBeVisible();
       await expect(contractRows.nth(1).getByText(/2024/)).toBeVisible();
     } finally {
-      await deleteChildViaApi(page, token, orgId, child.id);
+      await deleteChildViaApi(page, orgId, child.id);
     }
   });
 });
@@ -352,7 +349,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
   test('should add a new contract from history page', async ({ page }) => {
     // Create a fresh employee without any contracts
     const employeeName = uniqueName('AddContract');
-    const employee = await createEmployeeViaApi(page, token, orgId, {
+    const employee = await createEmployeeViaApi(page, orgId, {
       first_name: employeeName,
       last_name: 'Test',
       gender: 'male',
@@ -406,21 +403,21 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await expect(page.getByText(/Qualified Staff/i)).toBeVisible({ timeout: 10000 });
       await expect(page.getByText('S8a')).toBeVisible();
     } finally {
-      await deleteEmployeeViaApi(page, token, orgId, employee.id);
+      await deleteEmployeeViaApi(page, orgId, employee.id);
     }
   });
 
   test('should update a contract from history page', async ({ page }) => {
     // Create an employee with a contract
     const employeeName = uniqueName('UpdateContract');
-    const employee = await createEmployeeViaApi(page, token, orgId, {
+    const employee = await createEmployeeViaApi(page, orgId, {
       first_name: employeeName,
       last_name: 'Test',
       gender: 'male',
       birthdate: '1988-03-12',
     });
 
-    await createEmployeeContractViaApi(page, token, orgId, employee.id, {
+    await createEmployeeContractViaApi(page, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
       section_id: defaultSectionId,
       staff_category: 'qualified',
@@ -461,21 +458,21 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       // Should show updated values
       await expect(page.getByText(/Non-pedagogical/i)).toBeVisible({ timeout: 10000 });
     } finally {
-      await deleteEmployeeViaApi(page, token, orgId, employee.id);
+      await deleteEmployeeViaApi(page, orgId, employee.id);
     }
   });
 
   test('should delete a contract from history page', async ({ page }) => {
     // Create an employee with a contract
     const employeeName = uniqueName('DeleteContract');
-    const employee = await createEmployeeViaApi(page, token, orgId, {
+    const employee = await createEmployeeViaApi(page, orgId, {
       first_name: employeeName,
       last_name: 'Test',
       gender: 'female',
       birthdate: '1992-07-08',
     });
 
-    await createEmployeeContractViaApi(page, token, orgId, employee.id, {
+    await createEmployeeContractViaApi(page, orgId, employee.id, {
       from: formatDateForApi('2024-01-01'),
       section_id: defaultSectionId,
       staff_category: 'supplementary',
@@ -509,7 +506,7 @@ test.describe('Employee Contracts - CRUD Operations', () => {
       await expect(page.getByText(/Supplementary Staff/i)).not.toBeVisible({ timeout: 10000 });
       await expect(page.getByText(/No contracts found/i).first()).toBeVisible();
     } finally {
-      await deleteEmployeeViaApi(page, token, orgId, employee.id);
+      await deleteEmployeeViaApi(page, orgId, employee.id);
     }
   });
 });

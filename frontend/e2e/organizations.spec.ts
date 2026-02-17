@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   login,
-  getApiToken,
   createOrganizationViaApi,
   deleteOrganizationViaApi,
   getOrganizationsViaApi,
@@ -62,11 +61,10 @@ test.describe('Organizations', () => {
     await expect(page.getByText(orgName)).toBeVisible({ timeout: 10000 });
 
     // Cleanup: delete the org via API
-    const token = await getApiToken(page);
-    const orgs = await getOrganizationsViaApi(page, token);
+    const orgs = await getOrganizationsViaApi(page);
     const createdOrg = orgs.find((o) => o.name === orgName);
     if (createdOrg) {
-      await deleteOrganizationViaApi(page, token, createdOrg.id);
+      await deleteOrganizationViaApi(page, createdOrg.id);
     }
   });
 
@@ -74,8 +72,7 @@ test.describe('Organizations', () => {
     const orgName = uniqueName('API Test Org');
 
     // Create via API
-    const token = await getApiToken(page);
-    const org = await createOrganizationViaApi(page, token, orgName);
+    const org = await createOrganizationViaApi(page, orgName);
 
     // Refresh page
     await page.reload();
@@ -85,7 +82,7 @@ test.describe('Organizations', () => {
     await expect(page.getByText(orgName)).toBeVisible({ timeout: 10000 });
 
     // Cleanup
-    await deleteOrganizationViaApi(page, token, org.id);
+    await deleteOrganizationViaApi(page, org.id);
   });
 
   test('should show table headers', async ({ page }) => {
