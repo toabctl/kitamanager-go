@@ -4,6 +4,7 @@ import {
   createGovernmentFundingViaApi,
   deleteGovernmentFundingViaApi,
   getGovernmentFundingsViaApi,
+  ensureFundingHasProperties,
   uniqueName,
 } from './utils/test-helpers';
 
@@ -17,6 +18,14 @@ test.describe('Government Fundings', () => {
     await login(page);
     await page.goto('/government-fundings');
     await page.waitForLoadState('networkidle');
+  });
+
+  // Safety net: always restore Berlin funding with periods/properties after all tests
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await ensureFundingHasProperties(page);
+    await page.close();
   });
 
   test('should display government fundings list', async ({ page }) => {
@@ -60,7 +69,7 @@ test.describe('Government Fundings', () => {
     // Funding should appear in list
     await expect(page.getByText(fundingName)).toBeVisible({ timeout: 10000 });
 
-    // Cleanup: delete the test funding and restore original
+    // Cleanup: delete the test funding and restore original with properties
     const fundings = await getGovernmentFundingsViaApi(page);
     const created = fundings.find((f) => f.name === fundingName);
     if (created) {
@@ -70,6 +79,7 @@ test.describe('Government Fundings', () => {
     if (savedName) {
       await createGovernmentFundingViaApi(page, { name: savedName, state: 'berlin' });
     }
+    await ensureFundingHasProperties(page);
   });
 
   test('should edit a government funding via UI', async ({ page }) => {
@@ -141,9 +151,10 @@ test.describe('Government Fundings', () => {
     // Funding should disappear
     await expect(page.getByText(fundingName)).not.toBeVisible({ timeout: 10000 });
 
-    // Restore original funding
+    // Restore original funding with properties
     if (savedName) {
       await createGovernmentFundingViaApi(page, { name: savedName, state: 'berlin' });
     }
+    await ensureFundingHasProperties(page);
   });
 });

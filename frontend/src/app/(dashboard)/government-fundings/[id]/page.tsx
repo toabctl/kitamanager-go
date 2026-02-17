@@ -48,6 +48,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   formatDate,
+  formatDateForApi,
   formatCurrency,
   formatPeriod,
   formatAgeRange,
@@ -277,7 +278,8 @@ export default function GovernmentFundingDetailPage() {
   const onSubmitPeriod = (data: GovernmentFundingPeriodFormData) => {
     createPeriodMutation.mutate({
       ...data,
-      to: data.to || null,
+      from: formatDateForApi(data.from)!,
+      to: formatDateForApi(data.to) || null,
     });
   };
 
