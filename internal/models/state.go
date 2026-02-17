@@ -32,13 +32,3 @@ func ValidStatesString() string {
 	return strings.Join(strs, ", ")
 }
 
-// Stichtag returns the school enrollment cutoff date (month, day) for a state.
-// Children who turn 6 before this date must start school that year.
-func (s State) Stichtag() (month int, day int) {
-	switch s {
-	case StateBerlin:
-		return 9, 30 // September 30th
-	default:
-		return 9, 30 // Default fallback
-	}
-}
