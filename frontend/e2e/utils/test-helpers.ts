@@ -171,7 +171,14 @@ export async function getApiToken(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`getApiToken login failed: ${response.status} - ${text}`);
+      }
       const data = await response.json();
+      if (!data.token) {
+        throw new Error('getApiToken: response missing token field');
+      }
       return data.token;
     },
     { email, password }
