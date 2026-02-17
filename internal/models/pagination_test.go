@@ -99,94 +99,6 @@ func TestPaginationParams_Offset(t *testing.T) {
 	}
 }
 
-func TestNewPaginatedResponse(t *testing.T) {
-	tests := []struct {
-		name               string
-		data               []int
-		page               int
-		limit              int
-		total              int64
-		expectedTotalPages int
-	}{
-		{"100 items page 1 limit 20", []int{1, 2, 3}, 1, 20, 100, 5},
-		{"0 items", []int{}, 1, 20, 0, 0},
-		{"21 items limit 20", []int{1}, 1, 20, 21, 2},
-		{"20 items limit 20", []int{1}, 1, 20, 20, 1},
-		{"1 item limit 20", []int{1}, 1, 20, 1, 1},
-		{"99 items limit 20", []int{1}, 1, 20, 99, 5},
-		{"100 items limit 100", []int{1}, 1, 100, 100, 1},
-		{"101 items limit 100", []int{1}, 1, 100, 101, 2},
-		{"1 item limit 1", []int{1}, 1, 1, 1, 1},
-		{"5 items limit 1", []int{1}, 1, 1, 5, 5},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resp := NewPaginatedResponse(tt.data, tt.page, tt.limit, tt.total)
-
-			if resp.Page != tt.page {
-				t.Errorf("Page = %d, want %d", resp.Page, tt.page)
-			}
-			if resp.Limit != tt.limit {
-				t.Errorf("Limit = %d, want %d", resp.Limit, tt.limit)
-			}
-			if resp.Total != tt.total {
-				t.Errorf("Total = %d, want %d", resp.Total, tt.total)
-			}
-			if resp.TotalPages != tt.expectedTotalPages {
-				t.Errorf("TotalPages = %d, want %d", resp.TotalPages, tt.expectedTotalPages)
-			}
-			if len(resp.Data) != len(tt.data) {
-				t.Errorf("len(Data) = %d, want %d", len(resp.Data), len(tt.data))
-			}
-		})
-	}
-}
-
-func TestNewPaginatedResponse_DataPreserved(t *testing.T) {
-	data := []string{"a", "b", "c"}
-	resp := NewPaginatedResponse(data, 1, 10, 3)
-
-	if len(resp.Data) != 3 {
-		t.Fatalf("len(Data) = %d, want 3", len(resp.Data))
-	}
-	if resp.Data[0] != "a" || resp.Data[1] != "b" || resp.Data[2] != "c" {
-		t.Errorf("Data = %v, want [a b c]", resp.Data)
-	}
-}
-
-func TestNewPaginatedResponse_EmptySlice(t *testing.T) {
-	var data []string
-	resp := NewPaginatedResponse(data, 1, 20, 0)
-
-	if len(resp.Data) != 0 {
-		t.Errorf("Data should be empty, got %v", resp.Data)
-	}
-	if resp.TotalPages != 0 {
-		t.Errorf("TotalPages = %d, want 0", resp.TotalPages)
-	}
-}
-
-func TestNewPaginatedResponse_GenericType(t *testing.T) {
-	type CustomType struct {
-		ID   int
-		Name string
-	}
-
-	data := []CustomType{{ID: 1, Name: "First"}, {ID: 2, Name: "Second"}}
-	resp := NewPaginatedResponse(data, 2, 10, 25)
-
-	if len(resp.Data) != 2 {
-		t.Fatalf("len(Data) = %d, want 2", len(resp.Data))
-	}
-	if resp.Data[0].ID != 1 || resp.Data[0].Name != "First" {
-		t.Errorf("Data[0] = %v, want {1 First}", resp.Data[0])
-	}
-	if resp.TotalPages != 3 {
-		t.Errorf("TotalPages = %d, want 3", resp.TotalPages)
-	}
-}
-
 func TestPaginationParams_SetDefaults_Idempotent(t *testing.T) {
 	params := PaginationParams{Page: 0, Limit: 0}
 	params.SetDefaults()
@@ -221,19 +133,19 @@ func TestPaginationParams_ValidateThenSetDefaults(t *testing.T) {
 
 func TestPaginatedResponse_TotalPagesCalculation(t *testing.T) {
 	// Edge case: exactly divisible
-	resp := NewPaginatedResponse([]int{}, 1, 25, 100)
+	resp := NewPaginatedResponseWithLinks([]int{}, 1, 25, 100, "/test")
 	if resp.TotalPages != 4 {
 		t.Errorf("100/25 should give 4 total pages, got %d", resp.TotalPages)
 	}
 
 	// Edge case: not exactly divisible (ceiling)
-	resp = NewPaginatedResponse([]int{}, 1, 25, 101)
+	resp = NewPaginatedResponseWithLinks([]int{}, 1, 25, 101, "/test")
 	if resp.TotalPages != 5 {
 		t.Errorf("101/25 should give 5 total pages (ceiling), got %d", resp.TotalPages)
 	}
 
 	// Edge case: single item
-	resp = NewPaginatedResponse([]int{}, 1, 20, 1)
+	resp = NewPaginatedResponseWithLinks([]int{}, 1, 20, 1, "/test")
 	if resp.TotalPages != 1 {
 		t.Errorf("1 item should give 1 total page, got %d", resp.TotalPages)
 	}

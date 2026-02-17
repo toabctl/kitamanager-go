@@ -59,21 +59,6 @@ type PaginatedResponse[T any] struct {
 	Links      *PaginationLinks `json:"_links,omitempty"`
 }
 
-// NewPaginatedResponse creates a new paginated response (without links for backwards compatibility)
-func NewPaginatedResponse[T any](data []T, page, limit int, total int64) PaginatedResponse[T] {
-	totalPages := int(total) / limit
-	if int(total)%limit > 0 {
-		totalPages++
-	}
-	return PaginatedResponse[T]{
-		Data:       data,
-		Page:       page,
-		Limit:      limit,
-		Total:      total,
-		TotalPages: totalPages,
-	}
-}
-
 // NewPaginatedResponseWithLinks creates a new paginated response with HATEOAS links
 func NewPaginatedResponseWithLinks[T any](data []T, page, limit int, total int64, basePath string) PaginatedResponse[T] {
 	totalPages := int(total) / limit
