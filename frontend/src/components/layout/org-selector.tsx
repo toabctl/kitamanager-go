@@ -55,7 +55,7 @@ export function OrgSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
+        <Button variant="outline" className="w-full justify-between" data-testid="org-selector">
           <span className="flex items-center">
             <Building2 className="mr-2 h-4 w-4" />
             <span className="truncate">

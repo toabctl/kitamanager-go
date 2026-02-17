@@ -45,7 +45,7 @@ test.describe('Navigation', () => {
 
   test('should show organization selector', async ({ page }) => {
     // Organization selector should be visible
-    const orgSelector = page.locator('button').filter({ hasText: /select|organization|kita/i }).first();
+    const orgSelector = page.getByTestId('org-selector');
     await expect(orgSelector).toBeVisible({ timeout: 10000 });
   });
 });
