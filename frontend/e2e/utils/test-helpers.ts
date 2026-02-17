@@ -227,7 +227,10 @@ export async function getOrganizationsViaApi(
     'GET',
     '/api/v1/organizations?limit=100'
   );
-  return data.data || [];
+  if (!Array.isArray(data.data)) {
+    throw new Error('getOrganizationsViaApi: response missing data array');
+  }
+  return data.data;
 }
 
 /**
@@ -401,7 +404,10 @@ export async function getSectionsViaApi(
     'GET',
     `/api/v1/organizations/${orgId}/sections?limit=100`
   );
-  return data.data || [];
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getSectionsViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
 }
 
 /**
@@ -418,5 +424,8 @@ export async function getPayPlansViaApi(
     'GET',
     `/api/v1/organizations/${orgId}/payplans?limit=100`
   );
-  return data.data || [];
+  if (!Array.isArray(data.data)) {
+    throw new Error(`getPayPlansViaApi: response missing data array for org ${orgId}`);
+  }
+  return data.data;
 }
