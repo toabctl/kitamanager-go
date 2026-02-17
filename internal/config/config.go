@@ -183,7 +183,7 @@ func isValidPort(port string) bool {
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
-	corsOrigins := getEnv("CORS_ALLOW_ORIGINS", "http://localhost:5173,http://localhost:8080")
+	corsOrigins := getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:8080")
 	origins := strings.Split(corsOrigins, ",")
 	for i := range origins {
 		origins[i] = strings.TrimSpace(origins[i])

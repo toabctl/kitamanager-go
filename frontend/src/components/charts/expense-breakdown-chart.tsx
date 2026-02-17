@@ -22,6 +22,11 @@ function formatEur(cents: number): string {
   return (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
 
+function formatPct(value: number, total: number): string {
+  if (total === 0) return '0%';
+  return `${((value / total) * 100).toFixed(1)}%`;
+}
+
 const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#e879f9', '#fb923c', '#a855f7'];
 
 export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
@@ -80,6 +85,8 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
     return slices;
   }, [data, t]);
 
+  const total = useMemo(() => pieData.reduce((sum, s) => sum + s.value, 0), [pieData]);
+
   if (pieData.length === 0) {
     return <p className="text-muted-foreground">{t('statistics.chartError')}</p>;
   }
@@ -100,7 +107,7 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
         arcLinkLabelsColor={{ from: 'color' }}
         arcLabelsSkipAngle={10}
         arcLabelsTextColor="white"
-        valueFormat={(v) => formatEur(v * 100)}
+        arcLabel={(d) => formatPct(d.value, total)}
         tooltip={({ datum }) => {
           const sd = (datum.data as SliceDatum).salaryDetail;
           return (
@@ -126,7 +133,9 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
                 />
                 <strong>{datum.label}</strong>
               </div>
-              <div style={{ marginTop: 4 }}>{formatEur(datum.value * 100)}</div>
+              <div style={{ marginTop: 4 }}>
+                {formatEur(datum.value * 100)} ({formatPct(datum.value, total)})
+              </div>
               {sd && (
                 <div style={{ marginTop: 4, fontSize: 12, opacity: 0.8 }}>
                   <div>

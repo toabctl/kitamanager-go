@@ -14,6 +14,11 @@ function formatEur(cents: number): string {
   return (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
 
+function formatPct(value: number, total: number): string {
+  if (total === 0) return '0%';
+  return `${((value / total) * 100).toFixed(1)}%`;
+}
+
 const COLORS = ['#22c55e', '#14b8a6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
 export function FundingBreakdownChart({ data }: FundingBreakdownChartProps) {
@@ -48,6 +53,8 @@ export function FundingBreakdownChart({ data }: FundingBreakdownChartProps) {
     return slices;
   }, [data, t]);
 
+  const total = useMemo(() => pieData.reduce((sum, s) => sum + s.value, 0), [pieData]);
+
   if (pieData.length === 0) {
     return <p className="text-muted-foreground">{t('statistics.chartError')}</p>;
   }
@@ -68,7 +75,7 @@ export function FundingBreakdownChart({ data }: FundingBreakdownChartProps) {
         arcLinkLabelsColor={{ from: 'color' }}
         arcLabelsSkipAngle={10}
         arcLabelsTextColor="white"
-        valueFormat={(v) => formatEur(v * 100)}
+        arcLabel={(d) => formatPct(d.value, total)}
         tooltip={({ datum }) => (
           <div
             style={{
@@ -92,7 +99,9 @@ export function FundingBreakdownChart({ data }: FundingBreakdownChartProps) {
               />
               <strong>{datum.label}</strong>
             </div>
-            <div style={{ marginTop: 4 }}>{formatEur(datum.value * 100)}</div>
+            <div style={{ marginTop: 4 }}>
+              {formatEur(datum.value * 100)} ({formatPct(datum.value, total)})
+            </div>
           </div>
         )}
         theme={chartTheme}
