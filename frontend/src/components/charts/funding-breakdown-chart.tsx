@@ -20,14 +20,33 @@ export function FundingBreakdownChart({ data }: FundingBreakdownChartProps) {
   const t = useTranslations();
 
   const pieData = useMemo(() => {
-    if (!data.funding_details?.length) return [];
-    return data.funding_details.map((fd, i) => ({
-      id: fd.value,
-      label: fd.value,
-      value: fd.amount_cents / 100,
-      color: COLORS[i % COLORS.length],
-    }));
-  }, [data.funding_details]);
+    const slices: { id: string; label: string; value: number; color: string }[] = [];
+    let colorIdx = 0;
+
+    data.funding_details?.forEach((fd) => {
+      if (fd.amount_cents > 0) {
+        slices.push({
+          id: `funding_${fd.key}_${fd.value}`,
+          label: fd.value,
+          value: fd.amount_cents / 100,
+          color: COLORS[colorIdx++ % COLORS.length],
+        });
+      }
+    });
+
+    data.budget_item_details
+      ?.filter((bi) => bi.category === 'income' && bi.amount_cents > 0)
+      .forEach((bi) => {
+        slices.push({
+          id: `budget_${bi.name}`,
+          label: bi.name,
+          value: bi.amount_cents / 100,
+          color: COLORS[colorIdx++ % COLORS.length],
+        });
+      });
+
+    return slices;
+  }, [data, t]);
 
   if (pieData.length === 0) {
     return <p className="text-muted-foreground">{t('statistics.chartError')}</p>;
