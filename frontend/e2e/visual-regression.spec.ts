@@ -21,6 +21,17 @@ test.describe('Visual Regression - Login', () => {
 });
 
 test.describe('Visual Regression - Dashboard', () => {
+  let orgId: number;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const token = await getApiToken(page);
+    const org = await getFirstOrganization(page, token);
+    orgId = org.id;
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -36,10 +47,7 @@ test.describe('Visual Regression - Dashboard', () => {
   });
 
   test('employees list', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/employees`);
+    await page.goto(`/organizations/${orgId}/employees`);
     await page.waitForLoadState('networkidle');
     // Wait for table to render
     await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 10000 });
@@ -50,10 +58,7 @@ test.describe('Visual Regression - Dashboard', () => {
   });
 
   test('children list', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/children`);
+    await page.goto(`/organizations/${orgId}/children`);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 10000 });
 
@@ -63,10 +68,7 @@ test.describe('Visual Regression - Dashboard', () => {
   });
 
   test('sections board', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/sections`);
+    await page.goto(`/organizations/${orgId}/sections`);
     await page.waitForLoadState('networkidle');
     // Wait for the kanban board to render
     await expect(page.getByText(/drag children/i)).toBeVisible({ timeout: 10000 });
@@ -77,10 +79,7 @@ test.describe('Visual Regression - Dashboard', () => {
   });
 
   test('statistics overview page', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/statistics`);
+    await page.goto(`/organizations/${orgId}/statistics`);
     await page.waitForLoadState('networkidle');
     // Wait for statistics cards to render
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
@@ -91,10 +90,7 @@ test.describe('Visual Regression - Dashboard', () => {
   });
 
   test('statistics financials page', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/statistics/financials`);
+    await page.goto(`/organizations/${orgId}/statistics/financials`);
     await page.waitForLoadState('networkidle');
     // Wait for the financial overview chart card to render
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
@@ -106,6 +102,17 @@ test.describe('Visual Regression - Dashboard', () => {
 });
 
 test.describe('Visual Regression - Dialogs', () => {
+  let orgId: number;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const token = await getApiToken(page);
+    const org = await getFirstOrganization(page, token);
+    orgId = org.id;
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -123,10 +130,7 @@ test.describe('Visual Regression - Dialogs', () => {
   });
 
   test('create employee dialog', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/employees`);
+    await page.goto(`/organizations/${orgId}/employees`);
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: /new employee/i }).click();
@@ -138,10 +142,7 @@ test.describe('Visual Regression - Dialogs', () => {
   });
 
   test('create child dialog', async ({ page }) => {
-    const token = await getApiToken(page);
-    const org = await getFirstOrganization(page, token);
-
-    await page.goto(`/organizations/${org.id}/children`);
+    await page.goto(`/organizations/${orgId}/children`);
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: /new child/i }).click();
