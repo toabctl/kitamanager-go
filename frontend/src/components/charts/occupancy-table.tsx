@@ -28,13 +28,24 @@ export function OccupancyTable({ data }: OccupancyTableProps) {
 
   // Build rows: one per (age group × care type) combination
   const matrixRows = useMemo(() => {
-    const rows: { ageLabel: string; careTypeLabel: string; values: number[] }[] = [];
-    for (const ag of data.age_groups) {
+    const rows: {
+      ageLabel: string;
+      careTypeLabel: string;
+      ageGroupIndex: number;
+      values: number[];
+    }[] = [];
+    for (let agIdx = 0; agIdx < data.age_groups.length; agIdx++) {
+      const ag = data.age_groups[agIdx];
       for (const ct of data.care_types) {
         const values = data.data_points.map(
           (dp) => dp.by_age_and_care_type?.[ag.label]?.[ct.value] ?? 0
         );
-        rows.push({ ageLabel: ag.label, careTypeLabel: ct.label || ct.value, values });
+        rows.push({
+          ageLabel: ag.label,
+          careTypeLabel: ct.label || ct.value,
+          ageGroupIndex: agIdx,
+          values,
+        });
       }
     }
     return rows;
@@ -75,18 +86,23 @@ export function OccupancyTable({ data }: OccupancyTableProps) {
             // Show age group label only on first row of each group
             const isFirstInGroup = idx === 0 || matrixRows[idx - 1].ageLabel !== row.ageLabel;
             const rowsInGroup = matrixRows.filter((r) => r.ageLabel === row.ageLabel).length;
+            const isEvenGroup = row.ageGroupIndex % 2 === 0;
+            const rowBg = isEvenGroup ? 'bg-muted/50' : 'bg-background';
 
             return (
-              <TableRow key={`${row.ageLabel}-${row.careTypeLabel}`}>
+              <TableRow
+                key={`${row.ageLabel}-${row.careTypeLabel}`}
+                className={`${rowBg}${isFirstInGroup && idx > 0 ? 'border-t-2' : ''}`}
+              >
                 {isFirstInGroup ? (
                   <TableCell
-                    className="sticky left-0 z-10 bg-background font-medium"
+                    className={`sticky left-0 z-10 ${rowBg} font-medium`}
                     rowSpan={rowsInGroup}
                   >
                     {row.ageLabel}
                   </TableCell>
                 ) : null}
-                <TableCell className="sticky left-[80px] z-10 bg-background">
+                <TableCell className={`sticky left-[80px] z-10 ${rowBg}`}>
                   {row.careTypeLabel}
                 </TableCell>
                 {row.values.map((val, i) => (
