@@ -13,13 +13,8 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import { formatCurrency, getCurrentMonthStart } from '@/lib/utils/formatting';
 
 const FinancialsChart = dynamic(
-  () => import('@/components/charts/financials-chart').then((mod) => mod.FinancialsChart),
-  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full" /> }
-);
-
-const FinancialsBarChart = dynamic(
-  () => import('@/components/charts/financials-bar-chart').then((mod) => mod.FinancialsBarChart),
-  { ssr: false, loading: () => <Skeleton className="h-[350px] w-full" /> }
+  () => import('@/components/charts/financials-bar-chart').then((mod) => mod.FinancialsChart),
+  { ssr: false, loading: () => <Skeleton className="h-[400px] w-full" /> }
 );
 
 export default function FinancialsPage() {
@@ -104,31 +99,10 @@ export default function FinancialsPage() {
         </CardHeader>
         <CardContent>
           {isLoadingFinancials ? (
-            <Skeleton className="h-[350px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
           ) : financials ? (
             <ChartErrorBoundary>
               <FinancialsChart data={financials} />
-            </ChartErrorBoundary>
-          ) : (
-            <p className="text-muted-foreground">{t('statistics.chartError')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Income & Expenses Breakdown Bar Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('statistics.financialBreakdown')}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {t('statistics.financialBreakdownDescription')}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingFinancials ? (
-            <Skeleton className="h-[350px] w-full" />
-          ) : financials ? (
-            <ChartErrorBoundary>
-              <FinancialsBarChart data={financials} />
             </ChartErrorBoundary>
           ) : (
             <p className="text-muted-foreground">{t('statistics.chartError')}</p>
