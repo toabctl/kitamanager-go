@@ -45,7 +45,7 @@ func (s *UserGroupStore) UpdateRole(ctx context.Context, userID, groupID uint, r
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return ErrNotFound
 	}
 	return nil
 }
@@ -186,7 +186,7 @@ func (s *UserGroupStore) SetSuperAdmin(ctx context.Context, userID uint, isSuper
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return ErrNotFound
 	}
 	return nil
 }

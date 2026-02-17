@@ -1,9 +1,8 @@
 package store
 
 import (
+	"errors"
 	"testing"
-
-	"gorm.io/gorm"
 
 	"github.com/eenemeene/kitamanager-go/internal/models"
 )
@@ -104,8 +103,8 @@ func TestUserGroupStore_UpdateRole_NonExistent(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-existent relationship, got nil")
 	}
-	if err != gorm.ErrRecordNotFound {
-		t.Errorf("expected gorm.ErrRecordNotFound, got %v", err)
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
 
@@ -644,8 +643,8 @@ func TestUserGroupStore_SetSuperAdmin_NonExistent(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-existent user")
 	}
-	if err != gorm.ErrRecordNotFound {
-		t.Errorf("expected gorm.ErrRecordNotFound, got %v", err)
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
 
