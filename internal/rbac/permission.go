@@ -3,7 +3,6 @@ package rbac
 import (
 	"context"
 
-	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
@@ -86,25 +85,6 @@ func (s *PermissionService) HasPermissionInAnyOrg(ctx context.Context, userID ui
 	}
 
 	return false, nil
-}
-
-// GetUserRoles returns all roles a user has in a specific organization
-func (s *PermissionService) GetUserRoles(ctx context.Context, userID, orgID uint) ([]models.Role, error) {
-	memberships, err := s.userGroupStore.FindByUserAndOrg(ctx, userID, orgID)
-	if err != nil {
-		return nil, err
-	}
-
-	roles := make([]models.Role, 0, len(memberships))
-	for _, m := range memberships {
-		roles = append(roles, m.Role)
-	}
-	return roles, nil
-}
-
-// GetEffectiveRole returns the highest role a user has in an organization
-func (s *PermissionService) GetEffectiveRole(ctx context.Context, userID, orgID uint) (models.Role, error) {
-	return s.userGroupStore.GetEffectiveRoleInOrg(ctx, userID, orgID)
 }
 
 // HasAnyRoleInOrg checks if user has any role in the organization
