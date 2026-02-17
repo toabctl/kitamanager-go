@@ -54,7 +54,7 @@ type ChildUpdateRequest struct {
 	FirstName *string `json:"first_name" binding:"omitempty,max=255" example:"Emma"`
 	LastName  *string `json:"last_name" binding:"omitempty,max=255" example:"Schmidt"`
 	Gender    *string `json:"gender" binding:"omitempty" example:"female"`
-	Birthdate *string `json:"birthdate" example:"2020-03-10"`
+	Birthdate *string `json:"birthdate" binding:"omitempty" example:"2020-03-10"`
 }
 
 // ChildResponse represents the child response

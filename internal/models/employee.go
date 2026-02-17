@@ -72,7 +72,7 @@ type EmployeeUpdateRequest struct {
 	FirstName *string `json:"first_name" binding:"omitempty,max=255" example:"Max"`
 	LastName  *string `json:"last_name" binding:"omitempty,max=255" example:"Mustermann"`
 	Gender    *string `json:"gender" binding:"omitempty" example:"male"`
-	Birthdate *string `json:"birthdate" example:"1990-05-15"`
+	Birthdate *string `json:"birthdate" binding:"omitempty" example:"1990-05-15"`
 }
 
 // EmployeeResponse represents the employee response
