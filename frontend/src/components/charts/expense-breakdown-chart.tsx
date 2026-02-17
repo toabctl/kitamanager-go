@@ -101,6 +101,7 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
         cornerRadius={3}
         activeOuterRadiusOffset={6}
         colors={{ datum: 'data.color' }}
+        arcLinkLabel="label"
         arcLinkLabelsSkipAngle={10}
         arcLinkLabelsTextColor="hsl(var(--foreground))"
         arcLinkLabelsThickness={2}
