@@ -88,6 +88,45 @@ test.describe('Sections', () => {
     await expect(page.getByText(sectionName)).not.toBeVisible({ timeout: 10000 });
   });
 
+  test('should edit a section from Manage tab', async ({ page }) => {
+    // Create section via API
+    const origName = uniqueName('EditSec');
+    const section = await createSectionViaApi(page, orgId, origName);
+
+    await page.goto(`/organizations/${orgId}/sections`);
+    await page.waitForLoadState('networkidle');
+
+    // Switch to Manage tab
+    await page.getByRole('tab', { name: /manage/i }).click();
+
+    // Wait for section to appear
+    await expect(page.getByText(origName)).toBeVisible({ timeout: 10000 });
+
+    // Click edit button on the section's row
+    const row = page.getByRole('row').filter({ hasText: origName });
+    await row.getByRole('button', { name: /edit/i }).click();
+
+    // Dialog should open
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+
+    // Modify name
+    const updatedName = uniqueName('Updated');
+    await page.getByLabel(/name/i).clear();
+    await page.getByLabel(/name/i).fill(updatedName);
+
+    // Submit
+    await page.getByRole('button', { name: /save/i }).click();
+
+    // Dialog should close
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
+
+    // Updated name should appear
+    await expect(page.getByText(updatedName)).toBeVisible({ timeout: 10000 });
+
+    // Cleanup
+    await deleteSectionViaApi(page, orgId, section.id);
+  });
+
   test('should show children grouped by section on board', async ({ page }) => {
     // Create section and child via API
     const sectionName = uniqueName('BoardSec');

@@ -91,4 +91,61 @@ test.describe('Organizations', () => {
     await expect(page.getByRole('columnheader', { name: /state/i })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible();
   });
+
+  test('should edit an organization via UI', async ({ page }) => {
+    // Setup: create organization via API
+    const origName = uniqueName('EditOrg');
+    const org = await createOrganizationViaApi(page, origName);
+
+    // Reload to see the organization
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(origName)).toBeVisible({ timeout: 10000 });
+
+    // Click edit button on the organization's row
+    const row = page.getByRole('row').filter({ hasText: origName });
+    await row.getByRole('button', { name: /edit/i }).click();
+
+    // Dialog should open
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+
+    // Modify name
+    const updatedName = uniqueName('Updated');
+    await page.getByLabel('Name', { exact: true }).clear();
+    await page.getByLabel('Name', { exact: true }).fill(updatedName);
+
+    // Submit
+    await page.getByRole('button', { name: /save/i }).click();
+
+    // Dialog should close
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
+
+    // Updated name should appear
+    await expect(page.getByText(updatedName)).toBeVisible({ timeout: 10000 });
+
+    // Cleanup
+    await deleteOrganizationViaApi(page, org.id);
+  });
+
+  test('should delete an organization via UI', async ({ page }) => {
+    // Setup: create organization via API
+    const orgName = uniqueName('DelOrg');
+    const org = await createOrganizationViaApi(page, orgName);
+
+    // Reload to see the organization
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText(orgName)).toBeVisible({ timeout: 10000 });
+
+    // Click delete button on the organization's row
+    const row = page.getByRole('row').filter({ hasText: orgName });
+    await row.getByRole('button', { name: /delete/i }).click();
+
+    // Confirm deletion in alert dialog
+    await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 });
+    await page.getByRole('button', { name: /delete/i }).click();
+
+    // Organization should disappear
+    await expect(page.getByText(orgName)).not.toBeVisible({ timeout: 10000 });
+  });
 });
