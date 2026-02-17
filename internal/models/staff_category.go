@@ -23,11 +23,3 @@ func IsValidStaffCategory(s string) bool {
 	return false
 }
 
-// ValidStaffCategoryStrings returns the valid staff category values as strings
-func ValidStaffCategoryStrings() []string {
-	result := make([]string, len(ValidStaffCategories))
-	for i, s := range ValidStaffCategories {
-		result[i] = string(s)
-	}
-	return result
-}

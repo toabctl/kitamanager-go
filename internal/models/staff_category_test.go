@@ -20,19 +20,6 @@ func TestIsValidStaffCategory_Invalid(t *testing.T) {
 	}
 }
 
-func TestValidStaffCategoryStrings(t *testing.T) {
-	strings := ValidStaffCategoryStrings()
-	if len(strings) != 3 {
-		t.Errorf("ValidStaffCategoryStrings() returned %d items, want 3", len(strings))
-	}
-	expected := map[string]bool{"qualified": true, "supplementary": true, "non_pedagogical": true}
-	for _, s := range strings {
-		if !expected[s] {
-			t.Errorf("unexpected staff category string: %q", s)
-		}
-	}
-}
-
 func TestStaffCategory_Constants(t *testing.T) {
 	if string(StaffCategoryQualified) != "qualified" {
 		t.Errorf("StaffCategoryQualified = %q, want %q", StaffCategoryQualified, "qualified")
