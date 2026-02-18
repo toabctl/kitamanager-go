@@ -6688,6 +6688,79 @@
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/statistics/staffing-hours/employees": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns monthly contracted weekly hours for each employee, with one row per employee and one column per month.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "Get per-employee staffing hours",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD), defaults to 12 months ago",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD), defaults to 6 months ahead",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by section ID",
+                        "name": "section_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/users": {
             "get": {
                 "security": [
@@ -8584,6 +8657,50 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursResponse": {
+            "type": "object",
+            "properties": {
+                "dates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "employees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursRow"
+                    }
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursRow": {
+            "type": "object",
+            "properties": {
+                "employee_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "Max"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Mustermann"
+                },
+                "monthly_hours": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "staff_category": {
+                    "type": "string",
+                    "example": "qualified"
                 }
             }
         },

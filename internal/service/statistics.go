@@ -217,6 +217,76 @@ func (s *StatisticsService) GetStaffingHours(ctx context.Context, orgID uint, fr
 	}, nil
 }
 
+// GetEmployeeStaffingHours returns per-employee monthly contracted hours
+func (s *StatisticsService) GetEmployeeStaffingHours(ctx context.Context, orgID uint, from, to *time.Time, sectionID *uint) (*models.EmployeeStaffingHoursResponse, error) {
+	rangeStart, rangeEnd := snapDateRange(from, to)
+
+	// Fetch employees with contracts in range
+	employees, err := s.employeeStore.FindByOrganizationInDateRange(ctx, orgID, rangeStart, rangeEnd, sectionID)
+	if err != nil {
+		return nil, apperror.InternalWrap(err, "failed to fetch employees")
+	}
+
+	// Build dates array
+	numMonths := monthCount(rangeStart, rangeEnd)
+	dates := make([]string, 0, numMonths)
+	for date := rangeStart; !date.After(rangeEnd); date = date.AddDate(0, 1, 0) {
+		dates = append(dates, date.Format(models.DateFormat))
+	}
+
+	// Build rows
+	rows := make([]models.EmployeeStaffingHoursRow, 0, len(employees))
+	for i := range employees {
+		emp := &employees[i]
+
+		// Determine staff category from the most recent contract
+		staffCategory := ""
+		if len(emp.Contracts) > 0 {
+			latest := emp.Contracts[0]
+			for _, c := range emp.Contracts[1:] {
+				if c.From.After(latest.From) {
+					latest = c
+				}
+			}
+			staffCategory = latest.StaffCategory
+		}
+
+		monthlyHours := make([]float64, numMonths)
+		monthIdx := 0
+		for date := rangeStart; !date.After(rangeEnd); date = date.AddDate(0, 1, 0) {
+			for j := range emp.Contracts {
+				contract := &emp.Contracts[j]
+				if contract.IsActiveOn(date) {
+					monthlyHours[monthIdx] = contract.WeeklyHours
+					break
+				}
+			}
+			monthIdx++
+		}
+
+		rows = append(rows, models.EmployeeStaffingHoursRow{
+			EmployeeID:    emp.ID,
+			FirstName:     emp.FirstName,
+			LastName:      emp.LastName,
+			StaffCategory: staffCategory,
+			MonthlyHours:  monthlyHours,
+		})
+	}
+
+	// Sort by last name, first name
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].LastName != rows[j].LastName {
+			return rows[i].LastName < rows[j].LastName
+		}
+		return rows[i].FirstName < rows[j].FirstName
+	})
+
+	return &models.EmployeeStaffingHoursResponse{
+		Dates:     dates,
+		Employees: rows,
+	}, nil
+}
+
 // GetFinancials calculates monthly financial data points (income, expenses, balance)
 func (s *StatisticsService) GetFinancials(ctx context.Context, orgID uint, from, to *time.Time) (*models.FinancialResponse, error) {
 	rangeStart, rangeEnd := snapDateRange(from, to)

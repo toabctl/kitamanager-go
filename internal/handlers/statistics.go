@@ -86,6 +86,67 @@ func (h *StatisticsHandler) GetStaffingHours(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetEmployeeStaffingHours godoc
+// @Summary Get per-employee staffing hours
+// @Description Returns monthly contracted weekly hours for each employee, with one row per employee and one column per month.
+// @Tags statistics
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param from query string false "Start date (YYYY-MM-DD), defaults to 12 months ago"
+// @Param to query string false "End date (YYYY-MM-DD), defaults to 6 months ahead"
+// @Param section_id query int false "Filter by section ID"
+// @Success 200 {object} models.EmployeeStaffingHoursResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/v1/organizations/{orgId}/statistics/staffing-hours/employees [get]
+func (h *StatisticsHandler) GetEmployeeStaffingHours(c *gin.Context) {
+	orgID, ok := parseOrgID(c)
+	if !ok {
+		return
+	}
+
+	var from, to *time.Time
+	if fromStr := c.Query("from"); fromStr != "" {
+		parsed, err := time.Parse(models.DateFormat, fromStr)
+		if err != nil {
+			respondError(c, apperror.BadRequest("invalid date format for from, expected YYYY-MM-DD"))
+			return
+		}
+		from = &parsed
+	}
+	if toStr := c.Query("to"); toStr != "" {
+		parsed, err := time.Parse(models.DateFormat, toStr)
+		if err != nil {
+			respondError(c, apperror.BadRequest("invalid date format for to, expected YYYY-MM-DD"))
+			return
+		}
+		to = &parsed
+	}
+
+	if from != nil && to != nil {
+		if err := validateDateRange(*from, *to, MaxDateRangeMonths); err != nil {
+			respondError(c, err)
+			return
+		}
+	}
+
+	sectionID, ok := parseOptionalUint(c, "section_id")
+	if !ok {
+		return
+	}
+
+	result, err := h.service.GetEmployeeStaffingHours(c.Request.Context(), orgID, from, to, sectionID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // GetOccupancy godoc
 // @Summary Get occupancy matrix statistics
 // @Description Returns monthly data points showing the occupancy matrix: children broken down by age group and care type,

@@ -170,7 +170,9 @@
     "staffingBalance": "Deckung",
     "staffingBalancePercent": "Deckung %",
     "staffCount": "Mitarbeiter",
-    "average": "Durchschnitt"
+    "average": "Durchschnitt",
+    "employeeStaffingHoursGrid": "Mitarbeiter-Stunden-Übersicht",
+    "employeeName": "Mitarbeiter"
   },
   "months": {
     "jan": "Jan",

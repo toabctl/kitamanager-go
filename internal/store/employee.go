@@ -225,6 +225,36 @@ func (s *EmployeeStore) FindContractsByOrganizationInDateRange(ctx context.Conte
 	return contracts, nil
 }
 
+// FindByOrganizationInDateRange returns employees that have contracts overlapping the given date range.
+// Employees are returned with their contracts preloaded (only those overlapping the range).
+// Optional sectionID filters on the contract's section.
+func (s *EmployeeStore) FindByOrganizationInDateRange(ctx context.Context, orgID uint, rangeStart, rangeEnd time.Time, sectionID *uint) ([]models.Employee, error) {
+	var employees []models.Employee
+
+	query := DBFromContext(ctx, s.db).
+		Preload("Contracts", func(db *gorm.DB) *gorm.DB {
+			q := db.Where("from_date <= ? AND (to_date IS NULL OR to_date >= ?)", rangeEnd, rangeStart)
+			if sectionID != nil {
+				q = q.Where("section_id = ?", *sectionID)
+			}
+			return q
+		}).
+		Joins("JOIN employee_contracts ON employee_contracts.employee_id = employees.id").
+		Where("employees.organization_id = ?", orgID).
+		Where("employee_contracts.from_date <= ?", rangeEnd).
+		Where("employee_contracts.to_date IS NULL OR employee_contracts.to_date >= ?", rangeStart)
+
+	if sectionID != nil {
+		query = query.Where("employee_contracts.section_id = ?", *sectionID)
+	}
+
+	if err := query.Distinct().Find(&employees).Error; err != nil {
+		return nil, err
+	}
+
+	return employees, nil
+}
+
 // FindByOrganizationWithContracts fetches employees in an org who have an
 // active contract on `date`, with ALL their contracts preloaded (for seniority calculation).
 func (s *EmployeeStore) FindByOrganizationWithContracts(ctx context.Context, orgID uint, date time.Time) ([]models.Employee, error) {

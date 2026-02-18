@@ -2384,3 +2384,172 @@ func TestGetFinancials_SalaryDetails_NoEmployees(t *testing.T) {
 		t.Errorf("expected no salary details, got %d", len(dp.SalaryDetails))
 	}
 }
+
+// --- Employee Staffing Hours Tests ---
+
+func TestStatisticsService_GetEmployeeStaffingHours_Basic(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := getDefaultSection(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+
+	// Create 2 employees with contracts from Jan 2024, ongoing
+	emp1 := createTestEmployee(t, db, "Anna", "Mueller", org.ID)
+	emp2 := createTestEmployee(t, db, "Bob", "Schmidt", org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section.ID)
+	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 20.0, "supplementary", section.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// 3 months: Jan, Feb, Mar
+	if len(result.Dates) != 3 {
+		t.Fatalf("expected 3 dates, got %d", len(result.Dates))
+	}
+
+	// 2 employees, sorted alphabetically (Mueller, Schmidt)
+	if len(result.Employees) != 2 {
+		t.Fatalf("expected 2 employees, got %d", len(result.Employees))
+	}
+
+	// Anna Mueller comes first (M < S)
+	if result.Employees[0].LastName != "Mueller" {
+		t.Errorf("expected first employee to be Mueller, got %s", result.Employees[0].LastName)
+	}
+	if result.Employees[1].LastName != "Schmidt" {
+		t.Errorf("expected second employee to be Schmidt, got %s", result.Employees[1].LastName)
+	}
+
+	// Check hours for each month
+	for i := 0; i < 3; i++ {
+		if !almostEqual(result.Employees[0].MonthlyHours[i], 30.0, 0.01) {
+			t.Errorf("Mueller month %d: got %v, want 30.0", i, result.Employees[0].MonthlyHours[i])
+		}
+		if !almostEqual(result.Employees[1].MonthlyHours[i], 20.0, 0.01) {
+			t.Errorf("Schmidt month %d: got %v, want 20.0", i, result.Employees[1].MonthlyHours[i])
+		}
+	}
+
+	// Check staff categories
+	if result.Employees[0].StaffCategory != "qualified" {
+		t.Errorf("expected qualified, got %s", result.Employees[0].StaffCategory)
+	}
+	if result.Employees[1].StaffCategory != "supplementary" {
+		t.Errorf("expected supplementary, got %s", result.Employees[1].StaffCategory)
+	}
+}
+
+func TestStatisticsService_GetEmployeeStaffingHours_EmptyOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Empty Org")
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Dates) != 3 {
+		t.Fatalf("expected 3 dates, got %d", len(result.Dates))
+	}
+	if len(result.Employees) != 0 {
+		t.Fatalf("expected 0 employees, got %d", len(result.Employees))
+	}
+}
+
+func TestStatisticsService_GetEmployeeStaffingHours_ContractGaps(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := getDefaultSection(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+
+	emp := createTestEmployee(t, db, "Charlie", "Brown", org.ID)
+
+	// Contract 1: Jan-Feb 2024, 25 hours
+	contract1End := time.Date(2024, 2, 28, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID,
+		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &contract1End, 25.0, "qualified", section.ID)
+
+	// Contract 2: Apr 2024 onward, 35 hours (gap in March)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID,
+		time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC), nil, 35.0, "qualified", section.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(result.Employees))
+	}
+
+	hours := result.Employees[0].MonthlyHours
+	// Jan=25, Feb=25, Mar=0 (gap), Apr=35, May=35
+	expected := []float64{25.0, 25.0, 0.0, 35.0, 35.0}
+	for i, want := range expected {
+		if !almostEqual(hours[i], want, 0.01) {
+			t.Errorf("month %d: got %v, want %v", i, hours[i], want)
+		}
+	}
+}
+
+func TestStatisticsService_GetEmployeeStaffingHours_SectionFilter(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section1 := getDefaultSection(t, db, org.ID)
+	section2 := createTestSection(t, db, "Section B", org.ID, false)
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+
+	emp1 := createTestEmployee(t, db, "Anna", "Mueller", org.ID)
+	emp2 := createTestEmployee(t, db, "Bob", "Schmidt", org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 30.0, "qualified", section1.ID)
+	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 20.0, "qualified", section2.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// Filter by section1: should only return emp1
+	result, err := svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, &section1.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(result.Employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(result.Employees))
+	}
+	if result.Employees[0].LastName != "Mueller" {
+		t.Errorf("expected Mueller, got %s", result.Employees[0].LastName)
+	}
+
+	// Filter by section2: should only return emp2
+	result, err = svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, &section2.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(result.Employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(result.Employees))
+	}
+	if result.Employees[0].LastName != "Schmidt" {
+		t.Errorf("expected Schmidt, got %s", result.Employees[0].LastName)
+	}
+}

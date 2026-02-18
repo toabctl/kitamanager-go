@@ -114,3 +114,18 @@ type ContractPropertiesDistributionResponse struct {
 	TotalChildren int                     `json:"total_children" example:"45"`
 	Properties    []ContractPropertyCount `json:"properties"`
 }
+
+// EmployeeStaffingHoursRow represents a single employee's monthly hours in the staffing grid
+type EmployeeStaffingHoursRow struct {
+	EmployeeID    uint      `json:"employee_id" example:"1"`
+	FirstName     string    `json:"first_name" example:"Max"`
+	LastName      string    `json:"last_name" example:"Mustermann"`
+	StaffCategory string    `json:"staff_category" example:"qualified"`
+	MonthlyHours  []float64 `json:"monthly_hours"`
+}
+
+// EmployeeStaffingHoursResponse represents the response for per-employee staffing hours
+type EmployeeStaffingHoursResponse struct {
+	Dates     []string                   `json:"dates"`
+	Employees []EmployeeStaffingHoursRow `json:"employees"`
+}

@@ -55,6 +55,7 @@ import type {
   BudgetItemEntryUpdateRequest,
   StepPromotionsResponse,
   StaffingHoursResponse,
+  EmployeeStaffingHoursResponse,
   FinancialResponse,
   OccupancyResponse,
   Section,
@@ -791,6 +792,21 @@ class ApiClient {
     if (opts?.to) params.to = opts.to;
     const response = await this.client.get<OccupancyResponse>(
       `/organizations/${orgId}/statistics/occupancy`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getEmployeeStaffingHours(
+    orgId: number,
+    opts?: { sectionId?: number; from?: string; to?: string }
+  ): Promise<EmployeeStaffingHoursResponse> {
+    const params: Record<string, string> = {};
+    if (opts?.sectionId) params.section_id = opts.sectionId.toString();
+    if (opts?.from) params.from = opts.from;
+    if (opts?.to) params.to = opts.to;
+    const response = await this.client.get<EmployeeStaffingHoursResponse>(
+      `/organizations/${orgId}/statistics/staffing-hours/employees`,
       { params }
     );
     return response.data;

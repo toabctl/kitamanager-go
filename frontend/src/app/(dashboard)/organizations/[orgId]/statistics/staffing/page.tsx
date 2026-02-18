@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 import { StaffingHoursTable } from '@/components/charts/staffing-hours-table';
+import { EmployeeStaffingHoursTable } from '@/components/charts/employee-staffing-hours-table';
 import { YearStepper } from '@/components/ui/year-stepper';
 import {
   Select,
@@ -53,6 +54,14 @@ export default function StaffingPage() {
   const { data: staffingGrid, isLoading: isLoadingGrid } = useQuery({
     queryKey: queryKeys.statistics.staffingHours(orgId, selectedSectionId, from, to),
     queryFn: () => apiClient.getStaffingHours(orgId, { sectionId: selectedSectionId, from, to }),
+    enabled: !!orgId,
+  });
+
+  // Employee staffing hours grid: year-scoped query
+  const { data: employeeStaffingGrid, isLoading: isLoadingEmployeeGrid } = useQuery({
+    queryKey: queryKeys.statistics.employeeStaffingHours(orgId, selectedSectionId, from, to),
+    queryFn: () =>
+      apiClient.getEmployeeStaffingHours(orgId, { sectionId: selectedSectionId, from, to }),
     enabled: !!orgId,
   });
 
@@ -142,6 +151,24 @@ export default function StaffingPage() {
           ) : staffingGrid ? (
             <ChartErrorBoundary>
               <StaffingHoursTable data={staffingGrid} />
+            </ChartErrorBoundary>
+          ) : (
+            <p className="text-muted-foreground">{t('statistics.chartError')}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Employee Staffing Hours Grid */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('statistics.employeeStaffingHoursGrid')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingEmployeeGrid ? (
+            <Skeleton className="h-[200px] w-full" />
+          ) : employeeStaffingGrid ? (
+            <ChartErrorBoundary>
+              <EmployeeStaffingHoursTable data={employeeStaffingGrid} />
             </ChartErrorBoundary>
           ) : (
             <p className="text-muted-foreground">{t('statistics.chartError')}</p>

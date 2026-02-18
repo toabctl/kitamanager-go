@@ -645,6 +645,36 @@ definitions:
       updated_at:
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursResponse:
+    properties:
+      dates:
+        items:
+          type: string
+        type: array
+      employees:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursRow'
+        type: array
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursRow:
+    properties:
+      employee_id:
+        example: 1
+        type: integer
+      first_name:
+        example: Max
+        type: string
+      last_name:
+        example: Mustermann
+        type: string
+      monthly_hours:
+        items:
+          type: number
+        type: array
+      staff_category:
+        example: qualified
+        type: string
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.EmployeeUpdateRequest:
     properties:
       birthdate:
@@ -6618,6 +6648,54 @@ paths:
       security:
       - BearerAuth: []
       summary: Get staffing hours statistics
+      tags:
+      - statistics
+  /api/v1/organizations/{orgId}/statistics/staffing-hours/employees:
+    get:
+      consumes:
+      - application/json
+      description: Returns monthly contracted weekly hours for each employee, with
+        one row per employee and one column per month.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD), defaults to 12 months ago
+        in: query
+        name: from
+        type: string
+      - description: End date (YYYY-MM-DD), defaults to 6 months ahead
+        in: query
+        name: to
+        type: string
+      - description: Filter by section ID
+        in: query
+        name: section_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeStaffingHoursResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get per-employee staffing hours
       tags:
       - statistics
   /api/v1/organizations/{orgId}/users:

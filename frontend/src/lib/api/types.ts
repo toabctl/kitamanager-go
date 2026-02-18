@@ -671,6 +671,20 @@ export interface OccupancyResponse {
   data_points: OccupancyDataPoint[];
 }
 
+// Employee staffing hours (per-employee breakdown)
+export interface EmployeeStaffingHoursRow {
+  employee_id: number;
+  first_name: string;
+  last_name: string;
+  staff_category: string;
+  monthly_hours: number[];
+}
+
+export interface EmployeeStaffingHoursResponse {
+  dates: string[];
+  employees: EmployeeStaffingHoursRow[];
+}
+
 // Contract properties distribution
 export interface ContractPropertyCount {
   key: string;

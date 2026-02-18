@@ -243,6 +243,9 @@ func Setup(r *gin.Engine, d Deps) {
 				orgScoped.GET("/statistics/occupancy",
 					authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
 					statisticsHandler.GetOccupancy)
+				orgScoped.GET("/statistics/staffing-hours/employees",
+					authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+					statisticsHandler.GetEmployeeStaffingHours)
 
 				// Employees
 				employees := orgScoped.Group("/employees")

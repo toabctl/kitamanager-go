@@ -56,6 +56,8 @@ export const queryKeys = {
       ['financials', orgId, from, to] as const,
     occupancy: (orgId: number, sectionId?: number, from?: string, to?: string) =>
       ['occupancy', orgId, sectionId, from, to] as const,
+    employeeStaffingHours: (orgId: number, sectionId?: number, from?: string, to?: string) =>
+      ['employeeStaffingHours', orgId, sectionId, from, to] as const,
   },
   stepPromotions: (orgId: number) => ['stepPromotions', orgId] as const,
 } as const;
