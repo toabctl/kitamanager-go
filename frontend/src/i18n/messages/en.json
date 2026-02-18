@@ -163,7 +163,14 @@
     "ageGroup": "Age Group",
     "careType": "Care Type",
     "supplements": "Supplements",
-    "total": "Total"
+    "total": "Total",
+    "staffingHoursGrid": "Staffing Hours Grid",
+    "staffingRequired": "Required",
+    "staffingAvailable": "Available",
+    "staffingBalance": "Balance",
+    "staffingBalancePercent": "Balance %",
+    "staffCount": "Staff",
+    "average": "Average"
   },
   "months": {
     "jan": "Jan",

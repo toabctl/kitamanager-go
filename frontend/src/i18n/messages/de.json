@@ -163,7 +163,14 @@
     "ageGroup": "Alter",
     "careType": "Umfang",
     "supplements": "Zuschläge",
-    "total": "Gesamt"
+    "total": "Gesamt",
+    "staffingHoursGrid": "Personalstunden-Übersicht",
+    "staffingRequired": "Soll",
+    "staffingAvailable": "Ist",
+    "staffingBalance": "Deckung",
+    "staffingBalancePercent": "Deckung %",
+    "staffCount": "Mitarbeiter",
+    "average": "Durchschnitt"
   },
   "months": {
     "jan": "Jan",

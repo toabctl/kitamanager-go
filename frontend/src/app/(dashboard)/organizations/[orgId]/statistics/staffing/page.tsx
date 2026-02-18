@@ -8,6 +8,8 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
+import { StaffingHoursTable } from '@/components/charts/staffing-hours-table';
+import { YearStepper } from '@/components/ui/year-stepper';
 import {
   Select,
   SelectContent,
@@ -36,6 +38,10 @@ export default function StaffingPage() {
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const [selectedSectionId, setSelectedSectionId] = useState<number | undefined>(undefined);
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  const from = `${year}-01-01`;
+  const to = `${year}-12-01`;
 
   const { data: sections } = useQuery({
     queryKey: queryKeys.sections.list(orgId),
@@ -43,6 +49,14 @@ export default function StaffingPage() {
     enabled: !!orgId,
   });
 
+  // Grid data: year-scoped query
+  const { data: staffingGrid, isLoading: isLoadingGrid } = useQuery({
+    queryKey: queryKeys.statistics.staffingHours(orgId, selectedSectionId, from, to),
+    queryFn: () => apiClient.getStaffingHours(orgId, { sectionId: selectedSectionId, from, to }),
+    enabled: !!orgId,
+  });
+
+  // Chart data: default (no date range)
   const { data: staffingHours, isLoading: isLoadingStaffing } = useQuery({
     queryKey: queryKeys.statistics.staffingHours(orgId, selectedSectionId),
     queryFn: () => apiClient.getStaffingHours(orgId, { sectionId: selectedSectionId }),
@@ -86,41 +100,62 @@ export default function StaffingPage() {
   const isLoadingSectionStaffing =
     sectionStaffingQueries.length > 0 && sectionStaffingQueries.some((q) => q.isLoading);
 
+  const sectionFilter = sections && sections.data.length > 0 && (
+    <Select
+      value={selectedSectionId?.toString() ?? 'all'}
+      onValueChange={(value) => setSelectedSectionId(value === 'all' ? undefined : Number(value))}
+    >
+      <SelectTrigger className="w-[200px]">
+        <SelectValue placeholder={t('statistics.filterBySection')} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t('statistics.allSections')}</SelectItem>
+        {sections.data.map((section) => (
+          <SelectItem key={section.id} value={section.id.toString()}>
+            {section.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('nav.statisticsStaffing')}</h1>
       </div>
 
-      {/* Staffing Hours */}
+      {/* Staffing Hours Grid */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
-            <CardTitle>{t('statistics.staffingHours')}</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t('statistics.staffingHoursDescription')}
-            </p>
+            <CardTitle>{t('statistics.staffingHoursGrid')}</CardTitle>
           </div>
-          {sections && sections.data.length > 0 && (
-            <Select
-              value={selectedSectionId?.toString() ?? 'all'}
-              onValueChange={(value) =>
-                setSelectedSectionId(value === 'all' ? undefined : Number(value))
-              }
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={t('statistics.filterBySection')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('statistics.allSections')}</SelectItem>
-                {sections.data.map((section) => (
-                  <SelectItem key={section.id} value={section.id.toString()}>
-                    {section.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-4">
+            {sectionFilter}
+            <YearStepper value={year} onChange={setYear} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingGrid ? (
+            <Skeleton className="h-[200px] w-full" />
+          ) : staffingGrid ? (
+            <ChartErrorBoundary>
+              <StaffingHoursTable data={staffingGrid} />
+            </ChartErrorBoundary>
+          ) : (
+            <p className="text-muted-foreground">{t('statistics.chartError')}</p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Staffing Hours Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('statistics.staffingHours')}</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('statistics.staffingHoursDescription')}
+          </p>
         </CardHeader>
         <CardContent>
           {isLoadingStaffing ? (
