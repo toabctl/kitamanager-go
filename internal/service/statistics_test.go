@@ -2385,6 +2385,294 @@ func TestGetFinancials_SalaryDetails_NoEmployees(t *testing.T) {
 	}
 }
 
+// --- GetOccupancy Tests ---
+
+func TestStatisticsService_GetOccupancy_Basic(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Create funding with age groups and care types
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+
+	// care_type properties with age ranges
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 8000, 0.15, 3, 6)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "halbtag", "Halbtag", 6000, 0.20, 0, 2)
+
+	// supplement property
+	createTestFundingPropertyFull(t, db, period.ID, "integration", "integration_a", "Integration A", 5000, 0.0, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Child 1: born 2022 (age ~2 in Jan 2024), ganztag + integration_a
+	child1 := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Young", LastName: "Child", Birthdate: time.Date(2022, 6, 15, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child1)
+	createTestChildContract(t, db, child1.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, section.ID,
+		models.ContractProperties{"care_type": "ganztag", "integration": "integration_a"})
+
+	// Child 2: born 2020 (age ~3 in Jan 2024), ganztag, no supplements
+	child2 := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Older", LastName: "Child", Birthdate: time.Date(2020, 3, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child2)
+	createTestChildContract(t, db, child2.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, section.ID,
+		models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Should have age groups, care types, and supplement types
+	if len(result.AgeGroups) == 0 {
+		t.Error("expected age groups")
+	}
+	if len(result.CareTypes) == 0 {
+		t.Error("expected care types")
+	}
+	if len(result.SupplementTypes) == 0 {
+		t.Error("expected supplement types")
+	}
+
+	if len(result.DataPoints) != 1 {
+		t.Fatalf("expected 1 data point, got %d", len(result.DataPoints))
+	}
+
+	dp := result.DataPoints[0]
+	if dp.Total != 2 {
+		t.Errorf("expected total=2, got %d", dp.Total)
+	}
+
+	// Check supplement count
+	if dp.BySupplement["integration_a"] != 1 {
+		t.Errorf("expected integration_a=1, got %d", dp.BySupplement["integration_a"])
+	}
+}
+
+func TestStatisticsService_GetOccupancy_NoFunding(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// No funding configured => should still return without error, empty structure
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 3 {
+		t.Fatalf("expected 3 data points, got %d", len(result.DataPoints))
+	}
+
+	// All totals should be 0
+	for _, dp := range result.DataPoints {
+		if dp.Total != 0 {
+			t.Errorf("expected total=0, got %d for %s", dp.Total, dp.Date)
+		}
+	}
+}
+
+func TestStatisticsService_GetOccupancy_SectionFilter(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 6)
+
+	section1 := getDefaultSection(t, db, org.ID)
+	section2 := createTestSection(t, db, "Krippe", org.ID, false)
+
+	// Child in section1
+	child1 := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "S1", LastName: "Child", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child1)
+	createTestChildContract(t, db, child1.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, section1.ID,
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Child in section2
+	child2 := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "S2", LastName: "Child", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child2)
+	createTestChildContract(t, db, child2.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, section2.ID,
+		models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// Filter section2 => only 1 child
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, &section2.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if result.DataPoints[0].Total != 1 {
+		t.Errorf("expected total=1, got %d", result.DataPoints[0].Total)
+	}
+}
+
+func TestStatisticsService_GetOccupancy_ContractEndsDuringRange(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Child with contract ending in Feb 2024
+	child := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Leaving", LastName: "Child", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child)
+	contractEnd := time.Date(2024, 2, 28, 0, 0, 0, 0, time.UTC)
+	createTestChildContract(t, db, child.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &contractEnd, section.ID,
+		models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Jan=1, Feb=1, Mar=0, Apr=0
+	expected := []int{1, 1, 0, 0}
+	for i, want := range expected {
+		if result.DataPoints[i].Total != want {
+			t.Errorf("month %d: total=%d, want %d", i, result.DataPoints[i].Total, want)
+		}
+	}
+}
+
+// --- Helper function tests ---
+
+func TestFormatAgeGroupLabel(t *testing.T) {
+	tests := []struct {
+		minAge int
+		maxAge int
+		want   string
+	}{
+		{0, 1, "0/1"},
+		{2, 2, "2"},
+		{3, 8, "3+"},
+		{0, 0, "0"},
+		{3, 5, "3/4/5"},
+	}
+	for _, tt := range tests {
+		got := formatAgeGroupLabel(tt.minAge, tt.maxAge)
+		if got != tt.want {
+			t.Errorf("formatAgeGroupLabel(%d, %d) = %q, want %q", tt.minAge, tt.maxAge, got, tt.want)
+		}
+	}
+}
+
+func TestFindAgeGroupLabel(t *testing.T) {
+	ageGroups := []models.OccupancyAgeGroup{
+		{Label: "0/1", MinAge: 0, MaxAge: 1},
+		{Label: "2", MinAge: 2, MaxAge: 2},
+		{Label: "3+", MinAge: 3, MaxAge: 8},
+	}
+	tests := []struct {
+		age  int
+		want string
+	}{
+		{0, "0/1"},
+		{1, "0/1"},
+		{2, "2"},
+		{3, "3+"},
+		{5, "3+"},
+		{10, ""}, // Outside all groups
+	}
+	for _, tt := range tests {
+		got := findAgeGroupLabel(tt.age, ageGroups)
+		if got != tt.want {
+			t.Errorf("findAgeGroupLabel(%d) = %q, want %q", tt.age, got, tt.want)
+		}
+	}
+}
+
+func TestExtractOccupancyStructure(t *testing.T) {
+	// Empty periods => nil results
+	ageGroups, careTypes, supplements := extractOccupancyStructure(nil)
+	if ageGroups != nil || careTypes != nil || supplements != nil {
+		t.Error("expected nil for empty periods")
+	}
+
+	// Period with properties
+	minAge0, maxAge1 := 0, 1
+	minAge2, maxAge2 := 2, 2
+	periods := []models.GovernmentFundingPeriod{
+		{
+			Properties: []models.GovernmentFundingProperty{
+				{Key: "care_type", Value: "ganztag", Label: "Ganztag", MinAge: &minAge0, MaxAge: &maxAge1},
+				{Key: "care_type", Value: "halbtag", Label: "Halbtag", MinAge: &minAge0, MaxAge: &maxAge1},
+				{Key: "care_type", Value: "ganztag", Label: "Ganztag", MinAge: &minAge2, MaxAge: &maxAge2},
+				{Key: "integration", Value: "int_a", Label: "Integration A"},
+			},
+		},
+	}
+
+	ageGroups, careTypes, supplements = extractOccupancyStructure(periods)
+
+	// 2 age groups: 0-1 and 2
+	if len(ageGroups) != 2 {
+		t.Fatalf("expected 2 age groups, got %d", len(ageGroups))
+	}
+	if ageGroups[0].MinAge != 0 || ageGroups[0].MaxAge != 1 {
+		t.Errorf("first age group: got %d-%d, want 0-1", ageGroups[0].MinAge, ageGroups[0].MaxAge)
+	}
+
+	// 2 care types (ganztag, halbtag)
+	if len(careTypes) != 2 {
+		t.Fatalf("expected 2 care types, got %d", len(careTypes))
+	}
+
+	// 1 supplement
+	if len(supplements) != 1 {
+		t.Fatalf("expected 1 supplement, got %d", len(supplements))
+	}
+	if supplements[0].Key != "integration" {
+		t.Errorf("expected key=integration, got %s", supplements[0].Key)
+	}
+}
+
+func TestMonthCount(t *testing.T) {
+	tests := []struct {
+		start time.Time
+		end   time.Time
+		want  int
+	}{
+		{time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), 1},
+		{time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC), 12},
+		{time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC), 18},
+		{time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), 0}, // end before start
+	}
+	for _, tt := range tests {
+		got := monthCount(tt.start, tt.end)
+		if got != tt.want {
+			t.Errorf("monthCount(%v, %v) = %d, want %d", tt.start, tt.end, got, tt.want)
+		}
+	}
+}
+
 // --- Employee Staffing Hours Tests ---
 
 func TestStatisticsService_GetEmployeeStaffingHours_Basic(t *testing.T) {

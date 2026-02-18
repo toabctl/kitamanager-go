@@ -520,3 +520,318 @@ func TestEmployeeStore_DeleteAlsoDeletesContracts(t *testing.T) {
 		t.Error("expected contract to be deleted with employee")
 	}
 }
+
+// --- FindByOrganizationInDateRange tests ---
+
+func TestEmployeeStore_FindByOrganizationInDateRange_Basic(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	// Employee with contract in Jan-Jun 2024
+	emp1 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Anna", LastName: "Mueller", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp1)
+	endDate := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp1.ID,
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate}},
+		StaffCategory: "qualified",
+		WeeklyHours:   30,
+		PayPlanID:     payplan.ID,
+	})
+
+	// Employee with contract starting Jul 2024 (outside Jan-Jun range)
+	emp2 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Bob", LastName: "Schmidt", Birthdate: time.Date(1985, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp2.ID,
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   40,
+		PayPlanID:     payplan.ID,
+	})
+
+	// Query Jan-Jun 2024 => only emp1
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	employees, err := store.FindByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(employees))
+	}
+	if employees[0].ID != emp1.ID {
+		t.Errorf("expected employee %d, got %d", emp1.ID, employees[0].ID)
+	}
+	// Contracts should be preloaded
+	if len(employees[0].Contracts) != 1 {
+		t.Errorf("expected 1 preloaded contract, got %d", len(employees[0].Contracts))
+	}
+}
+
+func TestEmployeeStore_FindByOrganizationInDateRange_OngoingContract(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	emp := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Clara", LastName: "Ongoing", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp.ID,
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   35,
+		PayPlanID:     payplan.ID,
+	})
+
+	// Ongoing contract should appear in any future range
+	rangeStart := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2030, 12, 1, 0, 0, 0, 0, time.UTC)
+	employees, err := store.FindByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(employees))
+	}
+}
+
+func TestEmployeeStore_FindByOrganizationInDateRange_SectionFilter(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	// Create second section
+	section2 := &models.Section{OrganizationID: org.ID, Name: "Section B"}
+	db.Create(section2)
+
+	emp1 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "A", LastName: "SectionDefault", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp1)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp1.ID,
+		BaseContract:  models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "qualified",
+		WeeklyHours:   30,
+		PayPlanID:     payplan.ID,
+	})
+
+	emp2 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "B", LastName: "SectionB", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{
+		EmployeeID:    emp2.ID,
+		BaseContract:  models.BaseContract{SectionID: section2.ID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}},
+		StaffCategory: "supplementary",
+		WeeklyHours:   20,
+		PayPlanID:     payplan.ID,
+	})
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+
+	// Filter by section2 => only emp2
+	employees, err := store.FindByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, &section2.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(employees))
+	}
+	if employees[0].ID != emp2.ID {
+		t.Errorf("expected employee %d, got %d", emp2.ID, employees[0].ID)
+	}
+	// Preloaded contracts should only include section2's contracts
+	if len(employees[0].Contracts) != 1 {
+		t.Errorf("expected 1 preloaded contract, got %d", len(employees[0].Contracts))
+	}
+}
+
+func TestEmployeeStore_FindByOrganizationInDateRange_EmptyResult(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Empty Org")
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	employees, err := store.FindByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 0 {
+		t.Errorf("expected 0 employees, got %d", len(employees))
+	}
+}
+
+func TestEmployeeStore_FindByOrganizationInDateRange_OrgIsolation(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	section1 := getDefaultSectionID(t, db, org1.ID)
+	section2 := getDefaultSectionID(t, db, org2.ID)
+	payplan1 := createTestPayPlan(t, db, org1.ID)
+	payplan2 := createTestPayPlan(t, db, org2.ID)
+
+	emp1 := &models.Employee{Person: models.Person{OrganizationID: org1.ID, FirstName: "Org1", LastName: "Employee", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp1)
+	db.Create(&models.EmployeeContract{EmployeeID: emp1.ID, BaseContract: models.BaseContract{SectionID: section1, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 30, PayPlanID: payplan1.ID})
+
+	emp2 := &models.Employee{Person: models.Person{OrganizationID: org2.ID, FirstName: "Org2", LastName: "Employee", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{EmployeeID: emp2.ID, BaseContract: models.BaseContract{SectionID: section2, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 40, PayPlanID: payplan2.ID})
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+
+	// Query org1 => only emp1
+	employees, err := store.FindByOrganizationInDateRange(ctx, org1.ID, rangeStart, rangeEnd, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 1 {
+		t.Fatalf("expected 1 employee, got %d", len(employees))
+	}
+	if employees[0].ID != emp1.ID {
+		t.Errorf("expected employee %d, got %d", emp1.ID, employees[0].ID)
+	}
+}
+
+func TestEmployeeStore_FindByOrganizationInDateRange_MultipleContracts(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	emp := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Multi", LastName: "Contract", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp)
+
+	// Two contracts: Jan-Mar and Jul-Dec
+	endDate1 := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	db.Create(&models.EmployeeContract{EmployeeID: emp.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate1}}, StaffCategory: "qualified", WeeklyHours: 25, PayPlanID: payplan.ID})
+	db.Create(&models.EmployeeContract{EmployeeID: emp.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 35, PayPlanID: payplan.ID})
+
+	// Query full year => employee returned once with both contracts preloaded
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	employees, err := store.FindByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(employees) != 1 {
+		t.Fatalf("expected 1 employee (not duplicated), got %d", len(employees))
+	}
+	if len(employees[0].Contracts) != 2 {
+		t.Errorf("expected 2 preloaded contracts, got %d", len(employees[0].Contracts))
+	}
+}
+
+// --- FindContractsByOrganizationInDateRange tests ---
+
+func TestEmployeeStore_FindContractsByOrganizationInDateRange_Basic(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	emp := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Test", LastName: "Employee", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp)
+
+	// Contract in range
+	endDate := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	db.Create(&models.EmployeeContract{EmployeeID: emp.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), To: &endDate}}, StaffCategory: "qualified", WeeklyHours: 30, PayPlanID: payplan.ID})
+
+	// Contract outside range
+	db.Create(&models.EmployeeContract{EmployeeID: emp.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 40, PayPlanID: payplan.ID})
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	contracts, err := store.FindContractsByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(contracts) != 1 {
+		t.Fatalf("expected 1 contract, got %d", len(contracts))
+	}
+}
+
+func TestEmployeeStore_FindContractsByOrganizationInDateRange_StaffCategoryFilter(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	emp1 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "Q", LastName: "Staff", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp1)
+	db.Create(&models.EmployeeContract{EmployeeID: emp1.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 30, PayPlanID: payplan.ID})
+
+	emp2 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "NP", LastName: "Staff", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{EmployeeID: emp2.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "non_pedagogical", WeeklyHours: 20, PayPlanID: payplan.ID})
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+
+	// Filter to qualified only
+	contracts, err := store.FindContractsByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, []string{"qualified"}, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(contracts) != 1 {
+		t.Fatalf("expected 1 contract, got %d", len(contracts))
+	}
+	if contracts[0].StaffCategory != "qualified" {
+		t.Errorf("expected qualified, got %s", contracts[0].StaffCategory)
+	}
+
+	// No filter => both
+	contracts, err = store.FindContractsByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(contracts) != 2 {
+		t.Fatalf("expected 2 contracts, got %d", len(contracts))
+	}
+}
+
+func TestEmployeeStore_FindContractsByOrganizationInDateRange_SectionFilter(t *testing.T) {
+	db := setupTestDB(t)
+	store := NewEmployeeStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	sectionID := getDefaultSectionID(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, org.ID)
+
+	section2 := &models.Section{OrganizationID: org.ID, Name: "Section B"}
+	db.Create(section2)
+
+	emp1 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "S1", LastName: "Emp", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp1)
+	db.Create(&models.EmployeeContract{EmployeeID: emp1.ID, BaseContract: models.BaseContract{SectionID: sectionID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 30, PayPlanID: payplan.ID})
+
+	emp2 := &models.Employee{Person: models.Person{OrganizationID: org.ID, FirstName: "S2", LastName: "Emp", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(emp2)
+	db.Create(&models.EmployeeContract{EmployeeID: emp2.ID, BaseContract: models.BaseContract{SectionID: section2.ID, Period: models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)}}, StaffCategory: "qualified", WeeklyHours: 20, PayPlanID: payplan.ID})
+
+	rangeStart := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	rangeEnd := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+
+	// Filter by section2
+	contracts, err := store.FindContractsByOrganizationInDateRange(ctx, org.ID, rangeStart, rangeEnd, nil, &section2.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(contracts) != 1 {
+		t.Fatalf("expected 1 contract, got %d", len(contracts))
+	}
+	if contracts[0].EmployeeID != emp2.ID {
+		t.Errorf("expected employee %d, got %d", emp2.ID, contracts[0].EmployeeID)
+	}
+}
