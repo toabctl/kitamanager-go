@@ -94,6 +94,7 @@ export default function BudgetItemsPage() {
     queryKeys: {
       list: (orgId, page) => queryKeys.budgetItems.list(orgId, page),
       invalidate: (orgId) => queryKeys.budgetItems.all(orgId),
+      extraInvalidate: (orgId) => [['financials', orgId]],
     },
   });
 

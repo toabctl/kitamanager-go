@@ -10,6 +10,8 @@ export interface UseCrudMutationsConfig<TItem, TCreate, TUpdate> {
   resourceName: string;
   /** Query key to invalidate on success */
   queryKey: readonly (string | number | undefined)[];
+  /** Additional query keys to invalidate on success (e.g., related statistics) */
+  extraInvalidateKeys?: readonly (string | number | undefined)[][];
   /** Function to create a new item */
   createFn?: (data: TCreate) => Promise<TItem>;
   /** Function to update an existing item */
@@ -44,6 +46,7 @@ export interface UseCrudMutationsResult<TItem, TCreate, TUpdate> {
 export function useCrudMutations<TItem, TCreate, TUpdate>({
   resourceName,
   queryKey,
+  extraInvalidateKeys,
   createFn,
   updateFn,
   deleteFn,
@@ -60,6 +63,15 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey });
+    if (extraInvalidateKeys) {
+      for (const key of extraInvalidateKeys) {
+        queryClient.invalidateQueries({ queryKey: key });
+      }
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: TCreate) => {
       if (!createFn) {
@@ -68,7 +80,7 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
       return createFn(data);
     },
     onSuccess: (item) => {
-      queryClient.invalidateQueries({ queryKey });
+      invalidateAll();
       toast({ title: t(`${resourceName}.createSuccess`) });
       onSuccess?.();
       onCreateSuccess?.(item);
@@ -90,7 +102,7 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
       return updateFn(id, data);
     },
     onSuccess: (item) => {
-      queryClient.invalidateQueries({ queryKey });
+      invalidateAll();
       toast({ title: t(`${resourceName}.updateSuccess`) });
       onSuccess?.();
       onUpdateSuccess?.(item);
@@ -158,7 +170,7 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
     },
     onSettled: () => {
       // Always refetch after delete to ensure server state consistency
-      queryClient.invalidateQueries({ queryKey });
+      invalidateAll();
     },
   });
 

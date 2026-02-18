@@ -38,6 +38,8 @@ interface UseCrudPageConfig<
   queryKeys?: {
     list: (orgId: number, page: number) => readonly unknown[];
     invalidate: (orgId: number) => readonly unknown[];
+    /** Additional query keys to invalidate on success (e.g., related statistics) */
+    extraInvalidate?: (orgId: number) => readonly (string | number | undefined)[][];
   };
 }
 
@@ -110,9 +112,12 @@ export function useCrudPage<
     defaultValues: config.defaultValues,
   });
 
+  const extraInvalidateKeys = config.queryKeys?.extraInvalidate?.(orgId);
+
   const mutations = useCrudMutations<TItem, TCreate, TUpdate>({
     resourceName: config.resourceName,
     queryKey: invalidateQueryKey,
+    extraInvalidateKeys,
     createFn: (data) => config.createFn(orgId, data),
     updateFn: (id, data) => config.updateFn(orgId, id, data),
     deleteFn: (id) => config.deleteFn(orgId, id),

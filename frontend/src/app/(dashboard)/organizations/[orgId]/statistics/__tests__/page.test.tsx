@@ -98,5 +98,14 @@ describe('StatisticsPage (Overview)', () => {
     expect(hrefs).toContain('/organizations/1/statistics/financials');
     expect(hrefs).toContain('/organizations/1/statistics/staffing');
     expect(hrefs).toContain('/organizations/1/statistics/children');
+    expect(hrefs).toContain('/organizations/1/statistics/budget');
+  });
+
+  it('renders budget link card', async () => {
+    (apiClient.getFinancials as jest.Mock).mockResolvedValue(mockFinancials);
+
+    renderWithProviders(<StatisticsPage />);
+
+    expect(screen.getByText('nav.statisticsBudget')).toBeInTheDocument();
   });
 });
