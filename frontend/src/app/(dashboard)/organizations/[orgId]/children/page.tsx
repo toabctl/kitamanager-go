@@ -5,7 +5,8 @@ import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, FileText, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, History, Download } from 'lucide-react';
+import { MonthStepper } from '@/components/ui/month-stepper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -79,6 +80,7 @@ export default function ChildrenPage() {
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 300);
   const [sectionFilter, setSectionFilter] = useState<number | undefined>(undefined);
+  const [activeOn, setActiveOn] = useState(() => new Date());
 
   const {
     data: paginatedData,
@@ -86,12 +88,19 @@ export default function ChildrenPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.children.list(orgId, page, search, sectionFilter),
+    queryKey: queryKeys.children.list(
+      orgId,
+      page,
+      search,
+      sectionFilter,
+      activeOn.toISOString().slice(0, 10)
+    ),
     queryFn: () =>
       apiClient.getChildren(orgId, {
         page,
         search: search || undefined,
         section_id: sectionFilter,
+        active_on: activeOn.toISOString().slice(0, 10),
       }),
     enabled: !!orgId,
   });
@@ -259,13 +268,37 @@ export default function ChildrenPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('children.title')}</h1>
         </div>
-        <Button onClick={dialogs.handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('children.newChild')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.open(
+                apiClient.getChildrenExportUrl(orgId, {
+                  search: search || undefined,
+                  section_id: sectionFilter ? String(sectionFilter) : undefined,
+                  active_on: activeOn.toISOString().slice(0, 10),
+                })
+              );
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {t('common.exportExcel')}
+          </Button>
+          <Button onClick={dialogs.handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('children.newChild')}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
+        <MonthStepper
+          value={activeOn}
+          onChange={(date) => {
+            setActiveOn(date);
+            setPage(1);
+          }}
+        />
         <SearchInput
           id="search-children"
           value={searchInput}

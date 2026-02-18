@@ -4,7 +4,8 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
+import { MonthStepper } from '@/components/ui/month-stepper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,6 +63,7 @@ export default function EmployeesPage() {
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput, 300);
   const [staffCategoryFilter, setStaffCategoryFilter] = useState<string>('');
+  const [activeOn, setActiveOn] = useState(() => new Date());
 
   const {
     data: paginatedData,
@@ -69,12 +71,19 @@ export default function EmployeesPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.employees.list(orgId, page, search, staffCategoryFilter),
+    queryKey: queryKeys.employees.list(
+      orgId,
+      page,
+      search,
+      staffCategoryFilter,
+      activeOn.toISOString().slice(0, 10)
+    ),
     queryFn: () =>
       apiClient.getEmployees(orgId, {
         page,
         search: search || undefined,
         staff_category: staffCategoryFilter || undefined,
+        active_on: activeOn.toISOString().slice(0, 10),
       }),
     enabled: !!orgId,
   });
@@ -307,13 +316,37 @@ export default function EmployeesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('employees.title')}</h1>
         </div>
-        <Button onClick={dialogs.handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('employees.newEmployee')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.open(
+                apiClient.getEmployeesExportUrl(orgId, {
+                  search: search || undefined,
+                  staff_category: staffCategoryFilter || undefined,
+                  active_on: activeOn.toISOString().slice(0, 10),
+                })
+              );
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {t('common.exportExcel')}
+          </Button>
+          <Button onClick={dialogs.handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('employees.newEmployee')}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
+        <MonthStepper
+          value={activeOn}
+          onChange={(date) => {
+            setActiveOn(date);
+            setPage(1);
+          }}
+        />
         <SearchInput
           id="search-employees"
           value={searchInput}

@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import ChildrenPage from '../page';
 import { apiClient } from '@/lib/api/client';
 import { renderWithProviders, createMockPaginatedResponse } from '@/test-utils';
@@ -13,6 +14,7 @@ jest.mock('next-intl', () => ({
     if (params) return `${key}`;
     return key;
   },
+  useLocale: () => 'en',
 }));
 
 jest.mock('@/lib/hooks/use-toast', () => ({
@@ -29,6 +31,9 @@ jest.mock('@/lib/api/client', () => ({
     createChildContract: jest.fn(),
     updateChildContract: jest.fn(),
     getSections: jest.fn(),
+    getChildrenExportUrl: jest
+      .fn()
+      .mockReturnValue('/api/v1/organizations/1/children/export/excel'),
   },
   getErrorMessage: jest.fn((e: unknown, f: string) => f),
 }));
@@ -168,5 +173,56 @@ describe('ChildrenPage', () => {
     expect(screen.getByText('children.funding')).toBeInTheDocument();
     expect(screen.getByText('children.requirement')).toBeInTheDocument();
     expect(screen.getByText('common.actions')).toBeInTheDocument();
+  });
+
+  it('renders export excel button', async () => {
+    (apiClient.getChildren as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<ChildrenPage />);
+
+    expect(screen.getByText('common.exportExcel')).toBeInTheDocument();
+  });
+
+  it('calls getChildrenExportUrl and opens window on export click', async () => {
+    const user = userEvent.setup();
+    (apiClient.getChildren as jest.Mock).mockResolvedValue(mockEmptyResponse);
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
+
+    renderWithProviders(<ChildrenPage />);
+
+    await user.click(screen.getByText('common.exportExcel'));
+
+    expect(apiClient.getChildrenExportUrl).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        active_on: expect.any(String),
+      })
+    );
+    expect(mockOpen).toHaveBeenCalled();
+  });
+
+  it('renders month stepper', async () => {
+    (apiClient.getChildren as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<ChildrenPage />);
+
+    expect(screen.getByRole('button', { name: 'previousMonth' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'nextMonth' })).toBeInTheDocument();
+    expect(screen.getByText('today')).toBeInTheDocument();
+  });
+
+  it('passes active_on to getChildren', async () => {
+    (apiClient.getChildren as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<ChildrenPage />);
+
+    await waitFor(() => {
+      expect(apiClient.getChildren).toHaveBeenCalled();
+    });
+
+    const callArgs = (apiClient.getChildren as jest.Mock).mock.calls[0];
+    expect(callArgs[1]).toHaveProperty('active_on');
+    expect(callArgs[1].active_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

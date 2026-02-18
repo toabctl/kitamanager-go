@@ -53,7 +53,10 @@
     "today": "Today",
     "data": "data",
     "somethingWentWrong": "Something went wrong",
-    "unexpectedError": "An unexpected error occurred. Please try again."
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "exportExcel": "Export Excel",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "pagination": {
     "navigation": "Pagination",

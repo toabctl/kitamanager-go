@@ -151,3 +151,62 @@ describe('orgScopedCrud (groups as representative)', () => {
     expect(__mockDel).toHaveBeenCalledWith('/organizations/1/groups/5');
   });
 });
+
+describe('export URL builders', () => {
+  describe('getEmployeesExportUrl', () => {
+    it('builds URL without filters', () => {
+      const url = apiClient.getEmployeesExportUrl(1);
+      expect(url).toBe('/api/v1/organizations/1/employees/export/excel');
+    });
+
+    it('builds URL with filters', () => {
+      const url = apiClient.getEmployeesExportUrl(1, {
+        search: 'John',
+        staff_category: 'qualified',
+        active_on: '2026-02-01',
+      });
+      expect(url).toContain('/api/v1/organizations/1/employees/export/excel?');
+      expect(url).toContain('search=John');
+      expect(url).toContain('staff_category=qualified');
+      expect(url).toContain('active_on=2026-02-01');
+    });
+
+    it('omits undefined and empty filters', () => {
+      const url = apiClient.getEmployeesExportUrl(1, {
+        search: undefined,
+        staff_category: '',
+        active_on: '2026-02-01',
+      });
+      expect(url).toContain('active_on=2026-02-01');
+      expect(url).not.toContain('search');
+      expect(url).not.toContain('staff_category');
+    });
+  });
+
+  describe('getChildrenExportUrl', () => {
+    it('builds URL without filters', () => {
+      const url = apiClient.getChildrenExportUrl(1);
+      expect(url).toBe('/api/v1/organizations/1/children/export/excel');
+    });
+
+    it('builds URL with filters', () => {
+      const url = apiClient.getChildrenExportUrl(1, {
+        search: 'Max',
+        section_id: '3',
+        active_on: '2026-03-01',
+      });
+      expect(url).toContain('/api/v1/organizations/1/children/export/excel?');
+      expect(url).toContain('search=Max');
+      expect(url).toContain('section_id=3');
+      expect(url).toContain('active_on=2026-03-01');
+    });
+
+    it('omits undefined and empty filters', () => {
+      const url = apiClient.getChildrenExportUrl(2, {
+        search: undefined,
+        section_id: undefined,
+      });
+      expect(url).toBe('/api/v1/organizations/2/children/export/excel');
+    });
+  });
+});

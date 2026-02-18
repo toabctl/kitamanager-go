@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import EmployeesPage from '../page';
 import { apiClient } from '@/lib/api/client';
 import { renderWithProviders, createMockPaginatedResponse } from '@/test-utils';
@@ -13,6 +14,7 @@ jest.mock('next-intl', () => ({
     if (params) return `${key}`;
     return key;
   },
+  useLocale: () => 'en',
 }));
 
 jest.mock('@/lib/hooks/use-toast', () => ({
@@ -27,6 +29,9 @@ jest.mock('@/lib/api/client', () => ({
     deleteEmployee: jest.fn(),
     createEmployeeContract: jest.fn(),
     updateEmployeeContract: jest.fn(),
+    getEmployeesExportUrl: jest
+      .fn()
+      .mockReturnValue('/api/v1/organizations/1/employees/export/excel'),
   },
   getErrorMessage: jest.fn((e: unknown, f: string) => f),
 }));
@@ -151,5 +156,57 @@ describe('EmployeesPage', () => {
     expect(screen.getByText('employees.grade')).toBeInTheDocument();
     expect(screen.getByText('employees.weeklyHours')).toBeInTheDocument();
     expect(screen.getByText('common.actions')).toBeInTheDocument();
+  });
+
+  it('renders export excel button', async () => {
+    (apiClient.getEmployees as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<EmployeesPage />);
+
+    expect(screen.getByText('common.exportExcel')).toBeInTheDocument();
+  });
+
+  it('calls getEmployeesExportUrl and opens window on export click', async () => {
+    const user = userEvent.setup();
+    (apiClient.getEmployees as jest.Mock).mockResolvedValue(mockEmptyResponse);
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
+
+    renderWithProviders(<EmployeesPage />);
+
+    await user.click(screen.getByText('common.exportExcel'));
+
+    expect(apiClient.getEmployeesExportUrl).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        active_on: expect.any(String),
+      })
+    );
+    expect(mockOpen).toHaveBeenCalled();
+  });
+
+  it('renders month stepper', async () => {
+    (apiClient.getEmployees as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<EmployeesPage />);
+
+    // Month stepper has previous/next buttons and today button
+    expect(screen.getByRole('button', { name: 'previousMonth' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'nextMonth' })).toBeInTheDocument();
+    expect(screen.getByText('today')).toBeInTheDocument();
+  });
+
+  it('passes active_on to getEmployees', async () => {
+    (apiClient.getEmployees as jest.Mock).mockResolvedValue(mockEmptyResponse);
+
+    renderWithProviders(<EmployeesPage />);
+
+    await waitFor(() => {
+      expect(apiClient.getEmployees).toHaveBeenCalled();
+    });
+
+    const callArgs = (apiClient.getEmployees as jest.Mock).mock.calls[0];
+    expect(callArgs[1]).toHaveProperty('active_on');
+    expect(callArgs[1].active_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

@@ -53,7 +53,10 @@
     "today": "Heute",
     "data": "Daten",
     "somethingWentWrong": "Etwas ist schiefgelaufen",
-    "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+    "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "exportExcel": "Excel Export",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat"
   },
   "pagination": {
     "navigation": "Seitennavigation",

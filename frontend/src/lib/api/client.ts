@@ -796,6 +796,28 @@ class ApiClient {
     return response.data;
   }
 
+  getEmployeesExportUrl(orgId: number, filters?: Record<string, string | undefined>): string {
+    const qp = new URLSearchParams();
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== '') qp.set(key, value);
+      }
+    }
+    const qs = qp.toString();
+    return `${API_BASE_URL}/organizations/${orgId}/employees/export/excel${qs ? `?${qs}` : ''}`;
+  }
+
+  getChildrenExportUrl(orgId: number, filters?: Record<string, string | undefined>): string {
+    const qp = new URLSearchParams();
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== '') qp.set(key, value);
+      }
+    }
+    const qs = qp.toString();
+    return `${API_BASE_URL}/organizations/${orgId}/children/export/excel${qs ? `?${qs}` : ''}`;
+  }
+
   // Children - fetch upcoming (contracts starting after today)
   async getUpcomingChildren(orgId: number): Promise<Child[]> {
     const today = new Date().toISOString().slice(0, 10);
