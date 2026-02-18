@@ -2436,6 +2436,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/children/export/excel": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Download all children matching the given filters as an XLSX spreadsheet",
+                "produces": [
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ],
+                "tags": [
+                    "children"
+                ],
+                "summary": "Export children as Excel",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by section ID",
+                        "name": "section_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by active contract date (YYYY-MM-DD, defaults to today). Mutually exclusive with contract_after.",
+                        "name": "active_on",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter children with contracts starting after this date (YYYY-MM-DD). Mutually exclusive with active_on.",
+                        "name": "contract_after",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by first or last name (case-insensitive)",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "XLSX file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/children/funding": {
             "get": {
                 "security": [
@@ -3834,6 +3910,82 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizations/{orgId}/employees/export/excel": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Download all employees matching the given filters as an XLSX spreadsheet",
+                "produces": [
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ],
+                "tags": [
+                    "employees"
+                ],
+                "summary": "Export employees as Excel",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by section ID",
+                        "name": "section_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by active contract date (YYYY-MM-DD, defaults to today)",
+                        "name": "active_on",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by first or last name (case-insensitive)",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by staff category (qualified, supplementary, non_pedagogical)",
+                        "name": "staff_category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "XLSX file",
+                        "schema": {
+                            "type": "file"
                         }
                     },
                     "400": {

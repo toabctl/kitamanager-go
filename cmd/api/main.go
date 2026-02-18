@@ -160,6 +160,7 @@ func main() {
 	budgetItemHandler := handlers.NewBudgetItemHandler(budgetItemService, auditService)
 	stepPromotionHandler := handlers.NewStepPromotionHandler(stepPromotionService)
 	statisticsHandler := handlers.NewStatisticsHandler(statisticsService)
+	exportHandler := handlers.NewExportHandler(employeeService, childService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware
@@ -242,6 +243,7 @@ func main() {
 		BudgetItem:        budgetItemHandler,
 		StepPromotion:     stepPromotionHandler,
 		Statistics:        statisticsHandler,
+		Export:            exportHandler,
 		AuthMiddleware:    authMiddleware,
 		AuthzMiddleware:   authzMiddleware,
 		CSRFMiddleware:    csrfMiddleware,

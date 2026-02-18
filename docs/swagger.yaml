@@ -4516,6 +4516,57 @@ paths:
       summary: Get daily attendance summary
       tags:
       - child-attendance
+  /api/v1/organizations/{orgId}/children/export/excel:
+    get:
+      description: Download all children matching the given filters as an XLSX spreadsheet
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Filter by section ID
+        in: query
+        name: section_id
+        type: integer
+      - description: Filter by active contract date (YYYY-MM-DD, defaults to today).
+          Mutually exclusive with contract_after.
+        in: query
+        name: active_on
+        type: string
+      - description: Filter children with contracts starting after this date (YYYY-MM-DD).
+          Mutually exclusive with active_on.
+        in: query
+        name: contract_after
+        type: string
+      - description: Search by first or last name (case-insensitive)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: XLSX file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export children as Excel
+      tags:
+      - children
   /api/v1/organizations/{orgId}/children/funding:
     get:
       consumes:
@@ -5191,6 +5242,55 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current employee contract
+      tags:
+      - employees
+  /api/v1/organizations/{orgId}/employees/export/excel:
+    get:
+      description: Download all employees matching the given filters as an XLSX spreadsheet
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Filter by section ID
+        in: query
+        name: section_id
+        type: integer
+      - description: Filter by active contract date (YYYY-MM-DD, defaults to today)
+        in: query
+        name: active_on
+        type: string
+      - description: Search by first or last name (case-insensitive)
+        in: query
+        name: search
+        type: string
+      - description: Filter by staff category (qualified, supplementary, non_pedagogical)
+        in: query
+        name: staff_category
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: XLSX file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export employees as Excel
       tags:
       - employees
   /api/v1/organizations/{orgId}/employees/step-promotions:

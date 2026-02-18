@@ -23,6 +23,7 @@ type Deps struct {
 	BudgetItem        *handlers.BudgetItemHandler
 	StepPromotion     *handlers.StepPromotionHandler
 	Statistics        *handlers.StatisticsHandler
+	Export            *handlers.ExportHandler
 	AuthMiddleware    *middleware.AuthMiddleware
 	AuthzMiddleware   *middleware.AuthorizationMiddleware
 	CSRFMiddleware    *middleware.CSRFMiddleware
@@ -44,6 +45,7 @@ func Setup(r *gin.Engine, d Deps) {
 	budgetItemHandler := d.BudgetItem
 	stepPromotionHandler := d.StepPromotion
 	statisticsHandler := d.Statistics
+	exportHandler := d.Export
 	authMiddleware := d.AuthMiddleware
 	authzMiddleware := d.AuthzMiddleware
 	csrfMiddleware := d.CSRFMiddleware
@@ -245,6 +247,11 @@ func Setup(r *gin.Engine, d Deps) {
 				// Employees
 				employees := orgScoped.Group("/employees")
 				{
+					// Export (must be before /:id to avoid route conflict)
+					employees.GET("/export/excel",
+						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+						exportHandler.ExportEmployees)
+
 					// Step promotions (must be before /:id to avoid route conflict)
 					employees.GET("/step-promotions",
 						authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
@@ -290,6 +297,11 @@ func Setup(r *gin.Engine, d Deps) {
 				// Children
 				children := orgScoped.Group("/children")
 				{
+					// Export (must be before /:id to avoid route conflict)
+					children.GET("/export/excel",
+						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						exportHandler.ExportChildren)
+
 					// ============================================================
 					// Org-wide child attendance endpoints (must come before /:id)
 					// ============================================================
