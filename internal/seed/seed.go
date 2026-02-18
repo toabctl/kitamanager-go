@@ -350,6 +350,34 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created PayPlan", "name", payPlan.Name, "entries", len(payEntries))
 
+	// Create Minijob PayPlan
+	minijobPayPlan := &models.PayPlan{
+		OrganizationID: org.ID,
+		Name:           "Minijob 2024",
+	}
+	if err := db.Create(minijobPayPlan).Error; err != nil {
+		return err
+	}
+	minijobPeriod := &models.PayPlanPeriod{
+		PayPlanID:                minijobPayPlan.ID,
+		Period:                   models.Period{From: periodStart},
+		WeeklyHours:              10.0,
+		EmployerContributionRate: 3100, // 31.00% (pension 15% + health 13% + tax 2% + U1/U2/U3 ~1%)
+	}
+	if err := db.Create(minijobPeriod).Error; err != nil {
+		return err
+	}
+	minijobEntry := &models.PayPlanEntry{
+		PeriodID:      minijobPeriod.ID,
+		Grade:         "Minijob",
+		Step:          1,
+		MonthlyAmount: 55600, // €556.00/month for 10h/week
+	}
+	if err := db.Create(minijobEntry).Error; err != nil {
+		return err
+	}
+	slog.Info("Created PayPlan", "name", minijobPayPlan.Name, "entries", 1)
+
 	// Seed budget item: Garden maintenance expense (1000 EUR/month)
 	gardenItem := &models.BudgetItem{
 		OrganizationID: org.ID,
@@ -398,7 +426,7 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	slog.Info("Created test children", "children", childCount, "contracts", contractCount)
 
 	// Seed employees with varied scenarios (active, former, upcoming)
-	empCount, empContractCount, err := seedEmployees(db, org.ID, sections, defaultSection, payPlan.ID)
+	empCount, empContractCount, err := seedEmployees(db, org.ID, sections, defaultSection, payPlan.ID, minijobPayPlan.ID)
 	if err != nil {
 		return fmt.Errorf("failed to seed employees: %w", err)
 	}
@@ -607,7 +635,7 @@ type empContractDef struct {
 // Includes former employees (for historical staffing data) and upcoming hires.
 //
 //nolint:cyclop // complexity is inherent in realistic test data definition
-func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, defaultSection *models.Section, payPlanID uint) (int, int, error) {
+func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, defaultSection *models.Section, payPlanID uint, minijobPayPlanID uint) (int, int, error) {
 	now := time.Now()
 	currentKitaYear := kitaYearStartFor(now)
 
@@ -724,6 +752,14 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 		{"Inge", "Schwarz", 1970, []empContractDef{
 			{"non_pedagogical", "S4", 5, 20, d(2018, 1, 1), nil, -1},
 		}},
+		// Minijob: kitchen helper (10h/week, €556/month)
+		{"Gisela", "Peters", 1965, []empContractDef{
+			{"non_pedagogical", "Minijob", 1, 10, d(2023, 4, 1), nil, -1},
+		}},
+		// Minijob: afternoon helper (8h/week, prorated to €444.80/month)
+		{"Hanna", "Seidel", 2001, []empContractDef{
+			{"supplementary", "Minijob", 1, 8, d(2024, 9, 1), nil, 2},
+		}},
 
 		// ===== Former employees (left in last 3 years) =====
 
@@ -801,7 +837,11 @@ func seedEmployees(db *gorm.DB, orgID uint, namedSections []*models.Section, def
 			if c.sectionIdx >= 0 && c.sectionIdx < len(namedSections) {
 				sectionID = namedSections[c.sectionIdx].ID
 			}
-			if err := createEmployeeContract(db, emp.ID, c.staffCategory, c.grade, c.step, c.weeklyHours, c.from, c.to, payPlanID, sectionID); err != nil {
+			ppID := payPlanID
+			if c.grade == "Minijob" {
+				ppID = minijobPayPlanID
+			}
+			if err := createEmployeeContract(db, emp.ID, c.staffCategory, c.grade, c.step, c.weeklyHours, c.from, c.to, ppID, sectionID); err != nil {
 				return 0, 0, err
 			}
 			contractCount++
