@@ -13,8 +13,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+	gormPostgres "gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/eenemeene/kitamanager-go/internal/config"
+	"github.com/eenemeene/kitamanager-go/internal/models"
 )
 
 func TestMigrationsEmbedded(t *testing.T) {
@@ -158,4 +162,344 @@ func (tc *testConfig) toConfig() *config.Config {
 		DBName:     tc.dbName,
 		DBSSLMode:  tc.sslMode,
 	}
+}
+
+// startTestPostgres starts a PostgreSQL 18-alpine testcontainer and returns the connection string.
+func startTestPostgres(t *testing.T, dbName string) string {
+	t.Helper()
+	ctx := context.Background()
+
+	container, err := postgres.Run(ctx,
+		"postgres:18-alpine",
+		postgres.WithDatabase(dbName),
+		postgres.WithUsername("test"),
+		postgres.WithPassword("test"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(30*time.Second),
+		),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Logf("failed to terminate container: %v", err)
+		}
+	})
+
+	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+	return connStr
+}
+
+// newMigrateInstance creates a new golang-migrate instance using the embedded migration files.
+func newMigrateInstance(t *testing.T, connStr string) *migrate.Migrate {
+	t.Helper()
+	source, err := iofs.New(migrationsFS, "migrations")
+	require.NoError(t, err)
+	m, err := migrate.NewWithSourceInstance("iofs", source, connStr)
+	require.NoError(t, err)
+	return m
+}
+
+// openTestGormDB opens a GORM connection to the given database URL.
+func openTestGormDB(t *testing.T, connStr string) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(gormPostgres.Open(connStr), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	return db
+}
+
+// columnInfo represents a column from information_schema.columns.
+type columnInfo struct {
+	TableName  string `gorm:"column:table_name"`
+	ColumnName string `gorm:"column:column_name"`
+	DataType   string `gorm:"column:data_type"`
+	IsNullable string `gorm:"column:is_nullable"`
+}
+
+// snapshotSchema returns all columns from the public schema, excluding schema_migrations.
+func snapshotSchema(t *testing.T, db *gorm.DB) []columnInfo {
+	t.Helper()
+	var columns []columnInfo
+	err := db.Raw(`
+		SELECT table_name, column_name, data_type, is_nullable
+		FROM information_schema.columns
+		WHERE table_schema = 'public' AND table_name != 'schema_migrations'
+		ORDER BY table_name, column_name
+	`).Scan(&columns).Error
+	require.NoError(t, err)
+	return columns
+}
+
+// migrationVersions returns all migration version numbers from the embedded source.
+func migrationVersions(t *testing.T) []uint {
+	t.Helper()
+	source, err := iofs.New(migrationsFS, "migrations")
+	require.NoError(t, err)
+	defer source.Close()
+
+	var versions []uint
+	v, err := source.First()
+	require.NoError(t, err)
+	versions = append(versions, v)
+	for {
+		next, err := source.Next(v)
+		if err != nil {
+			break
+		}
+		versions = append(versions, next)
+		v = next
+	}
+	return versions
+}
+
+// normalizeDataType maps SQL-specific types to what GORM would generate.
+// SQL migrations intentionally use more specific types (integer, double precision, jsonb)
+// while GORM maps Go types differently (int→bigint, float64→numeric, serializer:json→text).
+// Normalizing lets the drift test focus on structural issues (missing columns, nullability).
+func normalizeDataType(dataType string) string {
+	switch dataType {
+	case "integer":
+		return "bigint"
+	case "double precision":
+		return "numeric"
+	case "jsonb":
+		return "text"
+	default:
+		return dataType
+	}
+}
+
+// allModels returns every GORM model that maps to a database table.
+func allModels() []interface{} {
+	return []interface{}{
+		&models.Organization{},
+		&models.User{},
+		&models.Group{},
+		&models.UserGroup{},
+		&models.Section{},
+		&models.Employee{},
+		&models.EmployeeContract{},
+		&models.Child{},
+		&models.ChildContract{},
+		&models.ChildAttendance{},
+		&models.GovernmentFunding{},
+		&models.GovernmentFundingPeriod{},
+		&models.GovernmentFundingProperty{},
+		&models.PayPlan{},
+		&models.PayPlanPeriod{},
+		&models.PayPlanEntry{},
+		&models.BudgetItem{},
+		&models.BudgetItemEntry{},
+		&models.AuditLog{},
+		&models.RevokedToken{},
+	}
+}
+
+// TestMigrationSchemaMatchesModels detects drift between SQL migrations and GORM models.
+// It applies all SQL migrations, snapshots the schema, runs GORM AutoMigrate, and verifies
+// AutoMigrate made no changes — proving the SQL migrations fully satisfy the model definitions.
+func TestMigrationSchemaMatchesModels(t *testing.T) {
+	connStr := startTestPostgres(t, "schema_drift_test")
+
+	// Apply all SQL migrations
+	m := newMigrateInstance(t, connStr)
+	require.NoError(t, m.Up(), "SQL migrations failed")
+	m.Close()
+
+	// Open GORM connection
+	db := openTestGormDB(t, connStr)
+
+	// Snapshot schema before AutoMigrate
+	before := snapshotSchema(t, db)
+	require.NotEmpty(t, before, "schema should have columns after migrations")
+
+	// Verify allModels() covers every table created by migrations.
+	// Catches the case where a new migration adds a table but allModels() isn't updated.
+	dbTables := make(map[string]bool)
+	for _, col := range before {
+		dbTables[col.TableName] = true
+	}
+	modelTables := make(map[string]bool)
+	for _, model := range allModels() {
+		stmt := &gorm.Statement{DB: db}
+		require.NoError(t, stmt.Parse(model))
+		modelTables[stmt.Schema.Table] = true
+	}
+	for table := range dbTables {
+		if !modelTables[table] {
+			t.Errorf("table %q exists in database but has no model in allModels()", table)
+		}
+	}
+
+	// Run AutoMigrate with all models
+	err := db.AutoMigrate(allModels()...)
+	require.NoError(t, err, "AutoMigrate failed")
+
+	// Snapshot schema after AutoMigrate
+	after := snapshotSchema(t, db)
+
+	// Normalize the before snapshot to account for known GORM-vs-SQL type mapping differences.
+	// SQL migrations intentionally use integer/double precision/jsonb, while GORM maps
+	// Go types to bigint/numeric/text. Normalizing avoids false positives from these
+	// expected differences while still catching missing columns and nullability changes.
+	normalized := make([]columnInfo, len(before))
+	for i, col := range before {
+		normalized[i] = col
+		normalized[i].DataType = normalizeDataType(col.DataType)
+	}
+
+	// Compare — if AutoMigrate changed anything beyond known type mappings, SQL migrations need updating
+	if !assert.Equal(t, normalized, after, "AutoMigrate changed the schema — SQL migrations are missing something") {
+		beforeMap := make(map[string]columnInfo)
+		for _, c := range normalized {
+			beforeMap[c.TableName+"."+c.ColumnName] = c
+		}
+		afterMap := make(map[string]columnInfo)
+		for _, c := range after {
+			afterMap[c.TableName+"."+c.ColumnName] = c
+		}
+
+		for key, col := range afterMap {
+			if _, exists := beforeMap[key]; !exists {
+				t.Errorf("  added column: %s (type=%s, nullable=%s)", key, col.DataType, col.IsNullable)
+			}
+		}
+		for key := range beforeMap {
+			if _, exists := afterMap[key]; !exists {
+				t.Errorf("  removed column: %s", key)
+			}
+		}
+		for key, b := range beforeMap {
+			if a, exists := afterMap[key]; exists && b != a {
+				t.Errorf("  changed column %s: before{type=%s,nullable=%s} after{type=%s,nullable=%s}",
+					key, b.DataType, b.IsNullable, a.DataType, a.IsNullable)
+			}
+		}
+	}
+}
+
+// TestMigrationsWithData applies the initial migration, inserts representative data into
+// every table, then applies remaining migrations one-by-one to verify they work with
+// pre-existing data (e.g., no NOT NULL columns added without DEFAULT).
+func TestMigrationsWithData(t *testing.T) {
+	connStr := startTestPostgres(t, "populated_data_test")
+
+	expectedVersions := migrationVersions(t)
+	require.GreaterOrEqual(t, len(expectedVersions), 2, "need at least 2 migrations for this test")
+
+	m := newMigrateInstance(t, connStr)
+	defer m.Close()
+
+	// Step 1: Apply only the first migration (initial schema)
+	require.NoError(t, m.Steps(1), "first migration failed")
+	version, dirty, err := m.Version()
+	require.NoError(t, err)
+	assert.Equal(t, expectedVersions[0], version)
+	assert.False(t, dirty)
+	t.Logf("applied initial migration: version=%d", version)
+
+	// Step 2: Insert representative data into every table.
+	// Column names match the initial schema (e.g., payplan_id before migration 3 renames it).
+	db := openTestGormDB(t, connStr)
+
+	inserts := []string{
+		`INSERT INTO organizations (id, name, active, state, created_at, updated_at)
+		 VALUES (1, 'Test Org', true, 'berlin', NOW(), NOW())`,
+
+		`INSERT INTO users (id, name, email, password, active, is_superadmin, created_at, updated_at)
+		 VALUES (1, 'Test User', 'test@example.com', 'hashed', true, false, NOW(), NOW())`,
+
+		`INSERT INTO groups (id, name, organization_id, is_default, active, created_at, updated_at)
+		 VALUES (1, 'Default', 1, true, true, NOW(), NOW())`,
+
+		`INSERT INTO user_groups (user_id, group_id, role, created_at)
+		 VALUES (1, 1, 'admin', NOW())`,
+
+		`INSERT INTO sections (id, organization_id, name, is_default, created_at, updated_at)
+		 VALUES (1, 1, 'Kita', true, NOW(), NOW())`,
+
+		`INSERT INTO employees (id, organization_id, first_name, last_name, gender, birthdate, created_at, updated_at)
+		 VALUES (1, 1, 'Jane', 'Doe', 'female', '1990-01-01', NOW(), NOW())`,
+
+		`INSERT INTO pay_plans (id, organization_id, name, created_at, updated_at)
+		 VALUES (1, 1, 'TVöD-SuE', NOW(), NOW())`,
+
+		`INSERT INTO employee_contracts (id, employee_id, from_date, section_id, staff_category, payplan_id, created_at, updated_at)
+		 VALUES (1, 1, '2024-01-01', 1, 'qualified', 1, NOW(), NOW())`,
+
+		`INSERT INTO children (id, organization_id, first_name, last_name, gender, birthdate, created_at, updated_at)
+		 VALUES (1, 1, 'Max', 'Schmidt', 'male', '2020-06-15', NOW(), NOW())`,
+
+		`INSERT INTO child_contracts (id, child_id, from_date, section_id, created_at, updated_at)
+		 VALUES (1, 1, '2024-01-01', 1, NOW(), NOW())`,
+
+		`INSERT INTO government_fundings (id, name, state, created_at, updated_at)
+		 VALUES (1, 'Berlin Funding', 'berlin', NOW(), NOW())`,
+
+		`INSERT INTO government_funding_periods (id, government_funding_id, from_date, full_time_weekly_hours, created_at)
+		 VALUES (1, 1, '2024-01-01', 39.0, NOW())`,
+
+		`INSERT INTO government_funding_properties (id, period_id, key, value, payment, requirement, created_at)
+		 VALUES (1, 1, 'care_type', 'ganztag', 166847, 0.261, NOW())`,
+
+		`INSERT INTO pay_plan_periods (id, pay_plan_id, from_date, weekly_hours, created_at, updated_at)
+		 VALUES (1, 1, '2024-01-01', 39.0, NOW(), NOW())`,
+
+		`INSERT INTO pay_plan_entries (id, period_id, grade, step, monthly_amount, created_at, updated_at)
+		 VALUES (1, 1, 'S8a', 3, 350000, NOW(), NOW())`,
+
+		`INSERT INTO child_attendances (id, child_id, organization_id, date, status, recorded_by, created_at, updated_at)
+		 VALUES (1, 1, 1, '2024-06-15', 'present', 1, NOW(), NOW())`,
+
+		`INSERT INTO budget_items (id, organization_id, name, category, per_child, created_at, updated_at)
+		 VALUES (1, 1, 'Rent', 'expense', false, NOW(), NOW())`,
+
+		`INSERT INTO budget_item_entries (id, budget_item_id, from_date, amount_cents, created_at, updated_at)
+		 VALUES (1, 1, '2024-01-01', 50000, NOW(), NOW())`,
+
+		`INSERT INTO audit_logs (id, timestamp, action, success)
+		 VALUES (1, NOW(), 'login', true)`,
+
+		`INSERT INTO revoked_tokens (id, user_id, token_hash, expires_at, created_at)
+		 VALUES (1, 1, 'abc123def456abc123def456abc123def456abc123def456abc123def456abcd', NOW() + INTERVAL '1 hour', NOW())`,
+	}
+
+	for _, insert := range inserts {
+		require.NoError(t, db.Exec(insert).Error, "insert failed: %.60s", insert)
+	}
+	t.Log("inserted test data into all 20 tables")
+
+	// Step 3: Apply remaining migrations one at a time
+	for i := 1; i < len(expectedVersions); i++ {
+		err := m.Steps(1)
+		require.NoError(t, err, "migration to version %d failed with data", expectedVersions[i])
+
+		version, dirty, err := m.Version()
+		require.NoError(t, err)
+		assert.Equal(t, expectedVersions[i], version)
+		assert.False(t, dirty, "database should not be dirty after version %d", expectedVersions[i])
+		t.Logf("applied migration version %d with data present", version)
+	}
+
+	// Step 4: Verify all data survived the migrations
+	tables := []string{
+		"organizations", "users", "groups", "user_groups", "sections",
+		"employees", "employee_contracts", "children", "child_contracts",
+		"child_attendances", "government_fundings", "government_funding_periods",
+		"government_funding_properties", "pay_plans", "pay_plan_periods",
+		"pay_plan_entries", "budget_items", "budget_item_entries",
+		"audit_logs", "revoked_tokens",
+	}
+
+	for _, table := range tables {
+		var count int64
+		err := db.Raw("SELECT COUNT(*) FROM " + table).Scan(&count).Error
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), count, "table %s should still have 1 row after all migrations", table)
+	}
+	t.Log("all row counts verified after migrations")
 }
