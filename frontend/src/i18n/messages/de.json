@@ -56,7 +56,8 @@
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "exportExcel": "Excel Export",
     "previousMonth": "Vorheriger Monat",
-    "nextMonth": "Nächster Monat"
+    "nextMonth": "Nächster Monat",
+    "notFound": "Nicht gefunden"
   },
   "pagination": {
     "navigation": "Seitennavigation",
@@ -674,7 +675,14 @@
     "matched": "Zugeordnet",
     "reset": "Zurücksetzen",
     "uploadError": "Fehler beim Hochladen der Abrechnung",
-    "uploading": "Wird hochgeladen..."
+    "uploading": "Wird hochgeladen...",
+    "fileName": "Dateiname",
+    "billingMonth": "Abrechnungsmonat",
+    "uploadedAt": "Hochgeladen am",
+    "noBills": "Noch keine Abrechnungen hochgeladen",
+    "deleteBill": "Abrechnung löschen",
+    "deleteConfirm": "Möchten Sie diese Abrechnung wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+    "deleteSuccess": "Abrechnung erfolgreich gelöscht"
   },
   "sectionAgeAlerts": {
     "title": "Kinder über Altersgrenze des Bereichs",

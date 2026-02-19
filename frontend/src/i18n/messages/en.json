@@ -56,7 +56,8 @@
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "exportExcel": "Export Excel",
     "previousMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "notFound": "Not found"
   },
   "pagination": {
     "navigation": "Pagination",
@@ -674,7 +675,14 @@
     "matched": "Matched",
     "reset": "Reset",
     "uploadError": "Failed to upload funding bill",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "fileName": "File Name",
+    "billingMonth": "Billing Month",
+    "uploadedAt": "Uploaded At",
+    "noBills": "No funding bills uploaded yet",
+    "deleteBill": "Delete Funding Bill",
+    "deleteConfirm": "Are you sure you want to delete this funding bill? This cannot be undone.",
+    "deleteSuccess": "Funding bill deleted successfully"
   },
   "sectionAgeAlerts": {
     "title": "Children Over Section Age Limit",

@@ -857,6 +857,93 @@ definitions:
         example: GB-12345678901-02
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodListResponse:
+    properties:
+      children_count:
+        example: 25
+        type: integer
+      contract_booking:
+        example: 480000
+        type: integer
+      correction_booking:
+        example: 20000
+        type: integer
+      created_at:
+        type: string
+      facility_name:
+        example: Kita Sonnenschein
+        type: string
+      facility_total:
+        example: 500000
+        type: integer
+      file_name:
+        example: Abrechnung_11-25.xlsx
+        type: string
+      from:
+        example: "2025-11-01"
+        type: string
+      id:
+        example: 1
+        type: integer
+      to:
+        example: "2025-11-30"
+        type: string
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodResponse:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillChildResponse'
+        type: array
+      children_count:
+        example: 25
+        type: integer
+      contract_booking:
+        example: 480000
+        type: integer
+      correction_booking:
+        example: 20000
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      facility_name:
+        example: Kita Sonnenschein
+        type: string
+      facility_total:
+        example: 500000
+        type: integer
+      file_name:
+        example: Abrechnung_11-25.xlsx
+        type: string
+      file_sha256:
+        example: a1b2c3d4...
+        type: string
+      from:
+        example: "2025-11-01"
+        type: string
+      id:
+        example: 1
+        type: integer
+      matched_count:
+        example: 23
+        type: integer
+      organization_id:
+        example: 1
+        type: integer
+      surcharges:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillAmount'
+        type: array
+      to:
+        example: "2025-11-30"
+        type: string
+      unmatched_count:
+        example: 2
+        type: integer
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillResponse:
     properties:
       children:
@@ -877,6 +964,9 @@ definitions:
         type: string
       facility_total:
         example: 500000
+        type: integer
+      id:
+        example: 1
         type: integer
       matched_count:
         example: 23
@@ -1597,6 +1687,27 @@ definitions:
       data:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 100
+        type: integer
+      total_pages:
+        example: 5
+        type: integer
+    type: object
+  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GovernmentFundingBillPeriodListResponse
+  : properties:
+      _links:
+        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
+      data:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodListResponse'
         type: array
       limit:
         example: 20
@@ -5446,12 +5557,127 @@ paths:
       summary: Get pending step promotions
       tags:
       - employees
+  /api/v1/organizations/{orgId}/government-funding-bills:
+    get:
+      description: Get a paginated list of government funding bill periods for an
+        organization
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 30
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GovernmentFundingBillPeriodListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List government funding bill periods
+      tags:
+      - government-funding-bills
+  /api/v1/organizations/{orgId}/government-funding-bills/{id}:
+    delete:
+      description: Delete a government funding bill period and all associated children
+        and payments
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Bill Period ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a government funding bill period
+      tags:
+      - government-funding-bills
+    get:
+      description: Get a single government funding bill period with enriched children
+        and match status
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Bill Period ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get government funding bill period detail
+      tags:
+      - government-funding-bills
   /api/v1/organizations/{orgId}/government-funding-bills/isbj:
     post:
       consumes:
       - multipart/form-data
-      description: Parse an ISBJ Senatsabrechnung Excel file and return funding bill
-        data enriched with matched child/contract info
+      description: Parse an ISBJ Senatsabrechnung Excel file, persist the bill, and
+        return funding bill data enriched with matched child/contract info
       parameters:
       - description: Organization ID
         in: path
@@ -5466,8 +5692,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillResponse'
         "400":

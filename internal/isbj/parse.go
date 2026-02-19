@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -87,9 +88,10 @@ func (v Vertrag) String() string {
 }
 
 type SenatsabrechnungOutput struct {
-	Einrichtung *Einrichtung `json:"einrichtung"`
-	Abrechnung  *Abrechnung  `json:"abrechnung"`
-	Vertrag     *Vertrag     `json:"vertrag"`
+	Einrichtung  *Einrichtung `json:"einrichtung"`
+	Abrechnung   *Abrechnung  `json:"abrechnung"`
+	Vertrag      *Vertrag     `json:"vertrag"`
+	BillingMonth time.Time    `json:"billing_month"`
 }
 
 func cellAsString(f *excelize.File, sheet, cell string) string {
@@ -168,11 +170,38 @@ func ParseFromReader(r io.Reader) (*SenatsabrechnungOutput, error) {
 		return nil, fmt.Errorf("parsing Vertrag: %w", err)
 	}
 
+	billingMonth, err := ParseBillingMonth(f)
+	if err != nil {
+		return nil, fmt.Errorf("parsing billing month: %w", err)
+	}
+
 	return &SenatsabrechnungOutput{
-		Einrichtung: eu,
-		Abrechnung:  ar,
-		Vertrag:     v,
+		Einrichtung:  eu,
+		Abrechnung:   ar,
+		Vertrag:      v,
+		BillingMonth: billingMonth,
 	}, nil
+}
+
+// ParseBillingMonth extracts the billing month from the Vertragsübersicht sheet.
+// It searches for "Trägernummer" and reads the cell below it to get a MM/YY date string.
+func ParseBillingMonth(f *excelize.File) (time.Time, error) {
+	col, row, err := getValueByHeaderName(f, SheetVertrag, "Trägernummer")
+	if err != nil {
+		return time.Time{}, fmt.Errorf("finding Trägernummer header: %w", err)
+	}
+
+	dateStr := cellAsString(f, SheetVertrag, fmt.Sprintf("%s%d", col, row+1))
+	if dateStr == "" {
+		return time.Time{}, fmt.Errorf("billing month cell below Trägernummer is empty")
+	}
+
+	t, err := time.Parse("01/06", dateStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parsing billing month %q: expected MM/YY format: %w", dateStr, err)
+	}
+
+	return t, nil
 }
 
 func getValueByHeaderName(f *excelize.File, sheetName string, header string) (string, int, error) {

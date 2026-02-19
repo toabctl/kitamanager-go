@@ -296,6 +296,9 @@ func allModels() []interface{} {
 		&models.BudgetItemEntry{},
 		&models.AuditLog{},
 		&models.RevokedToken{},
+		&models.GovernmentFundingBillPeriod{},
+		&models.GovernmentFundingBillChild{},
+		&models.GovernmentFundingBillPayment{},
 	}
 }
 

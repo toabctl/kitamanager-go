@@ -1,0 +1,384 @@
+package store
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/eenemeene/kitamanager-go/internal/models"
+)
+
+func TestGovernmentFundingBillPeriodStore_Create(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "Test User", "billtest@example.com")
+	ctx := context.Background()
+
+	to := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID:    org.ID,
+		Period:            models.Period{From: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:          "Abrechnung_11-25.xlsx",
+		FileSha256:        "abc123def456",
+		FacilityName:      "Kita Sonnenschein",
+		FacilityTotal:     500000,
+		ContractBooking:   480000,
+		CorrectionBooking: 20000,
+		CreatedBy:         user.ID,
+		Children: []models.GovernmentFundingBillChild{
+			{
+				VoucherNumber: "GB-12345678901-02",
+				ChildName:     "Mustermann, Max",
+				BirthDate:     "01.20",
+				District:      1,
+				Payments: []models.GovernmentFundingBillPayment{
+					{Key: "care_type", Value: "ganztag", Amount: 100000},
+					{Key: "ndh", Value: "ndh", Amount: 5000},
+				},
+			},
+			{
+				VoucherNumber: "GB-98765432109-01",
+				ChildName:     "Müller, Anna",
+				BirthDate:     "03.21",
+				District:      3,
+				Payments: []models.GovernmentFundingBillPayment{
+					{Key: "care_type", Value: "halbtag", Amount: 80000},
+				},
+			},
+		},
+	}
+
+	if err := s.Create(ctx, period); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	if period.ID == 0 {
+		t.Error("expected period ID to be set after create")
+	}
+
+	// Verify nested records were created
+	var childCount int64
+	db.Model(&models.GovernmentFundingBillChild{}).Where("period_id = ?", period.ID).Count(&childCount)
+	if childCount != 2 {
+		t.Errorf("expected 2 children, got %d", childCount)
+	}
+
+	var paymentCount int64
+	db.Model(&models.GovernmentFundingBillPayment{}).
+		Joins("JOIN government_funding_bill_children ON government_funding_bill_children.id = government_funding_bill_payments.child_id").
+		Where("government_funding_bill_children.period_id = ?", period.ID).
+		Count(&paymentCount)
+	if paymentCount != 3 {
+		t.Errorf("expected 3 payments, got %d", paymentCount)
+	}
+}
+
+func TestGovernmentFundingBillPeriodStore_CreateEmptyChildren(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "Test User", "billtest2@example.com")
+	ctx := context.Background()
+
+	to := time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID:    org.ID,
+		Period:            models.Period{From: time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:          "empty.xlsx",
+		FileSha256:        "emptyhash",
+		FacilityName:      "Kita Leer",
+		FacilityTotal:     0,
+		ContractBooking:   0,
+		CorrectionBooking: 0,
+		CreatedBy:         user.ID,
+	}
+
+	if err := s.Create(ctx, period); err != nil {
+		t.Fatalf("Create() with empty children error = %v", err)
+	}
+
+	if period.ID == 0 {
+		t.Error("expected period ID to be set")
+	}
+}
+
+func TestGovernmentFundingBillPeriodStore_FindByID(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "Test User", "billtest3@example.com")
+	ctx := context.Background()
+
+	to := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID:    org.ID,
+		Period:            models.Period{From: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:          "test.xlsx",
+		FileSha256:        "hash123",
+		FacilityName:      "Kita Test",
+		FacilityTotal:     300000,
+		ContractBooking:   280000,
+		CorrectionBooking: 20000,
+		CreatedBy:         user.ID,
+		Children: []models.GovernmentFundingBillChild{
+			{
+				VoucherNumber: "GB-11111111111-01",
+				ChildName:     "Kind, Eins",
+				BirthDate:     "05.19",
+				District:      2,
+				Payments: []models.GovernmentFundingBillPayment{
+					{Key: "care_type", Value: "ganztag", Amount: 150000},
+					{Key: "ndh", Value: "ndh", Amount: 10000},
+				},
+			},
+		},
+	}
+	if err := s.Create(ctx, period); err != nil {
+		t.Fatalf("setup: Create() error = %v", err)
+	}
+
+	found, err := s.FindByID(ctx, period.ID)
+	if err != nil {
+		t.Fatalf("FindByID() error = %v", err)
+	}
+
+	if found.ID != period.ID {
+		t.Errorf("expected ID %d, got %d", period.ID, found.ID)
+	}
+	if found.FacilityName != "Kita Test" {
+		t.Errorf("expected facility name 'Kita Test', got %q", found.FacilityName)
+	}
+	if found.OrganizationID != org.ID {
+		t.Errorf("expected org ID %d, got %d", org.ID, found.OrganizationID)
+	}
+
+	// Verify children are preloaded
+	if len(found.Children) != 1 {
+		t.Fatalf("expected 1 child, got %d", len(found.Children))
+	}
+	if found.Children[0].VoucherNumber != "GB-11111111111-01" {
+		t.Errorf("expected voucher 'GB-11111111111-01', got %q", found.Children[0].VoucherNumber)
+	}
+
+	// Verify payments are preloaded
+	if len(found.Children[0].Payments) != 2 {
+		t.Fatalf("expected 2 payments, got %d", len(found.Children[0].Payments))
+	}
+}
+
+func TestGovernmentFundingBillPeriodStore_FindByIDNotFound(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	ctx := context.Background()
+
+	_, err := s.FindByID(ctx, 99999)
+	if err == nil {
+		t.Fatal("expected error for non-existent ID, got nil")
+	}
+}
+
+func TestGovernmentFundingBillPeriodStore_FindByOrganization(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	user := createTestUser(t, db, "Test User", "billtest4@example.com")
+	ctx := context.Background()
+
+	// Create 3 periods for org1, 1 for org2
+	for i := 0; i < 3; i++ {
+		month := time.Month(i + 1)
+		to := time.Date(2025, month+1, 0, 0, 0, 0, 0, time.UTC)
+		p := &models.GovernmentFundingBillPeriod{
+			OrganizationID: org1.ID,
+			Period:         models.Period{From: time.Date(2025, month, 1, 0, 0, 0, 0, time.UTC), To: &to},
+			FileName:       "file.xlsx",
+			FileSha256:     "hash",
+			FacilityName:   "Kita",
+			CreatedBy:      user.ID,
+		}
+		if err := s.Create(ctx, p); err != nil {
+			t.Fatalf("setup: Create() error = %v", err)
+		}
+	}
+	toOrg2 := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
+	if err := s.Create(ctx, &models.GovernmentFundingBillPeriod{
+		OrganizationID: org2.ID,
+		Period:         models.Period{From: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), To: &toOrg2},
+		FileName:       "other.xlsx",
+		FileSha256:     "otherhash",
+		FacilityName:   "Other Kita",
+		CreatedBy:      user.ID,
+	}); err != nil {
+		t.Fatalf("setup: Create() error = %v", err)
+	}
+
+	t.Run("returns only org1 periods", func(t *testing.T) {
+		periods, total, err := s.FindByOrganization(ctx, org1.ID, 10, 0)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		if total != 3 {
+			t.Errorf("expected total 3, got %d", total)
+		}
+		if len(periods) != 3 {
+			t.Errorf("expected 3 periods, got %d", len(periods))
+		}
+	})
+
+	t.Run("returns only org2 periods", func(t *testing.T) {
+		periods, total, err := s.FindByOrganization(ctx, org2.ID, 10, 0)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		if total != 1 {
+			t.Errorf("expected total 1, got %d", total)
+		}
+		if len(periods) != 1 {
+			t.Errorf("expected 1 period, got %d", len(periods))
+		}
+	})
+
+	t.Run("pagination limit", func(t *testing.T) {
+		periods, total, err := s.FindByOrganization(ctx, org1.ID, 2, 0)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		if total != 3 {
+			t.Errorf("expected total 3, got %d", total)
+		}
+		if len(periods) != 2 {
+			t.Errorf("expected 2 periods (limit), got %d", len(periods))
+		}
+	})
+
+	t.Run("pagination offset", func(t *testing.T) {
+		periods, total, err := s.FindByOrganization(ctx, org1.ID, 10, 2)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		if total != 3 {
+			t.Errorf("expected total 3, got %d", total)
+		}
+		if len(periods) != 1 {
+			t.Errorf("expected 1 period (offset 2 of 3), got %d", len(periods))
+		}
+	})
+
+	t.Run("ordered by from_date descending", func(t *testing.T) {
+		periods, _, err := s.FindByOrganization(ctx, org1.ID, 10, 0)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		for i := 1; i < len(periods); i++ {
+			if periods[i].From.After(periods[i-1].From) {
+				t.Errorf("periods not ordered by from_date DESC: %v > %v", periods[i].From, periods[i-1].From)
+			}
+		}
+	})
+
+	t.Run("empty for unknown org", func(t *testing.T) {
+		periods, total, err := s.FindByOrganization(ctx, 99999, 10, 0)
+		if err != nil {
+			t.Fatalf("FindByOrganization() error = %v", err)
+		}
+		if total != 0 {
+			t.Errorf("expected total 0, got %d", total)
+		}
+		if len(periods) != 0 {
+			t.Errorf("expected 0 periods, got %d", len(periods))
+		}
+	})
+}
+
+func TestGovernmentFundingBillPeriodStore_Delete(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "Test User", "billtest5@example.com")
+	ctx := context.Background()
+
+	to := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID: org.ID,
+		Period:         models.Period{From: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:       "delete-test.xlsx",
+		FileSha256:     "deletehash",
+		FacilityName:   "Kita Delete",
+		CreatedBy:      user.ID,
+		Children: []models.GovernmentFundingBillChild{
+			{
+				VoucherNumber: "GB-00000000000-01",
+				ChildName:     "Delete, Child",
+				BirthDate:     "01.22",
+				District:      1,
+				Payments: []models.GovernmentFundingBillPayment{
+					{Key: "care_type", Value: "ganztag", Amount: 100000},
+				},
+			},
+		},
+	}
+	if err := s.Create(ctx, period); err != nil {
+		t.Fatalf("setup: Create() error = %v", err)
+	}
+
+	if err := s.Delete(ctx, period.ID); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	// Verify period is deleted
+	_, err := s.FindByID(ctx, period.ID)
+	if err == nil {
+		t.Error("expected error after delete, got nil")
+	}
+
+	// Verify cascade delete of children
+	var childCount int64
+	db.Model(&models.GovernmentFundingBillChild{}).Where("period_id = ?", period.ID).Count(&childCount)
+	if childCount != 0 {
+		t.Errorf("expected 0 children after cascade delete, got %d", childCount)
+	}
+}
+
+func TestGovernmentFundingBillPeriodStore_FindByIDChildrenOrdered(t *testing.T) {
+	db := setupTestDB(t)
+	s := NewGovernmentFundingBillPeriodStore(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "Test User", "billtest6@example.com")
+	ctx := context.Background()
+
+	to := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID: org.ID,
+		Period:         models.Period{From: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:       "order-test.xlsx",
+		FileSha256:     "orderhash",
+		FacilityName:   "Kita Order",
+		CreatedBy:      user.ID,
+		Children: []models.GovernmentFundingBillChild{
+			{VoucherNumber: "GB-00000000001-01", ChildName: "Alpha, Child", BirthDate: "01.20", District: 1},
+			{VoucherNumber: "GB-00000000002-01", ChildName: "Beta, Child", BirthDate: "02.20", District: 2},
+			{VoucherNumber: "GB-00000000003-01", ChildName: "Gamma, Child", BirthDate: "03.20", District: 3},
+		},
+	}
+	if err := s.Create(ctx, period); err != nil {
+		t.Fatalf("setup: Create() error = %v", err)
+	}
+
+	found, err := s.FindByID(ctx, period.ID)
+	if err != nil {
+		t.Fatalf("FindByID() error = %v", err)
+	}
+
+	if len(found.Children) != 3 {
+		t.Fatalf("expected 3 children, got %d", len(found.Children))
+	}
+
+	// Verify children are ordered by ID ASC (insertion order)
+	for i := 1; i < len(found.Children); i++ {
+		if found.Children[i].ID <= found.Children[i-1].ID {
+			t.Errorf("children not ordered by ID ASC: %d <= %d", found.Children[i].ID, found.Children[i-1].ID)
+		}
+	}
+}

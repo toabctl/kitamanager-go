@@ -4729,6 +4729,66 @@
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/government-funding-bills": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of government funding bill periods for an organization",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "government-funding-bills"
+                ],
+                "summary": "List government funding bill periods",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GovernmentFundingBillPeriodListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/government-funding-bills/isbj": {
             "post": {
                 "security": [
@@ -4736,7 +4796,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Parse an ISBJ Senatsabrechnung Excel file and return funding bill data enriched with matched child/contract info",
+                "description": "Parse an ISBJ Senatsabrechnung Excel file, persist the bill, and return funding bill data enriched with matched child/contract info",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -4764,8 +4824,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillResponse"
                         }
@@ -4784,6 +4844,119 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizations/{orgId}/government-funding-bills/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a single government funding bill period with enriched children and match status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "government-funding-bills"
+                ],
+                "summary": "Get government funding bill period detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Bill Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a government funding bill period and all associated children and payments",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "government-funding-bills"
+                ],
+                "summary": "Delete a government funding bill period",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Bill Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
                         }
@@ -9017,6 +9190,126 @@
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodListResponse": {
+            "type": "object",
+            "properties": {
+                "children_count": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "contract_booking": {
+                    "type": "integer",
+                    "example": 480000
+                },
+                "correction_booking": {
+                    "type": "integer",
+                    "example": 20000
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "facility_name": {
+                    "type": "string",
+                    "example": "Kita Sonnenschein"
+                },
+                "facility_total": {
+                    "type": "integer",
+                    "example": 500000
+                },
+                "file_name": {
+                    "type": "string",
+                    "example": "Abrechnung_11-25.xlsx"
+                },
+                "from": {
+                    "type": "string",
+                    "example": "2025-11-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "to": {
+                    "type": "string",
+                    "example": "2025-11-30"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodResponse": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillChildResponse"
+                    }
+                },
+                "children_count": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "contract_booking": {
+                    "type": "integer",
+                    "example": 480000
+                },
+                "correction_booking": {
+                    "type": "integer",
+                    "example": 20000
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "facility_name": {
+                    "type": "string",
+                    "example": "Kita Sonnenschein"
+                },
+                "facility_total": {
+                    "type": "integer",
+                    "example": 500000
+                },
+                "file_name": {
+                    "type": "string",
+                    "example": "Abrechnung_11-25.xlsx"
+                },
+                "file_sha256": {
+                    "type": "string",
+                    "example": "a1b2c3d4..."
+                },
+                "from": {
+                    "type": "string",
+                    "example": "2025-11-01"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "matched_count": {
+                    "type": "integer",
+                    "example": 23
+                },
+                "organization_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "surcharges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillAmount"
+                    }
+                },
+                "to": {
+                    "type": "string",
+                    "example": "2025-11-30"
+                },
+                "unmatched_count": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillResponse": {
             "type": "object",
             "properties": {
@@ -9045,6 +9338,10 @@
                 "facility_total": {
                     "type": "integer",
                     "example": 500000
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "matched_count": {
                     "type": "integer",
@@ -10049,6 +10346,36 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.EmployeeResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GovernmentFundingBillPeriodListResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillPeriodListResponse"
                     }
                 },
                 "limit": {

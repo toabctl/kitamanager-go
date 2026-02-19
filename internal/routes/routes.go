@@ -298,13 +298,22 @@ func Setup(r *gin.Engine, d Deps) {
 				}
 
 				// ============================================================
-				// Government funding bill uploads (org-scoped)
+				// Government funding bill management (org-scoped)
 				// ============================================================
 				fundingBills := orgScoped.Group("/government-funding-bills")
 				{
+					fundingBills.GET("",
+						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionRead),
+						governmentFundingBillHandler.List)
+					fundingBills.GET("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionRead),
+						governmentFundingBillHandler.Get)
 					fundingBills.POST("/isbj",
-						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionCreate),
 						governmentFundingBillHandler.UploadISBJ)
+					fundingBills.DELETE("/:id",
+						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionDelete),
+						governmentFundingBillHandler.Delete)
 				}
 
 				// Children

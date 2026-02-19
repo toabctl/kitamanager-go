@@ -236,19 +236,28 @@ type AuditStorer interface {
 	Cleanup(ctx context.Context, olderThan time.Time) (int64, error)
 }
 
+// GovernmentFundingBillPeriodStorer defines the interface for government funding bill period storage operations
+type GovernmentFundingBillPeriodStorer interface {
+	Create(ctx context.Context, period *models.GovernmentFundingBillPeriod) error
+	FindByID(ctx context.Context, id uint) (*models.GovernmentFundingBillPeriod, error)
+	FindByOrganization(ctx context.Context, orgID uint, limit, offset int) ([]models.GovernmentFundingBillPeriod, int64, error)
+	Delete(ctx context.Context, id uint) error
+}
+
 // Compile-time interface compliance checks
 var (
-	_ UserStorer              = (*UserStore)(nil)
-	_ OrganizationStorer      = (*OrganizationStore)(nil)
-	_ GroupStorer             = (*GroupStore)(nil)
-	_ EmployeeStorer          = (*EmployeeStore)(nil)
-	_ ChildStorer             = (*ChildStore)(nil)
-	_ UserGroupStorer         = (*UserGroupStore)(nil)
-	_ GovernmentFundingStorer = (*GovernmentFundingStore)(nil)
-	_ SectionStorer           = (*SectionStore)(nil)
-	_ ChildAttendanceStorer   = (*ChildAttendanceStore)(nil)
-	_ PayPlanStorer           = (*PayPlanStore)(nil)
-	_ AuditStorer             = (*AuditStore)(nil)
-	_ BudgetItemStorer        = (*BudgetItemStore)(nil)
-	_ Transactor              = (*GormTransactor)(nil)
+	_ UserStorer                        = (*UserStore)(nil)
+	_ OrganizationStorer                = (*OrganizationStore)(nil)
+	_ GroupStorer                       = (*GroupStore)(nil)
+	_ EmployeeStorer                    = (*EmployeeStore)(nil)
+	_ ChildStorer                       = (*ChildStore)(nil)
+	_ UserGroupStorer                   = (*UserGroupStore)(nil)
+	_ GovernmentFundingStorer           = (*GovernmentFundingStore)(nil)
+	_ GovernmentFundingBillPeriodStorer = (*GovernmentFundingBillPeriodStore)(nil)
+	_ SectionStorer                     = (*SectionStore)(nil)
+	_ ChildAttendanceStorer             = (*ChildAttendanceStore)(nil)
+	_ PayPlanStorer                     = (*PayPlanStore)(nil)
+	_ AuditStorer                       = (*AuditStore)(nil)
+	_ BudgetItemStorer                  = (*BudgetItemStore)(nil)
+	_ Transactor                        = (*GormTransactor)(nil)
 )

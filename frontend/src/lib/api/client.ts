@@ -43,6 +43,8 @@ import type {
   GovernmentFundingPropertyCreateRequest,
   GovernmentFundingPropertyUpdateRequest,
   GovernmentFundingBillResponse,
+  GovernmentFundingBillPeriodListItem,
+  GovernmentFundingBillPeriodResponse,
   PayPlan,
   PayPlanCreateRequest,
   PayPlanUpdateRequest,
@@ -899,7 +901,7 @@ class ApiClient {
     return this.fetchAllPages<Child>(url);
   }
 
-  // Government Funding Bill upload
+  // Government Funding Bill
   async uploadGovernmentFundingBill(
     orgId: number,
     formData: FormData
@@ -910,6 +912,31 @@ class ApiClient {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return response.data;
+  }
+
+  async getGovernmentFundingBillPeriods(
+    orgId: number,
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<GovernmentFundingBillPeriodListItem>> {
+    const { page = 1, limit = DEFAULT_PAGE_SIZE } = params;
+    const response = await this.client.get<PaginatedResponse<GovernmentFundingBillPeriodListItem>>(
+      `/organizations/${orgId}/government-funding-bills?page=${page}&limit=${limit}`
+    );
+    return response.data;
+  }
+
+  async getGovernmentFundingBillPeriod(
+    orgId: number,
+    id: number
+  ): Promise<GovernmentFundingBillPeriodResponse> {
+    const response = await this.client.get<GovernmentFundingBillPeriodResponse>(
+      `/organizations/${orgId}/government-funding-bills/${id}`
+    );
+    return response.data;
+  }
+
+  async deleteGovernmentFundingBillPeriod(orgId: number, id: number): Promise<void> {
+    await this.client.delete(`/organizations/${orgId}/government-funding-bills/${id}`);
   }
 
   // Children - fetch upcoming (contracts starting after today)

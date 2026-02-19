@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -632,5 +633,56 @@ func TestParseFromReader(t *testing.T) {
 	}
 	if output.Einrichtung.ZuschlagSPH != 165680 {
 		t.Errorf("ParseFromReader() ZuschlagSPH = %d, expected %d", output.Einrichtung.ZuschlagSPH, 165680)
+	}
+
+	// Verify billing month
+	expectedMonth := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	if !output.BillingMonth.Equal(expectedMonth) {
+		t.Errorf("ParseFromReader() BillingMonth = %v, expected %v", output.BillingMonth, expectedMonth)
+	}
+}
+
+func TestParseBillingMonth(t *testing.T) {
+	f, err := OpenSenatsabrechnung(testFile)
+	if err != nil {
+		t.Fatalf("OpenSenatsabrechnung() error = %v", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	billingMonth, err := ParseBillingMonth(f)
+	if err != nil {
+		t.Fatalf("ParseBillingMonth() error = %v", err)
+	}
+
+	// Expected: November 2025
+	expected := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	if !billingMonth.Equal(expected) {
+		t.Errorf("ParseBillingMonth() = %v, expected %v", billingMonth, expected)
+	}
+}
+
+func TestParseBillingMonthMissingHeader(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	_, _ = f.NewSheet(SheetVertrag)
+
+	_, err := ParseBillingMonth(f)
+	if err == nil {
+		t.Fatal("ParseBillingMonth() expected error for missing header")
+	}
+}
+
+func TestParseBillingMonthInvalidFormat(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	_, _ = f.NewSheet(SheetVertrag)
+
+	// Set up Trägernummer header and invalid date below
+	_ = f.SetCellValue(SheetVertrag, "A1", "Trägernummer")
+	_ = f.SetCellValue(SheetVertrag, "A2", "not-a-date")
+
+	_, err := ParseBillingMonth(f)
+	if err == nil {
+		t.Fatal("ParseBillingMonth() expected error for invalid date format")
 	}
 }

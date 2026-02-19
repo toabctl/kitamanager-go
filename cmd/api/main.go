@@ -145,7 +145,8 @@ func main() {
 	budgetItemService := service.NewBudgetItemService(budgetItemStore, transactor)
 	stepPromotionService := service.NewStepPromotionService(payPlanStore, employeeStore)
 	statisticsService := service.NewStatisticsService(childStore, employeeStore, orgStore, governmentFundingStore, payPlanStore, budgetItemStore)
-	governmentFundingBillService := service.NewGovernmentFundingBillService(childStore)
+	governmentFundingBillPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
+	governmentFundingBillService := service.NewGovernmentFundingBillService(childStore, governmentFundingBillPeriodStore)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, cfg.SecureCookies)
@@ -162,7 +163,7 @@ func main() {
 	stepPromotionHandler := handlers.NewStepPromotionHandler(stepPromotionService)
 	statisticsHandler := handlers.NewStatisticsHandler(statisticsService)
 	exportHandler := handlers.NewExportHandler(employeeService, childService)
-	governmentFundingBillHandler := handlers.NewGovernmentFundingBillHandler(governmentFundingBillService)
+	governmentFundingBillHandler := handlers.NewGovernmentFundingBillHandler(governmentFundingBillService, auditService)
 	healthHandler := handlers.NewHealthHandler(db)
 
 	// Initialize middleware

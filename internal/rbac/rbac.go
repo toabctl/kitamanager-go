@@ -18,19 +18,20 @@ const (
 
 // Resources
 const (
-	ResourceOrganizations     = "organizations"
-	ResourceEmployees         = "employees"
-	ResourceChildren          = "children"
-	ResourceEmployeeContracts = "employee_contracts"
-	ResourceChildContracts    = "child_contracts"
-	ResourceUsers             = "users"
-	ResourceGroups            = "groups"
-	ResourceSections          = "sections"
-	ResourceFundings          = "fundings"
-	ResourcePayPlans          = "payplans"
-	ResourceChildAttendance   = "child_attendance"
-	ResourceBudgetItems       = "budget_items"
-	ResourceBudgetItemEntries = "budget_item_entries"
+	ResourceOrganizations          = "organizations"
+	ResourceEmployees              = "employees"
+	ResourceChildren               = "children"
+	ResourceEmployeeContracts      = "employee_contracts"
+	ResourceChildContracts         = "child_contracts"
+	ResourceUsers                  = "users"
+	ResourceGroups                 = "groups"
+	ResourceSections               = "sections"
+	ResourceFundings               = "fundings"
+	ResourcePayPlans               = "payplans"
+	ResourceChildAttendance        = "child_attendance"
+	ResourceBudgetItems            = "budget_items"
+	ResourceBudgetItemEntries      = "budget_item_entries"
+	ResourceGovernmentFundingBills = "government_funding_bills"
 )
 
 // Actions
@@ -167,6 +168,9 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleSuperAdmin, "*", ResourceBudgetItemEntries, ActionRead},
 		{RoleSuperAdmin, "*", ResourceBudgetItemEntries, ActionUpdate},
 		{RoleSuperAdmin, "*", ResourceBudgetItemEntries, ActionDelete},
+		{RoleSuperAdmin, "*", ResourceGovernmentFundingBills, ActionCreate},
+		{RoleSuperAdmin, "*", ResourceGovernmentFundingBills, ActionRead},
+		{RoleSuperAdmin, "*", ResourceGovernmentFundingBills, ActionDelete},
 
 		// Admin - full access within their organization (domain is checked at runtime)
 		{RoleAdmin, "*", ResourceOrganizations, ActionRead},
@@ -215,6 +219,9 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleAdmin, "*", ResourceBudgetItemEntries, ActionRead},
 		{RoleAdmin, "*", ResourceBudgetItemEntries, ActionUpdate},
 		{RoleAdmin, "*", ResourceBudgetItemEntries, ActionDelete},
+		{RoleAdmin, "*", ResourceGovernmentFundingBills, ActionCreate},
+		{RoleAdmin, "*", ResourceGovernmentFundingBills, ActionRead},
+		{RoleAdmin, "*", ResourceGovernmentFundingBills, ActionDelete},
 
 		// Manager - manage employees, children, contracts; read-only for users/groups
 		{RoleManager, "*", ResourceOrganizations, ActionRead},
@@ -244,6 +251,9 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleManager, "*", ResourceChildAttendance, ActionDelete},
 		{RoleManager, "*", ResourceBudgetItems, ActionRead},
 		{RoleManager, "*", ResourceBudgetItemEntries, ActionRead},
+		{RoleManager, "*", ResourceGovernmentFundingBills, ActionCreate},
+		{RoleManager, "*", ResourceGovernmentFundingBills, ActionRead},
+		{RoleManager, "*", ResourceGovernmentFundingBills, ActionDelete},
 
 		// Member - read-only access to employees, children, contracts in their org
 		{RoleMember, "*", ResourceOrganizations, ActionRead},
