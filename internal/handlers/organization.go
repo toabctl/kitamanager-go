@@ -42,7 +42,10 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 		return
 	}
 
-	search := c.Query("search")
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
 
 	userID := getUserID(c)
 	organizations, total, err := h.service.ListForUser(c.Request.Context(), userID, search, params.Limit, params.Offset())

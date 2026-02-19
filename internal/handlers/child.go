@@ -83,11 +83,16 @@ func (h *ChildHandler) List(c *gin.Context) {
 		activeOn = &now
 	}
 
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
+
 	filter := models.ChildListFilter{
 		SectionID:     sectionID,
 		ActiveOn:      activeOn,
 		ContractAfter: contractAfter,
-		Search:        c.Query("search"),
+		Search:        search,
 	}
 
 	children, total, err := h.service.ListByOrganizationAndSection(c.Request.Context(), orgID, filter, params.Limit, params.Offset())

@@ -78,10 +78,15 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 		staffCategory = &sc
 	}
 
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
+
 	filter := models.EmployeeListFilter{
 		SectionID:     sectionID,
 		ActiveOn:      activeOn,
-		Search:        c.Query("search"),
+		Search:        search,
 		StaffCategory: staffCategory,
 	}
 

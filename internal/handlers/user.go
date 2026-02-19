@@ -47,7 +47,10 @@ func (h *UserHandler) List(c *gin.Context) {
 		return
 	}
 
-	search := c.Query("search")
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
 
 	users, total, err := h.service.List(c.Request.Context(), getUserID(c), search, params.Limit, params.Offset())
 	if err != nil {
@@ -85,7 +88,10 @@ func (h *UserHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	search := c.Query("search")
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
 
 	users, total, err := h.service.ListByOrganization(c.Request.Context(), orgID, search, params.Limit, params.Offset())
 	if err != nil {

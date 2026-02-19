@@ -24,7 +24,10 @@ func handleOrgList[R any](
 		return
 	}
 
-	search := c.Query("search")
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
 
 	items, total, err := listFn(c.Request.Context(), orgID, search, params.Limit, params.Offset())
 	if err != nil {

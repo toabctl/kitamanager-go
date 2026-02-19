@@ -64,10 +64,15 @@ func (h *ExportHandler) ExportEmployees(c *gin.Context) {
 		staffCategory = &sc
 	}
 
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
+
 	filter := models.EmployeeListFilter{
 		SectionID:     sectionID,
 		ActiveOn:      activeOn,
-		Search:        c.Query("search"),
+		Search:        search,
 		StaffCategory: staffCategory,
 	}
 
@@ -126,11 +131,16 @@ func (h *ExportHandler) ExportChildren(c *gin.Context) {
 		activeOn = &now
 	}
 
+	search, ok := parseSearch(c)
+	if !ok {
+		return
+	}
+
 	filter := models.ChildListFilter{
 		SectionID:     sectionID,
 		ActiveOn:      activeOn,
 		ContractAfter: contractAfter,
-		Search:        c.Query("search"),
+		Search:        search,
 	}
 
 	all, ok := fetchAllChildren(c, h.childService, orgID, filter)

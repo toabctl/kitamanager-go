@@ -19,6 +19,20 @@ import (
 // MaxDateRangeMonths is the maximum allowed date range for queries.
 const MaxDateRangeMonths = 72
 
+// MaxSearchLength is the maximum allowed length for search query parameters.
+const MaxSearchLength = 255
+
+// parseSearch extracts and validates the "search" query parameter.
+// Returns (search, ok). If ok is false, error response has been sent.
+func parseSearch(c *gin.Context) (string, bool) {
+	search := c.Query("search")
+	if len(search) > MaxSearchLength {
+		respondError(c, apperror.BadRequest(fmt.Sprintf("search query must not exceed %d characters", MaxSearchLength)))
+		return "", false
+	}
+	return search, true
+}
+
 // parseID extracts and validates ID from URL parameter
 func parseID(c *gin.Context, param string) (uint, error) {
 	id, err := strconv.ParseUint(c.Param(param), 10, 32)

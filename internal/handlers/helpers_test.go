@@ -171,3 +171,69 @@ func TestValidateDateRange(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSearch(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/?search=hello", nil)
+
+	search, ok := parseSearch(c)
+	if !ok {
+		t.Fatal("expected ok to be true")
+	}
+	if search != "hello" {
+		t.Errorf("expected 'hello', got %q", search)
+	}
+}
+
+func TestParseSearch_Empty(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/", nil)
+
+	search, ok := parseSearch(c)
+	if !ok {
+		t.Fatal("expected ok to be true")
+	}
+	if search != "" {
+		t.Errorf("expected empty string, got %q", search)
+	}
+}
+
+func TestParseSearch_TooLong(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	longSearch := make([]byte, MaxSearchLength+1)
+	for i := range longSearch {
+		longSearch[i] = 'a'
+	}
+	c.Request = httptest.NewRequest("GET", "/?search="+string(longSearch), nil)
+
+	_, ok := parseSearch(c)
+	if ok {
+		t.Fatal("expected ok to be false for search exceeding max length")
+	}
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestParseSearch_ExactlyMaxLength(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	exactSearch := make([]byte, MaxSearchLength)
+	for i := range exactSearch {
+		exactSearch[i] = 'a'
+	}
+	c.Request = httptest.NewRequest("GET", "/?search="+string(exactSearch), nil)
+
+	search, ok := parseSearch(c)
+	if !ok {
+		t.Fatal("expected ok to be true for search at max length")
+	}
+	if len(search) != MaxSearchLength {
+		t.Errorf("expected length %d, got %d", MaxSearchLength, len(search))
+	}
+}
