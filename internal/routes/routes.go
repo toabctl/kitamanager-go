@@ -24,7 +24,7 @@ type Deps struct {
 	StepPromotion     *handlers.StepPromotionHandler
 	Statistics        *handlers.StatisticsHandler
 	Export            *handlers.ExportHandler
-	Settlement        *handlers.SettlementHandler
+	GovernmentFundingBill *handlers.GovernmentFundingBillHandler
 	AuthMiddleware    *middleware.AuthMiddleware
 	AuthzMiddleware   *middleware.AuthorizationMiddleware
 	CSRFMiddleware    *middleware.CSRFMiddleware
@@ -47,7 +47,7 @@ func Setup(r *gin.Engine, d Deps) {
 	stepPromotionHandler := d.StepPromotion
 	statisticsHandler := d.Statistics
 	exportHandler := d.Export
-	settlementHandler := d.Settlement
+	governmentFundingBillHandler := d.GovernmentFundingBill
 	authMiddleware := d.AuthMiddleware
 	authzMiddleware := d.AuthzMiddleware
 	csrfMiddleware := d.CSRFMiddleware
@@ -298,13 +298,13 @@ func Setup(r *gin.Engine, d Deps) {
 				}
 
 				// ============================================================
-				// Settlement uploads (org-scoped)
+				// Government funding bill uploads (org-scoped)
 				// ============================================================
-				settlements := orgScoped.Group("/settlements")
+				fundingBills := orgScoped.Group("/government-funding-bills")
 				{
-					settlements.POST("/isbj",
+					fundingBills.POST("/isbj",
 						authzMiddleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
-						settlementHandler.UploadISBJ)
+						governmentFundingBillHandler.UploadISBJ)
 				}
 
 				// Children

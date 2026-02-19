@@ -11,31 +11,31 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/service"
 )
 
-// SettlementHandler handles settlement upload endpoints.
-type SettlementHandler struct {
-	settlementService *service.SettlementService
+// GovernmentFundingBillHandler handles government funding bill upload endpoints.
+type GovernmentFundingBillHandler struct {
+	service *service.GovernmentFundingBillService
 }
 
-// NewSettlementHandler creates a new SettlementHandler.
-func NewSettlementHandler(settlementService *service.SettlementService) *SettlementHandler {
-	return &SettlementHandler{settlementService: settlementService}
+// NewGovernmentFundingBillHandler creates a new GovernmentFundingBillHandler.
+func NewGovernmentFundingBillHandler(service *service.GovernmentFundingBillService) *GovernmentFundingBillHandler {
+	return &GovernmentFundingBillHandler{service: service}
 }
 
 // UploadISBJ godoc
-// @Summary Upload ISBJ settlement file
-// @Description Parse an ISBJ Senatsabrechnung Excel file and return settlement data enriched with matched child/contract info
-// @Tags settlements
+// @Summary Upload ISBJ government funding bill
+// @Description Parse an ISBJ Senatsabrechnung Excel file and return funding bill data enriched with matched child/contract info
+// @Tags government-funding-bills
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param file formData file true "ISBJ Senatsabrechnung Excel file (.xlsx)"
-// @Success 200 {object} models.SettlementUploadResponse
+// @Success 200 {object} models.GovernmentFundingBillResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/organizations/{orgId}/settlements/isbj [post]
-func (h *SettlementHandler) UploadISBJ(c *gin.Context) {
+// @Router /api/v1/organizations/{orgId}/government-funding-bills/isbj [post]
+func (h *GovernmentFundingBillHandler) UploadISBJ(c *gin.Context) {
 	orgID, ok := parseOrgID(c)
 	if !ok {
 		return
@@ -54,7 +54,7 @@ func (h *SettlementHandler) UploadISBJ(c *gin.Context) {
 	}
 	defer file.Close()
 
-	result, err := h.settlementService.ProcessISBJSettlement(c.Request.Context(), orgID, file)
+	result, err := h.service.ProcessISBJ(c.Request.Context(), orgID, file)
 	if err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
 		return

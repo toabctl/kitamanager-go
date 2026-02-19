@@ -9,18 +9,18 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/store"
 )
 
-// SettlementService handles settlement file processing.
-type SettlementService struct {
+// GovernmentFundingBillService handles government funding bill file processing.
+type GovernmentFundingBillService struct {
 	childStore store.ChildStorer
 }
 
-// NewSettlementService creates a new SettlementService.
-func NewSettlementService(childStore store.ChildStorer) *SettlementService {
-	return &SettlementService{childStore: childStore}
+// NewGovernmentFundingBillService creates a new GovernmentFundingBillService.
+func NewGovernmentFundingBillService(childStore store.ChildStorer) *GovernmentFundingBillService {
+	return &GovernmentFundingBillService{childStore: childStore}
 }
 
-// ProcessISBJSettlement parses an ISBJ Excel file and returns enriched settlement data.
-func (s *SettlementService) ProcessISBJSettlement(ctx context.Context, orgID uint, reader io.Reader) (*models.SettlementUploadResponse, error) {
+// ProcessISBJ parses an ISBJ Excel file and returns enriched government funding bill data.
+func (s *GovernmentFundingBillService) ProcessISBJ(ctx context.Context, orgID uint, reader io.Reader) (*models.GovernmentFundingBillResponse, error) {
 	output, err := isbj.ParseFromReader(reader)
 	if err != nil {
 		return nil, err
@@ -53,15 +53,15 @@ func (s *SettlementService) ProcessISBJSettlement(ctx context.Context, orgID uin
 
 	// Build response
 	matchedCount := 0
-	children := make([]models.SettlementChildResponse, 0, len(converted.Children))
+	children := make([]models.GovernmentFundingBillChildResponse, 0, len(converted.Children))
 	for _, child := range converted.Children {
-		resp := models.SettlementChildResponse{
+		resp := models.GovernmentFundingBillChildResponse{
 			VoucherNumber: child.VoucherNumber,
 			ChildName:     child.ChildName,
 			BirthDate:     child.BirthDate,
 			District:      child.District,
 			TotalAmount:   child.TotalAmount,
-			Amounts:       convertAmounts(child.Amounts),
+			Amounts:       convertBillAmounts(child.Amounts),
 		}
 
 		if contract, ok := contractMap[child.VoucherNumber]; ok {
@@ -74,7 +74,7 @@ func (s *SettlementService) ProcessISBJSettlement(ctx context.Context, orgID uin
 		children = append(children, resp)
 	}
 
-	return &models.SettlementUploadResponse{
+	return &models.GovernmentFundingBillResponse{
 		FacilityName:      converted.FacilityName,
 		FacilityTotal:     converted.FacilityTotal,
 		ContractBooking:   converted.ContractBooking,
@@ -82,15 +82,15 @@ func (s *SettlementService) ProcessISBJSettlement(ctx context.Context, orgID uin
 		ChildrenCount:     converted.ChildrenCount,
 		MatchedCount:      matchedCount,
 		UnmatchedCount:    converted.ChildrenCount - matchedCount,
-		Surcharges:        convertAmounts(converted.Surcharges),
+		Surcharges:        convertBillAmounts(converted.Surcharges),
 		Children:          children,
 	}, nil
 }
 
-func convertAmounts(amounts []isbj.SettlementAmount) []models.SettlementAmount {
-	result := make([]models.SettlementAmount, len(amounts))
+func convertBillAmounts(amounts []isbj.SettlementAmount) []models.GovernmentFundingBillAmount {
+	result := make([]models.GovernmentFundingBillAmount, len(amounts))
 	for i, a := range amounts {
-		result[i] = models.SettlementAmount{
+		result[i] = models.GovernmentFundingBillAmount{
 			Key:    a.Key,
 			Value:  a.Value,
 			Amount: a.Amount,
