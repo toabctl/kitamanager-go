@@ -451,6 +451,11 @@ func TestChildAttendanceService_Update_Status(t *testing.T) {
 	}
 	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
 
+	// Verify the record initially has a check-in time (auto-set by Create for present)
+	if createResp.CheckInTime == nil {
+		t.Fatal("expected check-in time to be set after create")
+	}
+
 	newStatus := models.ChildAttendanceStatusSick
 	updateReq := &models.ChildAttendanceUpdateRequest{Status: &newStatus}
 	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, updateReq)
@@ -459,6 +464,13 @@ func TestChildAttendanceService_Update_Status(t *testing.T) {
 	}
 	if resp.Status != models.ChildAttendanceStatusSick {
 		t.Errorf("expected status sick, got %s", resp.Status)
+	}
+	// Times must be cleared when status changes to non-present
+	if resp.CheckInTime != nil {
+		t.Error("expected CheckInTime to be nil after changing to sick")
+	}
+	if resp.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to be nil after changing to sick")
 	}
 }
 
@@ -543,6 +555,355 @@ func TestChildAttendanceService_Update_CheckTimes(t *testing.T) {
 	}
 	if !resp.CheckOutTime.Equal(newCheckOut) {
 		t.Errorf("expected CheckOutTime %v, got %v", newCheckOut, resp.CheckOutTime)
+	}
+}
+
+// ============================================================
+// Update: status change clears times (edge cases)
+// ============================================================
+
+func TestChildAttendanceService_Update_StatusToAbsentClearsTimes(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status:      models.ChildAttendanceStatusPresent,
+		CheckInTime: &checkIn,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Add a check-out time first
+	checkOut := time.Date(2025, 6, 15, 16, 0, 0, 0, time.UTC)
+	_, _ = svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		CheckOutTime: &checkOut,
+	})
+
+	// Change to absent — both times should be cleared
+	absent := models.ChildAttendanceStatusAbsent
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &absent,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.CheckInTime != nil {
+		t.Error("expected CheckInTime to be nil after changing to absent")
+	}
+	if resp.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to be nil after changing to absent")
+	}
+}
+
+func TestChildAttendanceService_Update_StatusToVacationClearsTimes(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status:      models.ChildAttendanceStatusPresent,
+		CheckInTime: &checkIn,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	vacation := models.ChildAttendanceStatusVacation
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &vacation,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.CheckInTime != nil {
+		t.Error("expected CheckInTime to be nil after changing to vacation")
+	}
+}
+
+func TestChildAttendanceService_Update_StatusToPresentKeepsTimes(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	checkOut := time.Date(2025, 6, 15, 16, 0, 0, 0, time.UTC)
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status:      models.ChildAttendanceStatusPresent,
+		CheckInTime: &checkIn,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Set check-out and change to present (explicitly) — times should be preserved
+	present := models.ChildAttendanceStatusPresent
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status:       &present,
+		CheckOutTime: &checkOut,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.CheckInTime == nil || !resp.CheckInTime.Equal(checkIn) {
+		t.Errorf("expected CheckInTime to be preserved, got %v", resp.CheckInTime)
+	}
+	if resp.CheckOutTime == nil || !resp.CheckOutTime.Equal(checkOut) {
+		t.Errorf("expected CheckOutTime to be preserved, got %v", resp.CheckOutTime)
+	}
+}
+
+func TestChildAttendanceService_Update_StatusFromSickToVacationTimesStayNil(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	createReq := &models.ChildAttendanceCreateRequest{
+		Date:   "2025-06-15",
+		Status: models.ChildAttendanceStatusSick,
+	}
+	createResp, err := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+	if createResp.CheckInTime != nil {
+		t.Fatal("expected no check-in time for sick status")
+	}
+
+	// Switch from sick to vacation — times should remain nil
+	vacation := models.ChildAttendanceStatusVacation
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &vacation,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.Status != models.ChildAttendanceStatusVacation {
+		t.Errorf("expected status vacation, got %s", resp.Status)
+	}
+	if resp.CheckInTime != nil {
+		t.Error("expected CheckInTime to remain nil")
+	}
+	if resp.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to remain nil")
+	}
+}
+
+func TestChildAttendanceService_Update_StatusFromSickToPresent_AutoSetsCheckIn(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	createReq := &models.ChildAttendanceCreateRequest{
+		Date:   "2025-06-15",
+		Status: models.ChildAttendanceStatusSick,
+	}
+	createResp, err := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+	if createResp.CheckInTime != nil {
+		t.Fatal("expected no check-in time for sick status")
+	}
+
+	// Switch from sick to present — check-in time should be auto-set to now
+	before := time.Now()
+	present := models.ChildAttendanceStatusPresent
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &present,
+	})
+	after := time.Now()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.Status != models.ChildAttendanceStatusPresent {
+		t.Errorf("expected status present, got %s", resp.Status)
+	}
+	if resp.CheckInTime == nil {
+		t.Fatal("expected CheckInTime to be auto-set when changing to present")
+	}
+	if resp.CheckInTime.Before(before) || resp.CheckInTime.After(after) {
+		t.Errorf("expected CheckInTime to be around now, got %v", resp.CheckInTime)
+	}
+	if resp.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to remain nil")
+	}
+}
+
+func TestChildAttendanceService_Update_StatusToPresentWithExplicitTime(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	createReq := &models.ChildAttendanceCreateRequest{
+		Date:   "2025-06-15",
+		Status: models.ChildAttendanceStatusAbsent,
+	}
+	createResp, err := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	// Switch to present with an explicit check-in time — should use the provided time, not now
+	explicitTime := time.Date(2025, 6, 15, 9, 30, 0, 0, time.UTC)
+	present := models.ChildAttendanceStatusPresent
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status:      &present,
+		CheckInTime: &explicitTime,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.CheckInTime == nil {
+		t.Fatal("expected CheckInTime to be set")
+	}
+	if !resp.CheckInTime.Equal(explicitTime) {
+		t.Errorf("expected explicit time %v, got %v", explicitTime, resp.CheckInTime)
+	}
+}
+
+func TestChildAttendanceService_Update_StatusToPresentAlreadyHasTimes(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status:      models.ChildAttendanceStatusPresent,
+		CheckInTime: &checkIn,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Explicitly set status to present when already present with times — should preserve existing time
+	present := models.ChildAttendanceStatusPresent
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &present,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.CheckInTime == nil || !resp.CheckInTime.Equal(checkIn) {
+		t.Errorf("expected existing check-in time %v to be preserved, got %v", checkIn, resp.CheckInTime)
+	}
+}
+
+func TestChildAttendanceService_Update_TimesAndNonPresentStatusClearsTimesAfterSetting(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status: models.ChildAttendanceStatusPresent,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Send both times AND a non-present status in the same request.
+	// The status change should take precedence and clear the times.
+	newCheckIn := time.Date(2025, 6, 15, 7, 0, 0, 0, time.UTC)
+	newCheckOut := time.Date(2025, 6, 15, 15, 0, 0, 0, time.UTC)
+	sick := models.ChildAttendanceStatusSick
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		CheckInTime:  &newCheckIn,
+		CheckOutTime: &newCheckOut,
+		Status:       &sick,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.Status != models.ChildAttendanceStatusSick {
+		t.Errorf("expected status sick, got %s", resp.Status)
+	}
+	// Status change to non-present should clear times even though they were sent in the request
+	if resp.CheckInTime != nil {
+		t.Error("expected CheckInTime to be nil (non-present status overrides sent times)")
+	}
+	if resp.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to be nil (non-present status overrides sent times)")
+	}
+}
+
+func TestChildAttendanceService_Update_AllNonPresentStatusesClearTimes(t *testing.T) {
+	statuses := []string{
+		models.ChildAttendanceStatusAbsent,
+		models.ChildAttendanceStatusSick,
+		models.ChildAttendanceStatusVacation,
+	}
+
+	for _, status := range statuses {
+		t.Run(status, func(t *testing.T) {
+			svc, _, _, org, child := setupChildAttendanceTest(t)
+			ctx := context.Background()
+
+			checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+			checkOut := time.Date(2025, 6, 15, 16, 0, 0, 0, time.UTC)
+			createReq := &models.ChildAttendanceCreateRequest{
+				Status:      models.ChildAttendanceStatusPresent,
+				CheckInTime: &checkIn,
+			}
+			createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+			// Set check-out time first
+			_, _ = svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+				CheckOutTime: &checkOut,
+			})
+
+			// Change to non-present status
+			s := status
+			resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+				Status: &s,
+			})
+			if err != nil {
+				t.Fatalf("expected no error for status %s, got %v", status, err)
+			}
+			if resp.CheckInTime != nil {
+				t.Errorf("expected CheckInTime nil for status %s", status)
+			}
+			if resp.CheckOutTime != nil {
+				t.Errorf("expected CheckOutTime nil for status %s", status)
+			}
+		})
+	}
+}
+
+func TestChildAttendanceService_Update_NotePreservedAfterStatusChange(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status: models.ChildAttendanceStatusPresent,
+		Note:   "Important note",
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Change status — note should be preserved
+	sick := models.ChildAttendanceStatusSick
+	resp, err := svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &sick,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if resp.Note != "Important note" {
+		t.Errorf("expected note to be preserved, got '%s'", resp.Note)
+	}
+}
+
+func TestChildAttendanceService_Update_TimesClearedPersistsToDatabase(t *testing.T) {
+	svc, _, _, org, child := setupChildAttendanceTest(t)
+	ctx := context.Background()
+
+	checkIn := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	createReq := &models.ChildAttendanceCreateRequest{
+		Status:      models.ChildAttendanceStatusPresent,
+		CheckInTime: &checkIn,
+	}
+	createResp, _ := svc.Create(ctx, org.ID, child.ID, createReq, 1)
+
+	// Change to sick — clear times
+	sick := models.ChildAttendanceStatusSick
+	_, _ = svc.Update(ctx, createResp.ID, org.ID, child.ID, &models.ChildAttendanceUpdateRequest{
+		Status: &sick,
+	})
+
+	// Re-fetch from database to verify times are actually persisted as NULL
+	reloaded, err := svc.GetByID(ctx, createResp.ID, org.ID, child.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if reloaded.CheckInTime != nil {
+		t.Error("expected CheckInTime to be nil after reload from database")
+	}
+	if reloaded.CheckOutTime != nil {
+		t.Error("expected CheckOutTime to be nil after reload from database")
 	}
 }
 

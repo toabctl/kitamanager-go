@@ -94,7 +94,9 @@ func (h *ChildAttendanceHandler) Get(c *gin.Context) {
 
 // Update godoc
 // @Summary Update an attendance record
-// @Description Update an existing attendance record for a specific child
+// @Description Update an existing attendance record for a specific child.
+// @Description When status changes to absent/sick/vacation, check_in_time and check_out_time are automatically cleared.
+// @Description When status changes to present and no check_in_time exists, check_in_time is automatically set to now.
 // @Tags child-attendance
 // @Accept json
 // @Produce json

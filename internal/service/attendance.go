@@ -123,6 +123,10 @@ func (s *ChildAttendanceService) GetByID(ctx context.Context, id, orgID, childID
 }
 
 // Update updates an existing attendance record.
+// Status transition rules:
+//   - To non-present (absent/sick/vacation): check_in_time and check_out_time are cleared.
+//   - To present: if no check_in_time exists, it is auto-set to now (mirrors Create behavior).
+//     An explicit check_in_time in the request takes precedence. Existing times are preserved.
 func (s *ChildAttendanceService) Update(ctx context.Context, id, orgID, childID uint, req *models.ChildAttendanceUpdateRequest) (*models.ChildAttendanceResponse, error) {
 	attendance, err := s.store.FindByID(ctx, id)
 	if err != nil {
@@ -146,6 +150,19 @@ func (s *ChildAttendanceService) Update(ctx context.Context, id, orgID, childID 
 			return nil, apperror.BadRequest("invalid status")
 		}
 		attendance.Status = *req.Status
+		if *req.Status == models.ChildAttendanceStatusPresent {
+			// When changing to present, auto-set check-in time to now
+			// (mirrors Create behavior) unless an explicit time was provided.
+			if attendance.CheckInTime == nil {
+				now := time.Now()
+				attendance.CheckInTime = &now
+			}
+		} else {
+			// Non-present statuses (absent, sick, vacation) mean the child was not
+			// physically present, so check-in/check-out times are meaningless.
+			attendance.CheckInTime = nil
+			attendance.CheckOutTime = nil
+		}
 	}
 	if req.Note != nil {
 		attendance.Note = strings.TrimSpace(*req.Note)

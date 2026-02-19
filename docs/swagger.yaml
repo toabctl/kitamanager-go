@@ -4088,7 +4088,10 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing attendance record for a specific child
+      description: |-
+        Update an existing attendance record for a specific child.
+        When status changes to absent/sick/vacation, check_in_time and check_out_time are automatically cleared.
+        When status changes to present and no check_in_time exists, check_in_time is automatically set to now.
       parameters:
       - description: Organization ID
         in: path
