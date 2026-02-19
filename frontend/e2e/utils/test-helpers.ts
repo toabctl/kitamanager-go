@@ -11,12 +11,7 @@ export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'supersecret';
  * Auth is handled via HttpOnly cookies (set during login).
  * CSRF token is extracted from the non-HttpOnly csrf_token cookie.
  */
-async function apiRequest<T>(
-  page: Page,
-  method: string,
-  url: string,
-  body?: unknown
-): Promise<T> {
+async function apiRequest<T>(page: Page, method: string, url: string, body?: unknown): Promise<T> {
   return page.evaluate(
     async ({ method, url, body }) => {
       const csrfMatch = document.cookie.match(/csrf_token=([^;]+)/);
@@ -152,10 +147,7 @@ export async function createOrganizationViaApi(
 /**
  * Delete an organization via the API
  */
-export async function deleteOrganizationViaApi(
-  page: Page,
-  orgId: number
-): Promise<void> {
+export async function deleteOrganizationViaApi(page: Page, orgId: number): Promise<void> {
   await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}`);
 }
 
@@ -219,11 +211,7 @@ export async function deleteEmployeeViaApi(
 /**
  * Delete a child via the API
  */
-export async function deleteChildViaApi(
-  page: Page,
-  orgId: number,
-  childId: number
-): Promise<void> {
+export async function deleteChildViaApi(page: Page, orgId: number, childId: number): Promise<void> {
   await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/children/${childId}`);
 }
 
@@ -278,9 +266,7 @@ export async function createChildContractViaApi(
 /**
  * Get the first organization via API (assumes at least one exists from seeding)
  */
-export async function getFirstOrganization(
-  page: Page
-): Promise<{ id: number; name: string }> {
+export async function getFirstOrganization(page: Page): Promise<{ id: number; name: string }> {
   const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
     page,
     'GET',
@@ -420,10 +406,7 @@ export async function createUserViaApi(
 /**
  * Delete a user via the API
  */
-export async function deleteUserViaApi(
-  page: Page,
-  userId: number
-): Promise<void> {
+export async function deleteUserViaApi(page: Page, userId: number): Promise<void> {
   await apiRequest(page, 'DELETE', `/api/v1/users/${userId}`);
 }
 
@@ -462,16 +445,8 @@ export async function createGroupViaApi(
 /**
  * Delete a group via the API
  */
-export async function deleteGroupViaApi(
-  page: Page,
-  orgId: number,
-  groupId: number
-): Promise<void> {
-  await apiRequest(
-    page,
-    'DELETE',
-    `/api/v1/organizations/${orgId}/groups/${groupId}`
-  );
+export async function deleteGroupViaApi(page: Page, orgId: number, groupId: number): Promise<void> {
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/groups/${groupId}`);
 }
 
 /**
@@ -487,10 +462,7 @@ export async function createGovernmentFundingViaApi(
 /**
  * Delete a government funding via the API
  */
-export async function deleteGovernmentFundingViaApi(
-  page: Page,
-  fundingId: number
-): Promise<void> {
+export async function deleteGovernmentFundingViaApi(page: Page, fundingId: number): Promise<void> {
   await apiRequest(page, 'DELETE', `/api/v1/government-fundings/${fundingId}`);
 }
 
@@ -520,7 +492,15 @@ export async function getGovernmentFundingViaApi(
   page: Page,
   fundingId: number,
   activeOn?: string
-): Promise<{ id: number; name: string; periods?: Array<{ id: number; comment?: string; properties?: Array<{ key: string; value: string }> }> }> {
+): Promise<{
+  id: number;
+  name: string;
+  periods?: Array<{
+    id: number;
+    comment?: string;
+    properties?: Array<{ key: string; value: string }>;
+  }>;
+}> {
   const params = 'periods_limit=0' + (activeOn ? `&active_on=${activeOn}` : '');
   return apiRequest(page, 'GET', `/api/v1/government-fundings/${fundingId}?${params}`);
 }
@@ -540,12 +520,7 @@ export async function createFundingPeriodViaApi(
     from: data.from.includes('T') ? data.from : `${data.from}T00:00:00Z`,
     ...(data.to ? { to: data.to.includes('T') ? data.to : `${data.to}T00:00:00Z` } : {}),
   };
-  return apiRequest(
-    page,
-    'POST',
-    `/api/v1/government-fundings/${fundingId}/periods`,
-    body
-  );
+  return apiRequest(page, 'POST', `/api/v1/government-fundings/${fundingId}/periods`, body);
 }
 
 /**
@@ -555,7 +530,15 @@ export async function createFundingPropertyViaApi(
   page: Page,
   fundingId: number,
   periodId: number,
-  data: { key: string; value: string; label: string; payment: number; requirement: number; min_age?: number; max_age?: number }
+  data: {
+    key: string;
+    value: string;
+    label: string;
+    payment: number;
+    requirement: number;
+    min_age?: number;
+    max_age?: number;
+  }
 ): Promise<{ id: number }> {
   return apiRequest(
     page,
@@ -576,10 +559,42 @@ export async function ensureFundingHasProperties(page: Page): Promise<void> {
   const details = await getGovernmentFundingViaApi(page, funding.id);
 
   const defaultProperties = [
-    { key: 'care_type', value: 'ganztag', label: 'Ganztag', payment: 100000, requirement: 0.301, min_age: 0, max_age: 8 },
-    { key: 'care_type', value: 'halbtag', label: 'Halbtag', payment: 70000, requirement: 0.15, min_age: 0, max_age: 8 },
-    { key: 'care_type', value: 'teilzeit', label: 'Teilzeit', payment: 85000, requirement: 0.217, min_age: 0, max_age: 8 },
-    { key: 'ndh', value: 'ndh', label: 'NdH', payment: 10000, requirement: 0.017, min_age: 0, max_age: 8 },
+    {
+      key: 'care_type',
+      value: 'ganztag',
+      label: 'Ganztag',
+      payment: 100000,
+      requirement: 0.301,
+      min_age: 0,
+      max_age: 8,
+    },
+    {
+      key: 'care_type',
+      value: 'halbtag',
+      label: 'Halbtag',
+      payment: 70000,
+      requirement: 0.15,
+      min_age: 0,
+      max_age: 8,
+    },
+    {
+      key: 'care_type',
+      value: 'teilzeit',
+      label: 'Teilzeit',
+      payment: 85000,
+      requirement: 0.217,
+      min_age: 0,
+      max_age: 8,
+    },
+    {
+      key: 'ndh',
+      value: 'ndh',
+      label: 'NdH',
+      payment: 10000,
+      requirement: 0.017,
+      min_age: 0,
+      max_age: 8,
+    },
   ];
 
   if (details.periods && details.periods.length > 0) {
@@ -616,12 +631,7 @@ export async function createBudgetItemViaApi(
   orgId: number,
   data: { name: string; category: string; per_child?: boolean }
 ): Promise<{ id: number; name: string }> {
-  return apiRequest(
-    page,
-    'POST',
-    `/api/v1/organizations/${orgId}/budget-items`,
-    data
-  );
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/budget-items`, data);
 }
 
 /**
@@ -632,11 +642,7 @@ export async function deleteBudgetItemViaApi(
   orgId: number,
   budgetItemId: number
 ): Promise<void> {
-  await apiRequest(
-    page,
-    'DELETE',
-    `/api/v1/organizations/${orgId}/budget-items/${budgetItemId}`
-  );
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/budget-items/${budgetItemId}`);
 }
 
 /**
@@ -665,12 +671,7 @@ export async function createPayPlanViaApi(
   orgId: number,
   name: string
 ): Promise<{ id: number; name: string }> {
-  return apiRequest(
-    page,
-    'POST',
-    `/api/v1/organizations/${orgId}/payplans`,
-    { name }
-  );
+  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/payplans`, { name });
 }
 
 /**
@@ -681,11 +682,7 @@ export async function deletePayPlanViaApi(
   orgId: number,
   payPlanId: number
 ): Promise<void> {
-  await apiRequest(
-    page,
-    'DELETE',
-    `/api/v1/organizations/${orgId}/payplans/${payPlanId}`
-  );
+  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/payplans/${payPlanId}`);
 }
 
 /**
@@ -808,11 +805,7 @@ export async function deleteFundingPeriodViaApi(
   fundingId: number,
   periodId: number
 ): Promise<void> {
-  await apiRequest(
-    page,
-    'DELETE',
-    `/api/v1/government-fundings/${fundingId}/periods/${periodId}`
-  );
+  await apiRequest(page, 'DELETE', `/api/v1/government-fundings/${fundingId}/periods/${periodId}`);
 }
 
 /**
@@ -829,6 +822,53 @@ export async function deleteFundingPropertyViaApi(
     'DELETE',
     `/api/v1/government-fundings/${fundingId}/periods/${periodId}/properties/${propertyId}`
   );
+}
+
+/**
+ * Get attendance records for a specific date via the API
+ */
+export async function getAttendanceByDateViaApi(
+  page: Page,
+  orgId: number,
+  date: string
+): Promise<Array<{ id: number; child_id: number; status: string }>> {
+  const data = await apiRequest<{
+    data: Array<{ id: number; child_id: number; status: string }>;
+  }>(page, 'GET', `/api/v1/organizations/${orgId}/children/attendance?date=${date}&limit=100`);
+  return data.data ?? [];
+}
+
+/**
+ * Delete an attendance record via the API
+ */
+export async function deleteAttendanceViaApi(
+  page: Page,
+  orgId: number,
+  childId: number,
+  attendanceId: number
+): Promise<void> {
+  await apiRequest(
+    page,
+    'DELETE',
+    `/api/v1/organizations/${orgId}/children/${childId}/attendance/${attendanceId}`
+  );
+}
+
+/**
+ * Delete all attendance records for a child on a given date
+ */
+export async function clearAttendanceForDate(
+  page: Page,
+  orgId: number,
+  childId: number,
+  date: string
+): Promise<void> {
+  const records = await getAttendanceByDateViaApi(page, orgId, date);
+  for (const rec of records) {
+    if (rec.child_id === childId) {
+      await deleteAttendanceViaApi(page, orgId, childId, rec.id);
+    }
+  }
 }
 
 /**
@@ -868,10 +908,7 @@ export async function createTestOrg(
  * Delete a test organization and its resources.
  * Deletes pay plans first (may not cascade from org deletion).
  */
-export async function deleteTestOrg(
-  page: Page,
-  orgId: number
-): Promise<void> {
+export async function deleteTestOrg(page: Page, orgId: number): Promise<void> {
   const payPlans = await getPayPlansViaApi(page, orgId).catch(
     () => [] as Array<{ id: number; name: string }>
   );
