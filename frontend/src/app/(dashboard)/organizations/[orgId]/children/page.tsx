@@ -5,19 +5,11 @@ import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, FileText, History, Download } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 import { MonthStepper } from '@/components/ui/month-stepper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { ChildrenTable } from '@/components/children/children-table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SearchInput } from '@/components/ui/search-input';
 import {
@@ -36,21 +28,11 @@ import {
   type ChildContractCreateRequest,
   type ChildContractUpdateRequest,
   type ChildFundingResponse,
-  type ContractProperties,
   LOOKUP_FETCH_LIMIT,
 } from '@/lib/api/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  formatDate,
-  calculateAge,
-  formatDateForInput,
-  formatDateForApi,
-  formatCurrency,
-  formatFte,
-  propertiesToValues,
-} from '@/lib/utils/formatting';
-import { getCurrentContract } from '@/lib/utils/contracts';
+import { formatDateForInput, formatDateForApi } from '@/lib/utils/formatting';
 import { useContractMutation } from '@/lib/hooks/use-contract-mutation';
 import { Pagination } from '@/components/ui/pagination';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
@@ -342,132 +324,15 @@ export default function ChildrenPage() {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('common.name')}</TableHead>
-                  <TableHead>{t('gender.label')}</TableHead>
-                  <TableHead>{t('children.birthdate')}</TableHead>
-                  <TableHead>{t('children.age')}</TableHead>
-                  <TableHead>{t('sections.title')}</TableHead>
-                  <TableHead>{t('children.properties')}</TableHead>
-                  <TableHead className="text-right">{t('children.funding')}</TableHead>
-                  <TableHead className="text-right">
-                    {t('children.requirement')}
-                    {fundingData?.weekly_hours_basis ? ` (${fundingData.weekly_hours_basis}h)` : ''}
-                  </TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {children?.map((child) => {
-                  const currentContract = getCurrentContract(child.contracts);
-                  return (
-                    <TableRow key={child.id}>
-                      <TableCell className="font-medium">
-                        {child.first_name} {child.last_name}
-                      </TableCell>
-                      <TableCell>{t(`gender.${child.gender}`)}</TableCell>
-                      <TableCell>{formatDate(child.birthdate)}</TableCell>
-                      <TableCell>{calculateAge(child.birthdate)}</TableCell>
-                      <TableCell>
-                        {currentContract?.section_name && (
-                          <span>{currentContract.section_name}</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {currentContract?.properties &&
-                        Object.keys(currentContract.properties).length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {propertiesToValues(currentContract.properties as ContractProperties)
-                              .slice(0, 3)
-                              .map((value) => (
-                                <Badge key={value} variant="outline" className="text-xs">
-                                  {value}
-                                </Badge>
-                              ))}
-                            {Object.keys(currentContract.properties).length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{Object.keys(currentContract.properties).length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            {t('contracts.noProperties')}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {(() => {
-                          const funding = fundingByChildId.get(child.id);
-                          if (!funding || funding.funding === 0) {
-                            return <span className="text-sm text-muted-foreground">-</span>;
-                          }
-                          return (
-                            <span className="font-medium">{formatCurrency(funding.funding)}</span>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {(() => {
-                          const funding = fundingByChildId.get(child.id);
-                          if (!funding || funding.requirement === 0) {
-                            return <span className="text-sm text-muted-foreground">-</span>;
-                          }
-                          return (
-                            <span className="font-medium">{formatFte(funding.requirement)}</span>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleViewContractHistory(child)}
-                          title={t('children.contractHistory')}
-                          aria-label={t('children.contractHistory')}
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleAddContract(child)}
-                          title={t('children.addContract')}
-                          aria-label={t('children.addContract')}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => dialogs.handleEdit(child)}
-                          aria-label={t('common.edit')}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => dialogs.handleDelete(child)}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {children?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
-                      {t('common.noResults')}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <ChildrenTable
+              items={children ?? []}
+              fundingByChildId={fundingByChildId}
+              weeklyHoursBasis={fundingData?.weekly_hours_basis}
+              onViewHistory={handleViewContractHistory}
+              onAddContract={handleAddContract}
+              onEdit={dialogs.handleEdit}
+              onDelete={dialogs.handleDelete}
+            />
           )}
           {paginatedData && (
             <Pagination
