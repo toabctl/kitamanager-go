@@ -44,106 +44,69 @@ test.describe('Attendance', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('should display attendance page with heading and day stepper', async ({ page }) => {
+  test('should display attendance page with heading and week stepper', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /attendance/i }).first()).toBeVisible();
-    // Day stepper should show today's date
-    await expect(page.getByRole('button', { name: /today/i })).toBeVisible();
+    // Week stepper should show "This week" button
+    await expect(page.getByRole('button', { name: /this week/i })).toBeVisible();
   });
 
-  test('should show child in attendance list', async ({ page }) => {
+  test('should show child in weekly attendance table', async ({ page }) => {
     await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
-    // Should show "Not Recorded" initially
-    await expect(page.getByText(/not recorded/i).first()).toBeVisible();
+
+    // Table should have 6 column headers (Name + 5 weekdays)
+    const headers = page.locator('thead th');
+    await expect(headers).toHaveCount(6);
   });
 
-  test('should quick-mark child as present', async ({ page }) => {
+  test('should check-in child', async ({ page }) => {
     await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
 
-    // Find the row with the child and click the present (check circle) button
-    const row = page.getByRole('row').filter({ hasText: childFirstName });
-    // The first quick button is "Present" (CheckCircle)
-    const quickButtons = row.getByRole('button');
-    // Quick buttons are after status column; find the green check one
-    await quickButtons.filter({ hasText: '' }).nth(0).click();
-
-    // Wait for the status to update - should show "Present" badge
-    await expect(row.getByText(/present/i)).toBeVisible({ timeout: 10000 });
-  });
-
-  test('should quick-mark child as absent after being present', async ({ page }) => {
-    await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
     const row = page.getByRole('row').filter({ hasText: childFirstName });
 
-    // Click the absent (XCircle) button - second quick button
-    const quickButtons = row.getByRole('button');
-    await quickButtons.nth(1).click();
+    // Click the first check-in button in the row
+    await row.getByRole('button', { name: /check-in/i }).first().click();
 
-    // Should update to "Absent"
-    await expect(row.getByText(/absent/i)).toBeVisible({ timeout: 10000 });
+    // After check-in, a check-out button should appear
+    await expect(row.getByRole('button', { name: /check-out/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test('should edit attendance record via dialog', async ({ page }) => {
+  test('should check-out child after check-in', async ({ page }) => {
     await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
+
     const row = page.getByRole('row').filter({ hasText: childFirstName });
 
-    // First make sure there's a record to edit (quick mark present)
-    await row.getByRole('button').nth(0).click();
-    await expect(row.getByText(/present/i)).toBeVisible({ timeout: 10000 });
+    // If not checked in yet, check in first
+    const checkOutButton = row.getByRole('button', { name: /check-out/i }).first();
+    const checkInButton = row.getByRole('button', { name: /check-in/i }).first();
 
-    // Click the edit (pencil) button
-    await row.getByRole('button', { name: /edit/i }).click();
+    if (await checkInButton.isVisible().catch(() => false)) {
+      await checkInButton.click();
+      await expect(checkOutButton).toBeVisible({ timeout: 10000 });
+    }
 
-    // Dialog should open
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    // Click check-out
+    await checkOutButton.click();
 
-    // Change check-in time
-    await page.getByLabel(/check-in/i).fill('08:30');
-
-    // Add a note
-    const noteField = page.getByLabel(/note/i);
-    await noteField.fill('Arrived with father');
-
-    // Save
-    await page.getByRole('button', { name: /save/i }).click();
-
-    // Dialog should close
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10000 });
-
-    // Note should be visible in the row (don't assert on time due to timezone differences)
-    await expect(row.getByText('Arrived with father')).toBeVisible({ timeout: 10000 });
+    // After check-out, the times should be displayed (no more buttons)
+    // The cell should show a time range like "HH:MM – HH:MM"
+    await expect(row.locator('text=/\\d{2}:\\d{2}\\s*–\\s*\\d{2}:\\d{2}/')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test('should delete attendance record', async ({ page }) => {
-    await expect(page.getByText(childFirstName)).toBeVisible({ timeout: 10000 });
-    const row = page.getByRole('row').filter({ hasText: childFirstName });
-
-    // First make sure there's a record (quick mark present)
-    await row.getByRole('button').nth(0).click();
-    await expect(row.getByText(/present/i)).toBeVisible({ timeout: 10000 });
-
-    // Click the delete button
-    await row.getByRole('button', { name: /delete/i }).click();
-
-    // Confirm deletion in alert dialog
-    await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 });
-    await page.getByRole('button', { name: /delete/i }).click();
-
-    // Should go back to "Not Recorded"
-    await expect(row.getByText(/not recorded/i)).toBeVisible({ timeout: 10000 });
-  });
-
-  test('should navigate between days', async ({ page }) => {
-    // Click previous day button
-    await page.getByRole('button', { name: /previous day/i }).click();
+  test('should navigate between weeks', async ({ page }) => {
+    // Navigate to previous week
+    await page.getByRole('button', { name: /previous week/i }).click();
     await page.waitForLoadState('networkidle');
 
-    // Click next day button twice (back to today + 1)
-    await page.getByRole('button', { name: /next day/i }).click();
-    await page.getByRole('button', { name: /next day/i }).click();
+    // Navigate to next week
+    await page.getByRole('button', { name: /next week/i }).click();
     await page.waitForLoadState('networkidle');
 
-    // Click "Today" button to return
-    await page.getByRole('button', { name: /today/i }).click();
+    // Click "This week" to return
+    await page.getByRole('button', { name: /this week/i }).click();
     await page.waitForLoadState('networkidle');
 
     // Child should still be visible

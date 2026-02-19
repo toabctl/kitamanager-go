@@ -63,6 +63,7 @@ export const queryKeys = {
     byDate: (orgId: number, date: string) => ['attendance', orgId, date] as const,
     summary: (orgId: number, date: string) => ['attendanceSummary', orgId, date] as const,
     all: (orgId: number) => ['attendance', orgId] as const,
+    byWeek: (orgId: number, weekStart: string) => ['attendanceWeek', orgId, weekStart] as const,
   },
   stepPromotions: (orgId: number) => ['stepPromotions', orgId] as const,
 } as const;

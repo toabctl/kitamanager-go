@@ -648,7 +648,10 @@
     "createSuccess": "Anwesenheit erfasst",
     "deleteSuccess": "Anwesenheit gelöscht",
     "failedToSave": "Fehler beim Speichern der Anwesenheit",
-    "failedToDelete": "Fehler beim Löschen der Anwesenheit"
+    "failedToDelete": "Fehler beim Löschen der Anwesenheit",
+    "thisWeek": "Diese Woche",
+    "previousWeek": "Vorherige Woche",
+    "nextWeek": "Nächste Woche"
   },
   "sectionAgeAlerts": {
     "title": "Kinder über Altersgrenze des Bereichs",

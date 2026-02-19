@@ -648,7 +648,10 @@
     "createSuccess": "Attendance recorded",
     "deleteSuccess": "Attendance deleted",
     "failedToSave": "Failed to save attendance",
-    "failedToDelete": "Failed to delete attendance"
+    "failedToDelete": "Failed to delete attendance",
+    "thisWeek": "This week",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week"
   },
   "sectionAgeAlerts": {
     "title": "Children Over Section Age Limit",

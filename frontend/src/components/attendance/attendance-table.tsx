@@ -39,13 +39,37 @@ const STATUS_BADGE_VARIANT: Record<
   vacation: 'default',
 };
 
-const QUICK_BUTTONS: { status: ChildAttendanceStatus; icon: typeof CheckCircle; color: string }[] =
-  [
-    { status: 'present', icon: CheckCircle, color: 'text-green-600 hover:text-green-700' },
-    { status: 'absent', icon: XCircle, color: 'text-red-600 hover:text-red-700' },
-    { status: 'sick', icon: Thermometer, color: 'text-orange-600 hover:text-orange-700' },
-    { status: 'vacation', icon: Palmtree, color: 'text-blue-600 hover:text-blue-700' },
-  ];
+const QUICK_BUTTONS: {
+  status: ChildAttendanceStatus;
+  icon: typeof CheckCircle;
+  color: string;
+  activeColor: string;
+}[] = [
+  {
+    status: 'present',
+    icon: CheckCircle,
+    color: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+    activeColor: 'bg-green-100 text-green-700 border-green-300',
+  },
+  {
+    status: 'absent',
+    icon: XCircle,
+    color: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+    activeColor: 'bg-red-100 text-red-700 border-red-300',
+  },
+  {
+    status: 'sick',
+    icon: Thermometer,
+    color: 'text-orange-600 hover:text-orange-700 hover:bg-orange-50',
+    activeColor: 'bg-orange-100 text-orange-700 border-orange-300',
+  },
+  {
+    status: 'vacation',
+    icon: Palmtree,
+    color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+    activeColor: 'bg-blue-100 text-blue-700 border-blue-300',
+  },
+];
 
 export function AttendanceTable({ rows, onQuickStatus, onEdit, onDelete }: AttendanceTableProps) {
   const t = useTranslations('attendance');
@@ -87,21 +111,25 @@ export function AttendanceTable({ rows, onQuickStatus, onEdit, onDelete }: Atten
               <TableCell className="max-w-[200px] truncate">{row.attendance?.note || ''}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-center gap-1">
-                  {QUICK_BUTTONS.map(({ status, icon: Icon, color }) => (
-                    <Tooltip key={status}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-7 w-7 ${color} ${row.attendance?.status === status ? 'bg-muted' : ''}`}
-                          onClick={() => onQuickStatus(row.childId, status, row.attendance?.id)}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{t(status)}</TooltipContent>
-                    </Tooltip>
-                  ))}
+                  {QUICK_BUTTONS.map(({ status, icon: Icon, color, activeColor }) => {
+                    const isActive = row.attendance?.status === status;
+                    return (
+                      <Tooltip key={status}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={`h-9 w-9 ${isActive ? activeColor : color}`}
+                            onClick={() => onQuickStatus(row.childId, status, row.attendance?.id)}
+                            aria-label={t(status)}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t(status)}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
               </TableCell>
               <TableCell className="text-right">
