@@ -56,7 +56,12 @@ const orgNavigation: NavItem[] = [
     icon: Users,
     children: [{ name: 'nav.payPlans', href: '/payplans' }],
   },
-  { name: 'nav.children', href: '/children', icon: Baby },
+  {
+    name: 'nav.children',
+    href: '/children',
+    icon: Baby,
+    children: [{ name: 'nav.attendance', href: '/attendance' }],
+  },
   { name: 'nav.sections', href: '/sections', icon: LayoutGrid },
   {
     name: 'nav.statistics',

@@ -161,6 +161,25 @@ export function getCurrentMonthRange(): { from: string; to: string } {
   };
 }
 
+/**
+ * Format an ISO datetime string to HH:mm.
+ * Extracts time directly from the ISO string to avoid timezone conversion.
+ */
+export function formatTime(isoString: string | null | undefined): string {
+  if (!isoString) return '';
+  const match = isoString.match(/T(\d{2}:\d{2})/);
+  return match ? match[1] : '';
+}
+
+/**
+ * Combine a date string (YYYY-MM-DD) and time string (HH:mm) into an ISO datetime string.
+ * Returns null if time is empty.
+ */
+export function combineDateAndTime(dateStr: string, timeStr: string): string | null {
+  if (!timeStr) return null;
+  return `${dateStr}T${timeStr}:00Z`;
+}
+
 // Re-export contract properties utilities for backwards compatibility
 export {
   propertiesToValues,

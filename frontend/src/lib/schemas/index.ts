@@ -45,6 +45,7 @@ export {
   type BudgetItemEntryFormData,
   type BudgetItemWithEntryFormData,
 } from './budget-item';
+export { attendanceSchema, type AttendanceFormData } from './attendance';
 export {
   governmentFundingSchema,
   governmentFundingPeriodSchema,

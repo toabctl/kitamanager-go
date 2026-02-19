@@ -59,5 +59,10 @@ export const queryKeys = {
     employeeStaffingHours: (orgId: number, sectionId?: number, from?: string, to?: string) =>
       ['employeeStaffingHours', orgId, sectionId, from, to] as const,
   },
+  attendance: {
+    byDate: (orgId: number, date: string) => ['attendance', orgId, date] as const,
+    summary: (orgId: number, date: string) => ['attendanceSummary', orgId, date] as const,
+    all: (orgId: number) => ['attendance', orgId] as const,
+  },
   stepPromotions: (orgId: number) => ['stepPromotions', orgId] as const,
 } as const;

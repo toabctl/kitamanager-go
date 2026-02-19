@@ -26,6 +26,10 @@ import type {
   ChildrenFundingResponse,
   AgeDistributionResponse,
   ContractPropertiesDistributionResponse,
+  ChildAttendanceResponse,
+  ChildAttendanceCreateRequest,
+  ChildAttendanceUpdateRequest,
+  ChildAttendanceDailySummaryResponse,
   Role,
   UserGroupResponse,
   UserMembershipsResponse,
@@ -832,6 +836,64 @@ class ApiClient {
     }
     const qs = qp.toString();
     return `${API_BASE_URL}/organizations/${orgId}/children/export/excel${qs ? `?${qs}` : ''}`;
+  }
+
+  // Child Attendance
+  async getChildAttendanceByDateAll(
+    orgId: number,
+    date: string
+  ): Promise<ChildAttendanceResponse[]> {
+    return this.fetchAllPages<ChildAttendanceResponse>(
+      `/organizations/${orgId}/children/attendance?date=${date}`
+    );
+  }
+
+  async getChildAttendanceSummary(
+    orgId: number,
+    date?: string
+  ): Promise<ChildAttendanceDailySummaryResponse> {
+    const params = date ? { date } : {};
+    const response = await this.client.get<ChildAttendanceDailySummaryResponse>(
+      `/organizations/${orgId}/children/attendance/summary`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async createChildAttendance(
+    orgId: number,
+    childId: number,
+    data: ChildAttendanceCreateRequest
+  ): Promise<ChildAttendanceResponse> {
+    const response = await this.client.post<ChildAttendanceResponse>(
+      `/organizations/${orgId}/children/${childId}/attendance`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateChildAttendance(
+    orgId: number,
+    childId: number,
+    attendanceId: number,
+    data: ChildAttendanceUpdateRequest
+  ): Promise<ChildAttendanceResponse> {
+    const response = await this.client.put<ChildAttendanceResponse>(
+      `/organizations/${orgId}/children/${childId}/attendance/${attendanceId}`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteChildAttendance(orgId: number, childId: number, attendanceId: number): Promise<void> {
+    await this.client.delete(
+      `/organizations/${orgId}/children/${childId}/attendance/${attendanceId}`
+    );
+  }
+
+  // Children - fetch all with active contracts for a specific date
+  async getChildrenAllForDate(orgId: number, date: string): Promise<Child[]> {
+    return this.fetchAllPages<Child>(`/organizations/${orgId}/children?contract_on=${date}`);
   }
 
   // Children - fetch upcoming (contracts starting after today)

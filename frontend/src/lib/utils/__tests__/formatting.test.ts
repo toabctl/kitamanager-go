@@ -9,6 +9,8 @@ import {
   formatPeriod,
   formatFte,
   formatAgeRange,
+  formatTime,
+  combineDateAndTime,
   propertiesToValues,
   getPropertyValue,
   getScalarPropertyValue,
@@ -469,5 +471,47 @@ describe('getKeyForValue', () => {
 
   it('returns undefined for undefined properties', () => {
     expect(getKeyForValue(undefined, 'fulltime')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatTime
+// ---------------------------------------------------------------------------
+describe('formatTime', () => {
+  it('returns empty string for null', () => {
+    expect(formatTime(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
+    expect(formatTime(undefined)).toBe('');
+  });
+
+  it('formats an ISO datetime to HH:mm', () => {
+    expect(formatTime('2025-06-15T08:30:00Z')).toBe('08:30');
+  });
+
+  it('formats a datetime with different time', () => {
+    expect(formatTime('2025-06-15T16:45:00Z')).toBe('16:45');
+  });
+
+  it('returns empty string for invalid input', () => {
+    expect(formatTime('not-a-date')).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// combineDateAndTime
+// ---------------------------------------------------------------------------
+describe('combineDateAndTime', () => {
+  it('returns null when time is empty', () => {
+    expect(combineDateAndTime('2025-06-15', '')).toBeNull();
+  });
+
+  it('combines date and time into ISO string', () => {
+    expect(combineDateAndTime('2025-06-15', '08:30')).toBe('2025-06-15T08:30:00Z');
+  });
+
+  it('combines date and different time', () => {
+    expect(combineDateAndTime('2025-12-01', '16:00')).toBe('2025-12-01T16:00:00Z');
   });
 });

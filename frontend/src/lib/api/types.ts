@@ -685,6 +685,47 @@ export interface EmployeeStaffingHoursResponse {
   employees: EmployeeStaffingHoursRow[];
 }
 
+// Child Attendance
+export type ChildAttendanceStatus = 'present' | 'absent' | 'sick' | 'vacation';
+
+export interface ChildAttendanceResponse {
+  id: number;
+  child_id: number;
+  child_name?: string;
+  organization_id: number;
+  date: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  status: ChildAttendanceStatus;
+  note?: string;
+  recorded_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChildAttendanceCreateRequest {
+  date: string;
+  status: ChildAttendanceStatus;
+  check_in_time?: string | null;
+  note?: string;
+}
+
+export interface ChildAttendanceUpdateRequest {
+  status?: ChildAttendanceStatus;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  note?: string;
+}
+
+export interface ChildAttendanceDailySummaryResponse {
+  date: string;
+  total_children: number;
+  present: number;
+  absent: number;
+  sick: number;
+  vacation: number;
+}
+
 // Contract properties distribution
 export interface ContractPropertyCount {
   key: string;
