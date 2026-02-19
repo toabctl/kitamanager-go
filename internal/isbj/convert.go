@@ -58,9 +58,6 @@ func isFlagActive(flagName, value string) bool {
 }
 
 func validateFlagAmount(childName, flagName string, flagActive bool, amount int) error {
-	if flagActive && amount == 0 {
-		return fmt.Errorf("child %s: flag %s is active but amount is 0", childName, flagName)
-	}
 	if !flagActive && amount != 0 {
 		return fmt.Errorf("child %s: flag %s is inactive but amount is %d", childName, flagName, amount)
 	}

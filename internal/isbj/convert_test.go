@@ -223,19 +223,52 @@ func TestConvert_FlagToValue(t *testing.T) {
 	})
 }
 
-func TestConvert_FlagValidationErrors(t *testing.T) {
-	t.Run("QM active but amount 0", func(t *testing.T) {
+func TestConvert_FlagActiveAmountZeroAllowed(t *testing.T) {
+	t.Run("QM active but amount 0 is allowed", func(t *testing.T) {
 		output := makeTestOutput()
 		output.Vertrag.Kinder[0].QM = "ja"
 		output.Vertrag.Kinder[0].ZuschlagQM = 0
 		output.Vertrag.Kinder[0].ZuschlagMSS = 0
 
-		_, err := Convert(output)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "QM/MSS")
-		assert.Contains(t, err.Error(), "active but amount is 0")
+		result, err := Convert(output)
+		require.NoError(t, err)
+
+		qm := result.Children[0].Amounts[2]
+		assert.Equal(t, "qm/mss", qm.Key)
+		assert.Equal(t, "qm/mss", qm.Value)
+		assert.Equal(t, 0, qm.Amount)
 	})
 
+	t.Run("ndH active but amount 0 is allowed", func(t *testing.T) {
+		output := makeTestOutput()
+		output.Vertrag.Kinder[0].HS = "A"
+		output.Vertrag.Kinder[0].ZuschlagNDH = 0
+
+		result, err := Convert(output)
+		require.NoError(t, err)
+
+		ndh := result.Children[0].Amounts[1]
+		assert.Equal(t, "ndh", ndh.Key)
+		assert.Equal(t, "ndh", ndh.Value)
+		assert.Equal(t, 0, ndh.Amount)
+	})
+
+	t.Run("SpH active but amount 0 is allowed", func(t *testing.T) {
+		output := makeTestOutput()
+		output.Vertrag.Kinder[0].SPH = "J"
+		output.Vertrag.Kinder[0].ZuschlagSPH = 0
+
+		result, err := Convert(output)
+		require.NoError(t, err)
+
+		sph := result.Children[0].Amounts[3]
+		assert.Equal(t, "sph", sph.Key)
+		assert.Equal(t, "sph", sph.Value)
+		assert.Equal(t, 0, sph.Amount)
+	})
+}
+
+func TestConvert_FlagValidationErrors(t *testing.T) {
 	t.Run("QM/MSS inactive but amount non-zero", func(t *testing.T) {
 		output := makeTestOutput()
 		output.Vertrag.Kinder[0].QM = "nein"
@@ -249,17 +282,6 @@ func TestConvert_FlagValidationErrors(t *testing.T) {
 		assert.Contains(t, err.Error(), "inactive but amount is")
 	})
 
-	t.Run("ndH active but amount 0", func(t *testing.T) {
-		output := makeTestOutput()
-		output.Vertrag.Kinder[0].HS = "A"
-		output.Vertrag.Kinder[0].ZuschlagNDH = 0
-
-		_, err := Convert(output)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "ndH")
-		assert.Contains(t, err.Error(), "active but amount is 0")
-	})
-
 	t.Run("ndH inactive but amount non-zero", func(t *testing.T) {
 		output := makeTestOutput()
 		output.Vertrag.Kinder[0].HS = "D"
@@ -269,17 +291,6 @@ func TestConvert_FlagValidationErrors(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "ndH")
 		assert.Contains(t, err.Error(), "inactive but amount is")
-	})
-
-	t.Run("SpH active but amount 0", func(t *testing.T) {
-		output := makeTestOutput()
-		output.Vertrag.Kinder[0].SPH = "J"
-		output.Vertrag.Kinder[0].ZuschlagSPH = 0
-
-		_, err := Convert(output)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "SpH")
-		assert.Contains(t, err.Error(), "active but amount is 0")
 	})
 
 	t.Run("SpH inactive but amount non-zero", func(t *testing.T) {
@@ -406,7 +417,7 @@ func TestIsFlagActive(t *testing.T) {
 func TestValidateFlagAmount(t *testing.T) {
 	assert.NoError(t, validateFlagAmount("child", "QM", true, 5000))
 	assert.NoError(t, validateFlagAmount("child", "QM", false, 0))
-	assert.Error(t, validateFlagAmount("child", "QM", true, 0))
+	assert.NoError(t, validateFlagAmount("child", "QM", true, 0))
 	assert.Error(t, validateFlagAmount("child", "QM", false, 5000))
 }
 
@@ -538,14 +549,14 @@ func TestConvert_ErrorOnSecondChildIncludesName(t *testing.T) {
 		Gutscheinnummer:  "GB-11111111111-01",
 		Name:             "Fehlerkind, Lisa",
 		Geburtsdatum:     "03.21",
-		QM:               "ja",
+		QM:               "nein",
 		MSS:              "nein",
 		HS:               "D",
 		SPH:              "N",
 		Betreuungsumfang: "ganztags",
 		Bezirk:           3,
 		Basisentgeld:     50000,
-		ZuschlagQM:       0, // QM active but amount 0 → error
+		ZuschlagQM:       5000, // QM/MSS inactive but amount non-zero → error
 		ZuschlagMSS:      0,
 		ZuschlagNDH:      0,
 		ZuschlagSPH:      0,
@@ -575,10 +586,7 @@ func TestConvert_QMActiveAmountOnlyInMSSSurcharge(t *testing.T) {
 
 func TestValidateFlagAmount_ErrorMessages(t *testing.T) {
 	err := validateFlagAmount("Musterkind, Max", "QM", true, 0)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Musterkind, Max")
-	assert.Contains(t, err.Error(), "QM")
-	assert.Contains(t, err.Error(), "active but amount is 0")
+	assert.NoError(t, err)
 
 	err = validateFlagAmount("Testkind, Anna", "ndH", false, 12345)
 	require.Error(t, err)
@@ -588,18 +596,19 @@ func TestValidateFlagAmount_ErrorMessages(t *testing.T) {
 }
 
 func TestConvert_FirstValidationErrorStopsConversion(t *testing.T) {
-	// Both ndH and SpH are invalid, but only ndH error should surface
-	// because it's validated first.
+	// Both QM/MSS and ndH are invalid (inactive but non-zero amount),
+	// but only QM/MSS error should surface because it's validated first.
 	output := makeTestOutput()
 	k := &output.Vertrag.Kinder[0]
-	k.HS = "A"
-	k.SPH = "J"
-	k.ZuschlagNDH = 0 // ndH active but 0
-	k.ZuschlagSPH = 0 // SpH active but 0
+	k.QM = "nein"
+	k.MSS = "nein"
+	k.HS = "D"
+	k.ZuschlagQM = 5000 // QM/MSS inactive but non-zero
+	k.ZuschlagMSS = 0
+	k.ZuschlagNDH = 3000 // ndH inactive but non-zero
 
 	_, err := Convert(output)
 	require.Error(t, err)
-	// QM/MSS is checked first (and passes), then ndH fails.
-	assert.Contains(t, err.Error(), "ndH")
-	assert.NotContains(t, err.Error(), "SpH")
+	assert.Contains(t, err.Error(), "QM/MSS")
+	assert.NotContains(t, err.Error(), "ndH")
 }
