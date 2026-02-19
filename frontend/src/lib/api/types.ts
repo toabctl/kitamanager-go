@@ -297,6 +297,7 @@ export interface ChildContract {
   to?: string | null;
   section_id: number;
   section_name?: string | null;
+  voucher_number?: string | null;
   properties?: ContractProperties;
   created_at: string;
   updated_at: string;
@@ -321,6 +322,7 @@ export interface ChildContractCreateRequest {
   from: string;
   to?: string | null;
   section_id: number;
+  voucher_number?: string | null;
   properties?: ContractProperties;
 }
 
@@ -328,6 +330,7 @@ export interface ChildContractUpdateRequest {
   from?: string;
   to?: string | null;
   section_id?: number | null;
+  voucher_number?: string | null;
   properties?: ContractProperties;
 }
 

@@ -8174,6 +8174,10 @@ const docTemplate = `{
                 "to": {
                     "type": "string",
                     "example": "2025-12-31"
+                },
+                "voucher_number": {
+                    "type": "string",
+                    "example": "GB-12345678901-02"
                 }
             }
         },
@@ -8212,6 +8216,10 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "voucher_number": {
+                    "type": "string",
+                    "example": "GB-12345678901-02"
                 }
             }
         },
@@ -8232,6 +8240,10 @@ const docTemplate = `{
                 "to": {
                     "type": "string",
                     "example": "2025-12-31"
+                },
+                "voucher_number": {
+                    "type": "string",
+                    "example": "GB-12345678901-02"
                 }
             }
         },

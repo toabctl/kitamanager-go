@@ -14,8 +14,9 @@ type Child struct {
 // ChildContract represents an enrollment contract for a specific period.
 // Contracts for the same child cannot overlap.
 type ChildContract struct {
-	ID      uint `gorm:"primaryKey" json:"id" example:"1"`
-	ChildID uint `gorm:"not null;index" json:"child_id" example:"1"`
+	ID            uint    `gorm:"primaryKey" json:"id" example:"1"`
+	ChildID       uint    `gorm:"not null;index" json:"child_id" example:"1"`
+	VoucherNumber *string `gorm:"size:50;index" json:"voucher_number,omitempty" example:"GB-12345678901-02"`
 	BaseContract
 }
 
@@ -26,18 +27,20 @@ func (c ChildContract) GetOwnerID() uint {
 
 // ChildContractCreateRequest represents the request body for creating a child contract.
 type ChildContractCreateRequest struct {
-	From       time.Time          `json:"from" binding:"required" example:"2025-01-01"`
-	To         *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID  uint               `json:"section_id" binding:"required" example:"2"`
-	Properties ContractProperties `json:"properties,omitempty"`
+	From          time.Time          `json:"from" binding:"required" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	SectionID     uint               `json:"section_id" binding:"required" example:"2"`
+	VoucherNumber *string            `json:"voucher_number,omitempty" example:"GB-12345678901-02"`
+	Properties    ContractProperties `json:"properties,omitempty"`
 }
 
 // ChildContractUpdateRequest represents the request body for updating a child contract.
 type ChildContractUpdateRequest struct {
-	From       *time.Time         `json:"from" example:"2025-01-01"`
-	To         *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID  *uint              `json:"section_id,omitempty" example:"2"`
-	Properties ContractProperties `json:"properties,omitempty"`
+	From          *time.Time         `json:"from" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	SectionID     *uint              `json:"section_id,omitempty" example:"2"`
+	VoucherNumber *string            `json:"voucher_number,omitempty" example:"GB-12345678901-02"`
+	Properties    ContractProperties `json:"properties,omitempty"`
 }
 
 // ChildCreateRequest represents the request body for creating a child.
@@ -97,27 +100,29 @@ func (c *Child) ToResponse() ChildResponse {
 
 // ChildContractResponse represents the child contract response
 type ChildContractResponse struct {
-	ID          uint               `json:"id" example:"1"`
-	ChildID     uint               `json:"child_id" example:"1"`
-	From        time.Time          `json:"from" example:"2025-01-01"`
-	To          *time.Time         `json:"to" example:"2025-12-31"`
-	SectionID   uint               `json:"section_id" example:"2"`
-	SectionName *string            `json:"section_name,omitempty" example:"Krippe"`
-	Properties  ContractProperties `json:"properties,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	ID            uint               `json:"id" example:"1"`
+	ChildID       uint               `json:"child_id" example:"1"`
+	From          time.Time          `json:"from" example:"2025-01-01"`
+	To            *time.Time         `json:"to" example:"2025-12-31"`
+	SectionID     uint               `json:"section_id" example:"2"`
+	SectionName   *string            `json:"section_name,omitempty" example:"Krippe"`
+	VoucherNumber *string            `json:"voucher_number,omitempty" example:"GB-12345678901-02"`
+	Properties    ContractProperties `json:"properties,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
 func (c *ChildContract) ToResponse() ChildContractResponse {
 	resp := ChildContractResponse{
-		ID:         c.ID,
-		ChildID:    c.ChildID,
-		From:       c.From,
-		To:         c.To,
-		SectionID:  c.SectionID,
-		Properties: c.Properties,
-		CreatedAt:  c.CreatedAt,
-		UpdatedAt:  c.UpdatedAt,
+		ID:            c.ID,
+		ChildID:       c.ChildID,
+		From:          c.From,
+		To:            c.To,
+		SectionID:     c.SectionID,
+		VoucherNumber: c.VoucherNumber,
+		Properties:    c.Properties,
+		CreatedAt:     c.CreatedAt,
+		UpdatedAt:     c.UpdatedAt,
 	}
 	if c.Section != nil {
 		resp.SectionName = &c.Section.Name

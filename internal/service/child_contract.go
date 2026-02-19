@@ -107,7 +107,8 @@ func (s *ChildService) CreateContract(ctx context.Context, childID, orgID uint, 
 	}
 
 	contract := &models.ChildContract{
-		ChildID: childID,
+		ChildID:       childID,
+		VoucherNumber: req.VoucherNumber,
 		BaseContract: models.BaseContract{
 			Period: models.Period{
 				From: req.From,
@@ -194,6 +195,9 @@ func (s *ChildService) updateContractInPlace(ctx context.Context, contract *mode
 	if req.Properties != nil {
 		contract.Properties = req.Properties
 	}
+	if req.VoucherNumber != nil {
+		contract.VoucherNumber = req.VoucherNumber
+	}
 
 	if err := validation.ValidatePeriod(contract.From, contract.To); err != nil {
 		return nil, apperror.BadRequest(err.Error())
@@ -223,7 +227,8 @@ func (s *ChildService) amendContract(ctx context.Context, contract *models.Child
 
 	// Clone contract with current values, new contract starts today
 	newContract := &models.ChildContract{
-		ChildID: contract.ChildID,
+		ChildID:       contract.ChildID,
+		VoucherNumber: contract.VoucherNumber,
 		BaseContract: models.BaseContract{
 			Period: models.Period{
 				From: today,
@@ -240,6 +245,9 @@ func (s *ChildService) amendContract(ctx context.Context, contract *models.Child
 	}
 	if req.Properties != nil {
 		newContract.Properties = req.Properties
+	}
+	if req.VoucherNumber != nil {
+		newContract.VoucherNumber = req.VoucherNumber
 	}
 	if req.To != nil {
 		newContract.To = req.To

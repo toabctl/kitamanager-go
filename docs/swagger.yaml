@@ -286,6 +286,9 @@ definitions:
       to:
         example: "2025-12-31"
         type: string
+      voucher_number:
+        example: GB-12345678901-02
+        type: string
     required:
     - from
     - section_id
@@ -316,6 +319,9 @@ definitions:
         type: string
       updated_at:
         type: string
+      voucher_number:
+        example: GB-12345678901-02
+        type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildContractUpdateRequest:
     properties:
@@ -329,6 +335,9 @@ definitions:
         type: integer
       to:
         example: "2025-12-31"
+        type: string
+      voucher_number:
+        example: GB-12345678901-02
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.ChildCreateRequest:
