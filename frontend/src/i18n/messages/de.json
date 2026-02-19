@@ -96,6 +96,7 @@
     "statisticsBudget": "Haushalt",
     "settings": "Einstellungen",
     "attendance": "Anwesenheit",
+    "governmentFundingBills": "Abrechnungen",
     "budgetItems": "Budgetposten",
     "admin": "Verwaltung"
   },
@@ -652,6 +653,28 @@
     "thisWeek": "Diese Woche",
     "previousWeek": "Vorherige Woche",
     "nextWeek": "Nächste Woche"
+  },
+  "governmentFundingBills": {
+    "title": "Senatsabrechnungen",
+    "upload": "Hochladen",
+    "selectFile": "ISBJ Excel-Datei auswählen (.xlsx)",
+    "facilityName": "Einrichtung",
+    "facilityTotal": "Gesamtbetrag",
+    "contractBooking": "Vertragsbuchung",
+    "correctionBooking": "Korrekturbuchung",
+    "matchedChildren": "Zugeordnet",
+    "unmatchedChildren": "Nicht zugeordnet",
+    "surcharges": "Zuschläge",
+    "children": "Kinder",
+    "voucherNumber": "Gutscheinnummer",
+    "childName": "Name",
+    "birthDate": "Geburtsdatum",
+    "district": "Bezirk",
+    "totalAmount": "Gesamtbetrag",
+    "matched": "Zugeordnet",
+    "reset": "Zurücksetzen",
+    "uploadError": "Fehler beim Hochladen der Abrechnung",
+    "uploading": "Wird hochgeladen..."
   },
   "sectionAgeAlerts": {
     "title": "Kinder über Altersgrenze des Bereichs",

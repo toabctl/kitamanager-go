@@ -60,7 +60,10 @@ const orgNavigation: NavItem[] = [
     name: 'nav.children',
     href: '/children',
     icon: Baby,
-    children: [{ name: 'nav.attendance', href: '/attendance' }],
+    children: [
+      { name: 'nav.attendance', href: '/attendance' },
+      { name: 'nav.governmentFundingBills', href: '/government-funding-bills' },
+    ],
   },
   { name: 'nav.sections', href: '/sections', icon: LayoutGrid },
   {

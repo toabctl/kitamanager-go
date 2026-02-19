@@ -96,6 +96,7 @@
     "statisticsBudget": "Budget",
     "settings": "Settings",
     "attendance": "Attendance",
+    "governmentFundingBills": "Funding Bills",
     "budgetItems": "Budget Items",
     "admin": "Admin"
   },
@@ -652,6 +653,28 @@
     "thisWeek": "This week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week"
+  },
+  "governmentFundingBills": {
+    "title": "Government Funding Bills",
+    "upload": "Upload",
+    "selectFile": "Select ISBJ Excel file (.xlsx)",
+    "facilityName": "Facility",
+    "facilityTotal": "Facility Total",
+    "contractBooking": "Contract Booking",
+    "correctionBooking": "Correction Booking",
+    "matchedChildren": "Matched",
+    "unmatchedChildren": "Unmatched",
+    "surcharges": "Surcharges",
+    "children": "Children",
+    "voucherNumber": "Voucher Number",
+    "childName": "Child Name",
+    "birthDate": "Birth Date",
+    "district": "District",
+    "totalAmount": "Total Amount",
+    "matched": "Matched",
+    "reset": "Reset",
+    "uploadError": "Failed to upload funding bill",
+    "uploading": "Uploading..."
   },
   "sectionAgeAlerts": {
     "title": "Children Over Section Age Limit",

@@ -42,6 +42,7 @@ import type {
   GovernmentFundingProperty,
   GovernmentFundingPropertyCreateRequest,
   GovernmentFundingPropertyUpdateRequest,
+  GovernmentFundingBillResponse,
   PayPlan,
   PayPlanCreateRequest,
   PayPlanUpdateRequest,
@@ -896,6 +897,19 @@ class ApiClient {
     let url = `/organizations/${orgId}/children?contract_on=${date}`;
     if (sectionId) url += `&section_id=${sectionId}`;
     return this.fetchAllPages<Child>(url);
+  }
+
+  // Government Funding Bill upload
+  async uploadGovernmentFundingBill(
+    orgId: number,
+    formData: FormData
+  ): Promise<GovernmentFundingBillResponse> {
+    const response = await this.client.post<GovernmentFundingBillResponse>(
+      `/organizations/${orgId}/government-funding-bills/isbj`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
   }
 
   // Children - fetch upcoming (contracts starting after today)

@@ -729,6 +729,37 @@ export interface ChildAttendanceDailySummaryResponse {
   vacation: number;
 }
 
+// Government Funding Bill (ISBJ upload)
+export interface GovernmentFundingBillAmount {
+  key: string;
+  value: string;
+  amount: number;
+}
+
+export interface GovernmentFundingBillChild {
+  voucher_number: string;
+  child_name: string;
+  birth_date: string;
+  district: number;
+  total_amount: number;
+  amounts: GovernmentFundingBillAmount[];
+  child_id?: number;
+  contract_id?: number;
+  matched: boolean;
+}
+
+export interface GovernmentFundingBillResponse {
+  facility_name: string;
+  facility_total: number;
+  contract_booking: number;
+  correction_booking: number;
+  children_count: number;
+  matched_count: number;
+  unmatched_count: number;
+  surcharges: GovernmentFundingBillAmount[];
+  children: GovernmentFundingBillChild[];
+}
+
 // Contract properties distribution
 export interface ContractPropertyCount {
   key: string;
