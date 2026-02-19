@@ -12,7 +12,7 @@ import { AttendanceWeekTable } from '@/components/attendance/attendance-week-tab
 import { QueryError } from '@/components/crud/query-error';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
-import type { ChildAttendanceResponse } from '@/lib/api/types';
+import type { ChildAttendanceResponse, ChildAttendanceStatus } from '@/lib/api/types';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useState } from 'react';
 
@@ -141,6 +141,114 @@ export default function AttendancePage() {
     [checkOutMutation]
   );
 
+  // Update time mutation: edit check_in_time or check_out_time
+  const updateTimeMutation = useMutation({
+    mutationFn: async ({
+      childId,
+      forDate,
+      attendanceId,
+      field,
+      time,
+    }: {
+      childId: number;
+      forDate: string;
+      attendanceId: number;
+      field: 'check_in_time' | 'check_out_time';
+      time: string;
+    }) => {
+      const isoTime = `${forDate}T${time}:00Z`;
+      return apiClient.updateChildAttendance(orgId, childId, attendanceId, {
+        [field]: isoTime,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      invalidateDate(variables.forDate);
+      toast({ title: t('updateSuccess') });
+    },
+    onError: () => {
+      toast({ title: t('failedToSave'), variant: 'destructive' });
+    },
+  });
+
+  const handleUpdateTime = useCallback(
+    (
+      childId: number,
+      forDate: string,
+      attendanceId: number,
+      field: 'check_in_time' | 'check_out_time',
+      time: string
+    ) => {
+      updateTimeMutation.mutate({ childId, forDate, attendanceId, field, time });
+    },
+    [updateTimeMutation]
+  );
+
+  // Set status mutation: create or update status (absent, sick, vacation, present)
+  const setStatusMutation = useMutation({
+    mutationFn: async ({
+      childId,
+      forDate,
+      status,
+      attendanceId,
+    }: {
+      childId: number;
+      forDate: string;
+      status: ChildAttendanceStatus;
+      attendanceId?: number;
+    }) => {
+      if (attendanceId) {
+        return apiClient.updateChildAttendance(orgId, childId, attendanceId, { status });
+      }
+      return apiClient.createChildAttendance(orgId, childId, { date: forDate, status });
+    },
+    onSuccess: (_data, variables) => {
+      invalidateDate(variables.forDate);
+      toast({ title: t('updateSuccess') });
+    },
+    onError: () => {
+      toast({ title: t('failedToSave'), variant: 'destructive' });
+    },
+  });
+
+  const handleSetStatus = useCallback(
+    (childId: number, forDate: string, status: ChildAttendanceStatus, attendanceId?: number) => {
+      setStatusMutation.mutate({ childId, forDate, status, attendanceId });
+    },
+    [setStatusMutation]
+  );
+
+  // Save note mutation
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({
+      childId,
+      attendanceId,
+      note,
+    }: {
+      childId: number;
+      forDate: string;
+      attendanceId: number;
+      note: string;
+    }) => {
+      return apiClient.updateChildAttendance(orgId, childId, attendanceId, {
+        note: note || undefined,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      invalidateDate(variables.forDate);
+      toast({ title: t('updateSuccess') });
+    },
+    onError: () => {
+      toast({ title: t('failedToSave'), variant: 'destructive' });
+    },
+  });
+
+  const handleSaveNote = useCallback(
+    (childId: number, forDate: string, attendanceId: number, note: string) => {
+      saveNoteMutation.mutate({ childId, forDate, attendanceId, note });
+    },
+    [saveNoteMutation]
+  );
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
@@ -172,6 +280,9 @@ export default function AttendancePage() {
               attendanceByDate={weekAttendanceByDate}
               onCheckIn={handleCheckIn}
               onCheckOut={handleCheckOut}
+              onUpdateTime={handleUpdateTime}
+              onSetStatus={handleSetStatus}
+              onSaveNote={handleSaveNote}
               days={weekDays}
             />
           )}
