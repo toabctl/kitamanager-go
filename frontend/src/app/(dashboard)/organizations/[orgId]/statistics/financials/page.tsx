@@ -14,7 +14,7 @@ import { formatCurrency, getCurrentMonthStart } from '@/lib/utils/formatting';
 
 const FinancialsChart = dynamic(
   () => import('@/components/charts/financials-bar-chart').then((mod) => mod.FinancialsChart),
-  { ssr: false, loading: () => <Skeleton className="h-[400px] w-full" /> }
+  { ssr: false, loading: () => <Skeleton className="h-[580px] w-full" /> }
 );
 
 const FundingBreakdownChart = dynamic(
@@ -111,7 +111,7 @@ export default function FinancialsPage() {
         </CardHeader>
         <CardContent>
           {isLoadingFinancials ? (
-            <Skeleton className="h-[400px] w-full" />
+            <Skeleton className="h-[580px] w-full" />
           ) : financials ? (
             <ChartErrorBoundary>
               <FinancialsChart data={financials} />

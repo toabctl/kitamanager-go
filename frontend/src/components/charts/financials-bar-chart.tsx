@@ -70,6 +70,7 @@ export function FinancialsChart({ data }: FinancialsChartProps) {
             const clampedX0 = Math.max(0, x0);
             const clampedX1 = Math.min(innerWidth, x1);
             const width = clampedX1 - clampedX0;
+            const midX = clampedX0 + width / 2;
 
             return (
               <g key={band.label}>
@@ -100,7 +101,6 @@ export function FinancialsChart({ data }: FinancialsChartProps) {
                 {(() => {
                   const bracketY = innerHeight + 48;
                   const tickH = 4;
-                  const midX = clampedX0 + width / 2;
                   const labelY = bracketY + 14;
                   return (
                     <>
@@ -272,14 +272,29 @@ export function FinancialsChart({ data }: FinancialsChartProps) {
   const hoveredDp: FinancialDataPoint | null =
     hoveredIdx !== null ? data.data_points[hoveredIdx] : null;
 
+  // Compute y-axis range that includes negative expenses
+  const yMin = useMemo(() => {
+    let min = 0;
+    for (const dp of data.data_points) {
+      const expenses = -(
+        centsToEur(dp.gross_salary) +
+        centsToEur(dp.employer_costs) +
+        centsToEur(dp.budget_expenses)
+      );
+      if (expenses < min) min = expenses;
+    }
+    return min;
+  }, [data]);
+
   return (
-    <div className="relative h-[400px]">
+    <div className="relative h-[580px]">
       <ResponsiveBar
         data={chartData}
         keys={keys}
         indexBy="date"
-        margin={{ top: 60, right: 30, bottom: 80, left: 80 }}
+        margin={{ top: 60, right: 30, bottom: 110, left: 80 }}
         padding={0.3}
+        valueScale={{ type: 'linear', min: yMin }}
         groupMode="stacked"
         colors={colors}
         layers={[

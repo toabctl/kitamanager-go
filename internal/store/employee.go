@@ -97,7 +97,7 @@ func (s *EmployeeStore) FindByOrganizationAndSection(ctx context.Context, orgID 
 	if needsDistinct {
 		dataQuery = dataQuery.Distinct()
 	}
-	if err := dataQuery.Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
+	if err := dataQuery.Order("employees.first_name ASC, employees.last_name ASC").Limit(limit).Offset(offset).Find(&employees).Error; err != nil {
 		return nil, 0, err
 	}
 

@@ -42,7 +42,7 @@ func (s *SectionStore) FindByOrganizationPaginated(ctx context.Context, orgID ui
 		dataQuery = dataQuery.Scopes(NameSearch("sections", "name", search))
 	}
 
-	if err := dataQuery.Limit(limit).Offset(offset).Find(&sections).Error; err != nil {
+	if err := dataQuery.Order("COALESCE(min_age_months, 999) ASC, name ASC").Limit(limit).Offset(offset).Find(&sections).Error; err != nil {
 		return nil, 0, err
 	}
 

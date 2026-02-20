@@ -90,7 +90,7 @@ func (s *ChildStore) FindByOrganizationAndSection(ctx context.Context, orgID uin
 	if needsDistinct {
 		dataQuery = dataQuery.Distinct()
 	}
-	if err := dataQuery.Limit(limit).Offset(offset).Find(&children).Error; err != nil {
+	if err := dataQuery.Order("children.first_name ASC, children.last_name ASC").Limit(limit).Offset(offset).Find(&children).Error; err != nil {
 		return nil, 0, err
 	}
 
