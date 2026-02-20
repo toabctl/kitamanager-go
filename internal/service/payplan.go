@@ -15,12 +15,13 @@ import (
 
 // PayPlanService handles business logic for pay plans.
 type PayPlanService struct {
-	store store.PayPlanStorer
+	store      store.PayPlanStorer
+	transactor store.Transactor
 }
 
 // NewPayPlanService creates a new PayPlanService.
-func NewPayPlanService(store store.PayPlanStorer) *PayPlanService {
-	return &PayPlanService{store: store}
+func NewPayPlanService(store store.PayPlanStorer, transactor store.Transactor) *PayPlanService {
+	return &PayPlanService{store: store, transactor: transactor}
 }
 
 // verifyPayPlanOwnership verifies a pay plan exists and belongs to the organization.
@@ -352,6 +353,60 @@ func (s *PayPlanService) DeleteEntry(ctx context.Context, entryID, periodID, pay
 		return apperror.InternalWrap(err, "failed to delete entry")
 	}
 	return nil
+}
+
+// Import creates a complete pay plan with all periods and entries in a single transaction.
+func (s *PayPlanService) Import(ctx context.Context, orgID uint, data *models.PayPlanDetailResponse) (*models.PayPlanDetailResponse, error) {
+	if data.Name == "" {
+		return nil, apperror.BadRequest("name is required")
+	}
+
+	var result *models.PayPlanDetailResponse
+	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		payplan := &models.PayPlan{
+			OrganizationID: orgID,
+			Name:           data.Name,
+		}
+		if err := s.store.Create(txCtx, payplan); err != nil {
+			return apperror.InternalWrap(err, "failed to create pay plan")
+		}
+
+		for _, p := range data.Periods {
+			period := &models.PayPlanPeriod{
+				PayPlanID:                payplan.ID,
+				Period:                   models.Period{From: p.From, To: p.To},
+				WeeklyHours:              p.WeeklyHours,
+				EmployerContributionRate: p.EmployerContributionRate,
+			}
+			if err := s.store.CreatePeriod(txCtx, period); err != nil {
+				return apperror.InternalWrap(err, "failed to create period")
+			}
+
+			for _, e := range p.Entries {
+				entry := &models.PayPlanEntry{
+					PeriodID:      period.ID,
+					Grade:         e.Grade,
+					Step:          e.Step,
+					MonthlyAmount: e.MonthlyAmount,
+					StepMinYears:  e.StepMinYears,
+				}
+				if err := s.store.CreateEntry(txCtx, entry); err != nil {
+					return apperror.InternalWrap(err, "failed to create entry")
+				}
+			}
+		}
+
+		resp, err := s.GetByID(txCtx, payplan.ID, orgID, nil)
+		if err != nil {
+			return err
+		}
+		result = resp
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // CalculateSalary calculates the monthly salary based on pay plan, grade, step, and working hours.

@@ -10,26 +10,26 @@ import (
 
 // Deps groups all dependencies needed for route setup.
 type Deps struct {
-	Auth              *handlers.AuthHandler
-	User              *handlers.UserHandler
-	Section           *handlers.SectionHandler
-	Organization      *handlers.OrganizationHandler
-	Employee          *handlers.EmployeeHandler
-	Child             *handlers.ChildHandler
-	ChildStatistics   *handlers.ChildStatisticsHandler
-	GovernmentFunding *handlers.GovernmentFundingHandler
-	PayPlan           *handlers.PayPlanHandler
-	ChildAttendance   *handlers.ChildAttendanceHandler
-	BudgetItem        *handlers.BudgetItemHandler
-	StepPromotion     *handlers.StepPromotionHandler
-	Statistics        *handlers.StatisticsHandler
-	Export            *handlers.ExportHandler
+	Auth                  *handlers.AuthHandler
+	User                  *handlers.UserHandler
+	Section               *handlers.SectionHandler
+	Organization          *handlers.OrganizationHandler
+	Employee              *handlers.EmployeeHandler
+	Child                 *handlers.ChildHandler
+	ChildStatistics       *handlers.ChildStatisticsHandler
+	GovernmentFunding     *handlers.GovernmentFundingHandler
+	PayPlan               *handlers.PayPlanHandler
+	ChildAttendance       *handlers.ChildAttendanceHandler
+	BudgetItem            *handlers.BudgetItemHandler
+	StepPromotion         *handlers.StepPromotionHandler
+	Statistics            *handlers.StatisticsHandler
+	Export                *handlers.ExportHandler
 	GovernmentFundingBill *handlers.GovernmentFundingBillHandler
-	AuthMiddleware    *middleware.AuthMiddleware
-	AuthzMiddleware   *middleware.AuthorizationMiddleware
-	CSRFMiddleware    *middleware.CSRFMiddleware
-	LoginRateLimiter  *middleware.RateLimiter
-	APIRateLimiter    *middleware.RateLimiter
+	AuthMiddleware        *middleware.AuthMiddleware
+	AuthzMiddleware       *middleware.AuthorizationMiddleware
+	CSRFMiddleware        *middleware.CSRFMiddleware
+	LoginRateLimiter      *middleware.RateLimiter
+	APIRateLimiter        *middleware.RateLimiter
 }
 
 func Setup(r *gin.Engine, d Deps) {
@@ -387,12 +387,20 @@ func Setup(r *gin.Engine, d Deps) {
 				// ============================================================
 				payplans := orgScoped.Group("/pay-plans")
 				{
+					// Import (must come before /:payPlanId to avoid route conflict)
+					payplans.POST("/import",
+						authzMiddleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionCreate),
+						payPlanHandler.Import)
+
 					payplans.GET("",
 						authzMiddleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionRead),
 						payPlanHandler.List)
 					payplans.GET("/:payPlanId",
 						authzMiddleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionRead),
 						payPlanHandler.Get)
+					payplans.GET("/:payPlanId/export",
+						authzMiddleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionRead),
+						payPlanHandler.Export)
 					payplans.POST("",
 						authzMiddleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionCreate),
 						payPlanHandler.Create)

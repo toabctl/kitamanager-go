@@ -5825,7 +5825,8 @@ paths:
         name: payPlanId
         required: true
         type: integer
-      - description: Filter periods active on date (YYYY-MM-DD, defaults to today)
+      - description: Filter periods active on date (YYYY-MM-DD). Omit to return all
+          periods.
         in: query
         name: active_on
         type: string
@@ -5912,6 +5913,52 @@ paths:
       security:
       - BearerAuth: []
       summary: Update pay plan
+      tags:
+      - pay-plans
+  /api/v1/organizations/{orgId}/pay-plans/{payPlanId}/export:
+    get:
+      description: Download a pay plan with all periods and entries as a YAML file
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Pay Plan ID
+        in: path
+        name: payPlanId
+        required: true
+        type: integer
+      produces:
+      - application/x-yaml
+      responses:
+        "200":
+          description: YAML file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export pay plan as YAML
       tags:
       - pay-plans
   /api/v1/organizations/{orgId}/pay-plans/{payPlanId}/periods:
@@ -6362,6 +6409,50 @@ paths:
       security:
       - BearerAuth: []
       summary: Update entry
+      tags:
+      - pay-plans
+  /api/v1/organizations/{orgId}/pay-plans/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a YAML file to create a pay plan with all periods and entries
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Pay plan YAML file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PayPlanDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Import pay plan from YAML
       tags:
       - pay-plans
   /api/v1/organizations/{orgId}/sections:

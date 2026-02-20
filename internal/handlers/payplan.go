@@ -1,10 +1,15 @@
 package handlers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 
+	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/service"
 )
@@ -65,7 +70,7 @@ func (h *PayPlanHandler) List(c *gin.Context) {
 // @Security BearerAuth
 // @Param orgId path int true "Organization ID"
 // @Param payPlanId path int true "Pay Plan ID"
-// @Param active_on query string false "Filter periods active on date (YYYY-MM-DD, defaults to today)"
+// @Param active_on query string false "Filter periods active on date (YYYY-MM-DD). Omit to return all periods."
 // @Success 200 {object} models.PayPlanDetailResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
@@ -79,11 +84,10 @@ func (h *PayPlanHandler) Get(c *gin.Context) {
 		return
 	}
 
-	activeOnDate, ok := parseOptionalDate(c, "active_on")
+	activeOn, ok := parseOptionalDatePtr(c, "active_on")
 	if !ok {
 		return
 	}
-	activeOn := &activeOnDate
 
 	payplan, err := h.service.GetByID(c.Request.Context(), id, orgID, activeOn)
 	if err != nil {
@@ -408,4 +412,101 @@ func (h *PayPlanHandler) DeleteEntry(c *gin.Context) {
 		auditConfig{h.auditService, "pay_plan_entry", "period"},
 		h.service.DeleteEntry,
 	)
+}
+
+// Export godoc
+// @Summary Export pay plan as YAML
+// @Description Download a pay plan with all periods and entries as a YAML file
+// @Tags pay-plans
+// @Produce application/x-yaml
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param payPlanId path int true "Pay Plan ID"
+// @Success 200 {file} file "YAML file"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/v1/organizations/{orgId}/pay-plans/{payPlanId}/export [get]
+func (h *PayPlanHandler) Export(c *gin.Context) {
+	orgID, id, ok := parseOrgAndResourceID(c, "payPlanId")
+	if !ok {
+		return
+	}
+
+	payplan, err := h.service.GetByID(c.Request.Context(), id, orgID, nil)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	data, err := yaml.Marshal(payplan)
+	if err != nil {
+		respondError(c, apperror.Internal("failed to marshal YAML"))
+		return
+	}
+
+	filename := strings.ReplaceAll(strings.ToLower(payplan.Name), " ", "-") + ".yaml"
+	c.Header("Content-Type", "application/x-yaml")
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	c.Writer.WriteHeader(http.StatusOK)
+	_, _ = c.Writer.Write(data)
+}
+
+// Import godoc
+// @Summary Import pay plan from YAML
+// @Description Upload a YAML file to create a pay plan with all periods and entries
+// @Tags pay-plans
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param file formData file true "Pay plan YAML file"
+// @Success 201 {object} models.PayPlanDetailResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/v1/organizations/{orgId}/pay-plans/import [post]
+func (h *PayPlanHandler) Import(c *gin.Context) {
+	orgID, ok := parseOrgID(c)
+	if !ok {
+		return
+	}
+
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, apperror.BadRequest("file is required"))
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		respondError(c, apperror.BadRequest("failed to read uploaded file"))
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		respondError(c, apperror.BadRequest("failed to read uploaded file"))
+		return
+	}
+
+	var data models.PayPlanDetailResponse
+	if err := yaml.Unmarshal(fileBytes, &data); err != nil {
+		respondError(c, apperror.BadRequest("invalid YAML: "+err.Error()))
+		return
+	}
+
+	result, err := h.service.Import(c.Request.Context(), orgID, &data)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	auditCreate(c, h.auditService, "pay_plan", result.ID, result.Name)
+
+	c.JSON(http.StatusCreated, result)
 }

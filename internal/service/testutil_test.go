@@ -219,7 +219,8 @@ func createSectionService(db *gorm.DB) *SectionService {
 // createPayPlanService creates a PayPlanService for testing.
 func createPayPlanService(db *gorm.DB) *PayPlanService {
 	payPlanStore := store.NewPayPlanStore(db)
-	return NewPayPlanService(payPlanStore)
+	transactor := store.NewTransactor(db)
+	return NewPayPlanService(payPlanStore, transactor)
 }
 
 // createStepPromotionService creates a StepPromotionService for testing.

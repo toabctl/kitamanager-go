@@ -19,7 +19,7 @@ func TestPayPlanHandler_CRUD(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -138,7 +138,7 @@ func TestPayPlanHandler_OrgIsolation(t *testing.T) {
 	org2 := createTestOrganization(t, db, "Org 2")
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -189,7 +189,7 @@ func TestPayPlanHandler_Period_CRUD(t *testing.T) {
 	db.Create(payplan)
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -297,7 +297,7 @@ func TestPayPlanHandler_Entry_CRUD(t *testing.T) {
 	db.Create(period)
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -420,7 +420,7 @@ func TestPayPlanHandler_GetWithPeriodsAndEntries(t *testing.T) {
 	}
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -467,7 +467,7 @@ func TestPayPlanHandler_DeleteCascade(t *testing.T) {
 	db.Create(entry)
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -501,7 +501,7 @@ func TestPayPlanHandler_InvalidRequests(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -563,7 +563,7 @@ func TestPayPlanHandler_MultiplePayPlansPerOrg(t *testing.T) {
 	org := createTestOrganization(t, db, "Test Org")
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()
@@ -605,7 +605,7 @@ func setupPayPlanTestFull(t *testing.T) (*models.Organization, *PayPlanHandler, 
 	org := createTestOrganization(t, db, "Test Org")
 
 	payplanStore := store.NewPayPlanStore(db)
-	svc := service.NewPayPlanService(payplanStore)
+	svc := service.NewPayPlanService(payplanStore, store.NewTransactor(db))
 	handler := NewPayPlanHandler(svc, createAuditService(db))
 
 	r := setupTestRouter()

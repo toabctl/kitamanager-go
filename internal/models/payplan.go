@@ -68,13 +68,14 @@ type PayPlanResponse struct {
 }
 
 // PayPlanDetailResponse includes periods for detail view.
+// YAML tags allow the same struct to be used for YAML import/export.
 type PayPlanDetailResponse struct {
-	ID             uint                    `json:"id" example:"1"`
-	OrganizationID uint                    `json:"organization_id" example:"1"`
-	Name           string                  `json:"name" example:"TVöD-SuE"`
-	Periods        []PayPlanPeriodResponse `json:"periods"`
-	CreatedAt      time.Time               `json:"created_at"`
-	UpdatedAt      time.Time               `json:"updated_at"`
+	ID             uint                    `json:"id" yaml:"id" example:"1"`
+	OrganizationID uint                    `json:"organization_id" yaml:"organization_id" example:"1"`
+	Name           string                  `json:"name" yaml:"name" example:"TVöD-SuE"`
+	Periods        []PayPlanPeriodResponse `json:"periods" yaml:"periods"`
+	CreatedAt      time.Time               `json:"created_at" yaml:"created_at"`
+	UpdatedAt      time.Time               `json:"updated_at" yaml:"updated_at"`
 }
 
 // PayPlanPeriodCreateRequest is the request body for creating a period.
@@ -95,15 +96,15 @@ type PayPlanPeriodUpdateRequest struct {
 
 // PayPlanPeriodResponse is the response for a period.
 type PayPlanPeriodResponse struct {
-	ID                       uint                   `json:"id" example:"1"`
-	PayPlanID                uint                   `json:"payplan_id" example:"1"`
-	From                     time.Time              `json:"from" example:"2024-01-01T00:00:00Z"`
-	To                       *time.Time             `json:"to,omitempty" example:"2024-12-31T00:00:00Z"`
-	WeeklyHours              float64                `json:"weekly_hours" example:"39.0"`
-	EmployerContributionRate int                    `json:"employer_contribution_rate" example:"2200"` // hundredths of percent: 2200 = 22.00%
-	Entries                  []PayPlanEntryResponse `json:"entries,omitempty"`
-	CreatedAt                time.Time              `json:"created_at"`
-	UpdatedAt                time.Time              `json:"updated_at"`
+	ID                       uint                   `json:"id" yaml:"id" example:"1"`
+	PayPlanID                uint                   `json:"payplan_id" yaml:"payplan_id" example:"1"`
+	From                     time.Time              `json:"from" yaml:"from" example:"2024-01-01T00:00:00Z"`
+	To                       *time.Time             `json:"to,omitempty" yaml:"to" example:"2024-12-31T00:00:00Z"`
+	WeeklyHours              float64                `json:"weekly_hours" yaml:"weekly_hours" example:"39.0"`
+	EmployerContributionRate int                    `json:"employer_contribution_rate" yaml:"employer_contribution_rate" example:"2200"` // hundredths of percent: 2200 = 22.00%
+	Entries                  []PayPlanEntryResponse `json:"entries,omitempty" yaml:"entries"`
+	CreatedAt                time.Time              `json:"created_at" yaml:"created_at"`
+	UpdatedAt                time.Time              `json:"updated_at" yaml:"updated_at"`
 }
 
 // PayPlanEntryCreateRequest is the request body for creating an entry.
@@ -124,14 +125,14 @@ type PayPlanEntryUpdateRequest struct {
 
 // PayPlanEntryResponse is the response for an entry.
 type PayPlanEntryResponse struct {
-	ID            uint      `json:"id" example:"1"`
-	PeriodID      uint      `json:"period_id" example:"1"`
-	Grade         string    `json:"grade" example:"S8a"`
-	Step          int       `json:"step" example:"3"`
-	MonthlyAmount int       `json:"monthly_amount" example:"350000"`
-	StepMinYears  *int      `json:"step_min_years,omitempty" example:"3"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID            uint      `json:"id" yaml:"id" example:"1"`
+	PeriodID      uint      `json:"period_id" yaml:"period_id" example:"1"`
+	Grade         string    `json:"grade" yaml:"grade" example:"S8a"`
+	Step          int       `json:"step" yaml:"step" example:"3"`
+	MonthlyAmount int       `json:"monthly_amount" yaml:"monthly_amount" example:"350000"`
+	StepMinYears  *int      `json:"step_min_years,omitempty" yaml:"step_min_years" example:"3"`
+	CreatedAt     time.Time `json:"created_at" yaml:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" yaml:"updated_at"`
 }
 
 // ToResponse converts a PayPlan to PayPlanResponse.

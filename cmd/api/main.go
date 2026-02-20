@@ -217,7 +217,7 @@ func initServices(s *appStores, cfg *config.Config, transactor store.Transactor)
 		employee:              service.NewEmployeeService(s.employee, s.payPlan, s.section, transactor),
 		child:                 service.NewChildService(s.child, s.organization, s.governmentFunding, s.section, transactor),
 		governmentFunding:     service.NewGovernmentFundingService(s.governmentFunding, transactor),
-		payPlan:               service.NewPayPlanService(s.payPlan),
+		payPlan:               service.NewPayPlanService(s.payPlan, transactor),
 		childAttendance:       service.NewChildAttendanceService(s.childAttendance, s.child),
 		budgetItem:            service.NewBudgetItemService(s.budgetItem, transactor),
 		stepPromotion:         service.NewStepPromotionService(s.payPlan, s.employee),
