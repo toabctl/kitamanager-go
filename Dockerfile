@@ -16,10 +16,11 @@ RUN go mod download
 COPY . .
 
 # Build the application with version info
+ARG GIT_VERSION=dev
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
-    -ldflags "-X github.com/eenemeene/kitamanager-go/internal/version.GitCommit=${GIT_COMMIT} -X github.com/eenemeene/kitamanager-go/internal/version.BuildTime=${BUILD_TIME}" \
+    -ldflags "-X github.com/eenemeene/kitamanager-go/internal/version.GitVersion=${GIT_VERSION} -X github.com/eenemeene/kitamanager-go/internal/version.GitCommit=${GIT_COMMIT} -X github.com/eenemeene/kitamanager-go/internal/version.BuildTime=${BUILD_TIME}" \
     -o main ./cmd/api
 
 # Stage 2: Final minimal image

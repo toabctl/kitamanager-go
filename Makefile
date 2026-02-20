@@ -6,10 +6,11 @@
 # =============================================================================
 # Version info
 # =============================================================================
+GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 GIT_COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 VERSION_PKG := github.com/eenemeene/kitamanager-go/internal/version
-LDFLAGS := -ldflags "-X $(VERSION_PKG).GitCommit=$(GIT_COMMIT) -X $(VERSION_PKG).BuildTime=$(BUILD_TIME)"
+LDFLAGS := -ldflags "-X $(VERSION_PKG).GitVersion=$(GIT_VERSION) -X $(VERSION_PKG).GitCommit=$(GIT_COMMIT) -X $(VERSION_PKG).BuildTime=$(BUILD_TIME)"
 
 # =============================================================================
 # Combined targets (web + api)
