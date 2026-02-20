@@ -1,12 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, getErrorMessage } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { PayPlan, PayPlanCreateRequest, PayPlanUpdateRequest } from '@/lib/api/types';
 import { useCrudPage } from '@/lib/hooks/use-crud-page';
@@ -19,6 +22,7 @@ import {
 } from '@/components/crud';
 import { Pagination } from '@/components/ui/pagination';
 import { payPlanSchema, type PayPlanFormData } from '@/lib/schemas';
+import { useToast } from '@/lib/hooks/use-toast';
 
 const defaultValues: PayPlanFormData = {
   name: '',
@@ -29,6 +33,30 @@ export default function PayPlansPage() {
   const params = useParams();
   const orgId = Number(params.orgId);
   const t = useTranslations();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const importMutation = useMutation({
+    mutationFn: (file: File) => apiClient.importPayPlan(orgId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.payPlans.all(orgId) });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      toast({ title: t('common.success') });
+    },
+    onError: (error) => {
+      toast({
+        title: t('payPlans.importError'),
+        description: getErrorMessage(error, t('payPlans.importError')),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) importMutation.mutate(file);
+  };
 
   const crud = useCrudPage<PayPlan, PayPlanFormData, PayPlanCreateRequest, PayPlanUpdateRequest>({
     resourceName: 'payPlans',
@@ -73,7 +101,25 @@ export default function PayPlansPage() {
         title="payPlans.title"
         onNew={crud.dialogs.handleCreate}
         newButtonText="payPlans.newPayPlan"
-      />
+      >
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".yaml,.yml"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importMutation.isPending}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {importMutation.isPending ? t('payPlans.importing') : t('payPlans.importYaml')}
+          </Button>
+        </>
+      </CrudPageHeader>
 
       <Card>
         <CardHeader>

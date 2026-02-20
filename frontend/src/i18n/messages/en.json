@@ -546,7 +546,11 @@
     "stepMinYearsLabel": "Min. years of service (optional)",
     "employerContributionRate": "Employer Contribution",
     "employerContributionRateLabel": "Employer Contribution (%)",
-    "employerContributionRateRequired": "Employer contribution rate is required"
+    "employerContributionRateRequired": "Employer contribution rate is required",
+    "exportYaml": "Export YAML",
+    "importYaml": "Import YAML",
+    "importing": "Importing...",
+    "importError": "Failed to import pay plan"
   },
   "upcomingChildren": {
     "title": "Upcoming Children",

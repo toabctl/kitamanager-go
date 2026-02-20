@@ -586,6 +586,21 @@ class ApiClient {
   updatePayPlan = this._payPlans.update;
   deletePayPlan = this._payPlans.delete;
 
+  getPayPlanExportUrl(orgId: number, payplanId: number): string {
+    return `${API_BASE_URL}/organizations/${orgId}/pay-plans/${payplanId}/export`;
+  }
+
+  async importPayPlan(orgId: number, file: File): Promise<PayPlan> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await this.client.post<PayPlan>(
+      `/organizations/${orgId}/pay-plans/import`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  }
+
   // PayPlan Periods
   async createPayPlanPeriod(
     orgId: number,

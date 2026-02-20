@@ -546,7 +546,11 @@
     "stepMinYearsLabel": "Mind. Dienstjahre (optional)",
     "employerContributionRate": "Arbeitgeberanteil",
     "employerContributionRateLabel": "Arbeitgeberanteil (%)",
-    "employerContributionRateRequired": "Arbeitgeberanteil ist erforderlich"
+    "employerContributionRateRequired": "Arbeitgeberanteil ist erforderlich",
+    "exportYaml": "YAML Export",
+    "importYaml": "YAML Import",
+    "importing": "Wird importiert...",
+    "importError": "Fehler beim Importieren der Entgelttabelle"
   },
   "upcomingChildren": {
     "title": "Bevorstehende Aufnahmen",

@@ -15,6 +15,8 @@ export interface CrudPageHeaderProps {
   hideNewButton?: boolean;
   /** Whether the "New" button is disabled */
   newButtonDisabled?: boolean;
+  /** Extra elements rendered before the "New" button */
+  children?: React.ReactNode;
 }
 
 /**
@@ -27,6 +29,7 @@ export function CrudPageHeader({
   newButtonText,
   hideNewButton = false,
   newButtonDisabled = false,
+  children,
 }: CrudPageHeaderProps) {
   const t = useTranslations();
 
@@ -37,12 +40,15 @@ export function CrudPageHeader({
           {title.includes('.') ? t(title) : title}
         </h1>
       </div>
-      {!hideNewButton && (
-        <Button onClick={onNew} disabled={newButtonDisabled}>
-          <Plus className="mr-2 h-4 w-4" />
-          {newButtonText.includes('.') ? t(newButtonText) : newButtonText}
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        {children}
+        {!hideNewButton && (
+          <Button onClick={onNew} disabled={newButtonDisabled}>
+            <Plus className="mr-2 h-4 w-4" />
+            {newButtonText.includes('.') ? t(newButtonText) : newButtonText}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

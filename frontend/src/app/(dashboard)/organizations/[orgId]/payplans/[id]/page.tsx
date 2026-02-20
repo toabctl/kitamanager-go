@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -249,9 +249,16 @@ export default function PayPlanDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{payPlan.name}</h1>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => window.open(apiClient.getPayPlanExportUrl(orgId, payPlanId))}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {t('payPlans.exportYaml')}
+        </Button>
       </div>
 
       <Card>
