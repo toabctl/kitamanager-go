@@ -161,17 +161,11 @@ func (s *PayPlanService) validatePayPlanPeriodNoOverlap(ctx context.Context, pay
 	if err != nil {
 		return apperror.InternalWrap(err, "failed to check for period overlaps")
 	}
-
-	for _, existing := range existingPeriods {
-		if excludeID != nil && existing.ID == *excludeID {
-			continue
-		}
-		if periodsOverlap(from, to, existing.From, existing.To) {
-			return apperror.BadRequest("period overlaps with existing period")
-		}
-	}
-
-	return nil
+	return validateNoOverlap(existingPeriods,
+		func(p models.PayPlanPeriod) uint { return p.ID },
+		func(p models.PayPlanPeriod) models.Period { return p.Period },
+		from, to, excludeID,
+	)
 }
 
 // CreatePeriod creates a new period for a pay plan.

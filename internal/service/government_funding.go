@@ -166,19 +166,11 @@ func (s *GovernmentFundingService) validatePeriodNoOverlap(ctx context.Context, 
 	if err != nil {
 		return apperror.InternalWrap(err, "failed to check for period overlaps")
 	}
-
-	for _, existing := range existingPeriods {
-		// Skip the period being updated
-		if excludeID != nil && existing.ID == *excludeID {
-			continue
-		}
-
-		if periodsOverlap(from, to, existing.From, existing.To) {
-			return apperror.BadRequest("period overlaps with existing period")
-		}
-	}
-
-	return nil
+	return validateNoOverlap(existingPeriods,
+		func(p models.GovernmentFundingPeriod) uint { return p.ID },
+		func(p models.GovernmentFundingPeriod) models.Period { return p.Period },
+		from, to, excludeID,
+	)
 }
 
 // CreatePeriod creates a new period

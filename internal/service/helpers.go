@@ -94,6 +94,28 @@ func periodsOverlap(from1 time.Time, to1 *time.Time, from2 time.Time, to2 *time.
 	return true
 }
 
+// validateNoOverlap checks that a period (from, to) does not overlap with any
+// existing periods. If excludeID is non-nil, that period is skipped (for updates).
+// The getID and getPeriod callbacks extract the ID and Period from each element.
+func validateNoOverlap[T any](
+	existing []T,
+	getID func(T) uint,
+	getPeriod func(T) models.Period,
+	from time.Time, to *time.Time,
+	excludeID *uint,
+) error {
+	for _, e := range existing {
+		if excludeID != nil && getID(e) == *excludeID {
+			continue
+		}
+		p := getPeriod(e)
+		if periodsOverlap(from, to, p.From, p.To) {
+			return apperror.BadRequest("period overlaps with existing period")
+		}
+	}
+	return nil
+}
+
 // personUpdateFields describes the optional fields in a person update request.
 type personUpdateFields struct {
 	FirstName *string
