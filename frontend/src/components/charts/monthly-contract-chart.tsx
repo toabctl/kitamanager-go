@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ResponsiveLine } from '@nivo/line';
+import { ExportableChart } from './exportable-chart';
 import type { StaffingHoursResponse } from '@/lib/api/types';
 import {
   buildKitaYearBands,
@@ -106,7 +107,7 @@ export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
   }, [xLabels, counts]);
 
   return (
-    <div className="h-[350px]">
+    <ExportableChart filename="children-contracts" className="h-[350px]">
       <ResponsiveLine
         data={chartData}
         margin={{ top: 20, right: 30, bottom: 80, left: 60 }}
@@ -140,8 +141,8 @@ export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
           tickRotation: 0,
         }}
         colors={['#3b82f6']}
-        pointSize={8}
-        pointColor={{ from: 'serieColor' }}
+        pointSize={6}
+        pointColor={{ from: 'series.color' }}
         pointBorderWidth={2}
         pointBorderColor={{ theme: 'background' }}
         pointLabelYOffset={-12}
@@ -166,6 +167,6 @@ export function MonthlyContractChart({ data }: MonthlyContractChartProps) {
         ]}
         theme={chartTheme}
       />
-    </div>
+    </ExportableChart>
   );
 }

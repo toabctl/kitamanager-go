@@ -2,6 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { ResponsiveBar } from '@nivo/bar';
+import { chartTheme } from './chart-utils';
+import { ExportableChart } from './exportable-chart';
 
 export interface SectionStaffingData {
   sectionName: string;
@@ -16,50 +18,67 @@ interface SectionStaffingChartProps {
 export function SectionStaffingChart({ data }: SectionStaffingChartProps) {
   const t = useTranslations();
 
-  const requiredKey = t('statistics.requiredHours');
-  const availableKey = t('statistics.availableHours');
+  const balanceKey = t('statistics.balancePercentage');
 
-  const chartData = data.map((d) => ({
-    section: d.sectionName,
-    [requiredKey]: Math.round(d.required * 100) / 100,
-    [availableKey]: Math.round(d.available * 100) / 100,
-  }));
+  const chartData = data.map((d) => {
+    const pct =
+      d.required > 0 ? Math.round(((d.available - d.required) / d.required) * 1000) / 10 : 0;
+    return {
+      section: d.sectionName,
+      [balanceKey]: pct,
+      available: Math.round(d.available),
+      required: Math.round(d.required),
+    };
+  });
 
-  const keys = [requiredKey, availableKey];
+  // Symmetric scale so 0% is always centered, with ~10% padding
+  const rawMax = Math.max(10, ...chartData.map((d) => Math.abs(d[balanceKey] as number)));
+  const maxAbs = Math.ceil(rawMax * 1.1);
 
   return (
-    <div className="h-[300px]">
+    <ExportableChart filename="section-staffing" className="h-[300px]">
       <ResponsiveBar
         data={chartData}
-        keys={keys}
+        keys={[balanceKey]}
         indexBy="section"
-        margin={{ top: 20, right: 130, bottom: 50, left: 60 }}
+        layout="horizontal"
+        margin={{ top: 10, right: 40, bottom: 60, left: 220 }}
         padding={0.3}
-        groupMode="grouped"
-        colors={['#f59e0b', '#3b82f6']}
-        borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
+        valueScale={{ type: 'linear', min: -maxAbs, max: maxAbs }}
+        colors={({ value }) => ((value ?? 0) >= 0 ? '#22c55e' : '#ef4444')}
+        borderRadius={3}
+        enableGridX={true}
+        gridXValues={Array.from(
+          { length: Math.floor(maxAbs / 10) * 2 + 1 },
+          (_, i) => -Math.floor(maxAbs / 10) * 10 + i * 10
+        )}
+        enableGridY={true}
+        enableLabel={true}
+        label={({ value }) => `${(value ?? 0) > 0 ? '+' : ''}${value}%`}
+        labelSkipWidth={20}
+        labelTextColor="#fff"
         axisTop={null}
         axisRight={null}
         axisBottom={{
           tickSize: 5,
           tickPadding: 5,
-          tickRotation: 0,
+          tickValues: Array.from(
+            { length: Math.floor(maxAbs / 10) * 2 + 1 },
+            (_, i) => -Math.floor(maxAbs / 10) * 10 + i * 10
+          ),
+          format: (v) => `${v}%`,
         }}
         axisLeft={{
-          tickSize: 5,
-          tickPadding: 5,
-          tickRotation: 0,
+          tickSize: 0,
+          tickPadding: 8,
+          format: (v) => {
+            const entry = chartData.find((d) => d.section === v);
+            if (!entry) return String(v);
+            return `${v}  (${entry.available}h / ${entry.required}h)`;
+          },
         }}
-        enableLabel={true}
-        labelSkipWidth={12}
-        labelSkipHeight={12}
-        labelTextColor={{ from: 'color', modifiers: [['brighter', 3]] }}
-        tooltip={({ id, value, indexValue }) => {
+        tooltip={({ indexValue, value }) => {
           const entry = data.find((d) => d.sectionName === indexValue);
-          const balance =
-            entry && entry.required > 0
-              ? Math.round(((entry.available - entry.required) / entry.required) * 1000) / 10
-              : null;
           return (
             <div
               style={{
@@ -73,38 +92,60 @@ export function SectionStaffingChart({ data }: SectionStaffingChartProps) {
             >
               <strong>{indexValue}</strong>
               <div style={{ marginTop: 4 }}>
-                {id}: {value}h
-              </div>
-              {balance !== null && (
-                <div
-                  style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid hsl(var(--border))' }}
+                <span
+                  style={{
+                    color: (value ?? 0) >= 0 ? '#22c55e' : '#ef4444',
+                    fontWeight: 600,
+                  }}
                 >
-                  <span
-                    style={{
-                      color: balance >= 0 ? '#22c55e' : '#ef4444',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {t('statistics.balancePercentage')}: {balance > 0 ? '+' : ''}
-                    {balance}%
-                  </span>
+                  {(value ?? 0) > 0 ? '+' : ''}
+                  {value}%
+                </span>
+              </div>
+              {entry && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    paddingTop: 6,
+                    borderTop: '1px solid hsl(var(--border))',
+                    fontSize: 12,
+                    opacity: 0.8,
+                  }}
+                >
+                  <div>
+                    {t('statistics.availableHours')}: {Math.round(entry.available)}h
+                  </div>
+                  <div>
+                    {t('statistics.requiredHours')}: {Math.round(entry.required)}h
+                  </div>
                 </div>
               )}
             </div>
           );
         }}
+        markers={[
+          {
+            axis: 'x',
+            value: 0,
+            lineStyle: {
+              stroke: 'hsl(var(--muted-foreground))',
+              strokeWidth: 1,
+              strokeDasharray: '3 3',
+            },
+          },
+        ]}
         legends={[
           {
             dataFrom: 'keys',
-            anchor: 'bottom-right',
-            direction: 'column',
+            anchor: 'bottom',
+            direction: 'row',
             justify: false,
-            translateX: 120,
-            translateY: 0,
-            itemsSpacing: 2,
+            translateX: 0,
+            translateY: 50,
+            itemsSpacing: 4,
+            itemDirection: 'left-to-right',
             itemWidth: 100,
             itemHeight: 20,
-            itemDirection: 'left-to-right',
             itemOpacity: 0.85,
             symbolSize: 12,
             symbolShape: 'circle',
@@ -112,34 +153,8 @@ export function SectionStaffingChart({ data }: SectionStaffingChartProps) {
         ]}
         role="application"
         ariaLabel={t('statistics.sectionStaffing')}
-        theme={{
-          axis: {
-            ticks: {
-              text: {
-                fill: 'hsl(var(--muted-foreground))',
-              },
-            },
-          },
-          grid: {
-            line: {
-              stroke: 'hsl(var(--border))',
-            },
-          },
-          legends: {
-            text: {
-              fill: 'hsl(var(--foreground))',
-            },
-          },
-          tooltip: {
-            container: {
-              background: 'hsl(var(--background))',
-              color: 'hsl(var(--foreground))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '6px',
-            },
-          },
-        }}
+        theme={chartTheme}
       />
-    </div>
+    </ExportableChart>
   );
 }

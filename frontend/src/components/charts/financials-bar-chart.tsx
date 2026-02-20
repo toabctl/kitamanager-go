@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ResponsiveBar } from '@nivo/bar';
 import type { BarDatum, BarCustomLayerProps } from '@nivo/bar';
 import { line, curveMonotoneX } from 'd3-shape';
+import { ExportableChart } from './exportable-chart';
 import type { FinancialResponse, FinancialDataPoint } from '@/lib/api/types';
 import { buildKitaYearBands, formatDateLabel, chartTheme } from './chart-utils';
 
@@ -287,7 +288,7 @@ export function FinancialsChart({ data }: FinancialsChartProps) {
   }, [data]);
 
   return (
-    <div className="relative h-[580px]">
+    <ExportableChart filename="financials" className="h-[580px]">
       <ResponsiveBar
         data={chartData}
         keys={keys}
@@ -486,6 +487,6 @@ export function FinancialsChart({ data }: FinancialsChartProps) {
           </div>
         </div>
       )}
-    </div>
+    </ExportableChart>
   );
 }

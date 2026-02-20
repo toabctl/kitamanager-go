@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { ResponsiveBar } from '@nivo/bar';
+import { ExportableChart } from './exportable-chart';
 import type { AgeDistributionResponse } from '@/lib/api/types';
 
 interface AgeDistributionChartProps {
@@ -27,7 +28,7 @@ export function AgeDistributionChart({ data }: AgeDistributionChartProps) {
       <p className="text-muted-foreground text-sm">
         {t('statistics.totalChildren', { count: data.total_count })}
       </p>
-      <div className="h-[300px]">
+      <ExportableChart filename="age-distribution" className="h-[300px]">
         <ResponsiveBar
           data={chartData}
           keys={keys}
@@ -100,7 +101,7 @@ export function AgeDistributionChart({ data }: AgeDistributionChartProps) {
             },
           }}
         />
-      </div>
+      </ExportableChart>
     </div>
   );
 }

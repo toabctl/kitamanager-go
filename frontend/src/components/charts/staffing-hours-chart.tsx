@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ResponsiveLine } from '@nivo/line';
+import { ExportableChart } from './exportable-chart';
 import { scaleLinear } from 'd3-scale';
 import type { StaffingHoursResponse } from '@/lib/api/types';
 import {
@@ -69,24 +70,41 @@ export function StaffingHoursChart({ data }: StaffingHoursChartProps) {
 
       return (
         <g>
-          {/* Bars */}
+          {/* Bars with percentage labels */}
           {xLabels.map((label, i) => {
             const pct = balancePercentages[i];
             const cx = scale(label);
             const barY = pct >= 0 ? pctScale(pct) : zeroY;
             const barH = Math.abs(pctScale(pct) - zeroY);
+            const color = pct >= 0 ? '#22c55e' : '#ef4444';
+            // Label position: above bar for positive, below bar for negative
+            const labelY = pct >= 0 ? barY - 3 : barY + barH + 10;
 
             return (
-              <rect
-                key={label}
-                x={cx - barWidth / 2}
-                y={barY}
-                width={barWidth}
-                height={barH}
-                fill={pct >= 0 ? '#22c55e' : '#ef4444'}
-                opacity={0.2}
-                rx={2}
-              />
+              <g key={label}>
+                <rect
+                  x={cx - barWidth / 2}
+                  y={barY}
+                  width={barWidth}
+                  height={barH}
+                  fill={color}
+                  opacity={0.2}
+                  rx={2}
+                />
+                {pct !== 0 && (
+                  <text
+                    x={cx}
+                    y={labelY}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fontWeight={600}
+                    fill={color}
+                  >
+                    {pct > 0 ? '+' : ''}
+                    {pct}%
+                  </text>
+                )}
+              </g>
             );
           })}
           {/* Zero line */}
@@ -147,7 +165,7 @@ export function StaffingHoursChart({ data }: StaffingHoursChartProps) {
   const todayLabel = formatDateLabel(todayStr);
 
   return (
-    <div className="h-[350px]">
+    <ExportableChart filename="staffing-hours" className="h-[350px]">
       <ResponsiveLine
         data={chartData}
         margin={{ top: 20, right: 60, bottom: 80, left: 60 }}
@@ -182,10 +200,10 @@ export function StaffingHoursChart({ data }: StaffingHoursChartProps) {
           tickRotation: 0,
         }}
         colors={['#f59e0b', '#3b82f6']}
-        pointSize={8}
-        pointColor={{ theme: 'background' }}
+        pointSize={6}
+        pointColor={{ from: 'series.color' }}
         pointBorderWidth={2}
-        pointBorderColor={{ from: 'serieColor' }}
+        pointBorderColor={{ theme: 'background' }}
         pointLabelYOffset={-12}
         useMesh={true}
         enableSlices="x"
@@ -258,6 +276,6 @@ export function StaffingHoursChart({ data }: StaffingHoursChartProps) {
         ]}
         theme={chartTheme}
       />
-    </div>
+    </ExportableChart>
   );
 }

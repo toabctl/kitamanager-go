@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { ResponsiveBar } from '@nivo/bar';
+import { ExportableChart } from './exportable-chart';
 import type { ContractPropertiesDistributionResponse } from '@/lib/api/types';
 
 interface ContractPropertiesChartProps {
@@ -21,7 +22,7 @@ export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) 
       <p className="text-muted-foreground text-sm">
         {t('statistics.totalChildren', { count: data.total_children })}
       </p>
-      <div className="h-[400px]">
+      <ExportableChart filename="contract-properties" className="h-[400px]">
         <ResponsiveBar
           data={chartData}
           keys={['value']}
@@ -71,7 +72,7 @@ export function ContractPropertiesChart({ data }: ContractPropertiesChartProps) 
             },
           }}
         />
-      </div>
+      </ExportableChart>
     </div>
   );
 }

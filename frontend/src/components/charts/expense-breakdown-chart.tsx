@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ResponsivePie } from '@nivo/pie';
 import type { FinancialDataPoint, FinancialSalaryDetail } from '@/lib/api/types';
 import { chartTheme } from './chart-utils';
+import { ExportableChart } from './exportable-chart';
 
 interface ExpenseBreakdownChartProps {
   data: FinancialDataPoint;
@@ -92,7 +93,7 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
   }
 
   return (
-    <div className="h-[350px]">
+    <ExportableChart filename="expense-breakdown" className="h-[350px]">
       <ResponsivePie
         data={pieData}
         margin={{ top: 30, right: 120, bottom: 30, left: 120 }}
@@ -152,6 +153,6 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
         }}
         theme={chartTheme}
       />
-    </div>
+    </ExportableChart>
   );
 }

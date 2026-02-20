@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Table,
@@ -24,6 +24,26 @@ function formatMonthHeader(dateStr: string): string {
 function formatHours(value: number): string {
   if (value === 0) return '\u2013';
   return value.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function formatDiff(value: number): string {
+  return value.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function DiffCell({ prev, curr }: { prev: number; curr: number }) {
+  // Both zero → no meaningful change
+  if (prev === 0 && curr === 0) return <TableCell className="px-0 text-center text-[10px]" />;
+  const diff = curr - prev;
+  if (diff === 0) return <TableCell className="px-0 text-center text-[10px]" />;
+  const isUp = diff > 0;
+  return (
+    <TableCell className="px-0 text-center text-[10px] whitespace-nowrap">
+      <span className={isUp ? 'text-green-600' : 'text-red-600'}>
+        {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
+        {formatDiff(diff)}
+      </span>
+    </TableCell>
+  );
 }
 
 const STAFF_CATEGORY_LABELS: Record<string, string> = {
@@ -75,39 +95,44 @@ export function EmployeeStaffingHoursTable({ data }: EmployeeStaffingHoursTableP
             <TableHead className="bg-background sticky left-0 z-10 min-w-[180px]">
               {t('employeeName')}
             </TableHead>
-            {dates.map((d) => (
-              <TableHead key={d} className="min-w-[70px] text-right">
-                {formatMonthHeader(d)}
-              </TableHead>
+            {dates.map((d, i) => (
+              <Fragment key={d}>
+                {i > 0 && <TableHead className="w-0 px-0" />}
+                <TableHead className="min-w-[70px] text-right">{formatMonthHeader(d)}</TableHead>
+              </Fragment>
             ))}
             <TableHead className="min-w-[70px] text-right font-bold">{t('average')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {employees.map((emp, empIdx) => (
-            <TableRow key={emp.employee_id}>
-              <TableCell className="bg-background sticky left-0 z-10">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {emp.last_name}, {emp.first_name}
-                  </span>
-                  {emp.staff_category && (
-                    <span className="text-muted-foreground text-xs">
-                      {STAFF_CATEGORY_LABELS[emp.staff_category] ?? emp.staff_category}
+          {employees.map((emp, empIdx) => {
+            const hours = emp.monthly_hours ?? [];
+            return (
+              <TableRow key={emp.employee_id}>
+                <TableCell className="bg-background sticky left-0 z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {emp.last_name}, {emp.first_name}
                     </span>
-                  )}
-                </div>
-              </TableCell>
-              {(emp.monthly_hours ?? []).map((hours, i) => (
-                <TableCell key={dates[i]} className="text-right tabular-nums">
-                  {formatHours(hours)}
+                    {emp.staff_category && (
+                      <span className="text-muted-foreground text-xs">
+                        {STAFF_CATEGORY_LABELS[emp.staff_category] ?? emp.staff_category}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
-              ))}
-              <TableCell className="text-right font-bold tabular-nums">
-                {formatHours(averages[empIdx])}
-              </TableCell>
-            </TableRow>
-          ))}
+                {hours.map((h, i) => (
+                  <Fragment key={dates[i]}>
+                    {i > 0 && <DiffCell prev={hours[i - 1]} curr={h} />}
+                    <TableCell className="text-right tabular-nums">{formatHours(h)}</TableCell>
+                  </Fragment>
+                ))}
+                <TableCell className="text-right font-bold tabular-nums">
+                  {formatHours(averages[empIdx])}
+                </TableCell>
+              </TableRow>
+            );
+          })}
 
           {/* Total row */}
           <TableRow className="border-t-2">
@@ -115,9 +140,12 @@ export function EmployeeStaffingHoursTable({ data }: EmployeeStaffingHoursTableP
               {t('total')}
             </TableCell>
             {totals.map((val, i) => (
-              <TableCell key={dates[i]} className="text-right font-bold tabular-nums">
-                {formatHours(val)}
-              </TableCell>
+              <Fragment key={dates[i]}>
+                {i > 0 && <DiffCell prev={totals[i - 1]} curr={val} />}
+                <TableCell className="text-right font-bold tabular-nums">
+                  {formatHours(val)}
+                </TableCell>
+              </Fragment>
             ))}
             <TableCell className="text-right font-bold tabular-nums">
               {formatHours(totalAvg)}

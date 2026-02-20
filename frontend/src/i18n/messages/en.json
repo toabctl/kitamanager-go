@@ -134,6 +134,8 @@
     "kitaYear": "Kita Year {year}",
     "staffingBalance": "Staffing Balance",
     "balancePercentage": "Balance",
+    "surplus": "Surplus",
+    "deficit": "Deficit",
     "sectionStaffing": "Staffing by Section (Today)",
     "contractProperties": "Children Contract Properties (Today)",
     "financialOverview": "Financial Overview",
