@@ -233,6 +233,26 @@ func (h *GovernmentFundingHandler) CreatePeriod(c *gin.Context) {
 	)
 }
 
+// GetPeriod godoc
+// @Summary Get a period
+// @Description Get a period by ID (superadmin only)
+// @Tags government-fundings
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param fundingId path int true "GovernmentFunding ID"
+// @Param periodId path int true "Period ID"
+// @Success 200 {object} models.GovernmentFundingPeriodResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/v1/government-fundings/{fundingId}/periods/{periodId} [get]
+func (h *GovernmentFundingHandler) GetPeriod(c *gin.Context) {
+	handleGlobalNestedGet(c, "fundingId", "periodId", h.service.GetPeriod)
+}
+
 // UpdatePeriod godoc
 // @Summary Update a period
 // @Description Update an existing period by ID (superadmin only)
@@ -305,6 +325,27 @@ func (h *GovernmentFundingHandler) CreateProperty(c *gin.Context) {
 		h.service.CreateProperty,
 		func(r *models.GovernmentFundingPropertyResponse) uint { return r.ID },
 	)
+}
+
+// GetProperty godoc
+// @Summary Get a property
+// @Description Get a property by ID (superadmin only)
+// @Tags government-fundings
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param fundingId path int true "GovernmentFunding ID"
+// @Param periodId path int true "Period ID"
+// @Param propId path int true "Property ID"
+// @Success 200 {object} models.GovernmentFundingPropertyResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/v1/government-fundings/{fundingId}/periods/{periodId}/properties/{propId} [get]
+func (h *GovernmentFundingHandler) GetProperty(c *gin.Context) {
+	handleGlobalDeepNestedGet(c, "fundingId", "periodId", "propId", h.service.GetProperty)
 }
 
 // UpdateProperty godoc

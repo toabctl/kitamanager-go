@@ -228,6 +228,16 @@ func (s *GovernmentFundingService) GetPeriodByID(ctx context.Context, id uint) (
 	return &resp, nil
 }
 
+// GetPeriod returns a period by ID, verifying it belongs to the given funding.
+func (s *GovernmentFundingService) GetPeriod(ctx context.Context, periodID, fundingID uint) (*models.GovernmentFundingPeriodResponse, error) {
+	period, err := s.verifyPeriodOwnership(ctx, periodID, fundingID)
+	if err != nil {
+		return nil, err
+	}
+	resp := period.ToResponse()
+	return &resp, nil
+}
+
 // UpdatePeriod updates an existing period
 func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, fundingID, periodID uint, req *models.GovernmentFundingPeriodUpdateRequest) (*models.GovernmentFundingPeriodResponse, error) {
 	period, err := s.verifyPeriodOwnership(ctx, periodID, fundingID)
@@ -334,6 +344,19 @@ func (s *GovernmentFundingService) GetPropertyByID(ctx context.Context, id uint)
 			return nil, apperror.NotFound("property")
 		}
 		return nil, apperror.InternalWrap(err, "failed to fetch property")
+	}
+	resp := property.ToResponse()
+	return &resp, nil
+}
+
+// GetProperty returns a property by ID, verifying ownership through period and funding.
+func (s *GovernmentFundingService) GetProperty(ctx context.Context, propertyID, periodID, fundingID uint) (*models.GovernmentFundingPropertyResponse, error) {
+	if _, err := s.verifyPeriodOwnership(ctx, periodID, fundingID); err != nil {
+		return nil, err
+	}
+	property, err := s.verifyPropertyOwnership(ctx, propertyID, periodID)
+	if err != nil {
+		return nil, err
 	}
 	resp := property.ToResponse()
 	return &resp, nil

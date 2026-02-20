@@ -341,6 +341,34 @@ func handleGlobalNestedCreate[Req any, Resp any](
 	c.JSON(http.StatusCreated, resp)
 }
 
+// handleGlobalNestedGet handles fetching a single nested resource under a global parent.
+func handleGlobalNestedGet[Resp any](
+	c *gin.Context,
+	parentParam string,
+	nestedParam string,
+	getFn func(context.Context, uint, uint) (*Resp, error),
+) {
+	parentID, err := parseID(c, parentParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	resp, err := getFn(c.Request.Context(), nestedID, parentID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 // handleGlobalNestedUpdate handles updating a nested resource under a global parent.
 func handleGlobalNestedUpdate[Req any, Resp any](
 	c *gin.Context,
@@ -445,6 +473,41 @@ func handleGlobalDeepNestedCreate[Req any, Resp any](
 	auditCreate(c, audit.auditService, audit.resourceType, getID(resp), fmt.Sprintf("%s=%d", audit.parentLabel, midID))
 
 	c.JSON(http.StatusCreated, resp)
+}
+
+// handleGlobalDeepNestedGet handles fetching a single deep nested resource under a global parent.
+func handleGlobalDeepNestedGet[Resp any](
+	c *gin.Context,
+	parentParam string,
+	midParam string,
+	nestedParam string,
+	getFn func(context.Context, uint, uint, uint) (*Resp, error),
+) {
+	parentID, err := parseID(c, parentParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	midID, err := parseID(c, midParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	resp, err := getFn(c.Request.Context(), nestedID, midID, parentID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // handleGlobalDeepNestedUpdate handles updating a deep nested resource under a global parent.

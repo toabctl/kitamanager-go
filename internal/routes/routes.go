@@ -117,11 +117,13 @@ func Setup(r *gin.Engine, d Deps) {
 				governmentFundings.DELETE("/:fundingId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.Delete)
 
 				// Period management
+				governmentFundings.GET("/:fundingId/periods/:periodId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.GetPeriod)
 				governmentFundings.POST("/:fundingId/periods", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.CreatePeriod)
 				governmentFundings.PUT("/:fundingId/periods/:periodId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdatePeriod)
 				governmentFundings.DELETE("/:fundingId/periods/:periodId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeletePeriod)
 
 				// Property management (directly under periods)
+				governmentFundings.GET("/:fundingId/periods/:periodId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.GetProperty)
 				governmentFundings.POST("/:fundingId/periods/:periodId/properties", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.CreateProperty)
 				governmentFundings.PUT("/:fundingId/periods/:periodId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.UpdateProperty)
 				governmentFundings.DELETE("/:fundingId/periods/:periodId/properties/:propId", authzMiddleware.RequireSuperAdmin(), governmentFundingHandler.DeleteProperty)

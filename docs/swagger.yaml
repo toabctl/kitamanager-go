@@ -2743,6 +2743,53 @@ paths:
       summary: Delete a period
       tags:
       - government-fundings
+    get:
+      consumes:
+      - application/json
+      description: Get a period by ID (superadmin only)
+      parameters:
+      - description: GovernmentFunding ID
+        in: path
+        name: fundingId
+        required: true
+        type: integer
+      - description: Period ID
+        in: path
+        name: periodId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a period
+      tags:
+      - government-fundings
     put:
       consumes:
       - application/json
@@ -2895,6 +2942,58 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete a property
+      tags:
+      - government-fundings
+    get:
+      consumes:
+      - application/json
+      description: Get a property by ID (superadmin only)
+      parameters:
+      - description: GovernmentFunding ID
+        in: path
+        name: fundingId
+        required: true
+        type: integer
+      - description: Period ID
+        in: path
+        name: periodId
+        required: true
+        type: integer
+      - description: Property ID
+        in: path
+        name: propId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPropertyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a property
       tags:
       - government-fundings
     put:
