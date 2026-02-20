@@ -9600,6 +9600,10 @@ const docTemplate = `{
                 },
                 "to": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
@@ -9659,6 +9663,10 @@ const docTemplate = `{
                 "to": {
                     "type": "string",
                     "example": "2024-02-29"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },

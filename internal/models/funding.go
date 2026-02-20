@@ -30,6 +30,7 @@ type GovernmentFundingPeriod struct {
 	FullTimeWeeklyHours float64                     `gorm:"not null" json:"full_time_weekly_hours" example:"39.0"`
 	Comment             string                      `gorm:"size:1000" json:"comment,omitempty" example:"Funding period 2023/2024"`
 	CreatedAt           time.Time                   `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt           time.Time                   `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 	Properties          []GovernmentFundingProperty `gorm:"foreignKey:PeriodID;constraint:OnDelete:CASCADE" json:"properties,omitempty"`
 }
 
@@ -173,6 +174,7 @@ type GovernmentFundingPeriodResponse struct {
 	FullTimeWeeklyHours float64    `json:"full_time_weekly_hours" example:"39.0"`
 	Comment             string     `json:"comment,omitempty" example:"Funding period 2023/2024"`
 	CreatedAt           time.Time  `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt           time.Time  `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
 
 func (p *GovernmentFundingPeriod) ToResponse() GovernmentFundingPeriodResponse {
@@ -184,6 +186,7 @@ func (p *GovernmentFundingPeriod) ToResponse() GovernmentFundingPeriodResponse {
 		FullTimeWeeklyHours: p.FullTimeWeeklyHours,
 		Comment:             p.Comment,
 		CreatedAt:           p.CreatedAt,
+		UpdatedAt:           p.UpdatedAt,
 	}
 }
 

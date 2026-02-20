@@ -1041,6 +1041,9 @@ definitions:
         type: array
       to:
         type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodCreateRequest:
     properties:
@@ -1083,6 +1086,9 @@ definitions:
         type: integer
       to:
         example: "2024-02-29"
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
         type: string
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingPeriodUpdateRequest:
