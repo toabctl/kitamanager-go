@@ -62,7 +62,7 @@ func (s *EmployeeService) Create(ctx context.Context, orgID uint, req *models.Em
 
 // Update updates an existing employee, validating it belongs to the specified organization
 func (s *EmployeeService) Update(ctx context.Context, id, orgID uint, req *models.EmployeeUpdateRequest) (*models.EmployeeResponse, error) {
-	return personUpdate(ctx, s.store.FindByIDAndOrg, func(e *models.Employee) *models.Person { return &e.Person },
+	return personUpdate(ctx, s.transactor, s.store.FindByIDAndOrg, func(e *models.Employee) *models.Person { return &e.Person },
 		s.store.Update, (*models.Employee).ToResponse, id, orgID,
 		personUpdateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
 		"employee")

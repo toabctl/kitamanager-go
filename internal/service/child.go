@@ -69,7 +69,7 @@ func (s *ChildService) Create(ctx context.Context, orgID uint, req *models.Child
 
 // Update updates an existing child, validating it belongs to the specified organization
 func (s *ChildService) Update(ctx context.Context, id, orgID uint, req *models.ChildUpdateRequest) (*models.ChildResponse, error) {
-	return personUpdate(ctx, s.store.FindByIDAndOrg, func(ch *models.Child) *models.Person { return &ch.Person },
+	return personUpdate(ctx, s.transactor, s.store.FindByIDAndOrg, func(ch *models.Child) *models.Person { return &ch.Person },
 		s.store.Update, (*models.Child).ToResponse, id, orgID,
 		personUpdateFields{FirstName: req.FirstName, LastName: req.LastName, Gender: req.Gender, Birthdate: req.Birthdate},
 		"child")

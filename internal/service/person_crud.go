@@ -72,8 +72,10 @@ func personCreate[T any, R any](
 }
 
 // personUpdate validates and applies person field updates, scoped to the given organization.
+// The update and reload are wrapped in a transaction to ensure consistent reads.
 func personUpdate[T any, R any](
 	ctx context.Context,
+	transactor store.Transactor,
 	findByIDAndOrg func(ctx context.Context, id, orgID uint) (*T, error),
 	getPerson func(*T) *models.Person,
 	updateFn func(ctx context.Context, entity *T) error,
@@ -91,17 +93,23 @@ func personUpdate[T any, R any](
 		return nil, err
 	}
 
-	if err := updateFn(ctx, entity); err != nil {
-		return nil, apperror.InternalWrap(err, "failed to update "+resourceName)
+	var resp R
+	if err := transactor.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := updateFn(txCtx, entity); err != nil {
+			return apperror.InternalWrap(err, "failed to update "+resourceName)
+		}
+
+		// Reload to get fresh associations within the same transaction
+		reloaded, err := findByIDAndOrg(txCtx, id, orgID)
+		if err != nil {
+			return apperror.InternalWrap(err, "failed to reload "+resourceName+" after update")
+		}
+		resp = toResponse(reloaded)
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	// Reload to get fresh associations
-	entity, err = findByIDAndOrg(ctx, id, orgID)
-	if err != nil {
-		return nil, apperror.InternalWrap(err, "failed to reload "+resourceName+" after update")
-	}
-
-	resp := toResponse(entity)
 	return &resp, nil
 }
 
