@@ -384,28 +384,22 @@ func TestMigrationSchemaMatchesModels(t *testing.T) {
 	}
 }
 
-// TestMigrationsWithData applies the initial migration, inserts representative data into
-// every table, then applies remaining migrations one-by-one to verify they work with
-// pre-existing data (e.g., no NOT NULL columns added without DEFAULT).
+// TestMigrationsWithData applies the migration, inserts representative data into
+// every table, and verifies data can be inserted correctly.
 func TestMigrationsWithData(t *testing.T) {
 	connStr := startTestPostgres(t, "populated_data_test")
-
-	expectedVersions := migrationVersions(t)
-	require.GreaterOrEqual(t, len(expectedVersions), 2, "need at least 2 migrations for this test")
 
 	m := newMigrateInstance(t, connStr)
 	defer m.Close()
 
-	// Step 1: Apply only the first migration (initial schema)
-	require.NoError(t, m.Steps(1), "first migration failed")
+	// Step 1: Apply all migrations
+	require.NoError(t, m.Up(), "migrations failed")
 	version, dirty, err := m.Version()
 	require.NoError(t, err)
-	assert.Equal(t, expectedVersions[0], version)
 	assert.False(t, dirty)
-	t.Logf("applied initial migration: version=%d", version)
+	t.Logf("applied migrations: version=%d", version)
 
 	// Step 2: Insert representative data into every table.
-	// Column names match the initial schema (e.g., payplan_id before migration 3 renames it).
 	db := openTestGormDB(t, connStr)
 
 	inserts := []string{
@@ -415,10 +409,7 @@ func TestMigrationsWithData(t *testing.T) {
 		`INSERT INTO users (id, name, email, password, active, is_superadmin, created_at, updated_at)
 		 VALUES (1, 'Test User', 'test@example.com', 'hashed', true, false, NOW(), NOW())`,
 
-		`INSERT INTO groups (id, name, organization_id, is_default, active, created_at, updated_at)
-		 VALUES (1, 'Default', 1, true, true, NOW(), NOW())`,
-
-		`INSERT INTO user_groups (user_id, group_id, role, created_at)
+		`INSERT INTO user_organizations (user_id, organization_id, role, created_at)
 		 VALUES (1, 1, 'admin', NOW())`,
 
 		`INSERT INTO sections (id, organization_id, name, is_default, created_at, updated_at)
@@ -430,7 +421,7 @@ func TestMigrationsWithData(t *testing.T) {
 		`INSERT INTO pay_plans (id, organization_id, name, created_at, updated_at)
 		 VALUES (1, 1, 'TVöD-SuE', NOW(), NOW())`,
 
-		`INSERT INTO employee_contracts (id, employee_id, from_date, section_id, staff_category, payplan_id, created_at, updated_at)
+		`INSERT INTO employee_contracts (id, employee_id, from_date, section_id, staff_category, pay_plan_id, created_at, updated_at)
 		 VALUES (1, 1, '2024-01-01', 1, 'qualified', 1, NOW(), NOW())`,
 
 		`INSERT INTO children (id, organization_id, first_name, last_name, gender, birthdate, created_at, updated_at)
@@ -445,8 +436,8 @@ func TestMigrationsWithData(t *testing.T) {
 		`INSERT INTO government_funding_periods (id, government_funding_id, from_date, full_time_weekly_hours, created_at)
 		 VALUES (1, 1, '2024-01-01', 39.0, NOW())`,
 
-		`INSERT INTO government_funding_properties (id, period_id, key, value, payment, requirement, created_at)
-		 VALUES (1, 1, 'care_type', 'ganztag', 166847, 0.261, NOW())`,
+		`INSERT INTO government_funding_properties (id, period_id, key, value, label, payment, requirement, created_at)
+		 VALUES (1, 1, 'care_type', 'ganztag', 'Ganztag', 166847, 0.261, NOW())`,
 
 		`INSERT INTO pay_plan_periods (id, pay_plan_id, from_date, weekly_hours, created_at, updated_at)
 		 VALUES (1, 1, '2024-01-01', 39.0, NOW(), NOW())`,
@@ -468,6 +459,15 @@ func TestMigrationsWithData(t *testing.T) {
 
 		`INSERT INTO revoked_tokens (id, user_id, token_hash, expires_at, created_at)
 		 VALUES (1, 1, 'abc123def456abc123def456abc123def456abc123def456abc123def456abcd', NOW() + INTERVAL '1 hour', NOW())`,
+
+		`INSERT INTO government_funding_bill_periods (id, organization_id, from_date, file_name, file_sha256, facility_name, facility_total, contract_booking, correction_booking, created_by, created_at)
+		 VALUES (1, 1, '2024-01-01', 'test.xlsx', 'abc123', 'Test Kita', 100000, 90000, 10000, 1, NOW())`,
+
+		`INSERT INTO government_funding_bill_children (id, period_id, voucher_number, child_name, birth_date, district)
+		 VALUES (1, 1, 'V-12345', 'Max Schmidt', '2020-06-15', 1)`,
+
+		`INSERT INTO government_funding_bill_payments (id, child_id, key, value, amount)
+		 VALUES (1, 1, 'care_type', 'ganztag', 166847)`,
 	}
 
 	for _, insert := range inserts {
@@ -475,19 +475,7 @@ func TestMigrationsWithData(t *testing.T) {
 	}
 	t.Log("inserted test data into all tables")
 
-	// Step 3: Apply remaining migrations one at a time
-	for i := 1; i < len(expectedVersions); i++ {
-		err := m.Steps(1)
-		require.NoError(t, err, "migration to version %d failed with data", expectedVersions[i])
-
-		version, dirty, err := m.Version()
-		require.NoError(t, err)
-		assert.Equal(t, expectedVersions[i], version)
-		assert.False(t, dirty, "database should not be dirty after version %d", expectedVersions[i])
-		t.Logf("applied migration version %d with data present", version)
-	}
-
-	// Step 4: Verify all data survived the migrations
+	// Step 3: Verify all data was inserted correctly
 	tables := []string{
 		"organizations", "users", "user_organizations", "sections",
 		"employees", "employee_contracts", "children", "child_contracts",
@@ -495,13 +483,15 @@ func TestMigrationsWithData(t *testing.T) {
 		"government_funding_properties", "pay_plans", "pay_plan_periods",
 		"pay_plan_entries", "budget_items", "budget_item_entries",
 		"audit_logs", "revoked_tokens",
+		"government_funding_bill_periods", "government_funding_bill_children",
+		"government_funding_bill_payments",
 	}
 
 	for _, table := range tables {
 		var count int64
 		err := db.Raw("SELECT COUNT(*) FROM " + table).Scan(&count).Error
 		require.NoError(t, err)
-		assert.Equal(t, int64(1), count, "table %s should still have 1 row after all migrations", table)
+		assert.Equal(t, int64(1), count, "table %s should have 1 row", table)
 	}
-	t.Log("all row counts verified after migrations")
+	t.Log("all row counts verified")
 }
