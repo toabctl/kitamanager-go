@@ -12,7 +12,6 @@ import (
 type Deps struct {
 	Auth              *handlers.AuthHandler
 	User              *handlers.UserHandler
-	Group             *handlers.GroupHandler
 	Section           *handlers.SectionHandler
 	Organization      *handlers.OrganizationHandler
 	Employee          *handlers.EmployeeHandler
@@ -36,7 +35,6 @@ type Deps struct {
 func Setup(r *gin.Engine, d Deps) {
 	authHandler := d.Auth
 	userHandler := d.User
-	groupHandler := d.Group
 	sectionHandler := d.Section
 	orgHandler := d.Organization
 	employeeHandler := d.Employee
@@ -152,15 +150,15 @@ func Setup(r *gin.Engine, d Deps) {
 				users.DELETE("/:userId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionDelete),
 					userHandler.Delete)
-				users.POST("/:userId/groups",
+				users.POST("/:userId/organizations",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
-					userHandler.AddToGroup)
-				users.PUT("/:userId/groups/:groupId",
+					userHandler.AddToOrganization)
+				users.PUT("/:userId/organizations/:orgId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
-					userHandler.UpdateGroupRole)
-				users.DELETE("/:userId/groups/:groupId",
+					userHandler.UpdateOrganizationRole)
+				users.DELETE("/:userId/organizations/:orgId",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
-					userHandler.RemoveFromGroup)
+					userHandler.RemoveFromOrganization)
 				users.GET("/:userId/memberships",
 					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionRead),
 					userHandler.GetMemberships)
@@ -170,12 +168,6 @@ func Setup(r *gin.Engine, d Deps) {
 				users.PUT("/:userId/superadmin",
 					authzMiddleware.RequireSuperAdmin(),
 					userHandler.SetSuperAdmin)
-				users.POST("/:userId/organizations",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
-					userHandler.AddToOrganization)
-				users.DELETE("/:userId/organizations/:orgId",
-					authzMiddleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionUpdate),
-					userHandler.RemoveFromOrganization)
 			}
 
 			// ============================================================
@@ -184,28 +176,6 @@ func Setup(r *gin.Engine, d Deps) {
 			// ============================================================
 			orgScoped := protected.Group("/organizations/:orgId")
 			{
-				// ============================================================
-				// Group management (org-scoped - each group belongs to one org)
-				// ============================================================
-				groups := orgScoped.Group("/groups")
-				{
-					groups.GET("",
-						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionRead),
-						groupHandler.List)
-					groups.GET("/:groupId",
-						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionRead),
-						groupHandler.Get)
-					groups.POST("",
-						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionCreate),
-						groupHandler.Create)
-					groups.PUT("/:groupId",
-						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionUpdate),
-						groupHandler.Update)
-					groups.DELETE("/:groupId",
-						authzMiddleware.RequirePermission(rbac.ResourceGroups, rbac.ActionDelete),
-						groupHandler.Delete)
-				}
-
 				// ============================================================
 				// Section management (org-scoped - each section belongs to one org)
 				// ============================================================

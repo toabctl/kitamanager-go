@@ -68,31 +68,29 @@ func TestRole_Precedence_Ordering(t *testing.T) {
 	}
 }
 
-func TestUserGroup_ToResponse(t *testing.T) {
+func TestUserOrganization_ToResponse(t *testing.T) {
 	now := time.Now()
-	group := &Group{
-		ID:             1,
-		Name:           "Test Group",
+	org := &Organization{
+		ID:   1,
+		Name: "Test Org",
+	}
+
+	uo := &UserOrganization{
+		UserID:         1,
 		OrganizationID: 1,
-		Active:         true,
+		Role:           RoleAdmin,
+		CreatedAt:      now,
+		CreatedBy:      "admin@example.com",
+		Organization:   org,
 	}
 
-	ug := &UserGroup{
-		UserID:    1,
-		GroupID:   1,
-		Role:      RoleAdmin,
-		CreatedAt: now,
-		CreatedBy: "admin@example.com",
-		Group:     group,
-	}
-
-	resp := ug.ToResponse()
+	resp := uo.ToResponse()
 
 	if resp.UserID != 1 {
 		t.Errorf("ToResponse().UserID = %d, want 1", resp.UserID)
 	}
-	if resp.GroupID != 1 {
-		t.Errorf("ToResponse().GroupID = %d, want 1", resp.GroupID)
+	if resp.OrganizationID != 1 {
+		t.Errorf("ToResponse().OrganizationID = %d, want 1", resp.OrganizationID)
 	}
 	if resp.Role != RoleAdmin {
 		t.Errorf("ToResponse().Role = %v, want %v", resp.Role, RoleAdmin)
@@ -103,40 +101,40 @@ func TestUserGroup_ToResponse(t *testing.T) {
 	if resp.CreatedBy != "admin@example.com" {
 		t.Errorf("ToResponse().CreatedBy = %v, want admin@example.com", resp.CreatedBy)
 	}
-	if resp.Group != group {
-		t.Error("ToResponse().Group should reference the same group")
+	if resp.Organization != org {
+		t.Error("ToResponse().Organization should reference the same organization")
 	}
 }
 
-func TestUserGroup_ToResponse_NilGroup(t *testing.T) {
-	ug := &UserGroup{
-		UserID:    1,
-		GroupID:   1,
-		Role:      RoleMember,
-		CreatedBy: "test@example.com",
-		Group:     nil,
+func TestUserOrganization_ToResponse_NilOrganization(t *testing.T) {
+	uo := &UserOrganization{
+		UserID:         1,
+		OrganizationID: 1,
+		Role:           RoleMember,
+		CreatedBy:      "test@example.com",
+		Organization:   nil,
 	}
 
-	resp := ug.ToResponse()
+	resp := uo.ToResponse()
 
-	if resp.Group != nil {
-		t.Error("ToResponse().Group should be nil when UserGroup.Group is nil")
+	if resp.Organization != nil {
+		t.Error("ToResponse().Organization should be nil when UserOrganization.Organization is nil")
 	}
 	if resp.UserID != 1 {
 		t.Errorf("ToResponse().UserID = %d, want 1", resp.UserID)
 	}
 }
 
-func TestUserGroup_ToResponse_ZeroValues(t *testing.T) {
-	ug := &UserGroup{}
+func TestUserOrganization_ToResponse_ZeroValues(t *testing.T) {
+	uo := &UserOrganization{}
 
-	resp := ug.ToResponse()
+	resp := uo.ToResponse()
 
 	if resp.UserID != 0 {
 		t.Errorf("ToResponse().UserID = %d, want 0", resp.UserID)
 	}
-	if resp.GroupID != 0 {
-		t.Errorf("ToResponse().GroupID = %d, want 0", resp.GroupID)
+	if resp.OrganizationID != 0 {
+		t.Errorf("ToResponse().OrganizationID = %d, want 0", resp.OrganizationID)
 	}
 	if resp.Role != "" {
 		t.Errorf("ToResponse().Role = %v, want empty", resp.Role)
@@ -146,29 +144,15 @@ func TestUserGroup_ToResponse_ZeroValues(t *testing.T) {
 	}
 }
 
-func TestUserGroup_TableName(t *testing.T) {
-	ug := UserGroup{}
-	if ug.TableName() != "user_groups" {
-		t.Errorf("TableName() = %v, want user_groups", ug.TableName())
+func TestUserOrganization_TableName(t *testing.T) {
+	uo := UserOrganization{}
+	if uo.TableName() != "user_organizations" {
+		t.Errorf("TableName() = %v, want user_organizations", uo.TableName())
 	}
 }
 
-func TestUserGroupAddRequest(t *testing.T) {
-	req := UserGroupAddRequest{
-		GroupID: 5,
-		Role:    RoleManager,
-	}
-
-	if req.GroupID != 5 {
-		t.Errorf("GroupID = %d, want 5", req.GroupID)
-	}
-	if req.Role != RoleManager {
-		t.Errorf("Role = %v, want %v", req.Role, RoleManager)
-	}
-}
-
-func TestUserGroupRoleUpdateRequest(t *testing.T) {
-	req := UserGroupRoleUpdateRequest{
+func TestUserOrganizationRoleUpdateRequest(t *testing.T) {
+	req := UserOrganizationRoleUpdateRequest{
 		Role: RoleAdmin,
 	}
 
@@ -179,22 +163,19 @@ func TestUserGroupRoleUpdateRequest(t *testing.T) {
 
 func TestUserMembership(t *testing.T) {
 	org := &Organization{ID: 1, Name: "Test Org"}
-	group := &Group{ID: 1, Name: "Test Group", Organization: org}
 
 	membership := UserMembership{
-		UserID:           1,
-		GroupID:          1,
-		Role:             RoleMember,
-		Group:            group,
-		EffectiveOrgRole: RoleAdmin,
-		Organization:     org,
+		UserID:         1,
+		OrganizationID: 1,
+		Role:           RoleAdmin,
+		Organization:   org,
 	}
 
 	if membership.UserID != 1 {
 		t.Errorf("UserID = %d, want 1", membership.UserID)
 	}
-	if membership.EffectiveOrgRole != RoleAdmin {
-		t.Errorf("EffectiveOrgRole = %v, want %v", membership.EffectiveOrgRole, RoleAdmin)
+	if membership.Role != RoleAdmin {
+		t.Errorf("Role = %v, want %v", membership.Role, RoleAdmin)
 	}
 	if membership.Organization != org {
 		t.Error("Organization should reference the same org")
@@ -203,8 +184,8 @@ func TestUserMembership(t *testing.T) {
 
 func TestUserMembershipsResponse(t *testing.T) {
 	memberships := []UserMembership{
-		{UserID: 1, GroupID: 1, Role: RoleAdmin},
-		{UserID: 1, GroupID: 2, Role: RoleMember},
+		{UserID: 1, OrganizationID: 1, Role: RoleAdmin},
+		{UserID: 1, OrganizationID: 2, Role: RoleMember},
 	}
 
 	resp := UserMembershipsResponse{Memberships: memberships}

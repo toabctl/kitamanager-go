@@ -1,0 +1,150 @@
+package store
+
+import (
+	"context"
+	"errors"
+
+	"gorm.io/gorm"
+
+	"github.com/eenemeene/kitamanager-go/internal/models"
+)
+
+// UserOrganizationStore handles database operations for user-organization relationships
+type UserOrganizationStore struct {
+	db *gorm.DB
+}
+
+// NewUserOrganizationStore creates a new UserOrganizationStore
+func NewUserOrganizationStore(db *gorm.DB) *UserOrganizationStore {
+	return &UserOrganizationStore{db: db}
+}
+
+// AddUserToOrg adds a user to an organization with a specified role
+func (s *UserOrganizationStore) AddUserToOrg(ctx context.Context, userID, orgID uint, role models.Role, createdBy string) (*models.UserOrganization, error) {
+	uo := &models.UserOrganization{
+		UserID:         userID,
+		OrganizationID: orgID,
+		Role:           role,
+		CreatedBy:      createdBy,
+	}
+
+	if err := DBFromContext(ctx, s.db).Create(uo).Error; err != nil {
+		return nil, err
+	}
+
+	return uo, nil
+}
+
+// UpdateRole updates a user's role in an organization
+func (s *UserOrganizationStore) UpdateRole(ctx context.Context, userID, orgID uint, role models.Role) error {
+	result := DBFromContext(ctx, s.db).Model(&models.UserOrganization{}).
+		Where("user_id = ? AND organization_id = ?", userID, orgID).
+		Update("role", role)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// RemoveUserFromOrg removes a user from an organization
+func (s *UserOrganizationStore) RemoveUserFromOrg(ctx context.Context, userID, orgID uint) error {
+	result := DBFromContext(ctx, s.db).Where("user_id = ? AND organization_id = ?", userID, orgID).
+		Delete(&models.UserOrganization{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// FindByUserAndOrg finds a specific user-organization relationship
+func (s *UserOrganizationStore) FindByUserAndOrg(ctx context.Context, userID, orgID uint) (*models.UserOrganization, error) {
+	var uo models.UserOrganization
+	err := DBFromContext(ctx, s.db).Where("user_id = ? AND organization_id = ?", userID, orgID).First(&uo).Error
+	if err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &uo, nil
+}
+
+// FindByUser returns all organization memberships for a user
+func (s *UserOrganizationStore) FindByUser(ctx context.Context, userID uint) ([]models.UserOrganization, error) {
+	var memberships []models.UserOrganization
+	err := DBFromContext(ctx, s.db).
+		Preload("Organization").
+		Where("user_id = ?", userID).
+		Find(&memberships).Error
+	return memberships, err
+}
+
+// GetRoleInOrg returns the role a user has in an organization
+// Returns empty string if user has no role in the organization
+func (s *UserOrganizationStore) GetRoleInOrg(ctx context.Context, userID, orgID uint) (models.Role, error) {
+	var uo models.UserOrganization
+	err := DBFromContext(ctx, s.db).
+		Where("user_id = ? AND organization_id = ?", userID, orgID).
+		First(&uo).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil
+		}
+		return "", err
+	}
+	return uo.Role, nil
+}
+
+// GetUserOrganizationsWithRoles returns all organizations a user belongs to with their roles
+func (s *UserOrganizationStore) GetUserOrganizationsWithRoles(ctx context.Context, userID uint) (map[uint]models.Role, error) {
+	memberships, err := s.FindByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	orgRoles := make(map[uint]models.Role)
+	for _, m := range memberships {
+		orgRoles[m.OrganizationID] = m.Role
+	}
+
+	return orgRoles, nil
+}
+
+// SetSuperAdmin sets or unsets superadmin status for a user
+func (s *UserOrganizationStore) SetSuperAdmin(ctx context.Context, userID uint, isSuperAdmin bool) error {
+	result := DBFromContext(ctx, s.db).Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("is_superadmin", isSuperAdmin)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// IsSuperAdmin checks if a user is a superadmin
+func (s *UserOrganizationStore) IsSuperAdmin(ctx context.Context, userID uint) (bool, error) {
+	var user models.User
+	err := DBFromContext(ctx, s.db).Select("is_superadmin").Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return user.IsSuperAdmin, nil
+}
+
+// Exists checks if a user-organization relationship exists
+func (s *UserOrganizationStore) Exists(ctx context.Context, userID, orgID uint) (bool, error) {
+	var count int64
+	err := DBFromContext(ctx, s.db).Model(&models.UserOrganization{}).
+		Where("user_id = ? AND organization_id = ?", userID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}

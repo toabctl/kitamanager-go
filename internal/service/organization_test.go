@@ -151,37 +151,6 @@ func TestOrganizationService_Create(t *testing.T) {
 	}
 }
 
-func TestOrganizationService_Create_CreatesDefaultGroup(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createOrganizationService(db)
-	groupSvc := createGroupService(db)
-	ctx := context.Background()
-
-	req := &models.OrganizationCreateRequest{
-		Name:               "New Organization",
-		Active:             true,
-		State:              "berlin",
-		DefaultSectionName: "Bären",
-	}
-
-	org, err := svc.Create(ctx, req, "creator@example.com")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	// Check that default "Members" group was created
-	groups, total, _ := groupSvc.ListByOrganization(ctx, org.ID, "", 10, 0)
-	if total != 1 {
-		t.Fatalf("expected 1 group (default), got %d", total)
-	}
-	if groups[0].Name != "Members" {
-		t.Errorf("default group name = %v, want Members", groups[0].Name)
-	}
-	if !groups[0].IsDefault {
-		t.Error("expected default group to have IsDefault = true")
-	}
-}
-
 func TestOrganizationService_Create_CreatesDefaultSection(t *testing.T) {
 	db := setupTestDB(t)
 	svc := createOrganizationService(db)
@@ -592,13 +561,9 @@ func TestOrganizationService_ListForUser(t *testing.T) {
 	// Create a regular user
 	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
 
-	// Create groups for org1 and org2
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
-
-	// Assign user to group1 and group2
-	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
-	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
+	// Assign user to org1 and org2
+	createTestUserOrganization(t, db, user.ID, org1.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, org2.ID, models.RoleAdmin)
 
 	// Regular user should see only orgs they belong to (org1 and org2)
 	orgs, total, err := svc.ListForUser(ctx, user.ID, "", 100, 0)
@@ -648,13 +613,11 @@ func TestOrganizationService_ListForUser_SearchFilter(t *testing.T) {
 
 	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
 
-	// User belongs to all 3 orgs
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
-	group3 := createTestGroupWithOrg(t, db, "Group 3", createTestOrganization(t, db, "Another").ID)
-	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
-	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
-	createTestUserGroup(t, db, user.ID, group3.ID, models.RoleAdmin)
+	// User belongs to org1, org2, and another org
+	anotherOrg := createTestOrganization(t, db, "Another")
+	createTestUserOrganization(t, db, user.ID, org1.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, org2.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, anotherOrg.ID, models.RoleAdmin)
 
 	// Search for "Kindergarten" should return only matching orgs
 	orgs, total, err := svc.ListForUser(ctx, user.ID, "Kindergarten", 100, 0)
@@ -682,12 +645,9 @@ func TestOrganizationService_ListForUser_Pagination(t *testing.T) {
 
 	user := createTestUser(t, db, "Test User", "test@example.com", "password123")
 
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
-	group3 := createTestGroupWithOrg(t, db, "Group 3", org3.ID)
-	createTestUserGroup(t, db, user.ID, group1.ID, models.RoleAdmin)
-	createTestUserGroup(t, db, user.ID, group2.ID, models.RoleAdmin)
-	createTestUserGroup(t, db, user.ID, group3.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, org1.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, org2.ID, models.RoleAdmin)
+	createTestUserOrganization(t, db, user.ID, org3.ID, models.RoleAdmin)
 
 	// First page (limit 2)
 	orgs, total, err := svc.ListForUser(ctx, user.ID, "", 2, 0)

@@ -278,8 +278,7 @@ func allModels() []interface{} {
 	return []interface{}{
 		&models.Organization{},
 		&models.User{},
-		&models.Group{},
-		&models.UserGroup{},
+		&models.UserOrganization{},
 		&models.Section{},
 		&models.Employee{},
 		&models.EmployeeContract{},
@@ -474,7 +473,7 @@ func TestMigrationsWithData(t *testing.T) {
 	for _, insert := range inserts {
 		require.NoError(t, db.Exec(insert).Error, "insert failed: %.60s", insert)
 	}
-	t.Log("inserted test data into all 20 tables")
+	t.Log("inserted test data into all tables")
 
 	// Step 3: Apply remaining migrations one at a time
 	for i := 1; i < len(expectedVersions); i++ {
@@ -490,7 +489,7 @@ func TestMigrationsWithData(t *testing.T) {
 
 	// Step 4: Verify all data survived the migrations
 	tables := []string{
-		"organizations", "users", "groups", "user_groups", "sections",
+		"organizations", "users", "user_organizations", "sections",
 		"employees", "employee_contracts", "children", "child_contracts",
 		"child_attendances", "government_fundings", "government_funding_periods",
 		"government_funding_properties", "pay_plans", "pay_plan_periods",

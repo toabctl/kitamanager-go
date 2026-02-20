@@ -120,15 +120,13 @@ func setupRouter() *gin.Engine {
 	// Setup stores
 	orgStore := store.NewOrganizationStore(testDB)
 	userStore := store.NewUserStore(testDB)
-	groupStore := store.NewGroupStore(testDB)
-	userGroupStore := store.NewUserGroupStore(testDB)
+	userOrgStore := store.NewUserOrganizationStore(testDB)
 
 	// Setup services
-	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
-	userService := service.NewUserService(userStore, groupStore, userGroupStore)
+	orgService := service.NewOrganizationService(orgStore, userStore)
+	userService := service.NewUserService(userStore, userOrgStore)
 	transactor := store.NewTransactor(testDB)
-	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore, transactor)
-	groupService := service.NewGroupService(groupStore)
+	userOrgService := service.NewUserOrganizationService(userOrgStore, userStore, transactor)
 
 	// Setup audit service
 	auditStore := store.NewAuditStore(testDB)
@@ -136,8 +134,7 @@ func setupRouter() *gin.Engine {
 
 	// Setup handlers
 	orgHandler := handlers.NewOrganizationHandler(orgService, auditService)
-	userHandler := handlers.NewUserHandler(userService, userGroupService, auditService, nil)
-	groupHandler := handlers.NewGroupHandler(groupService, auditService)
+	userHandler := handlers.NewUserHandler(userService, userOrgService, auditService, nil)
 
 	// Routes - matching the actual API structure
 	api := r.Group("/api/v1")
@@ -153,14 +150,6 @@ func setupRouter() *gin.Engine {
 		api.GET("/users", userHandler.List)
 		api.POST("/users", userHandler.Create)
 		api.GET("/users/:uid", userHandler.Get)
-
-		// Org-scoped groups
-		orgScoped := api.Group("/organizations/:orgId")
-		{
-			orgScoped.GET("/groups", groupHandler.List)
-			orgScoped.POST("/groups", groupHandler.Create)
-			orgScoped.GET("/groups/:groupId", groupHandler.Get)
-		}
 	}
 
 	return r
@@ -185,8 +174,7 @@ func cleanupDatabase() {
 		"employee_contracts",
 		"employees",
 		"sections",
-		"user_groups",
-		"groups",
+		"user_organizations",
 		"users",
 		"organizations",
 	}
@@ -376,55 +364,3 @@ func TestContract_UserCreate(t *testing.T) {
 	}
 }
 
-func TestContract_GroupsList(t *testing.T) {
-	cleanupBetweenTests()
-
-	// Create organization first (groups are org-scoped)
-	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
-		"name":                 "Groups List Test Org",
-		"active":               true,
-		"state":                "berlin",
-		"default_section_name": "Default",
-	})
-	if orgResp.Code != http.StatusCreated {
-		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
-	}
-	var org models.Organization
-	if err := json.Unmarshal(orgResp.Body.Bytes(), &org); err != nil {
-		t.Fatalf("failed to parse organization response: %v", err)
-	}
-
-	resp := performRequest(t, "GET", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), nil)
-
-	if resp.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", resp.Code)
-	}
-}
-
-func TestContract_GroupCreate(t *testing.T) {
-	cleanupBetweenTests()
-
-	// Create organization first
-	orgResp := performRequest(t, "POST", "/api/v1/organizations", map[string]interface{}{
-		"name":                 "Group Test Org",
-		"active":               true,
-		"state":                "berlin",
-		"default_section_name": "Default",
-	})
-	if orgResp.Code != http.StatusCreated {
-		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
-	}
-	var org models.Organization
-	if err := json.Unmarshal(orgResp.Body.Bytes(), &org); err != nil {
-		t.Fatalf("failed to parse organization response: %v", err)
-	}
-
-	resp := performRequest(t, "POST", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), map[string]interface{}{
-		"name":   "Test Group",
-		"active": true,
-	})
-
-	if resp.Code != http.StatusCreated {
-		t.Errorf("expected status 201, got %d: %s", resp.Code, resp.Body.String())
-	}
-}

@@ -126,44 +126,6 @@ func TestUserStore_Delete(t *testing.T) {
 	}
 }
 
-func TestUserStore_AddToGroup(t *testing.T) {
-	db := setupTestDB(t)
-	store := NewUserStore(db)
-
-	user := createTestUser(t, db, "Test User", "test@example.com")
-	group := createTestGroup(t, db, "Test Group")
-
-	err := store.AddToGroup(context.Background(), user.ID, group.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	found, _ := store.FindByID(context.Background(), user.ID)
-	if len(found.Groups) != 1 {
-		t.Errorf("expected 1 group, got %d", len(found.Groups))
-	}
-}
-
-func TestUserStore_RemoveFromGroup(t *testing.T) {
-	db := setupTestDB(t)
-	store := NewUserStore(db)
-
-	user := createTestUser(t, db, "Test User", "test@example.com")
-	group := createTestGroup(t, db, "Test Group")
-
-	_ = store.AddToGroup(context.Background(), user.ID, group.ID)
-
-	err := store.RemoveFromGroup(context.Background(), user.ID, group.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	found, _ := store.FindByID(context.Background(), user.ID)
-	if len(found.Groups) != 0 {
-		t.Errorf("expected 0 groups, got %d", len(found.Groups))
-	}
-}
-
 func TestUserStore_GetUserOrganizations(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewUserStore(db)
@@ -172,12 +134,9 @@ func TestUserStore_GetUserOrganizations(t *testing.T) {
 	org1 := createTestOrganization(t, db, "Test Org 1")
 	org2 := createTestOrganization(t, db, "Test Org 2")
 
-	// Create groups in each org and add user to them
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
-
-	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
-	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
+	// Add user to both orgs
+	createTestUserOrganization(t, db, user.ID, org1.ID, models.RoleMember)
+	createTestUserOrganization(t, db, user.ID, org2.ID, models.RoleAdmin)
 
 	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
@@ -186,39 +145,6 @@ func TestUserStore_GetUserOrganizations(t *testing.T) {
 
 	if len(orgs) != 2 {
 		t.Errorf("expected 2 organizations, got %d", len(orgs))
-	}
-}
-
-func TestUserStore_RemoveFromAllGroupsInOrg(t *testing.T) {
-	db := setupTestDB(t)
-	store := NewUserStore(db)
-
-	user := createTestUser(t, db, "Test User", "test@example.com")
-	org := createTestOrganization(t, db, "Test Org")
-
-	// Create two groups in the org and add user to both
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org.ID)
-
-	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
-	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
-
-	// Verify user is in both groups
-	found, _ := store.FindByID(context.Background(), user.ID)
-	if len(found.Groups) != 2 {
-		t.Fatalf("expected 2 groups, got %d", len(found.Groups))
-	}
-
-	// Remove user from all groups in org
-	err := store.RemoveFromAllGroupsInOrg(context.Background(), user.ID, org.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	// Verify user is no longer in any groups
-	found, _ = store.FindByID(context.Background(), user.ID)
-	if len(found.Groups) != 0 {
-		t.Errorf("expected 0 groups, got %d", len(found.Groups))
 	}
 }
 
@@ -244,8 +170,6 @@ func TestUserStore_UpdateLastLogin(t *testing.T) {
 	}
 }
 
-// TestUserStore_GetUserOrganizations_MultipleOrgs verifies that user's orgs are
-// correctly derived from their group memberships across multiple organizations.
 func TestUserStore_GetUserOrganizations_MultipleOrgs(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewUserStore(db)
@@ -255,16 +179,10 @@ func TestUserStore_GetUserOrganizations_MultipleOrgs(t *testing.T) {
 	org2 := createTestOrganization(t, db, "Org 2")
 	org3 := createTestOrganization(t, db, "Org 3")
 
-	// Create groups in each org
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org1.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org2.ID)
-	_ = createTestGroupWithOrg(t, db, "Group 3", org3.ID) // User not in this group
+	// Add user to org1 and org2 only
+	createTestUserOrganization(t, db, user.ID, org1.ID, models.RoleMember)
+	createTestUserOrganization(t, db, user.ID, org2.ID, models.RoleAdmin)
 
-	// Add user to groups in org1 and org2 only
-	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
-	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
-
-	// Get user's organizations
 	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -287,88 +205,19 @@ func TestUserStore_GetUserOrganizations_MultipleOrgs(t *testing.T) {
 	}
 }
 
-// TestUserStore_GetUserOrganizations_MultipleGroupsSameOrg verifies that a user
-// in multiple groups within the same org only gets that org returned once.
-func TestUserStore_GetUserOrganizations_MultipleGroupsSameOrg(t *testing.T) {
-	db := setupTestDB(t)
-	store := NewUserStore(db)
-
-	user := createTestUser(t, db, "Test User", "test@example.com")
-	org := createTestOrganization(t, db, "Test Org")
-
-	// Create multiple groups in the same org
-	group1 := createTestGroupWithOrg(t, db, "Group 1", org.ID)
-	group2 := createTestGroupWithOrg(t, db, "Group 2", org.ID)
-	group3 := createTestGroupWithOrg(t, db, "Group 3", org.ID)
-
-	// Add user to all groups
-	_ = store.AddToGroup(context.Background(), user.ID, group1.ID)
-	_ = store.AddToGroup(context.Background(), user.ID, group2.ID)
-	_ = store.AddToGroup(context.Background(), user.ID, group3.ID)
-
-	// Get user's organizations - should only return the org once
-	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if len(orgs) != 1 {
-		t.Errorf("expected 1 organization (no duplicates), got %d", len(orgs))
-	}
-
-	if orgs[0].ID != org.ID {
-		t.Errorf("expected org ID %d, got %d", org.ID, orgs[0].ID)
-	}
-}
-
-// TestUserStore_GetUserOrganizations_NoGroups verifies that a user with no
-// group memberships has no organizations.
-func TestUserStore_GetUserOrganizations_NoGroups(t *testing.T) {
+func TestUserStore_GetUserOrganizations_NoOrgs(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewUserStore(db)
 
 	user := createTestUser(t, db, "Test User", "test@example.com")
 
-	// User has no group memberships
 	orgs, err := store.GetUserOrganizations(context.Background(), user.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if len(orgs) != 0 {
-		t.Errorf("expected 0 organizations for user with no groups, got %d", len(orgs))
-	}
-}
-
-func TestUserStore_FindAll_PreloadsGroups(t *testing.T) {
-	db := setupTestDB(t)
-	userStore := NewUserStore(db)
-
-	// Create organization and group
-	org := createTestOrganization(t, db, "Test Org")
-	group := createTestGroupWithOrg(t, db, "Test Group", org.ID)
-
-	user := createTestUser(t, db, "Test User", "test@example.com")
-
-	// Add user to group
-	_ = userStore.AddToGroup(context.Background(), user.ID, group.ID)
-
-	users, _, err := userStore.FindAll(context.Background(), "", 100, 0)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if len(users) != 1 {
-		t.Fatalf("expected 1 user, got %d", len(users))
-	}
-
-	if len(users[0].Groups) != 1 {
-		t.Fatalf("expected 1 group, got %d", len(users[0].Groups))
-	}
-
-	// Verify that group's organization ID is set correctly
-	if users[0].Groups[0].OrganizationID != org.ID {
-		t.Errorf("expected group organization_id %d, got %d", org.ID, users[0].Groups[0].OrganizationID)
+		t.Errorf("expected 0 organizations for user with no memberships, got %d", len(orgs))
 	}
 }
 

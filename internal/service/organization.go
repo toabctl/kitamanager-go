@@ -12,14 +12,13 @@ import (
 
 // OrganizationService handles business logic for organization operations
 type OrganizationService struct {
-	store      store.OrganizationStorer
-	groupStore store.GroupStorer
-	userStore  store.UserStorer
+	store     store.OrganizationStorer
+	userStore store.UserStorer
 }
 
 // NewOrganizationService creates a new organization service
-func NewOrganizationService(store store.OrganizationStorer, groupStore store.GroupStorer, userStore store.UserStorer) *OrganizationService {
-	return &OrganizationService{store: store, groupStore: groupStore, userStore: userStore}
+func NewOrganizationService(store store.OrganizationStorer, userStore store.UserStorer) *OrganizationService {
+	return &OrganizationService{store: store, userStore: userStore}
 }
 
 // ListForUser returns a paginated list of organizations the user has access to.
@@ -36,7 +35,7 @@ func (s *OrganizationService) ListForUser(ctx context.Context, userID uint, sear
 		return s.List(ctx, search, limit, offset)
 	}
 
-	// Regular users only see organizations they belong to via group membership
+	// Regular users only see organizations they belong to via user_organizations
 	orgs, err := s.userStore.GetUserOrganizations(ctx, userID)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to fetch user organizations")
@@ -90,7 +89,7 @@ func (s *OrganizationService) GetByID(ctx context.Context, id uint) (*models.Org
 	return &resp, nil
 }
 
-// Create creates a new organization with a default group (transactional)
+// Create creates a new organization with a default section (transactional)
 func (s *OrganizationService) Create(ctx context.Context, req *models.OrganizationCreateRequest, createdBy string) (*models.OrganizationResponse, error) {
 	name, err := validateRequiredName(req.Name)
 	if err != nil {
@@ -113,14 +112,6 @@ func (s *OrganizationService) Create(ctx context.Context, req *models.Organizati
 		CreatedBy: createdBy,
 	}
 
-	// Create default group for the organization
-	defaultGroup := &models.Group{
-		Name:      "Members",
-		IsDefault: true,
-		Active:    true,
-		CreatedBy: createdBy,
-	}
-
 	// Create default section for the organization
 	defaultSection := &models.Section{
 		Name:      sectionName,
@@ -128,8 +119,8 @@ func (s *OrganizationService) Create(ctx context.Context, req *models.Organizati
 		CreatedBy: createdBy,
 	}
 
-	// Create organization, default group, and default section in a single transaction
-	if err := s.store.CreateWithDefaults(ctx, org, defaultGroup, defaultSection); err != nil {
+	// Create organization and default section in a single transaction
+	if err := s.store.CreateWithDefaultSection(ctx, org, defaultSection); err != nil {
 		return nil, apperror.InternalWrap(err, "failed to create organization")
 	}
 

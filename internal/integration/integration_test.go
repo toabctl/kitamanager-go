@@ -99,20 +99,18 @@ func setupRouter() *gin.Engine {
 	// Setup stores
 	orgStore := store.NewOrganizationStore(testDB)
 	userStore := store.NewUserStore(testDB)
-	groupStore := store.NewGroupStore(testDB)
+	userOrgStore := store.NewUserOrganizationStore(testDB)
 	employeeStore := store.NewEmployeeStore(testDB)
 	childStore := store.NewChildStore(testDB)
-	userGroupStore := store.NewUserGroupStore(testDB)
 	fundingStore := store.NewGovernmentFundingStore(testDB)
 
 	// Setup services
-	orgService := service.NewOrganizationService(orgStore, groupStore, userStore)
-	userService := service.NewUserService(userStore, groupStore, userGroupStore)
-	groupService := service.NewGroupService(groupStore)
+	orgService := service.NewOrganizationService(orgStore, userStore)
+	userService := service.NewUserService(userStore, userOrgStore)
 	payPlanStore := store.NewPayPlanStore(testDB)
 	sectionStore := store.NewSectionStore(testDB)
 	transactor := store.NewTransactor(testDB)
-	userGroupService := service.NewUserGroupService(userGroupStore, userStore, groupStore, transactor)
+	userOrgService := service.NewUserOrganizationService(userOrgStore, userStore, transactor)
 	employeeService := service.NewEmployeeService(employeeStore, payPlanStore, sectionStore, transactor)
 	childService := service.NewChildService(childStore, orgStore, fundingStore, sectionStore, transactor)
 
@@ -122,8 +120,7 @@ func setupRouter() *gin.Engine {
 
 	// Setup handlers
 	orgHandler := handlers.NewOrganizationHandler(orgService, auditService)
-	userHandler := handlers.NewUserHandler(userService, userGroupService, auditService, nil)
-	groupHandler := handlers.NewGroupHandler(groupService, auditService)
+	userHandler := handlers.NewUserHandler(userService, userOrgService, auditService, nil)
 	employeeHandler := handlers.NewEmployeeHandler(employeeService, auditService)
 	childHandler := handlers.NewChildHandler(childService, auditService)
 
@@ -145,11 +142,6 @@ func setupRouter() *gin.Engine {
 		// Org-scoped routes
 		orgScoped := api.Group("/organizations/:orgId")
 		{
-			// Groups
-			orgScoped.GET("/groups", groupHandler.List)
-			orgScoped.POST("/groups", groupHandler.Create)
-			orgScoped.GET("/groups/:groupId", groupHandler.Get)
-
 			// Employees
 			orgScoped.GET("/employees", employeeHandler.List)
 			orgScoped.POST("/employees", employeeHandler.Create)
@@ -184,8 +176,7 @@ func cleanupDatabase() {
 		"employee_contracts",
 		"employees",
 		"sections",
-		"user_groups",
-		"groups",
+		"user_organizations",
 		"users",
 		"organizations",
 	}
@@ -415,51 +406,6 @@ func TestChildWithContracts(t *testing.T) {
 	parseResponse(t, childResp, &child)
 	if child.FirstName != "Emma" {
 		t.Errorf("expected first name 'Emma', got '%s'", child.FirstName)
-	}
-}
-
-func TestGroupOperations(t *testing.T) {
-	cleanupBetweenTests()
-
-	// Create organization first
-	orgResp := performRequest("POST", "/api/v1/organizations", map[string]interface{}{
-		"name":                 "Group Test Org",
-		"active":               true,
-		"state":                "berlin",
-		"default_section_name": "Default",
-	})
-	if orgResp.Code != http.StatusCreated {
-		t.Fatalf("failed to create organization: %d: %s", orgResp.Code, orgResp.Body.String())
-	}
-	var org models.Organization
-	parseResponse(t, orgResp, &org)
-
-	// Create group (using org-scoped route)
-	groupResp := performRequest("POST", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), map[string]interface{}{
-		"name":   "Test Group",
-		"active": true,
-	})
-	if groupResp.Code != http.StatusCreated {
-		t.Fatalf("expected status 201, got %d: %s", groupResp.Code, groupResp.Body.String())
-	}
-
-	var group models.Group
-	parseResponse(t, groupResp, &group)
-	if group.Name != "Test Group" {
-		t.Errorf("expected name 'Test Group', got '%s'", group.Name)
-	}
-
-	// List groups (org-scoped)
-	// Should have 2 groups: default "Members" group + the one we created
-	listResp := performRequest("GET", fmt.Sprintf("/api/v1/organizations/%d/groups", org.ID), nil)
-	if listResp.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", listResp.Code)
-	}
-
-	var groupsResp PaginatedResponse[models.Group]
-	parseResponse(t, listResp, &groupsResp)
-	if len(groupsResp.Data) != 2 {
-		t.Errorf("expected 2 groups (default + created), got %d", len(groupsResp.Data))
 	}
 }
 

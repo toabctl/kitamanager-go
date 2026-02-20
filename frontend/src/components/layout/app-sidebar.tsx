@@ -22,12 +22,14 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/stores/ui-store';
+import { useCurrentRole, hasMinimumRole, type EffectiveRole } from '@/hooks/use-current-role';
 import { OrgSelector } from './org-selector';
 
 interface NavChild {
   name: string;
   href: string;
   exact?: boolean;
+  minRole?: EffectiveRole;
 }
 
 interface NavItem {
@@ -35,41 +37,52 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   requiresOrg?: boolean;
+  minRole?: EffectiveRole;
   children?: NavChild[];
 }
 
 const navigation: NavItem[] = [
-  { name: 'nav.organizations', href: '/organizations', icon: Building2, requiresOrg: false },
+  {
+    name: 'nav.organizations',
+    href: '/organizations',
+    icon: Building2,
+    requiresOrg: false,
+    minRole: 'superadmin',
+  },
   {
     name: 'nav.governmentFundings',
     href: '/government-funding-rates',
     icon: Landmark,
     requiresOrg: false,
+    minRole: 'superadmin',
   },
 ];
 
 const orgNavigation: NavItem[] = [
-  { name: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard, minRole: 'member' },
   {
     name: 'nav.employees',
     href: '/employees',
     icon: Users,
-    children: [{ name: 'nav.payPlans', href: '/payplans' }],
+    minRole: 'manager',
+    children: [{ name: 'nav.payPlans', href: '/payplans', minRole: 'admin' }],
   },
   {
     name: 'nav.children',
     href: '/children',
     icon: Baby,
+    minRole: 'member',
     children: [
-      { name: 'nav.attendance', href: '/attendance' },
-      { name: 'nav.governmentFundingBills', href: '/government-funding-bills' },
+      { name: 'nav.attendance', href: '/attendance', minRole: 'member' },
+      { name: 'nav.governmentFundingBills', href: '/government-funding-bills', minRole: 'admin' },
     ],
   },
-  { name: 'nav.sections', href: '/sections', icon: LayoutGrid },
+  { name: 'nav.sections', href: '/sections', icon: LayoutGrid, minRole: 'manager' },
   {
     name: 'nav.statistics',
     href: '/statistics',
     icon: BarChart3,
+    minRole: 'admin',
     children: [
       { name: 'nav.statisticsOverview', href: '/statistics', exact: true },
       { name: 'nav.statisticsFinancials', href: '/statistics/financials' },
@@ -79,15 +92,13 @@ const orgNavigation: NavItem[] = [
       { name: 'nav.statisticsBudget', href: '/statistics/budget' },
     ],
   },
-  { name: 'nav.budgetItems', href: '/budget-items', icon: Wallet },
+  { name: 'nav.budgetItems', href: '/budget-items', icon: Wallet, minRole: 'admin' },
   {
     name: 'nav.admin',
     href: '/users',
     icon: Settings,
-    children: [
-      { name: 'nav.users', href: '/users' },
-      { name: 'nav.groups', href: '/groups' },
-    ],
+    minRole: 'admin',
+    children: [{ name: 'nav.users', href: '/users' }],
   },
 ];
 
@@ -101,7 +112,22 @@ export function AppSidebar() {
     sidebarMobileOpen,
     setMobileSidebarOpen,
   } = useUiStore();
+  const currentRole = useCurrentRole();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const filteredNavigation = navigation.filter(
+    (item) => !item.minRole || hasMinimumRole(currentRole, item.minRole)
+  );
+
+  const filteredOrgNavigation = orgNavigation
+    .filter((item) => !item.minRole || hasMinimumRole(currentRole, item.minRole))
+    .map((item) => {
+      if (!item.children) return item;
+      const filteredChildren = item.children.filter(
+        (child) => !child.minRole || hasMinimumRole(currentRole, child.minRole)
+      );
+      return { ...item, children: filteredChildren };
+    });
 
   const isActive = (href: string) => {
     return pathname.startsWith(href);
@@ -139,8 +165,8 @@ export function AppSidebar() {
 
   // Auto-expand parent when a child route is active
   useEffect(() => {
-    for (const item of orgNavigation) {
-      if (item.children && isAnyChildActive(item)) {
+    for (const item of filteredOrgNavigation) {
+      if (item.children && item.children.length > 0 && isAnyChildActive(item)) {
         setExpandedItems((prev) => {
           if (prev.has(item.name)) return prev;
           const next = new Set(prev);
@@ -184,7 +210,7 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
@@ -216,7 +242,7 @@ export function AppSidebar() {
         {/* Organization-scoped navigation */}
         {selectedOrganizationId && (
           <ul className="mt-4 space-y-1">
-            {orgNavigation.map((item) => {
+            {filteredOrgNavigation.map((item) => {
               const Icon = item.icon;
               const href = getOrgHref(item.href);
               const hasChildren = item.children && item.children.length > 0;

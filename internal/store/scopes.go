@@ -34,7 +34,7 @@ func PeriodActiveOn(fromCol, toCol string, date time.Time) func(*gorm.DB) *gorm.
 
 // NameSearch returns a GORM scope filtering records by a single column (e.g., name, email).
 // The search term is matched case-insensitively using LOWER()+LIKE.
-// The tablePrefix should be the table name (e.g., "sections", "groups").
+// The tablePrefix should be the table name (e.g., "sections", "users").
 func NameSearch(tablePrefix, column, search string) func(*gorm.DB) *gorm.DB {
 	mustBeIdentifier(tablePrefix)
 	mustBeIdentifier(column)

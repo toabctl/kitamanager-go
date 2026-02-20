@@ -41,7 +41,7 @@ func (s *OrganizationStore) FindAll(ctx context.Context, search string, limit, o
 
 func (s *OrganizationStore) FindByID(ctx context.Context, id uint) (*models.Organization, error) {
 	var organization models.Organization
-	if err := DBFromContext(ctx, s.db).Preload("Groups").First(&organization, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).First(&organization, id).Error; err != nil {
 		return nil, WrapNotFound(err)
 	}
 	return &organization, nil
@@ -51,13 +51,9 @@ func (s *OrganizationStore) Create(ctx context.Context, organization *models.Org
 	return DBFromContext(ctx, s.db).Create(organization).Error
 }
 
-func (s *OrganizationStore) CreateWithDefaults(ctx context.Context, org *models.Organization, defaultGroup *models.Group, defaultSection *models.Section) error {
+func (s *OrganizationStore) CreateWithDefaultSection(ctx context.Context, org *models.Organization, defaultSection *models.Section) error {
 	return DBFromContext(ctx, s.db).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(org).Error; err != nil {
-			return err
-		}
-		defaultGroup.OrganizationID = org.ID
-		if err := tx.Create(defaultGroup).Error; err != nil {
 			return err
 		}
 		defaultSection.OrganizationID = org.ID

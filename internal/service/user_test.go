@@ -331,195 +331,19 @@ func TestUserService_Delete(t *testing.T) {
 	}
 }
 
-func TestUserService_AddToGroup(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	group := createTestGroup(t, db, "Test Group")
-
-	err := svc.AddToGroup(ctx, user.ID, group.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-}
-
-func TestUserService_AddToGroup_UserNotFound(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	group := createTestGroup(t, db, "Test Group")
-
-	err := svc.AddToGroup(ctx, 999, group.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var appErr *apperror.AppError
-	if !errors.As(err, &appErr) {
-		t.Fatalf("expected AppError, got %T", err)
-	}
-	if !errors.Is(err, apperror.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
-func TestUserService_AddToGroup_GroupNotFound(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-
-	err := svc.AddToGroup(ctx, user.ID, 999)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var appErr *apperror.AppError
-	if !errors.As(err, &appErr) {
-		t.Fatalf("expected AppError, got %T", err)
-	}
-	if !errors.Is(err, apperror.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
-func TestUserService_RemoveFromGroup(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	group := createTestGroup(t, db, "Test Group")
-
-	// First add user to group
-	_ = svc.AddToGroup(ctx, user.ID, group.ID)
-
-	// Then remove
-	err := svc.RemoveFromGroup(ctx, user.ID, group.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-}
-
-func TestUserService_AddToOrganization(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	org := createTestOrganization(t, db, "Test Org")
-	// Create default group
-	createTestGroupWithOrgAndDefault(t, db, "Members", org.ID, true)
-
-	err := svc.AddToOrganization(ctx, user.ID, org.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-}
-
-func TestUserService_AddToOrganization_UserNotFound(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	org := createTestOrganization(t, db, "Test Org")
-	createTestGroupWithOrgAndDefault(t, db, "Members", org.ID, true)
-
-	err := svc.AddToOrganization(ctx, 999, org.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var appErr *apperror.AppError
-	if !errors.As(err, &appErr) {
-		t.Fatalf("expected AppError, got %T", err)
-	}
-	if !errors.Is(err, apperror.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
-func TestUserService_AddToOrganization_NoDefaultGroup(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	org := createTestOrganization(t, db, "Test Org")
-	// No default group created
-
-	err := svc.AddToOrganization(ctx, user.ID, org.ID)
-	if err == nil {
-		t.Fatal("expected error for org without default group, got nil")
-	}
-
-	var appErr *apperror.AppError
-	if !errors.As(err, &appErr) {
-		t.Fatalf("expected AppError, got %T", err)
-	}
-	if !errors.Is(err, apperror.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
-func TestUserService_RemoveFromOrganization(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	org := createTestOrganization(t, db, "Test Org")
-	group := createTestGroupWithOrgAndDefault(t, db, "Members", org.ID, true)
-
-	// Add user to group first
-	_ = svc.AddToGroup(ctx, user.ID, group.ID)
-
-	// Remove from organization
-	err := svc.RemoveFromOrganization(ctx, user.ID, org.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-}
-
-func TestUserService_RemoveFromOrganization_UserNotFound(t *testing.T) {
-	db := setupTestDB(t)
-	svc := createUserService(db)
-	ctx := context.Background()
-
-	org := createTestOrganization(t, db, "Test Org")
-
-	err := svc.RemoveFromOrganization(ctx, 999, org.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var appErr *apperror.AppError
-	if !errors.As(err, &appErr) {
-		t.Fatalf("expected AppError, got %T", err)
-	}
-	if !errors.Is(err, apperror.ErrNotFound) {
-		t.Errorf("expected ErrNotFound, got %v", err)
-	}
-}
-
 func TestUserService_ListByOrganization(t *testing.T) {
 	db := setupTestDB(t)
 	svc := createUserService(db)
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db, "Test Org")
-	group := createTestGroupWithOrgAndDefault(t, db, "Members", org.ID, true)
 
 	user1 := createTestUser(t, db, "User 1", "user1@example.com", "password")
 	user2 := createTestUser(t, db, "User 2", "user2@example.com", "password")
 	createTestUser(t, db, "User 3", "user3@example.com", "password") // Not in org
 
-	_ = svc.AddToGroup(ctx, user1.ID, group.ID)
-	_ = svc.AddToGroup(ctx, user2.ID, group.ID)
+	createTestUserOrganization(t, db, user1.ID, org.ID, models.RoleMember)
+	createTestUserOrganization(t, db, user2.ID, org.ID, models.RoleAdmin)
 
 	users, total, err := svc.ListByOrganization(ctx, org.ID, "", 10, 0)
 	if err != nil {

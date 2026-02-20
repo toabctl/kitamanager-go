@@ -28,7 +28,6 @@ export {
   type ChildWithContractFormData,
 } from './child';
 export { sectionSchema, type SectionFormData } from './section';
-export { groupSchema, type GroupFormData } from './group';
 export {
   payPlanSchema,
   payPlanPeriodSchema,

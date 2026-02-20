@@ -44,8 +44,7 @@ var truncateTables = []string{
 	"employee_contracts",
 	"employees",
 	"sections",
-	"user_groups",
-	"groups",
+	"user_organizations",
 	"users",
 	"organizations",
 }
@@ -152,68 +151,20 @@ func CreateTestUser(t *testing.T, db *gorm.DB, name, email, password string) *mo
 	return user
 }
 
-// CreateTestGroup creates a group for testing. It creates a default organization for the group.
-func CreateTestGroup(t *testing.T, db *gorm.DB, name string) *models.Group {
+// CreateTestUserOrganization creates a user-organization membership for testing.
+func CreateTestUserOrganization(t *testing.T, db *gorm.DB, userID, orgID uint, role models.Role) *models.UserOrganization {
 	t.Helper()
 
-	org := CreateTestOrganization(t, db, name+" Org")
-
-	group := &models.Group{
-		Name:           name,
-		OrganizationID: org.ID,
-		Active:         true,
-	}
-	if err := db.Create(group).Error; err != nil {
-		t.Fatalf("failed to create test group: %v", err)
-	}
-	return group
-}
-
-// CreateTestGroupWithOrg creates a group for testing with a specific organization.
-func CreateTestGroupWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint) *models.Group {
-	t.Helper()
-
-	group := &models.Group{
-		Name:           name,
+	uo := &models.UserOrganization{
+		UserID:         userID,
 		OrganizationID: orgID,
-		Active:         true,
+		Role:           role,
+		CreatedBy:      "test@example.com",
 	}
-	if err := db.Create(group).Error; err != nil {
-		t.Fatalf("failed to create test group: %v", err)
+	if err := db.Create(uo).Error; err != nil {
+		t.Fatalf("failed to create test user organization: %v", err)
 	}
-	return group
-}
-
-// CreateTestGroupWithOrgAndDefault creates a group with specific organization and default flag.
-func CreateTestGroupWithOrgAndDefault(t *testing.T, db *gorm.DB, name string, orgID uint, isDefault bool) *models.Group {
-	t.Helper()
-
-	group := &models.Group{
-		Name:           name,
-		OrganizationID: orgID,
-		IsDefault:      isDefault,
-		Active:         true,
-	}
-	if err := db.Create(group).Error; err != nil {
-		t.Fatalf("failed to create test group: %v", err)
-	}
-	return group
-}
-
-// CreateTestUserGroup creates a user-group relationship for testing.
-func CreateTestUserGroup(t *testing.T, db *gorm.DB, userID, groupID uint, role models.Role) *models.UserGroup {
-	t.Helper()
-
-	ug := &models.UserGroup{
-		UserID:    userID,
-		GroupID:   groupID,
-		Role:      role,
-		CreatedBy: "test@example.com",
-	}
-	if err := db.Create(ug).Error; err != nil {
-		t.Fatalf("failed to create test user group: %v", err)
-	}
-	return ug
+	return uo
 }
 
 // CreateTestSection creates a section for testing.

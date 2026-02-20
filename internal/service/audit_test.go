@@ -183,13 +183,13 @@ func TestAuditService_LogSuperAdminChange(t *testing.T) {
 	})
 }
 
-func TestAuditService_LogUserAddToGroup(t *testing.T) {
+func TestAuditService_LogUserAddToOrg(t *testing.T) {
 	db := setupTestDB(t)
 	auditStore := store.NewAuditStore(db)
 	svc := NewAuditService(auditStore)
 	ctx := context.Background()
 
-	svc.LogUserAddToGroup(1, 5, 10, "admin", "127.0.0.1")
+	svc.LogUserAddToOrg(1, 5, 10, "admin", "127.0.0.1")
 	svc.Shutdown()
 
 	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
@@ -201,32 +201,32 @@ func TestAuditService_LogUserAddToGroup(t *testing.T) {
 	}
 
 	log := logs[0]
-	if log.Action != models.AuditActionUserAddToGroup {
-		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserAddToGroup)
+	if log.Action != models.AuditActionUserAddToOrg {
+		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserAddToOrg)
 	}
-	if log.ResourceType != "user_group" {
-		t.Errorf("ResourceType = %v, want user_group", log.ResourceType)
+	if log.ResourceType != "user_organization" {
+		t.Errorf("ResourceType = %v, want user_organization", log.ResourceType)
 	}
 
 	var details map[string]interface{}
 	if err := json.Unmarshal([]byte(log.Details), &details); err != nil {
 		t.Fatalf("failed to unmarshal details: %v", err)
 	}
-	if details["group_id"].(float64) != 10 {
-		t.Errorf("details[group_id] = %v, want 10", details["group_id"])
+	if details["organization_id"].(float64) != 10 {
+		t.Errorf("details[organization_id] = %v, want 10", details["organization_id"])
 	}
 	if details["role"] != "admin" {
 		t.Errorf("details[role] = %v, want admin", details["role"])
 	}
 }
 
-func TestAuditService_LogUserRemoveFromGroup(t *testing.T) {
+func TestAuditService_LogUserRemoveFromOrg(t *testing.T) {
 	db := setupTestDB(t)
 	auditStore := store.NewAuditStore(db)
 	svc := NewAuditService(auditStore)
 	ctx := context.Background()
 
-	svc.LogUserRemoveFromGroup(1, 5, 10, "127.0.0.1")
+	svc.LogUserRemoveFromOrg(1, 5, 10, "127.0.0.1")
 	svc.Shutdown()
 
 	logs, total, err := store.NewAuditStore(db).FindAll(ctx, 100, 0)
@@ -238,19 +238,19 @@ func TestAuditService_LogUserRemoveFromGroup(t *testing.T) {
 	}
 
 	log := logs[0]
-	if log.Action != models.AuditActionUserRemoveFromGroup {
-		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserRemoveFromGroup)
+	if log.Action != models.AuditActionUserRemoveFromOrg {
+		t.Errorf("Action = %v, want %v", log.Action, models.AuditActionUserRemoveFromOrg)
 	}
-	if log.ResourceType != "user_group" {
-		t.Errorf("ResourceType = %v, want user_group", log.ResourceType)
+	if log.ResourceType != "user_organization" {
+		t.Errorf("ResourceType = %v, want user_organization", log.ResourceType)
 	}
 
 	var details map[string]interface{}
 	if err := json.Unmarshal([]byte(log.Details), &details); err != nil {
 		t.Fatalf("failed to unmarshal details: %v", err)
 	}
-	if details["group_id"].(float64) != 10 {
-		t.Errorf("details[group_id] = %v, want 10", details["group_id"])
+	if details["organization_id"].(float64) != 10 {
+		t.Errorf("details[organization_id] = %v, want 10", details["organization_id"])
 	}
 }
 
@@ -697,8 +697,8 @@ func TestAuditService_NilSafety(t *testing.T) {
 		svc.LogLogin(1, "test@example.com", "127.0.0.1", "Agent")
 		svc.LogLoginFailed("test@example.com", "127.0.0.1", "Agent", "reason")
 		svc.LogSuperAdminChange(1, 2, "test@example.com", true, "127.0.0.1")
-		svc.LogUserAddToGroup(1, 2, 3, "admin", "127.0.0.1")
-		svc.LogUserRemoveFromGroup(1, 2, 3, "127.0.0.1")
+		svc.LogUserAddToOrg(1, 2, 3, "admin", "127.0.0.1")
+		svc.LogUserRemoveFromOrg(1, 2, 3, "127.0.0.1")
 		svc.LogRoleChange(1, 2, 3, "old", "new", "127.0.0.1")
 		svc.LogResourceDelete(1, "employee", 2, "name", "127.0.0.1")
 		svc.LogResourceCreate(1, "employee", 2, "name", "127.0.0.1")

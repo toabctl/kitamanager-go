@@ -30,28 +30,10 @@ func createTestUser(t *testing.T, db *gorm.DB, name, email, password string) *mo
 	return testutil.CreateTestUser(t, db, name, email, password)
 }
 
-// createTestGroup creates a group for testing.
-func createTestGroup(t *testing.T, db *gorm.DB, name string) *models.Group {
+// createTestUserOrganization creates a user-organization membership for testing.
+func createTestUserOrganization(t *testing.T, db *gorm.DB, userID, orgID uint, role models.Role) *models.UserOrganization {
 	t.Helper()
-	return testutil.CreateTestGroup(t, db, name)
-}
-
-// createTestGroupWithOrg creates a group for testing with a specific organization.
-func createTestGroupWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint) *models.Group {
-	t.Helper()
-	return testutil.CreateTestGroupWithOrg(t, db, name, orgID)
-}
-
-// createTestGroupWithOrgAndDefault creates a group with specific organization and default flag.
-func createTestGroupWithOrgAndDefault(t *testing.T, db *gorm.DB, name string, orgID uint, isDefault bool) *models.Group {
-	t.Helper()
-	return testutil.CreateTestGroupWithOrgAndDefault(t, db, name, orgID, isDefault)
-}
-
-// createTestUserGroup creates a user-group relationship for testing.
-func createTestUserGroup(t *testing.T, db *gorm.DB, userID, groupID uint, role models.Role) *models.UserGroup {
-	t.Helper()
-	return testutil.CreateTestUserGroup(t, db, userID, groupID, role)
+	return testutil.CreateTestUserOrganization(t, db, userID, orgID, role)
 }
 
 // createTestChild creates a child for testing.
@@ -127,29 +109,21 @@ func createTestSuperAdmin(t *testing.T, db *gorm.DB) *models.User {
 
 func createOrganizationService(db *gorm.DB) *OrganizationService {
 	orgStore := store.NewOrganizationStore(db)
-	groupStore := store.NewGroupStore(db)
 	userStore := store.NewUserStore(db)
-	return NewOrganizationService(orgStore, groupStore, userStore)
+	return NewOrganizationService(orgStore, userStore)
 }
 
 func createUserService(db *gorm.DB) *UserService {
 	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	userGroupStore := store.NewUserGroupStore(db)
-	return NewUserService(userStore, groupStore, userGroupStore)
+	userOrgStore := store.NewUserOrganizationStore(db)
+	return NewUserService(userStore, userOrgStore)
 }
 
-func createUserGroupService(db *gorm.DB) *UserGroupService {
-	userGroupStore := store.NewUserGroupStore(db)
+func createUserOrganizationService(db *gorm.DB) *UserOrganizationService {
+	userOrgStore := store.NewUserOrganizationStore(db)
 	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
 	transactor := store.NewTransactor(db)
-	return NewUserGroupService(userGroupStore, userStore, groupStore, transactor)
-}
-
-func createGroupService(db *gorm.DB) *GroupService {
-	groupStore := store.NewGroupStore(db)
-	return NewGroupService(groupStore)
+	return NewUserOrganizationService(userOrgStore, userStore, transactor)
 }
 
 func createChildService(db *gorm.DB) *ChildService {

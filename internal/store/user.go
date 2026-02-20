@@ -38,7 +38,7 @@ func (s *UserStore) FindAll(ctx context.Context, search string, limit, offset in
 		return nil, 0, err
 	}
 
-	if err := DBFromContext(ctx, s.db).Preload("Groups").Scopes(scope).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Scopes(scope).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -52,9 +52,8 @@ func (s *UserStore) FindByOrganization(ctx context.Context, orgID uint, search s
 
 	orgJoin := func(q *gorm.DB) *gorm.DB {
 		return q.Distinct().
-			Joins("JOIN user_groups ON user_groups.user_id = users.id").
-			Joins("JOIN groups ON groups.id = user_groups.group_id").
-			Where("groups.organization_id = ?", orgID)
+			Joins("JOIN user_organizations ON user_organizations.user_id = users.id").
+			Where("user_organizations.organization_id = ?", orgID)
 	}
 
 	if err := DBFromContext(ctx, s.db).Model(&models.User{}).Scopes(orgJoin, scope).Count(&total).Error; err != nil {
@@ -62,7 +61,6 @@ func (s *UserStore) FindByOrganization(ctx context.Context, orgID uint, search s
 	}
 
 	if err := DBFromContext(ctx, s.db).Scopes(orgJoin, scope).
-		Preload("Groups", "organization_id = ?", orgID).
 		Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
@@ -72,7 +70,7 @@ func (s *UserStore) FindByOrganization(ctx context.Context, orgID uint, search s
 
 func (s *UserStore) FindByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
-	if err := DBFromContext(ctx, s.db).Preload("Groups").Preload("Groups.Organization").First(&user, id).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).First(&user, id).Error; err != nil {
 		return nil, WrapNotFound(err)
 	}
 	return &user, nil
@@ -110,33 +108,11 @@ func (s *UserStore) Delete(ctx context.Context, id uint) error {
 	return DBFromContext(ctx, s.db).Delete(&models.User{}, id).Error
 }
 
-func (s *UserStore) AddToGroup(ctx context.Context, userID, groupID uint) error {
-	user := &models.User{ID: userID}
-	group := &models.Group{ID: groupID}
-	return DBFromContext(ctx, s.db).Model(user).Association("Groups").Append(group)
-}
-
-func (s *UserStore) RemoveFromGroup(ctx context.Context, userID, groupID uint) error {
-	user := &models.User{ID: userID}
-	group := &models.Group{ID: groupID}
-	return DBFromContext(ctx, s.db).Model(user).Association("Groups").Delete(group)
-}
-
-func (s *UserStore) RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID uint) error {
-	return DBFromContext(ctx, s.db).
-		Where("user_id = ? AND group_id IN (?)",
-			userID,
-			DBFromContext(ctx, s.db).Model(&models.Group{}).Select("id").Where("organization_id = ?", orgID),
-		).
-		Delete(&models.UserGroup{}).Error
-}
-
 func (s *UserStore) GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error) {
 	var orgs []models.Organization
 	err := DBFromContext(ctx, s.db).Distinct().
-		Joins("JOIN groups ON groups.organization_id = organizations.id").
-		Joins("JOIN user_groups ON user_groups.group_id = groups.id").
-		Where("user_groups.user_id = ?", userID).
+		Joins("JOIN user_organizations ON user_organizations.organization_id = organizations.id").
+		Where("user_organizations.user_id = ?", userID).
 		Find(&orgs).Error
 	return orgs, err
 }
@@ -148,16 +124,15 @@ func (s *UserStore) FindByOrganizations(ctx context.Context, orgIDs []uint, sear
 
 	orgsJoin := func(q *gorm.DB) *gorm.DB {
 		return q.Distinct().
-			Joins("JOIN user_groups ON user_groups.user_id = users.id").
-			Joins("JOIN groups ON groups.id = user_groups.group_id").
-			Where("groups.organization_id IN ?", orgIDs)
+			Joins("JOIN user_organizations ON user_organizations.user_id = users.id").
+			Where("user_organizations.organization_id IN ?", orgIDs)
 	}
 
 	if err := DBFromContext(ctx, s.db).Model(&models.User{}).Scopes(orgsJoin, scope).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := DBFromContext(ctx, s.db).Preload("Groups").Scopes(orgsJoin, scope).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	if err := DBFromContext(ctx, s.db).Scopes(orgsJoin, scope).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -166,13 +141,9 @@ func (s *UserStore) FindByOrganizations(ctx context.Context, orgIDs []uint, sear
 
 func (s *UserStore) SharesOrganization(ctx context.Context, userID1, userID2 uint) (bool, error) {
 	var count int64
-	err := DBFromContext(ctx, s.db).Model(&models.UserGroup{}).
-		Select("COUNT(DISTINCT ug1.user_id)").
-		Table("user_groups ug1").
-		Joins("JOIN groups g1 ON g1.id = ug1.group_id").
-		Joins("JOIN groups g2 ON g2.organization_id = g1.organization_id").
-		Joins("JOIN user_groups ug2 ON ug2.group_id = g2.id").
-		Where("ug1.user_id = ? AND ug2.user_id = ?", userID1, userID2).
+	err := DBFromContext(ctx, s.db).Table("user_organizations uo1").
+		Joins("JOIN user_organizations uo2 ON uo2.organization_id = uo1.organization_id").
+		Where("uo1.user_id = ? AND uo2.user_id = ?", userID1, userID2).
 		Count(&count).Error
 	if err != nil {
 		return false, err

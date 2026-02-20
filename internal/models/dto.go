@@ -46,4 +46,5 @@ type StatusResponse struct {
 // UserAddOrganizationRequest represents the request body for adding a user to an organization
 type UserAddOrganizationRequest struct {
 	OrganizationID uint `json:"organization_id" binding:"required" example:"1"`
+	Role           Role `json:"role" example:"member"`
 }

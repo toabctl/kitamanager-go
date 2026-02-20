@@ -14,20 +14,19 @@ import (
 
 // UserService handles business logic for user operations
 type UserService struct {
-	store          store.UserStorer
-	groupStore     store.GroupStorer
-	userGroupStore store.UserGroupStorer
+	store        store.UserStorer
+	userOrgStore store.UserOrganizationStorer
 }
 
 // NewUserService creates a new user service
-func NewUserService(store store.UserStorer, groupStore store.GroupStorer, userGroupStore store.UserGroupStorer) *UserService {
-	return &UserService{store: store, groupStore: groupStore, userGroupStore: userGroupStore}
+func NewUserService(store store.UserStorer, userOrgStore store.UserOrganizationStorer) *UserService {
+	return &UserService{store: store, userOrgStore: userOrgStore}
 }
 
 // List returns a paginated list of users visible to the requester.
 // Superadmins see all users; other users see only users who share at least one organization.
 func (s *UserService) List(ctx context.Context, requesterID uint, search string, limit, offset int) ([]models.UserResponse, int64, error) {
-	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, requesterID)
+	isSuperAdmin, err := s.userOrgStore.IsSuperAdmin(ctx, requesterID)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to check superadmin status")
 	}
@@ -40,7 +39,7 @@ func (s *UserService) List(ctx context.Context, requesterID uint, search string,
 		return toResponseList(users, (*models.User).ToResponse), total, nil
 	}
 
-	orgRoles, err := s.userGroupStore.GetUserOrganizationsWithRoles(ctx, requesterID)
+	orgRoles, err := s.userOrgStore.GetUserOrganizationsWithRoles(ctx, requesterID)
 	if err != nil {
 		return nil, 0, apperror.InternalWrap(err, "failed to fetch requester organizations")
 	}
@@ -200,7 +199,7 @@ func (s *UserService) verifyRequesterCanAccessUser(ctx context.Context, requeste
 		return nil
 	}
 
-	isSuperAdmin, err := s.userGroupStore.IsSuperAdmin(ctx, requesterID)
+	isSuperAdmin, err := s.userOrgStore.IsSuperAdmin(ctx, requesterID)
 	if err != nil {
 		return apperror.InternalWrap(err, "failed to check superadmin status")
 	}
@@ -214,64 +213,6 @@ func (s *UserService) verifyRequesterCanAccessUser(ctx context.Context, requeste
 	}
 	if !shares {
 		return apperror.NotFound("user")
-	}
-	return nil
-}
-
-// AddToGroup adds a user to a group
-func (s *UserService) AddToGroup(ctx context.Context, userID, groupID uint) error {
-	_, err := s.store.FindByID(ctx, userID)
-	if err != nil {
-		return classifyStoreError(err, "user")
-	}
-
-	_, err = s.groupStore.FindByID(ctx, groupID)
-	if err != nil {
-		return classifyStoreError(err, "group")
-	}
-
-	if err := s.store.AddToGroup(ctx, userID, groupID); err != nil {
-		return apperror.InternalWrap(err, "failed to add user to group")
-	}
-	return nil
-}
-
-// RemoveFromGroup removes a user from a group
-func (s *UserService) RemoveFromGroup(ctx context.Context, userID, groupID uint) error {
-	if err := s.store.RemoveFromGroup(ctx, userID, groupID); err != nil {
-		return apperror.InternalWrap(err, "failed to remove user from group")
-	}
-	return nil
-}
-
-// AddToOrganization adds a user to an organization by adding them to the default group
-func (s *UserService) AddToOrganization(ctx context.Context, userID, orgID uint) error {
-	_, err := s.store.FindByID(ctx, userID)
-	if err != nil {
-		return classifyStoreError(err, "user")
-	}
-
-	// Find the default group for the organization
-	defaultGroup, err := s.groupStore.FindDefaultGroup(ctx, orgID)
-	if err != nil {
-		return classifyStoreError(err, "organization or default group")
-	}
-
-	if err := s.store.AddToGroup(ctx, userID, defaultGroup.ID); err != nil {
-		return apperror.InternalWrap(err, "failed to add user to organization")
-	}
-	return nil
-}
-
-// RemoveFromOrganization removes a user from an organization by removing them from all groups in that org
-func (s *UserService) RemoveFromOrganization(ctx context.Context, userID, orgID uint) error {
-	_, err := s.store.FindByID(ctx, userID)
-	if err != nil {
-		return apperror.NotFound("user")
-	}
-
-	if err := s.store.RemoveFromAllGroupsInOrg(ctx, userID, orgID); err != nil {
-		return apperror.InternalWrap(err, "failed to remove user from organization")
 	}
 	return nil
 }

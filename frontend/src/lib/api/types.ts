@@ -3,7 +3,7 @@
 // Gender type
 export type Gender = 'male' | 'female' | 'diverse';
 
-// Roles for user-group membership
+// Roles for user-organization membership
 export type Role = 'admin' | 'manager' | 'member';
 
 // Auth
@@ -115,7 +115,6 @@ export interface Organization {
   created_by: string;
   updated_at: string;
   users?: User[];
-  groups?: Group[];
 }
 
 export interface OrganizationCreateRequest {
@@ -143,7 +142,6 @@ export interface User {
   created_by: string;
   updated_at: string;
   organizations?: Organization[];
-  groups?: Group[];
 }
 
 export interface UserCreateRequest {
@@ -156,29 +154,6 @@ export interface UserCreateRequest {
 export interface UserUpdateRequest {
   name?: string;
   email?: string;
-  active?: boolean;
-}
-
-// Group (each group belongs to exactly one organization)
-export interface Group {
-  id: number;
-  name: string;
-  organization_id: number;
-  organization?: Organization;
-  active: boolean;
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  users?: User[];
-}
-
-export interface GroupCreateRequest {
-  name: string;
-  active?: boolean;
-}
-
-export interface GroupUpdateRequest {
-  name?: string;
   active?: boolean;
 }
 
@@ -367,23 +342,22 @@ export interface DashboardStats {
   total_users: number;
 }
 
-// User-Group membership with role
-export interface UserGroupResponse {
+// User-Organization membership response
+export interface UserOrganizationResponse {
   user_id: number;
-  group_id: number;
+  organization_id: number;
   role: Role;
   created_at: string;
   created_by: string;
-  group?: Group;
+  organization?: Organization;
 }
 
 // User membership for memberships endpoint
 export interface UserMembership {
   user_id: number;
-  group_id: number;
+  organization_id: number;
   role: Role;
-  group: Group;
-  effective_org_role: Role;
+  organization?: Organization;
 }
 
 // Response for user memberships
@@ -391,14 +365,14 @@ export interface UserMembershipsResponse {
   memberships: UserMembership[];
 }
 
-// Request to add user to group
-export interface AddUserToGroupRequest {
-  group_id: number;
-  role: Role;
+// Request to add user to organization
+export interface UserAddOrganizationRequest {
+  organization_id: number;
+  role?: Role;
 }
 
-// Request to update user's role in a group
-export interface UpdateUserGroupRoleRequest {
+// Request to update user's role in an organization
+export interface UserOrganizationRoleUpdateRequest {
   role: Role;
 }
 

@@ -151,22 +151,10 @@ func createTestSuperAdmin(t *testing.T, db *gorm.DB) *models.User {
 	return user
 }
 
-// createTestGroup creates a group for testing.
-func createTestGroup(t *testing.T, db *gorm.DB, name string) *models.Group {
+// createTestUserOrganization creates a user-organization membership for testing.
+func createTestUserOrganization(t *testing.T, db *gorm.DB, userID, orgID uint, role models.Role) *models.UserOrganization {
 	t.Helper()
-	return testutil.CreateTestGroup(t, db, name)
-}
-
-// createTestGroupWithOrg creates a group for testing with a specific organization.
-func createTestGroupWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint) *models.Group {
-	t.Helper()
-	return testutil.CreateTestGroupWithOrg(t, db, name, orgID)
-}
-
-// createTestGroupWithOrgAndDefault creates a group for testing with a specific organization and default flag.
-func createTestGroupWithOrgAndDefault(t *testing.T, db *gorm.DB, name string, orgID uint, isDefault bool) *models.Group {
-	t.Helper()
-	return testutil.CreateTestGroupWithOrgAndDefault(t, db, name, orgID, isDefault)
+	return testutil.CreateTestUserOrganization(t, db, userID, orgID, role)
 }
 
 // ensureTestPayPlan finds or creates a pay plan for the given organization.
@@ -238,32 +226,23 @@ func createActiveEmployeeContract(t *testing.T, db *gorm.DB, employeeID uint) {
 // createUserService creates a user service for testing.
 func createUserService(db *gorm.DB) *service.UserService {
 	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
-	userGroupStore := store.NewUserGroupStore(db)
-	return service.NewUserService(userStore, groupStore, userGroupStore)
+	userOrgStore := store.NewUserOrganizationStore(db)
+	return service.NewUserService(userStore, userOrgStore)
 }
 
-// createUserGroupService creates a user group service for testing.
-func createUserGroupService(db *gorm.DB) *service.UserGroupService {
-	userGroupStore := store.NewUserGroupStore(db)
+// createUserOrganizationService creates a user organization service for testing.
+func createUserOrganizationService(db *gorm.DB) *service.UserOrganizationService {
+	userOrgStore := store.NewUserOrganizationStore(db)
 	userStore := store.NewUserStore(db)
-	groupStore := store.NewGroupStore(db)
 	transactor := store.NewTransactor(db)
-	return service.NewUserGroupService(userGroupStore, userStore, groupStore, transactor)
-}
-
-// createGroupService creates a group service for testing.
-func createGroupService(db *gorm.DB) *service.GroupService {
-	groupStore := store.NewGroupStore(db)
-	return service.NewGroupService(groupStore)
+	return service.NewUserOrganizationService(userOrgStore, userStore, transactor)
 }
 
 // createOrganizationService creates an organization service for testing.
 func createOrganizationService(db *gorm.DB) *service.OrganizationService {
 	orgStore := store.NewOrganizationStore(db)
-	groupStore := store.NewGroupStore(db)
 	userStore := store.NewUserStore(db)
-	return service.NewOrganizationService(orgStore, groupStore, userStore)
+	return service.NewOrganizationService(orgStore, userStore)
 }
 
 // createEmployeeService creates an employee service for testing.

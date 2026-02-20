@@ -407,45 +407,6 @@ export async function deleteUserViaApi(page: Page, userId: number): Promise<void
 }
 
 /**
- * Get groups via the API
- */
-export async function getGroupsViaApi(
-  page: Page,
-  orgId: number
-): Promise<Array<{ id: number; name: string }>> {
-  const data = await apiRequest<{ data: Array<{ id: number; name: string }> }>(
-    page,
-    'GET',
-    `/api/v1/organizations/${orgId}/groups?limit=100`
-  );
-  if (!Array.isArray(data.data)) {
-    throw new Error(`getGroupsViaApi: response missing data array for org ${orgId}`);
-  }
-  return data.data;
-}
-
-/**
- * Create a group via the API
- */
-export async function createGroupViaApi(
-  page: Page,
-  orgId: number,
-  data: { name: string; active?: boolean }
-): Promise<{ id: number; name: string }> {
-  return apiRequest(page, 'POST', `/api/v1/organizations/${orgId}/groups`, {
-    active: true,
-    ...data,
-  });
-}
-
-/**
- * Delete a group via the API
- */
-export async function deleteGroupViaApi(page: Page, orgId: number, groupId: number): Promise<void> {
-  await apiRequest(page, 'DELETE', `/api/v1/organizations/${orgId}/groups/${groupId}`);
-}
-
-/**
  * Create a government funding via the API
  */
 export async function createGovernmentFundingViaApi(

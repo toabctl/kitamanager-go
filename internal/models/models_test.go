@@ -336,9 +336,6 @@ func TestUser_ToResponse(t *testing.T) {
 		CreatedAt: now,
 		CreatedBy: "admin@example.com",
 		UpdatedAt: now,
-		Groups: []Group{
-			{ID: 1, Name: "Group 1"},
-		},
 	}
 
 	response := user.ToResponse()
@@ -363,51 +360,5 @@ func TestUser_ToResponse(t *testing.T) {
 	}
 	if response.CreatedBy != user.CreatedBy {
 		t.Errorf("ToResponse().CreatedBy = %q, want %q", response.CreatedBy, user.CreatedBy)
-	}
-	if len(response.Groups) != 1 {
-		t.Errorf("ToResponse().Groups length = %d, want 1", len(response.Groups))
-	}
-}
-
-func TestGroup_ToResponse(t *testing.T) {
-	now := time.Now()
-	org := &Organization{ID: 1, Name: "Test Org"}
-
-	group := Group{
-		ID:             1,
-		Name:           "Administrators",
-		OrganizationID: 1,
-		Organization:   org,
-		Active:         true,
-		CreatedAt:      now,
-		CreatedBy:      "admin@example.com",
-		UpdatedAt:      now,
-		Users: []User{
-			{ID: 1, Name: "User 1"},
-		},
-	}
-
-	response := group.ToResponse()
-
-	if response.ID != group.ID {
-		t.Errorf("ToResponse().ID = %d, want %d", response.ID, group.ID)
-	}
-	if response.Name != group.Name {
-		t.Errorf("ToResponse().Name = %q, want %q", response.Name, group.Name)
-	}
-	if response.OrganizationID != group.OrganizationID {
-		t.Errorf("ToResponse().OrganizationID = %d, want %d", response.OrganizationID, group.OrganizationID)
-	}
-	if response.Organization == nil || response.Organization.ID != org.ID {
-		t.Errorf("ToResponse().Organization = %v, want %v", response.Organization, org)
-	}
-	if response.Active != group.Active {
-		t.Errorf("ToResponse().Active = %v, want %v", response.Active, group.Active)
-	}
-	if response.CreatedBy != group.CreatedBy {
-		t.Errorf("ToResponse().CreatedBy = %q, want %q", response.CreatedBy, group.CreatedBy)
-	}
-	if len(response.Users) != 1 {
-		t.Errorf("ToResponse().Users length = %d, want 1", len(response.Users))
 	}
 }

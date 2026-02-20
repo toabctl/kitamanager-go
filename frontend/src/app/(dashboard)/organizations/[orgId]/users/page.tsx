@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Trash2 } from 'lucide-react';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/lib/hooks/use-toast';
 import { apiClient, getErrorMessage } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
-import type { User, UserCreateRequest, UserUpdateRequest } from '@/lib/api/types';
+import type { User, UserCreateRequest, UserUpdateRequest, UserMembership } from '@/lib/api/types';
 import { Pagination } from '@/components/ui/pagination';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +35,8 @@ import {
   type UserCreateFormData,
   type UserUpdateFormData,
 } from '@/lib/schemas';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { UserMembershipDialog } from '@/components/users/user-membership-dialog';
 
 const createDefaultValues: UserCreateFormData = {
   name: '',
@@ -57,6 +59,7 @@ export default function UsersPage() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const [page, setPage] = useState(1);
+  const [membershipUser, setMembershipUser] = useState<User | null>(null);
 
   const {
     register: registerCreate,
@@ -88,6 +91,29 @@ export default function UsersPage() {
   });
 
   const users = paginatedData?.data;
+
+  // Fetch memberships for all visible users
+  const membershipQueries = useQueries({
+    queries: (users ?? []).map((user) => ({
+      queryKey: queryKeys.users.memberships(user.id),
+      queryFn: () => apiClient.getUserMemberships(user.id),
+    })),
+  });
+
+  const membershipsByUserId = useMemo(() => {
+    const map = new Map<number, UserMembership | undefined>();
+    if (!users) return map;
+    users.forEach((user, i) => {
+      const data = membershipQueries[i]?.data;
+      if (data?.memberships) {
+        map.set(
+          user.id,
+          data.memberships.find((m) => m.organization_id === orgId)
+        );
+      }
+    });
+    return map;
+  }, [users, membershipQueries, orgId]);
 
   // Use separate dialog hooks for create (no edit item) and general dialogs
   const dialogs = useCrudDialogs<User, UserUpdateFormData>({
@@ -163,6 +189,19 @@ export default function UsersPage() {
           </Badge>
         ),
       },
+      {
+        key: 'role',
+        header: 'roles.role',
+        render: (user) => {
+          const membership = membershipsByUserId.get(user.id);
+          if (!membership) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return <Badge variant="outline">{t(`roles.${membership.role}`)}</Badge>;
+        },
+        className: 'hidden md:table-cell',
+        headerClassName: 'hidden md:table-cell',
+      },
     ];
 
     if (isSuperadmin) {
@@ -186,21 +225,39 @@ export default function UsersPage() {
     });
 
     return baseColumns;
-  }, [t, isSuperadmin, currentUser?.id, handleSuperadminToggle]);
+  }, [t, isSuperadmin, currentUser?.id, handleSuperadminToggle, membershipsByUserId]);
 
   const renderActions = (user: User) => (
     <>
-      <Button variant="ghost" size="icon" onClick={() => dialogs.handleEdit(user)}>
-        <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => dialogs.handleDelete(user)}
-        disabled={user.id === currentUser?.id}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" onClick={() => dialogs.handleEdit(user)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('common.edit')}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" onClick={() => setMembershipUser(user)}>
+            <Users className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('users.manageMemberships')}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => dialogs.handleDelete(user)}
+            disabled={user.id === currentUser?.id}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('common.delete')}</TooltipContent>
+      </Tooltip>
     </>
   );
 
@@ -318,6 +375,12 @@ export default function UsersPage() {
         }
         isLoading={mutations.deleteMutation.isPending}
         resourceName="users"
+      />
+
+      <UserMembershipDialog
+        user={membershipUser}
+        orgId={orgId}
+        onClose={() => setMembershipUser(null)}
       />
     </div>
   );

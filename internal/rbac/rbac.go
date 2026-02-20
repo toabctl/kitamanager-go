@@ -24,7 +24,6 @@ const (
 	ResourceEmployeeContracts      = "employee_contracts"
 	ResourceChildContracts         = "child_contracts"
 	ResourceUsers                  = "users"
-	ResourceGroups                 = "groups"
 	ResourceSections               = "sections"
 	ResourceFundings               = "fundings"
 	ResourcePayPlans               = "payplans"
@@ -49,7 +48,7 @@ const (
 // - Storing role -> permission mappings (e.g., "admin can create employees")
 // - Storing superadmin assignments (user -> superadmin role)
 //
-// Note: Regular user -> role assignments are stored in the database (UserGroup table),
+// Note: Regular user -> role assignments are stored in the database (UserOrganization table),
 // not in Casbin. See PermissionService for the complete authorization flow.
 type Enforcer struct {
 	*casbin.Enforcer
@@ -141,10 +140,6 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleSuperAdmin, "*", ResourceUsers, ActionRead},
 		{RoleSuperAdmin, "*", ResourceUsers, ActionUpdate},
 		{RoleSuperAdmin, "*", ResourceUsers, ActionDelete},
-		{RoleSuperAdmin, "*", ResourceGroups, ActionCreate},
-		{RoleSuperAdmin, "*", ResourceGroups, ActionRead},
-		{RoleSuperAdmin, "*", ResourceGroups, ActionUpdate},
-		{RoleSuperAdmin, "*", ResourceGroups, ActionDelete},
 		{RoleSuperAdmin, "*", ResourceSections, ActionCreate},
 		{RoleSuperAdmin, "*", ResourceSections, ActionRead},
 		{RoleSuperAdmin, "*", ResourceSections, ActionUpdate},
@@ -197,10 +192,6 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleAdmin, "*", ResourceUsers, ActionRead},
 		{RoleAdmin, "*", ResourceUsers, ActionUpdate},
 		{RoleAdmin, "*", ResourceUsers, ActionDelete},
-		{RoleAdmin, "*", ResourceGroups, ActionCreate},
-		{RoleAdmin, "*", ResourceGroups, ActionRead},
-		{RoleAdmin, "*", ResourceGroups, ActionUpdate},
-		{RoleAdmin, "*", ResourceGroups, ActionDelete},
 		{RoleAdmin, "*", ResourceSections, ActionCreate},
 		{RoleAdmin, "*", ResourceSections, ActionRead},
 		{RoleAdmin, "*", ResourceSections, ActionUpdate},
@@ -245,7 +236,6 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleManager, "*", ResourceChildContracts, ActionUpdate},
 		{RoleManager, "*", ResourceChildContracts, ActionDelete},
 		{RoleManager, "*", ResourceUsers, ActionRead},
-		{RoleManager, "*", ResourceGroups, ActionRead},
 		{RoleManager, "*", ResourceSections, ActionRead},
 		{RoleManager, "*", ResourcePayPlans, ActionRead},
 		{RoleManager, "*", ResourceChildAttendance, ActionCreate},
@@ -327,7 +317,7 @@ func (e *Enforcer) CheckPermission(userID uint, orgID uint, resource, action str
 }
 
 // AssignRole assigns a role to a user in Casbin (for testing).
-// Production code assigns roles via the UserGroup database table.
+// Production code assigns roles via the UserOrganization database table.
 func (e *Enforcer) AssignRole(userID uint, role string, orgID uint) error {
 	sub := fmt.Sprintf("user:%d", userID)
 	dom := fmt.Sprintf("org:%d", orgID)
@@ -340,7 +330,7 @@ func (e *Enforcer) AssignRole(userID uint, role string, orgID uint) error {
 }
 
 // RemoveRole removes a role from a user in Casbin (for testing).
-// Production code removes roles via the UserGroup database table.
+// Production code removes roles via the UserOrganization database table.
 func (e *Enforcer) RemoveRole(userID uint, role string, orgID uint) error {
 	sub := fmt.Sprintf("user:%d", userID)
 	dom := fmt.Sprintf("org:%d", orgID)

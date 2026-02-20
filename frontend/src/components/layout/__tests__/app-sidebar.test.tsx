@@ -26,6 +26,16 @@ jest.mock('@/stores/ui-store', () => ({
   useUiStore: () => mockUiStore,
 }));
 
+jest.mock('@/stores/auth-store', () => ({
+  useAuthStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+    const state = {
+      user: { id: 1, is_superadmin: true },
+      orgRoleMap: new Map([[1, 'admin']]),
+    };
+    return selector ? selector(state) : state;
+  },
+}));
+
 jest.mock('../org-selector', () => ({
   OrgSelector: () => <div data-testid="org-selector">OrgSelector</div>,
 }));
@@ -61,7 +71,6 @@ describe('AppSidebar', () => {
     expect(screen.queryByText('nav.users')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.employees')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.children')).not.toBeInTheDocument();
-    expect(screen.queryByText('nav.groups')).not.toBeInTheDocument();
   });
 
   it('shows org-scoped navigation when org selected', () => {
@@ -83,9 +92,8 @@ describe('AppSidebar', () => {
     expect(screen.getByText('nav.admin')).toBeInTheDocument();
     // Pay Plans is nested under Employees (collapsed by default)
     expect(screen.queryByText('nav.payPlans')).not.toBeInTheDocument();
-    // Users and Groups are nested under Admin (collapsed by default)
+    // Users is nested under Admin (collapsed by default)
     expect(screen.queryByText('nav.users')).not.toBeInTheDocument();
-    expect(screen.queryByText('nav.groups')).not.toBeInTheDocument();
   });
 
   it('renders collapse/toggle sidebar button', () => {

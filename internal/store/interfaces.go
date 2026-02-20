@@ -7,21 +7,18 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/models"
 )
 
-// UserGroupStorer defines the interface for user-group relationship operations
-type UserGroupStorer interface {
-	AddUserToGroup(ctx context.Context, userID, groupID uint, role models.Role, createdBy string) (*models.UserGroup, error)
-	UpdateRole(ctx context.Context, userID, groupID uint, role models.Role) error
-	RemoveUserFromGroup(ctx context.Context, userID, groupID uint) error
-	FindByUserAndGroup(ctx context.Context, userID, groupID uint) (*models.UserGroup, error)
-	FindByUser(ctx context.Context, userID uint) ([]models.UserGroup, error)
-	FindByGroup(ctx context.Context, groupID uint) ([]models.UserGroup, error)
-	FindByUserAndOrg(ctx context.Context, userID, orgID uint) ([]models.UserGroup, error)
-	GetEffectiveRoleInOrg(ctx context.Context, userID, orgID uint) (models.Role, error)
-	GetUserOrganizationsWithRoles(ctx context.Context, userID uint) (map[uint]models.Role, error)
+// UserOrganizationStorer defines the interface for user-organization relationship operations
+type UserOrganizationStorer interface {
+	AddUserToOrg(ctx context.Context, userID, orgID uint, role models.Role, createdBy string) (*models.UserOrganization, error)
+	UpdateRole(ctx context.Context, userID, orgID uint, role models.Role) error
 	RemoveUserFromOrg(ctx context.Context, userID, orgID uint) error
+	FindByUserAndOrg(ctx context.Context, userID, orgID uint) (*models.UserOrganization, error)
+	FindByUser(ctx context.Context, userID uint) ([]models.UserOrganization, error)
+	GetRoleInOrg(ctx context.Context, userID, orgID uint) (models.Role, error)
+	GetUserOrganizationsWithRoles(ctx context.Context, userID uint) (map[uint]models.Role, error)
 	SetSuperAdmin(ctx context.Context, userID uint, isSuperAdmin bool) error
 	IsSuperAdmin(ctx context.Context, userID uint) (bool, error)
-	Exists(ctx context.Context, userID, groupID uint) (bool, error)
+	Exists(ctx context.Context, userID, orgID uint) (bool, error)
 }
 
 // UserStorer defines the interface for user storage operations
@@ -35,9 +32,6 @@ type UserStorer interface {
 	Update(ctx context.Context, user *models.User) error
 	UpdateLastLogin(ctx context.Context, userID uint) error
 	Delete(ctx context.Context, id uint) error
-	AddToGroup(ctx context.Context, userID, groupID uint) error
-	RemoveFromGroup(ctx context.Context, userID, groupID uint) error
-	RemoveFromAllGroupsInOrg(ctx context.Context, userID, orgID uint) error
 	GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error)
 	FindByOrganizations(ctx context.Context, orgIDs []uint, search string, limit, offset int) ([]models.User, int64, error)
 	SharesOrganization(ctx context.Context, userID1, userID2 uint) (bool, error)
@@ -48,19 +42,8 @@ type OrganizationStorer interface {
 	FindAll(ctx context.Context, search string, limit, offset int) ([]models.Organization, int64, error)
 	FindByID(ctx context.Context, id uint) (*models.Organization, error)
 	Create(ctx context.Context, org *models.Organization) error
-	CreateWithDefaults(ctx context.Context, org *models.Organization, defaultGroup *models.Group, defaultSection *models.Section) error
+	CreateWithDefaultSection(ctx context.Context, org *models.Organization, defaultSection *models.Section) error
 	Update(ctx context.Context, org *models.Organization) error
-	Delete(ctx context.Context, id uint) error
-}
-
-// GroupStorer defines the interface for group storage operations
-type GroupStorer interface {
-	FindAll(ctx context.Context, limit, offset int) ([]models.Group, int64, error)
-	FindByID(ctx context.Context, id uint) (*models.Group, error)
-	FindByOrganizationPaginated(ctx context.Context, orgID uint, search string, limit, offset int) ([]models.Group, int64, error)
-	FindDefaultGroup(ctx context.Context, orgID uint) (*models.Group, error)
-	Create(ctx context.Context, group *models.Group) error
-	Update(ctx context.Context, group *models.Group) error
 	Delete(ctx context.Context, id uint) error
 }
 
@@ -245,10 +228,9 @@ type GovernmentFundingBillPeriodStorer interface {
 var (
 	_ UserStorer                        = (*UserStore)(nil)
 	_ OrganizationStorer                = (*OrganizationStore)(nil)
-	_ GroupStorer                       = (*GroupStore)(nil)
 	_ EmployeeStorer                    = (*EmployeeStore)(nil)
 	_ ChildStorer                       = (*ChildStore)(nil)
-	_ UserGroupStorer                   = (*UserGroupStore)(nil)
+	_ UserOrganizationStorer            = (*UserOrganizationStore)(nil)
 	_ GovernmentFundingStorer           = (*GovernmentFundingStore)(nil)
 	_ GovernmentFundingBillPeriodStorer = (*GovernmentFundingBillPeriodStore)(nil)
 	_ SectionStorer                     = (*SectionStore)(nil)

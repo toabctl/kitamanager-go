@@ -27,22 +27,10 @@ func createTestUser(t *testing.T, db *gorm.DB, name, email string) *models.User 
 	return testutil.CreateTestUser(t, db, name, email, "hashedpassword")
 }
 
-// createTestGroup creates a group for testing.
-func createTestGroup(t *testing.T, db *gorm.DB, name string) *models.Group {
+// createTestUserOrganization creates a user-organization membership for testing.
+func createTestUserOrganization(t *testing.T, db *gorm.DB, userID, orgID uint, role models.Role) *models.UserOrganization {
 	t.Helper()
-	return testutil.CreateTestGroup(t, db, name)
-}
-
-// createTestGroupWithOrg creates a group for testing with a specific organization.
-func createTestGroupWithOrg(t *testing.T, db *gorm.DB, name string, orgID uint) *models.Group {
-	t.Helper()
-	return testutil.CreateTestGroupWithOrg(t, db, name, orgID)
-}
-
-// createTestUserGroup creates a user-group relationship for testing.
-func createTestUserGroup(t *testing.T, db *gorm.DB, userID, groupID uint, role models.Role) *models.UserGroup {
-	t.Helper()
-	return testutil.CreateTestUserGroup(t, db, userID, groupID, role)
+	return testutil.CreateTestUserOrganization(t, db, userID, orgID, role)
 }
 
 // createTestPayPlan creates a pay plan for the given organization.

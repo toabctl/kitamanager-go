@@ -32,7 +32,7 @@ import (
 
 // @title KitaManager API
 // @version 1.0
-// @description REST API for managing Users, Groups, and Organizations with RBAC support
+// @description REST API for managing Users and Organizations with RBAC support
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -52,12 +52,11 @@ import (
 // appStores holds all data access layer instances.
 type appStores struct {
 	user                        *store.UserStore
-	group                       *store.GroupStore
 	section                     *store.SectionStore
 	organization                *store.OrganizationStore
 	employee                    *store.EmployeeStore
 	child                       *store.ChildStore
-	userGroup                   *store.UserGroupStore
+	userOrganization            *store.UserOrganizationStore
 	governmentFunding           *store.GovernmentFundingStore
 	payPlan                     *store.PayPlanStore
 	childAttendance             *store.ChildAttendanceStore
@@ -72,9 +71,8 @@ type appServices struct {
 	audit                 *service.AuditService
 	auth                  *service.AuthService
 	user                  *service.UserService
-	userGroup             *service.UserGroupService
+	userOrganization      *service.UserOrganizationService
 	organization          *service.OrganizationService
-	group                 *service.GroupService
 	section               *service.SectionService
 	employee              *service.EmployeeService
 	child                 *service.ChildService
@@ -137,7 +135,7 @@ func main() {
 	seedData(cfg, db, stores, enforcer)
 
 	transactor := store.NewTransactor(db)
-	permissionService := rbac.NewPermissionService(stores.userGroup, enforcer)
+	permissionService := rbac.NewPermissionService(stores.userOrganization, enforcer)
 
 	svc := initServices(stores, cfg, transactor)
 	mw := initMiddleware(stores, cfg, permissionService)
@@ -175,12 +173,11 @@ func main() {
 func initStores(db *gorm.DB) *appStores {
 	return &appStores{
 		user:                        store.NewUserStore(db),
-		group:                       store.NewGroupStore(db),
 		section:                     store.NewSectionStore(db),
 		organization:                store.NewOrganizationStore(db),
 		employee:                    store.NewEmployeeStore(db),
 		child:                       store.NewChildStore(db),
-		userGroup:                   store.NewUserGroupStore(db),
+		userOrganization:            store.NewUserOrganizationStore(db),
 		governmentFunding:           store.NewGovernmentFundingStore(db),
 		payPlan:                     store.NewPayPlanStore(db),
 		childAttendance:             store.NewChildAttendanceStore(db),
@@ -192,7 +189,7 @@ func initStores(db *gorm.DB) *appStores {
 }
 
 func seedData(cfg *config.Config, db *gorm.DB, s *appStores, enforcer *rbac.Enforcer) {
-	if err := seed.SeedAdmin(cfg, s.user, s.userGroup, enforcer); err != nil {
+	if err := seed.SeedAdmin(cfg, s.user, s.userOrganization, enforcer); err != nil {
 		slog.Error("Failed to seed admin user", "error", err)
 		os.Exit(1)
 	}
@@ -213,10 +210,9 @@ func initServices(s *appStores, cfg *config.Config, transactor store.Transactor)
 	return &appServices{
 		audit:                 auditService,
 		auth:                  service.NewAuthService(s.user, s.token, cfg.JWTSecret, auditService),
-		user:                  service.NewUserService(s.user, s.group, s.userGroup),
-		userGroup:             service.NewUserGroupService(s.userGroup, s.user, s.group, transactor),
-		organization:          service.NewOrganizationService(s.organization, s.group, s.user),
-		group:                 service.NewGroupService(s.group),
+		user:                  service.NewUserService(s.user, s.userOrganization),
+		userOrganization:      service.NewUserOrganizationService(s.userOrganization, s.user, transactor),
+		organization:          service.NewOrganizationService(s.organization, s.user),
 		section:               service.NewSectionService(s.section, transactor),
 		employee:              service.NewEmployeeService(s.employee, s.payPlan, s.section, transactor),
 		child:                 service.NewChildService(s.child, s.organization, s.governmentFunding, s.section, transactor),
@@ -299,8 +295,7 @@ func setupRouter(cfg *config.Config, db *gorm.DB, s *appStores, svc *appServices
 	// API routes
 	routes.Setup(r, routes.Deps{
 		Auth:                  handlers.NewAuthHandler(svc.auth, cfg.SecureCookies),
-		User:                  handlers.NewUserHandler(svc.user, svc.userGroup, svc.audit, s.token),
-		Group:                 handlers.NewGroupHandler(svc.group, svc.audit),
+		User:                  handlers.NewUserHandler(svc.user, svc.userOrganization, svc.audit, s.token),
 		Section:               handlers.NewSectionHandler(svc.section, svc.audit),
 		Organization:          handlers.NewOrganizationHandler(svc.organization, svc.audit),
 		Employee:              handlers.NewEmployeeHandler(svc.employee, svc.audit),

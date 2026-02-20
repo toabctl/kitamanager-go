@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -13,7 +14,11 @@ export function createTestQueryClient() {
 
 export function renderWithProviders(ui: React.ReactNode) {
   const queryClient = createTestQueryClient();
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>{ui}</TooltipProvider>
+    </QueryClientProvider>
+  );
 }
 
 export function createHookWrapper(queryClient?: QueryClient) {

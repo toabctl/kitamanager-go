@@ -81,11 +81,11 @@ func setupTestEnforcer(t *testing.T) *rbac.Enforcer {
 
 func setupTestPermissionService(t *testing.T, db *gorm.DB, enforcer *rbac.Enforcer) *rbac.PermissionService {
 	t.Helper()
-	userGroupStore := store.NewUserGroupStore(db)
-	return rbac.NewPermissionService(userGroupStore, enforcer)
+	userOrgStore := store.NewUserOrganizationStore(db)
+	return rbac.NewPermissionService(userOrgStore, enforcer)
 }
 
-// assignRole adds a user to a group with a role in the database
+// assignRole adds a user to an organization with a role in the database
 func assignRole(t *testing.T, db *gorm.DB, userID uint, role models.Role, orgID uint) {
 	t.Helper()
 
@@ -99,15 +99,6 @@ func assignRole(t *testing.T, db *gorm.DB, userID uint, role models.Role, orgID 
 		}
 	}
 
-	// Create group if it doesn't exist
-	var group models.Group
-	if err := db.Where("organization_id = ?", orgID).First(&group).Error; err != nil {
-		group = models.Group{Name: "Test Group", OrganizationID: orgID, Active: true}
-		if err := db.Create(&group).Error; err != nil {
-			t.Fatalf("failed to create group: %v", err)
-		}
-	}
-
 	// Create user if it doesn't exist
 	var user models.User
 	if err := db.First(&user, userID).Error; err != nil {
@@ -118,15 +109,15 @@ func assignRole(t *testing.T, db *gorm.DB, userID uint, role models.Role, orgID 
 		}
 	}
 
-	// Add user to group with role
-	userGroup := models.UserGroup{
-		UserID:    userID,
-		GroupID:   group.ID,
-		Role:      role,
-		CreatedBy: "test",
+	// Add user to organization with role
+	userOrg := models.UserOrganization{
+		UserID:         userID,
+		OrganizationID: orgID,
+		Role:           role,
+		CreatedBy:      "test",
 	}
-	if err := db.Create(&userGroup).Error; err != nil {
-		t.Fatalf("failed to add user to group: %v", err)
+	if err := db.Create(&userOrg).Error; err != nil {
+		t.Fatalf("failed to add user to organization: %v", err)
 	}
 }
 

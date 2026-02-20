@@ -13,9 +13,9 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - SERVER_PORT=8080
       # Admin seeding - set these to create initial admin user
-      - SEED_ADMIN_EMAIL=admin@example.com
+      - SEED_ADMIN_EMAIL=superadmin@example.com
       - SEED_ADMIN_PASSWORD=admin
-      - SEED_ADMIN_NAME=admin
+      - SEED_ADMIN_NAME=Super Admin
       - SEED_RBAC_POLICIES=true
       # CORS configuration
       - CORS_ALLOW_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:8080

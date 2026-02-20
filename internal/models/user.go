@@ -15,8 +15,7 @@ type User struct {
 	CreatedAt    time.Time   `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	CreatedBy    string      `gorm:"size:255" json:"created_by" example:"admin@example.com"`
 	UpdatedAt    time.Time   `json:"updated_at" example:"2024-01-15T10:30:00Z"`
-	Groups       []Group     `gorm:"many2many:user_groups;" json:"groups,omitempty"`
-	UserGroups   []UserGroup `gorm:"foreignKey:UserID" json:"-"`
+	UserOrganizations []UserOrganization `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // UserCreateRequest represents the request body for creating a user
@@ -45,7 +44,6 @@ type UserResponse struct {
 	CreatedAt    time.Time  `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	CreatedBy    string     `json:"created_by" example:"admin@example.com"`
 	UpdatedAt    time.Time  `json:"updated_at" example:"2024-01-15T10:30:00Z"`
-	Groups       []Group    `json:"groups,omitempty"`
 }
 
 func (u *User) ToResponse() UserResponse {
@@ -59,7 +57,6 @@ func (u *User) ToResponse() UserResponse {
 		CreatedAt:    u.CreatedAt,
 		CreatedBy:    u.CreatedBy,
 		UpdatedAt:    u.UpdatedAt,
-		Groups:       u.Groups,
 	}
 }
 

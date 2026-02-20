@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,18 +11,18 @@ import (
 )
 
 type UserHandler struct {
-	service          *service.UserService
-	userGroupService *service.UserGroupService
-	auditService     *service.AuditService
-	tokenStore       store.TokenStorer
+	service        *service.UserService
+	userOrgService *service.UserOrganizationService
+	auditService   *service.AuditService
+	tokenStore     store.TokenStorer
 }
 
-func NewUserHandler(service *service.UserService, userGroupService *service.UserGroupService, auditService *service.AuditService, tokenStore store.TokenStorer) *UserHandler {
+func NewUserHandler(service *service.UserService, userOrgService *service.UserOrganizationService, auditService *service.AuditService, tokenStore store.TokenStorer) *UserHandler {
 	return &UserHandler{
-		service:          service,
-		userGroupService: userGroupService,
-		auditService:     auditService,
-		tokenStore:       tokenStore,
+		service:        service,
+		userOrgService: userOrgService,
+		auditService:   auditService,
+		tokenStore:     tokenStore,
 	}
 }
 
@@ -63,7 +62,7 @@ func (h *UserHandler) List(c *gin.Context) {
 
 // ListByOrganization godoc
 // @Summary List users in an organization
-// @Description Get a paginated list of users who are members of any group in the specified organization
+// @Description Get a paginated list of users who are members of the specified organization
 // @Tags users,organizations
 // @Accept json
 // @Produce json
@@ -239,144 +238,149 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// AddToGroup godoc
-// @Summary Add user to group with role
-// @Description Add a user to a group with a specific role (admin, manager, or member)
+// AddToOrganization godoc
+// @Summary Add user to organization
+// @Description Add a user to an organization with a specific role
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param userId path int true "User ID"
-// @Param request body models.UserGroupAddRequest true "Group ID and role"
-// @Success 201 {object} models.UserGroupResponse
+// @Param request body models.UserAddOrganizationRequest true "Organization ID and role"
+// @Success 201 {object} models.UserOrganizationResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/users/{userId}/groups [post]
-func (h *UserHandler) AddToGroup(c *gin.Context) {
+// @Router /api/v1/users/{userId}/organizations [post]
+func (h *UserHandler) AddToOrganization(c *gin.Context) {
 	userID, err := parseID(c, "userId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	req, ok := bindJSON[models.UserGroupAddRequest](c)
+	req, ok := bindJSON[models.UserAddOrganizationRequest](c)
 	if !ok {
 		return
 	}
 
-	resp, err := h.userGroupService.AddUserToGroup(c.Request.Context(), userID, req.GroupID, req.Role, getCreatedBy(c), getUserID(c))
+	role := req.Role
+	if role == "" {
+		role = models.RoleMember
+	}
+
+	resp, err := h.userOrgService.AddUserToOrganization(c.Request.Context(), userID, req.OrganizationID, role, getCreatedBy(c), getUserID(c))
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	h.auditService.LogUserAddToGroup(getUserID(c), userID, req.GroupID, string(req.Role), c.ClientIP())
+	h.auditService.LogUserAddToOrg(getUserID(c), userID, req.OrganizationID, string(role), c.ClientIP())
 
 	c.JSON(http.StatusCreated, resp)
 }
 
-// UpdateGroupRole godoc
-// @Summary Update user's role in group
-// @Description Update a user's role within a specific group
+// UpdateOrganizationRole godoc
+// @Summary Update user's role in organization
+// @Description Update a user's role within a specific organization
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param userId path int true "User ID"
-// @Param groupId path int true "Group ID"
-// @Param request body models.UserGroupRoleUpdateRequest true "New role"
-// @Success 200 {object} models.UserGroupResponse
+// @Param orgId path int true "Organization ID"
+// @Param request body models.UserOrganizationRoleUpdateRequest true "New role"
+// @Success 200 {object} models.UserOrganizationResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/users/{userId}/groups/{groupId} [put]
-func (h *UserHandler) UpdateGroupRole(c *gin.Context) {
+// @Router /api/v1/users/{userId}/organizations/{orgId} [put]
+func (h *UserHandler) UpdateOrganizationRole(c *gin.Context) {
 	userID, err := parseID(c, "userId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	groupID, err := parseID(c, "groupId")
+	orgID, err := parseID(c, "orgId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	req, ok := bindJSON[models.UserGroupRoleUpdateRequest](c)
+	req, ok := bindJSON[models.UserOrganizationRoleUpdateRequest](c)
 	if !ok {
 		return
 	}
 
 	// Get current role before update for audit log
-	memberships, _ := h.userGroupService.GetUserMemberships(c.Request.Context(), userID)
+	memberships, _ := h.userOrgService.GetUserMemberships(c.Request.Context(), userID)
 	oldRole := ""
 	if memberships != nil {
 		for _, m := range memberships.Memberships {
-			if m.GroupID == groupID {
+			if m.OrganizationID == orgID {
 				oldRole = string(m.Role)
 				break
 			}
 		}
 	}
 
-	resp, err := h.userGroupService.UpdateUserGroupRole(c.Request.Context(), userID, groupID, req.Role, getUserID(c))
+	resp, err := h.userOrgService.UpdateUserOrganizationRole(c.Request.Context(), userID, orgID, req.Role, getUserID(c))
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	h.auditService.LogRoleChange(getUserID(c), userID, groupID, oldRole, string(req.Role), c.ClientIP())
+	h.auditService.LogRoleChange(getUserID(c), userID, orgID, oldRole, string(req.Role), c.ClientIP())
 
 	c.JSON(http.StatusOK, resp)
 }
 
-// RemoveFromGroup godoc
-// @Summary Remove user from group
-// @Description Remove a user from a group
+// RemoveFromOrganization godoc
+// @Summary Remove user from organization
+// @Description Remove a user from an organization
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param userId path int true "User ID"
-// @Param groupId path int true "Group ID"
+// @Param orgId path int true "Organization ID"
 // @Success 204 "No Content"
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/users/{userId}/groups/{groupId} [delete]
-func (h *UserHandler) RemoveFromGroup(c *gin.Context) {
+// @Router /api/v1/users/{userId}/organizations/{orgId} [delete]
+func (h *UserHandler) RemoveFromOrganization(c *gin.Context) {
 	userID, err := parseID(c, "userId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	groupID, err := parseID(c, "groupId")
+	orgID, err := parseID(c, "orgId")
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
-	if err := h.userGroupService.RemoveUserFromGroup(c.Request.Context(), userID, groupID, getUserID(c)); err != nil {
+	if err := h.userOrgService.RemoveUserFromOrganization(c.Request.Context(), userID, orgID, getUserID(c)); err != nil {
 		respondError(c, err)
 		return
 	}
 
-	h.auditService.LogUserRemoveFromGroup(getUserID(c), userID, groupID, c.ClientIP())
+	h.auditService.LogUserRemoveFromOrg(getUserID(c), userID, orgID, c.ClientIP())
 
 	c.Status(http.StatusNoContent)
 }
 
 // GetMemberships godoc
-// @Summary Get user's group memberships
-// @Description Get all group memberships for a user with effective organization roles
+// @Summary Get user's organization memberships
+// @Description Get all organization memberships for a user with their roles
 // @Tags users
 // @Accept json
 // @Produce json
@@ -395,7 +399,7 @@ func (h *UserHandler) GetMemberships(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.userGroupService.GetUserMemberships(c.Request.Context(), userID)
+	resp, err := h.userOrgService.GetUserMemberships(c.Request.Context(), userID)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -440,7 +444,7 @@ func (h *UserHandler) SetSuperAdmin(c *gin.Context) {
 		return
 	}
 
-	if err := h.userGroupService.SetSuperAdmin(c.Request.Context(), userID, req.IsSuperAdmin); err != nil {
+	if err := h.userOrgService.SetSuperAdmin(c.Request.Context(), userID, req.IsSuperAdmin); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -456,82 +460,6 @@ func (h *UserHandler) SetSuperAdmin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
-}
-
-// AddToOrganization godoc
-// @Summary Add user to organization
-// @Description Add a user to an organization's default group with member role
-// @Tags users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param userId path int true "User ID"
-// @Param request body models.UserAddOrganizationRequest true "Organization ID"
-// @Success 201 {object} models.UserGroupResponse
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 404 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/users/{userId}/organizations [post]
-func (h *UserHandler) AddToOrganization(c *gin.Context) {
-	userID, err := parseID(c, "userId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	req, ok := bindJSON[models.UserAddOrganizationRequest](c)
-	if !ok {
-		return
-	}
-
-	resp, err := h.userGroupService.AddUserToOrganization(c.Request.Context(), userID, req.OrganizationID, getCreatedBy(c), getUserID(c))
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	h.auditService.LogUserAddToGroup(getUserID(c), userID, resp.GroupID, string(resp.Role), c.ClientIP())
-
-	c.JSON(http.StatusCreated, resp)
-}
-
-// RemoveFromOrganization godoc
-// @Summary Remove user from organization
-// @Description Remove a user from all groups in an organization
-// @Tags users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param userId path int true "User ID"
-// @Param orgId path int true "Organization ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 404 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /api/v1/users/{userId}/organizations/{orgId} [delete]
-func (h *UserHandler) RemoveFromOrganization(c *gin.Context) {
-	userID, err := parseID(c, "userId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	orgID, err := parseID(c, "orgId")
-	if err != nil {
-		respondError(c, err)
-		return
-	}
-
-	if err := h.userGroupService.RemoveUserFromOrganization(c.Request.Context(), userID, orgID, getUserID(c)); err != nil {
-		respondError(c, err)
-		return
-	}
-
-	auditDelete(c, h.auditService, "user_organization", userID, fmt.Sprintf("user %d from org %d", userID, orgID))
-
-	c.Status(http.StatusNoContent)
 }
 
 // ResetPassword godoc

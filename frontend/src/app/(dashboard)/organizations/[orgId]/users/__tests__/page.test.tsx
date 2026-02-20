@@ -10,6 +10,9 @@ jest.mock('@/lib/api/client', () => ({
     updateUser: jest.fn(),
     deleteUser: jest.fn(),
     setSuperAdmin: jest.fn(),
+    getUserMemberships: jest.fn().mockResolvedValue({ memberships: [] }),
+    updateUserOrganizationRole: jest.fn(),
+    removeUserFromOrganization: jest.fn(),
   },
   getErrorMessage: jest.fn((error, fallback) => fallback),
 }));

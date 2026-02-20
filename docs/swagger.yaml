@@ -1278,94 +1278,6 @@ definitions:
         maxLength: 255
         type: string
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.Group:
-    properties:
-      active:
-        example: true
-        type: boolean
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      created_by:
-        example: admin@example.com
-        type: string
-      id:
-        example: 1
-        type: integer
-      is_default:
-        example: false
-        type: boolean
-      name:
-        example: Administrators
-        type: string
-      organization:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
-      organization_id:
-        example: 1
-        type: integer
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      users:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.User'
-        type: array
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GroupCreateRequest:
-    properties:
-      active:
-        example: true
-        type: boolean
-      name:
-        example: Administrators
-        maxLength: 255
-        type: string
-    required:
-    - name
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GroupResponse:
-    properties:
-      active:
-        example: true
-        type: boolean
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      created_by:
-        example: admin@example.com
-        type: string
-      id:
-        example: 1
-        type: integer
-      is_default:
-        example: false
-        type: boolean
-      name:
-        example: Administrators
-        type: string
-      organization:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
-      organization_id:
-        example: 1
-        type: integer
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      users:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.User'
-        type: array
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.GroupUpdateRequest:
-    properties:
-      active:
-        example: false
-        type: boolean
-      name:
-        example: Administrators Updated
-        maxLength: 255
-        type: string
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.HealthResponse:
     properties:
       services:
@@ -1485,10 +1397,6 @@ definitions:
       created_by:
         example: admin@example.com
         type: string
-      groups:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
-        type: array
       id:
         example: 1
         type: integer
@@ -1735,27 +1643,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingResponse'
-        type: array
-      limit:
-        example: 20
-        type: integer
-      page:
-        example: 1
-        type: integer
-      total:
-        example: 100
-        type: integer
-      total_pages:
-        example: 5
-        type: integer
-    type: object
-  ? github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GroupResponse
-  : properties:
-      _links:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks'
-      data:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupResponse'
         type: array
       limit:
         example: 20
@@ -2222,45 +2109,15 @@ definitions:
         example: 40284
         type: integer
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.User:
-    properties:
-      active:
-        example: true
-        type: boolean
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      created_by:
-        example: admin@example.com
-        type: string
-      email:
-        example: john@example.com
-        type: string
-      groups:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
-        type: array
-      id:
-        example: 1
-        type: integer
-      is_superadmin:
-        example: false
-        type: boolean
-      last_login:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      name:
-        example: John Doe
-        type: string
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.UserAddOrganizationRequest:
     properties:
       organization_id:
         example: 1
         type: integer
+      role:
+        allOf:
+        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
+        example: member
     required:
     - organization_id
     type: object
@@ -2287,62 +2144,13 @@ definitions:
     - name
     - password
     type: object
-  github_com_eenemeene_kitamanager-go_internal_models.UserGroupAddRequest:
-    properties:
-      group_id:
-        example: 1
-        type: integer
-      role:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
-        example: member
-    required:
-    - group_id
-    - role
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.UserGroupResponse:
-    properties:
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      created_by:
-        example: admin@example.com
-        type: string
-      group:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
-      group_id:
-        example: 1
-        type: integer
-      role:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
-        example: member
-      user_id:
-        example: 1
-        type: integer
-    type: object
-  github_com_eenemeene_kitamanager-go_internal_models.UserGroupRoleUpdateRequest:
-    properties:
-      role:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
-        example: admin
-    required:
-    - role
-    type: object
   github_com_eenemeene_kitamanager-go_internal_models.UserMembership:
     properties:
-      effective_org_role:
-        allOf:
-        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
-        example: admin
-      group:
-        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
-      group_id:
-        example: 1
-        type: integer
       organization:
         $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+      organization_id:
+        example: 1
+        type: integer
       role:
         allOf:
         - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
@@ -2357,6 +2165,36 @@ definitions:
         items:
           $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserMembership'
         type: array
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.UserOrganizationResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      created_by:
+        example: admin@example.com
+        type: string
+      organization:
+        $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Organization'
+      organization_id:
+        example: 1
+        type: integer
+      role:
+        allOf:
+        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
+        example: member
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.UserOrganizationRoleUpdateRequest:
+    properties:
+      role:
+        allOf:
+        - $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Role'
+        example: admin
+    required:
+    - role
     type: object
   github_com_eenemeene_kitamanager-go_internal_models.UserPasswordChangeRequest:
     properties:
@@ -2396,10 +2234,6 @@ definitions:
       email:
         example: john@example.com
         type: string
-      groups:
-        items:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.Group'
-        type: array
       id:
         example: 1
         type: integer
@@ -2441,7 +2275,7 @@ info:
   contact:
     email: support@kitamanager.example.com
     name: API Support
-  description: REST API for managing Users, Groups, and Organizations with RBAC support
+  description: REST API for managing Users and Organizations with RBAC support
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -5693,230 +5527,6 @@ paths:
       summary: Get government funding bill period detail
       tags:
       - government-funding-bills
-  /api/v1/organizations/{orgId}/groups:
-    get:
-      consumes:
-      - application/json
-      description: Get a paginated list of groups within a specific organization
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: Search by name (case-insensitive)
-        in: query
-        name: search
-        type: string
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 20
-        description: Items per page
-        in: query
-        maximum: 100
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_GroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List groups in an organization
-      tags:
-      - groups
-    post:
-      consumes:
-      - application/json
-      description: Create a new group within an organization
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: Group data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new group
-      tags:
-      - groups
-  /api/v1/organizations/{orgId}/groups/{groupId}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a group by ID within an organization
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete a group
-      tags:
-      - groups
-    get:
-      consumes:
-      - application/json
-      description: Get a single group by its ID within an organization
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get group by ID
-      tags:
-      - groups
-    put:
-      consumes:
-      - application/json
-      description: Update an existing group by ID within an organization
-      parameters:
-      - description: Organization ID
-        in: path
-        name: orgId
-        required: true
-        type: integer
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: integer
-      - description: Group data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.GroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update a group
-      tags:
-      - groups
   /api/v1/organizations/{orgId}/pay-plans:
     get:
       consumes:
@@ -7160,8 +6770,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a paginated list of users who are members of any group in the
-        specified organization
+      description: Get a paginated list of users who are members of the specified
+        organization
       parameters:
       - description: Organization ID
         in: path
@@ -7442,157 +7052,11 @@ paths:
       summary: Update a user
       tags:
       - users
-  /api/v1/users/{userId}/groups:
-    post:
-      consumes:
-      - application/json
-      description: Add a user to a group with a specific role (admin, manager, or
-        member)
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Group ID and role
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserGroupAddRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserGroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Add user to group with role
-      tags:
-      - users
-  /api/v1/users/{userId}/groups/{groupId}:
-    delete:
-      consumes:
-      - application/json
-      description: Remove a user from a group
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Remove user from group
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update a user's role within a specific group
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Group ID
-        in: path
-        name: groupId
-        required: true
-        type: integer
-      - description: New role
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserGroupRoleUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserGroupResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update user's role in group
-      tags:
-      - users
   /api/v1/users/{userId}/memberships:
     get:
       consumes:
       - application/json
-      description: Get all group memberships for a user with effective organization
-        roles
+      description: Get all organization memberships for a user with their roles
       parameters:
       - description: User ID
         in: path
@@ -7624,21 +7088,21 @@ paths:
             $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get user's group memberships
+      summary: Get user's organization memberships
       tags:
       - users
   /api/v1/users/{userId}/organizations:
     post:
       consumes:
       - application/json
-      description: Add a user to an organization's default group with member role
+      description: Add a user to an organization with a specific role
       parameters:
       - description: User ID
         in: path
         name: userId
         required: true
         type: integer
-      - description: Organization ID
+      - description: Organization ID and role
         in: body
         name: request
         required: true
@@ -7650,13 +7114,17 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserGroupResponse'
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserOrganizationResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
         "404":
@@ -7676,7 +7144,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove a user from all groups in an organization
+      description: Remove a user from an organization
       parameters:
       - description: User ID
         in: path
@@ -7712,6 +7180,59 @@ paths:
       security:
       - BearerAuth: []
       summary: Remove user from organization
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's role within a specific organization
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserOrganizationRoleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.UserOrganizationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user's role in organization
       tags:
       - users
   /api/v1/users/{userId}/password:

@@ -6,6 +6,7 @@ export const queryKeys = {
   users: {
     all: () => ['users'] as const,
     list: (page: number) => ['users', page] as const,
+    memberships: (userId: number) => ['userMemberships', userId] as const,
   },
   employees: {
     all: (orgId: number) => ['employees', orgId] as const,

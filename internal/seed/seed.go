@@ -41,7 +41,7 @@ func randomGender() string {
 // SeedAdmin creates an initial admin user if SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are set.
 // If the user already exists, it will be skipped.
 // The user will be assigned the superadmin role (in database).
-func SeedAdmin(cfg *config.Config, userStore *store.UserStore, userGroupStore *store.UserGroupStore, enforcer *rbac.Enforcer) error {
+func SeedAdmin(cfg *config.Config, userStore *store.UserStore, userOrgStore *store.UserOrganizationStore, enforcer *rbac.Enforcer) error {
 	ctx := context.Background()
 	if cfg.SeedAdminEmail == "" || cfg.SeedAdminPassword == "" {
 		slog.Info("Admin seeding skipped: SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD not set")
@@ -55,7 +55,7 @@ func SeedAdmin(cfg *config.Config, userStore *store.UserStore, userGroupStore *s
 
 		// Ensure superadmin is set in database
 		if !existingUser.IsSuperAdmin {
-			if err := userGroupStore.SetSuperAdmin(ctx, existingUser.ID, true); err != nil {
+			if err := userOrgStore.SetSuperAdmin(ctx, existingUser.ID, true); err != nil {
 				slog.Warn("Failed to ensure superadmin status in database", "error", err)
 			} else {
 				slog.Info("Superadmin status set in database", "userId", existingUser.ID)
@@ -206,18 +206,6 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 	}
 	slog.Info("Created test organization", "name", org.Name, "id", org.ID, "state", org.State)
 
-	// Create default group for the organization
-	group := &models.Group{
-		Name:           "Mitarbeiter",
-		OrganizationID: org.ID,
-		IsDefault:      true,
-		Active:         true,
-		CreatedBy:      "seed",
-	}
-	if err := db.Create(group).Error; err != nil {
-		return err
-	}
-
 	// Create default section for the organization
 	defaultSection := &models.Section{
 		Name:           "Unassigned",
@@ -267,9 +255,9 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 		name         string
 		email        string
 		isSuperAdmin bool
-		groupRole    models.Role
+		orgRole      models.Role
 	}{
-		{"Super Admin", "superadmin@example.com", true, ""},
+		{"Super Admin", "superadmin@example.com", true, models.Role("")},
 		{"Admin", "admin@example.com", false, models.RoleAdmin},
 		{"Manager", "manager@example.com", false, models.RoleManager},
 	}
@@ -290,15 +278,15 @@ func SeedTestData(cfg *config.Config, db *gorm.DB, fundingStore *store.Governmen
 				return err
 			}
 		}
-		if tu.groupRole != "" {
-			userGroup := &models.UserGroup{
-				UserID:    user.ID,
-				GroupID:   group.ID,
-				Role:      tu.groupRole,
-				CreatedBy: "seed",
+		if tu.orgRole != "" {
+			userOrg := &models.UserOrganization{
+				UserID:         user.ID,
+				OrganizationID: org.ID,
+				Role:           tu.orgRole,
+				CreatedBy:      "seed",
 			}
-			if err := db.Create(userGroup).Error; err != nil {
-				slog.Warn("Failed to add user to group (may already exist)", "email", tu.email, "error", err)
+			if err := db.Create(userOrg).Error; err != nil {
+				slog.Warn("Failed to add user to organization (may already exist)", "email", tu.email, "error", err)
 			}
 		}
 	}

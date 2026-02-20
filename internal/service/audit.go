@@ -140,49 +140,49 @@ func (s *AuditService) LogSuperAdminChange(actorID, targetUserID uint, targetEma
 	})
 }
 
-// LogUserAddToGroup logs adding a user to a group
-func (s *AuditService) LogUserAddToGroup(actorID, userID, groupID uint, role string, ipAddress string) {
+// LogUserAddToOrg logs adding a user to an organization
+func (s *AuditService) LogUserAddToOrg(actorID, userID, orgID uint, role string, ipAddress string) {
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
-		Action:       models.AuditActionUserAddToGroup,
-		ResourceType: "user_group",
+		Action:       models.AuditActionUserAddToOrg,
+		ResourceType: "user_organization",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
 		Details: mustMarshalJSON(map[string]any{
-			"group_id": groupID,
-			"role":     role,
+			"organization_id": orgID,
+			"role":            role,
 		}),
-		Success:      true,
+		Success: true,
 	})
 }
 
-// LogUserRemoveFromGroup logs removing a user from a group
-func (s *AuditService) LogUserRemoveFromGroup(actorID, userID, groupID uint, ipAddress string) {
+// LogUserRemoveFromOrg logs removing a user from an organization
+func (s *AuditService) LogUserRemoveFromOrg(actorID, userID, orgID uint, ipAddress string) {
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
-		Action:       models.AuditActionUserRemoveFromGroup,
-		ResourceType: "user_group",
+		Action:       models.AuditActionUserRemoveFromOrg,
+		ResourceType: "user_organization",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
-		Details:      mustMarshalJSON(map[string]any{"group_id": groupID}),
+		Details:      mustMarshalJSON(map[string]any{"organization_id": orgID}),
 		Success:      true,
 	})
 }
 
-// LogRoleChange logs a role change for a user in a group
-func (s *AuditService) LogRoleChange(actorID, userID, groupID uint, oldRole, newRole string, ipAddress string) {
+// LogRoleChange logs a role change for a user in an organization
+func (s *AuditService) LogRoleChange(actorID, userID, orgID uint, oldRole, newRole string, ipAddress string) {
 	s.log(&models.AuditLog{
 		UserID:       &actorID,
 		Action:       models.AuditActionRoleChange,
-		ResourceType: "user_group",
+		ResourceType: "user_organization",
 		ResourceID:   &userID,
 		IPAddress:    ipAddress,
 		Details: mustMarshalJSON(map[string]any{
-			"group_id": groupID,
-			"old_role": oldRole,
-			"new_role": newRole,
+			"organization_id": orgID,
+			"old_role":        oldRole,
+			"new_role":        newRole,
 		}),
-		Success:      true,
+		Success: true,
 	})
 }
 

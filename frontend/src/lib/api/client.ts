@@ -8,9 +8,6 @@ import type {
   User,
   UserCreateRequest,
   UserUpdateRequest,
-  Group,
-  GroupCreateRequest,
-  GroupUpdateRequest,
   Employee,
   EmployeeCreateRequest,
   EmployeeUpdateRequest,
@@ -31,7 +28,7 @@ import type {
   ChildAttendanceUpdateRequest,
   ChildAttendanceDailySummaryResponse,
   Role,
-  UserGroupResponse,
+  UserOrganizationResponse,
   UserMembershipsResponse,
   GovernmentFunding,
   GovernmentFundingCreateRequest,
@@ -302,26 +299,30 @@ class ApiClient {
   updateUser = this._users.update;
   deleteUser = this._users.delete;
 
-  // User-Group assignments with roles
-  async addUserToGroup(userId: number, groupId: number, role: Role): Promise<UserGroupResponse> {
-    const response = await this.client.post<UserGroupResponse>(`/users/${userId}/groups`, {
-      group_id: groupId,
-      role,
-    });
+  // User-Organization assignments with roles
+  async addUserToOrganization(
+    userId: number,
+    organizationId: number,
+    role?: Role
+  ): Promise<UserOrganizationResponse> {
+    const response = await this.client.post<UserOrganizationResponse>(
+      `/users/${userId}/organizations`,
+      { organization_id: organizationId, role }
+    );
     return response.data;
   }
 
-  async removeUserFromGroup(userId: number, groupId: number): Promise<void> {
-    await this.client.delete(`/users/${userId}/groups/${groupId}`);
+  async removeUserFromOrganization(userId: number, organizationId: number): Promise<void> {
+    await this.client.delete(`/users/${userId}/organizations/${organizationId}`);
   }
 
-  async updateUserGroupRole(
+  async updateUserOrganizationRole(
     userId: number,
-    groupId: number,
+    organizationId: number,
     role: Role
-  ): Promise<UserGroupResponse> {
-    const response = await this.client.put<UserGroupResponse>(
-      `/users/${userId}/groups/${groupId}`,
+  ): Promise<UserOrganizationResponse> {
+    const response = await this.client.put<UserOrganizationResponse>(
+      `/users/${userId}/organizations/${organizationId}`,
       { role }
     );
     return response.data;
@@ -338,23 +339,6 @@ class ApiClient {
     });
     return response.data;
   }
-
-  // User-Organization assignments
-  async addUserToOrganization(userId: number, organizationId: number): Promise<void> {
-    await this.client.post(`/users/${userId}/organizations`, { organization_id: organizationId });
-  }
-
-  async removeUserFromOrganization(userId: number, organizationId: number): Promise<void> {
-    await this.client.delete(`/users/${userId}/organizations/${organizationId}`);
-  }
-
-  // Groups (organization-scoped)
-  private _groups = this.orgScopedCrud<Group, GroupCreateRequest, GroupUpdateRequest>('groups');
-  getGroups = this._groups.list;
-  getGroup = this._groups.get;
-  createGroup = this._groups.create;
-  updateGroup = this._groups.update;
-  deleteGroup = this._groups.delete;
 
   // Organization users
   async getOrganizationUsers(

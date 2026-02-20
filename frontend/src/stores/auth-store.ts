@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { apiClient } from '@/lib/api/client';
-import type { User, LoginRequest } from '@/lib/api/types';
+import type { User, LoginRequest, Role, UserMembership } from '@/lib/api/types';
 import { getCookie } from '@/lib/utils';
 
 /**
@@ -18,6 +18,8 @@ interface AuthState {
   userLoaded: boolean;
   isAuthenticated: boolean;
   hasHydrated: boolean;
+  memberships: UserMembership[];
+  orgRoleMap: Map<number, Role>;
 
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -26,12 +28,24 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
 }
 
+function buildOrgRoleMap(memberships: UserMembership[]): Map<number, Role> {
+  const map = new Map<number, Role>();
+  for (const m of memberships) {
+    if (m.organization_id) {
+      map.set(m.organization_id, m.role);
+    }
+  }
+  return map;
+}
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   userLoading: false,
   userLoaded: false,
   isAuthenticated: false,
   hasHydrated: false,
+  memberships: [],
+  orgRoleMap: new Map(),
 
   setHasHydrated: (state: boolean) => {
     set({ hasHydrated: state });
@@ -47,6 +61,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const userData = await apiClient.getCurrentUser();
       set({ user: userData, userLoaded: true });
+
+      // Fetch memberships for role-based navigation
+      if (userData.id) {
+        try {
+          const { memberships } = await apiClient.getUserMemberships(userData.id);
+          set({ memberships, orgRoleMap: buildOrgRoleMap(memberships) });
+        } catch {
+          // Non-critical: navigation will show all items if memberships fail
+        }
+      }
     } catch {
       set({ userLoaded: true });
     }
@@ -65,6 +89,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       user: null,
       isAuthenticated: false,
       userLoaded: false,
+      memberships: [],
+      orgRoleMap: new Map(),
     });
   },
 
@@ -79,6 +105,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Try to get current user info - backend will use the cookie
       const userData = await apiClient.getCurrentUser();
       set({ user: userData, userLoaded: true, userLoading: false });
+
+      // Fetch memberships for role-based navigation
+      if (userData.id) {
+        try {
+          const { memberships } = await apiClient.getUserMemberships(userData.id);
+          set({ memberships, orgRoleMap: buildOrgRoleMap(memberships) });
+        } catch {
+          // Non-critical: navigation will show all items if memberships fail
+        }
+      }
     } catch {
       // Cookie may be expired or invalid
       set({
@@ -119,5 +155,7 @@ apiClient.setOnUnauthorized(() => {
     user: null,
     isAuthenticated: false,
     userLoaded: false,
+    memberships: [],
+    orgRoleMap: new Map(),
   });
 });
