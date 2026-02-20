@@ -184,16 +184,34 @@ func ParseFromReader(r io.Reader) (*SenatsabrechnungOutput, error) {
 }
 
 // ParseBillingMonth extracts the billing month from the Vertragsübersicht sheet.
-// It searches for "Trägernummer" and reads the cell below it to get a MM/YY date string.
+// The layout is: "Trägernummer" label in one cell, with the billing month in the
+// next column one row below (e.g., label at Y2, billing month at Z3).
+// It also checks the cell directly below as a fallback.
 func ParseBillingMonth(f *excelize.File) (time.Time, error) {
 	col, row, err := getValueByHeaderName(f, SheetVertrag, "Trägernummer")
 	if err != nil {
 		return time.Time{}, fmt.Errorf("finding Trägernummer header: %w", err)
 	}
 
-	dateStr := cellAsString(f, SheetVertrag, fmt.Sprintf("%s%d", col, row+1))
+	// Primary location: next column, one row below the label
+	colNum, err := excelize.ColumnNameToNumber(col)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parsing column name %q: %w", col, err)
+	}
+	nextCol, err := excelize.ColumnNumberToName(colNum + 1)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("computing next column: %w", err)
+	}
+
+	dateStr := cellAsString(f, SheetVertrag, fmt.Sprintf("%s%d", nextCol, row+1))
+
+	// Fallback: directly below the label (some anonymized/variant files)
 	if dateStr == "" {
-		return time.Time{}, fmt.Errorf("billing month cell below Trägernummer is empty")
+		dateStr = cellAsString(f, SheetVertrag, fmt.Sprintf("%s%d", col, row+1))
+	}
+
+	if dateStr == "" {
+		return time.Time{}, fmt.Errorf("billing month cell near Trägernummer is empty")
 	}
 
 	t, err := time.Parse("01/06", dateStr)

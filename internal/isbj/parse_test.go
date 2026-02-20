@@ -677,12 +677,51 @@ func TestParseBillingMonthInvalidFormat(t *testing.T) {
 	defer func() { _ = f.Close() }()
 	_, _ = f.NewSheet(SheetVertrag)
 
-	// Set up Trägernummer header and invalid date below
+	// Set up Trägernummer header and invalid date in next column below (primary location)
 	_ = f.SetCellValue(SheetVertrag, "A1", "Trägernummer")
-	_ = f.SetCellValue(SheetVertrag, "A2", "not-a-date")
+	_ = f.SetCellValue(SheetVertrag, "B2", "not-a-date")
 
 	_, err := ParseBillingMonth(f)
 	if err == nil {
 		t.Fatal("ParseBillingMonth() expected error for invalid date format")
+	}
+}
+
+func TestParseBillingMonthFallbackBelowHeader(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	_, _ = f.NewSheet(SheetVertrag)
+
+	// Billing month directly below header (fallback location)
+	_ = f.SetCellValue(SheetVertrag, "A1", "Trägernummer")
+	_ = f.SetCellValue(SheetVertrag, "A2", "03/25")
+
+	billingMonth, err := ParseBillingMonth(f)
+	if err != nil {
+		t.Fatalf("ParseBillingMonth() error = %v", err)
+	}
+	expected := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
+	if !billingMonth.Equal(expected) {
+		t.Errorf("ParseBillingMonth() = %v, expected %v", billingMonth, expected)
+	}
+}
+
+func TestParseBillingMonthNextColumn(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	_, _ = f.NewSheet(SheetVertrag)
+
+	// Billing month in next column below header (primary location, matches real files)
+	_ = f.SetCellValue(SheetVertrag, "Y2", "Trägernummer:")
+	_ = f.SetCellValue(SheetVertrag, "Z2", "0770")
+	_ = f.SetCellValue(SheetVertrag, "Z3", "11/25")
+
+	billingMonth, err := ParseBillingMonth(f)
+	if err != nil {
+		t.Fatalf("ParseBillingMonth() error = %v", err)
+	}
+	expected := time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	if !billingMonth.Equal(expected) {
+		t.Errorf("ParseBillingMonth() = %v, expected %v", billingMonth, expected)
 	}
 }
