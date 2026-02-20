@@ -239,7 +239,7 @@ func (s *GovernmentFundingService) GetPeriod(ctx context.Context, periodID, fund
 }
 
 // UpdatePeriod updates an existing period
-func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, fundingID, periodID uint, req *models.GovernmentFundingPeriodUpdateRequest) (*models.GovernmentFundingPeriodResponse, error) {
+func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID, fundingID uint, req *models.GovernmentFundingPeriodUpdateRequest) (*models.GovernmentFundingPeriodResponse, error) {
 	period, err := s.verifyPeriodOwnership(ctx, periodID, fundingID)
 	if err != nil {
 		return nil, err
@@ -285,7 +285,7 @@ func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, fundingID, 
 }
 
 // DeletePeriod deletes a period
-func (s *GovernmentFundingService) DeletePeriod(ctx context.Context, fundingID, periodID uint) error {
+func (s *GovernmentFundingService) DeletePeriod(ctx context.Context, periodID, fundingID uint) error {
 	if _, err := s.verifyPeriodOwnership(ctx, periodID, fundingID); err != nil {
 		return err
 	}
@@ -363,7 +363,7 @@ func (s *GovernmentFundingService) GetProperty(ctx context.Context, propertyID, 
 }
 
 // UpdateProperty updates an existing property
-func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, fundingID, periodID, propertyID uint, req *models.GovernmentFundingPropertyUpdateRequest) (*models.GovernmentFundingPropertyResponse, error) {
+func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyID, periodID, fundingID uint, req *models.GovernmentFundingPropertyUpdateRequest) (*models.GovernmentFundingPropertyResponse, error) {
 	if _, err := s.verifyPeriodOwnership(ctx, periodID, fundingID); err != nil {
 		return nil, err
 	}
@@ -423,7 +423,7 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, fundingID
 }
 
 // DeleteProperty deletes a property
-func (s *GovernmentFundingService) DeleteProperty(ctx context.Context, fundingID, periodID, propertyID uint) error {
+func (s *GovernmentFundingService) DeleteProperty(ctx context.Context, propertyID, periodID, fundingID uint) error {
 	if _, err := s.verifyPeriodOwnership(ctx, periodID, fundingID); err != nil {
 		return err
 	}

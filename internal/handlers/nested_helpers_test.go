@@ -435,10 +435,10 @@ func TestHandleGlobalNestedDelete_Success(t *testing.T) {
 	}, nil)
 
 	called := false
-	handleGlobalNestedDelete(c, "parentId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, parentID, nestedID uint) error {
+	handleGlobalNestedDelete(c, "parentId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, nestedID, parentID uint) error {
 		called = true
-		if parentID != 5 || nestedID != 6 {
-			t.Errorf("IDs = (%d, %d), want (5, 6)", parentID, nestedID)
+		if nestedID != 6 || parentID != 5 {
+			t.Errorf("IDs = (%d, %d), want (6, 5)", nestedID, parentID)
 		}
 		return nil
 	})
@@ -486,10 +486,10 @@ func TestHandleGlobalDeepNestedDelete_Success(t *testing.T) {
 	}, nil)
 
 	called := false
-	handleGlobalDeepNestedDelete(c, "parentId", "midId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, parentID, midID, nestedID uint) error {
+	handleGlobalDeepNestedDelete(c, "parentId", "midId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, nestedID, midID, parentID uint) error {
 		called = true
-		if parentID != 5 || midID != 6 || nestedID != 7 {
-			t.Errorf("IDs = (%d, %d, %d), want (5, 6, 7)", parentID, midID, nestedID)
+		if nestedID != 7 || midID != 6 || parentID != 5 {
+			t.Errorf("IDs = (%d, %d, %d), want (7, 6, 5)", nestedID, midID, parentID)
 		}
 		return nil
 	})
@@ -580,10 +580,10 @@ func TestHandleGlobalNestedUpdate_Success(t *testing.T) {
 	}, testNestedReq{Name: "updated"})
 
 	called := false
-	handleGlobalNestedUpdate(c, "parentId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, parentID, nestedID uint, req *testNestedReq) (*testNestedResp, error) {
+	handleGlobalNestedUpdate(c, "parentId", "subId", testAuditConfig(t, "test", "item"), func(_ context.Context, nestedID, parentID uint, req *testNestedReq) (*testNestedResp, error) {
 		called = true
-		if parentID != 5 || nestedID != 6 {
-			t.Errorf("IDs = (%d, %d), want (5, 6)", parentID, nestedID)
+		if nestedID != 6 || parentID != 5 {
+			t.Errorf("IDs = (%d, %d), want (6, 5)", nestedID, parentID)
 		}
 		return &testNestedResp{ID: nestedID, Name: req.Name}, nil
 	}, func(r *testNestedResp) uint { return r.ID })

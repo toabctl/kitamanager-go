@@ -445,7 +445,7 @@ func TestGovernmentFundingService_UpdatePeriod(t *testing.T) {
 		Comment: &newComment,
 	}
 
-	result, err := svc.UpdatePeriod(ctx, funding.ID, period.ID, req)
+	result, err := svc.UpdatePeriod(ctx, period.ID, funding.ID, req)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -476,7 +476,7 @@ func TestGovernmentFundingService_UpdatePeriod_FullTimeWeeklyHours(t *testing.T)
 		FullTimeWeeklyHours: &newHours,
 	}
 
-	result, err := svc.UpdatePeriod(ctx, funding.ID, period.ID, req)
+	result, err := svc.UpdatePeriod(ctx, period.ID, funding.ID, req)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -526,7 +526,7 @@ func TestGovernmentFundingService_DeletePeriod(t *testing.T) {
 	}
 	db.Create(period)
 
-	err := svc.DeletePeriod(ctx, funding.ID, period.ID)
+	err := svc.DeletePeriod(ctx, period.ID, funding.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -723,7 +723,7 @@ func TestGovernmentFundingService_UpdateProperty(t *testing.T) {
 		Payment: &newPayment,
 	}
 
-	result, err := svc.UpdateProperty(ctx, funding.ID, period.ID, property.ID, req)
+	result, err := svc.UpdateProperty(ctx, property.ID, period.ID, funding.ID, req)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -783,7 +783,7 @@ func TestGovernmentFundingService_DeleteProperty(t *testing.T) {
 	}
 	db.Create(property)
 
-	err := svc.DeleteProperty(ctx, funding.ID, period.ID, property.ID)
+	err := svc.DeleteProperty(ctx, property.ID, period.ID, funding.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -819,7 +819,7 @@ func TestGovernmentFundingService_UpdatePeriod_WrongFunding(t *testing.T) {
 	req := &models.GovernmentFundingPeriodUpdateRequest{Comment: &newComment}
 
 	// Try to update period via wrong funding ID
-	_, err := svc.UpdatePeriod(ctx, funding2.ID, period.ID, req)
+	_, err := svc.UpdatePeriod(ctx, period.ID, funding2.ID, req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -847,7 +847,7 @@ func TestGovernmentFundingService_DeletePeriod_WrongFunding(t *testing.T) {
 	db.Create(period)
 
 	// Try to delete period via wrong funding ID
-	err := svc.DeletePeriod(ctx, funding2.ID, period.ID)
+	err := svc.DeletePeriod(ctx, period.ID, funding2.ID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -925,7 +925,7 @@ func TestGovernmentFundingService_UpdateProperty_WrongPeriod(t *testing.T) {
 	req := &models.GovernmentFundingPropertyUpdateRequest{Payment: &newPayment}
 
 	// Try to update property via wrong period ID
-	_, err := svc.UpdateProperty(ctx, funding.ID, period2.ID, property.ID, req)
+	_, err := svc.UpdateProperty(ctx, property.ID, period2.ID, funding.ID, req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -962,7 +962,7 @@ func TestGovernmentFundingService_DeleteProperty_WrongPeriod(t *testing.T) {
 	db.Create(property)
 
 	// Try to delete property via wrong period ID
-	err := svc.DeleteProperty(ctx, funding.ID, period2.ID, property.ID)
+	err := svc.DeleteProperty(ctx, property.ID, period2.ID, funding.ID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

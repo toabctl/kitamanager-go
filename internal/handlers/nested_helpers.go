@@ -395,7 +395,7 @@ func handleGlobalNestedUpdate[Req any, Resp any](
 		return
 	}
 
-	resp, err := updateFn(c.Request.Context(), parentID, nestedID, req)
+	resp, err := updateFn(c.Request.Context(), nestedID, parentID, req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -426,7 +426,7 @@ func handleGlobalNestedDelete(
 		return
 	}
 
-	if err := deleteFn(c.Request.Context(), parentID, nestedID); err != nil {
+	if err := deleteFn(c.Request.Context(), nestedID, parentID); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -543,7 +543,7 @@ func handleGlobalDeepNestedUpdate[Req any, Resp any](
 		return
 	}
 
-	resp, err := updateFn(c.Request.Context(), parentID, midID, nestedID, req)
+	resp, err := updateFn(c.Request.Context(), nestedID, midID, parentID, req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -581,7 +581,7 @@ func handleGlobalDeepNestedDelete(
 		return
 	}
 
-	if err := deleteFn(c.Request.Context(), parentID, midID, nestedID); err != nil {
+	if err := deleteFn(c.Request.Context(), nestedID, midID, parentID); err != nil {
 		respondError(c, err)
 		return
 	}
