@@ -364,20 +364,13 @@ func (s *StatisticsService) GetFinancials(ctx context.Context, orgID uint, from,
 				if contract.IsActiveOn(date) {
 					childCount++
 					age := validation.CalculateAgeOnDate(child.Birthdate, date)
-					if fundingPeriod != nil {
-						for _, fp := range fundingPeriod.Properties {
-							if !fp.MatchesAge(age) {
-								continue
-							}
-							if contract.Properties.HasValue(fp.Key, fp.Value) {
-								fundingIncome += fp.Payment
-								mapKey := fp.Key + ":" + fp.Value
-								existing := fundingDetailMap[mapKey]
-								fundingDetailMap[mapKey] = fundingDetailAccum{
-									amount: existing.amount + fp.Payment,
-									label:  fp.Label,
-								}
-							}
+					for _, fp := range matchFundingProperties(age, contract.Properties, fundingPeriod) {
+						fundingIncome += fp.Payment
+						mapKey := fp.Key + ":" + fp.Value
+						existing := fundingDetailMap[mapKey]
+						fundingDetailMap[mapKey] = fundingDetailAccum{
+							amount: existing.amount + fp.Payment,
+							label:  fp.Label,
 						}
 					}
 					break
@@ -707,12 +700,3 @@ func findPayPlanPeriodForDate(periods []models.PayPlanPeriod, date time.Time) *m
 	return nil
 }
 
-// findPayPlanEntry finds the entry matching grade+step in a period's entries.
-func findPayPlanEntry(entries []models.PayPlanEntry, grade string, step int) *models.PayPlanEntry {
-	for i := range entries {
-		if entries[i].Grade == grade && entries[i].Step == step {
-			return &entries[i]
-		}
-	}
-	return nil
-}

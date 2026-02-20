@@ -87,20 +87,28 @@ func findPeriodForDate(periods []models.GovernmentFundingPeriod, date time.Time)
 	return nil
 }
 
+// matchFundingProperties returns the funding properties that match a child's age and
+// contract properties. This is the single source of truth for funding property matching.
+func matchFundingProperties(age int, props models.ContractProperties, period *models.GovernmentFundingPeriod) []*models.GovernmentFundingProperty {
+	if period == nil {
+		return nil
+	}
+	var matched []*models.GovernmentFundingProperty
+	for i := range period.Properties {
+		fp := &period.Properties[i]
+		if fp.MatchesAge(age) && props.HasValue(fp.Key, fp.Value) {
+			matched = append(matched, fp)
+		}
+	}
+	return matched
+}
+
 // sumChildFundingMatch returns total payment (cents) and requirement for a child
 // by matching their contract properties against government funding properties.
 func sumChildFundingMatch(age int, props models.ContractProperties, period *models.GovernmentFundingPeriod) (payment int, requirement float64) {
-	if period == nil {
-		return 0, 0
-	}
-	for _, fp := range period.Properties {
-		if !fp.MatchesAge(age) {
-			continue
-		}
-		if props.HasValue(fp.Key, fp.Value) {
-			payment += fp.Payment
-			requirement += fp.Requirement
-		}
+	for _, fp := range matchFundingProperties(age, props, period) {
+		payment += fp.Payment
+		requirement += fp.Requirement
 	}
 	return
 }
@@ -128,24 +136,19 @@ func (s *ChildService) calculateChildFunding(age int, properties models.Contract
 		return result
 	}
 
-	// Get totals from the generalized matcher
-	totalFunding, totalRequirement := sumChildFundingMatch(age, properties, period)
-
-	// Track which contract key-value pairs have been matched (for detailed reporting)
-	matchedSet := make(map[string]bool) // key:value -> matched
-	for _, fundingProp := range period.Properties {
-		if !fundingProp.MatchesAge(age) {
-			continue
-		}
-		if properties.HasValue(fundingProp.Key, fundingProp.Value) {
-			kvKey := fundingProp.Key + ":" + fundingProp.Value
-			if !matchedSet[kvKey] {
-				matchedSet[kvKey] = true
-				result.MatchedProperties = append(result.MatchedProperties, models.ChildFundingMatchedProp{
-					Key:   fundingProp.Key,
-					Value: fundingProp.Value,
-				})
-			}
+	// Single pass: accumulate totals and track matched properties
+	matches := matchFundingProperties(age, properties, period)
+	matchedSet := make(map[string]bool, len(matches))
+	for _, fp := range matches {
+		result.Funding += fp.Payment
+		result.Requirement += fp.Requirement
+		kvKey := fp.Key + ":" + fp.Value
+		if !matchedSet[kvKey] {
+			matchedSet[kvKey] = true
+			result.MatchedProperties = append(result.MatchedProperties, models.ChildFundingMatchedProp{
+				Key:   fp.Key,
+				Value: fp.Value,
+			})
 		}
 	}
 
@@ -157,8 +160,6 @@ func (s *ChildService) calculateChildFunding(age int, properties models.Contract
 		}
 	}
 
-	result.Funding = totalFunding
-	result.Requirement = totalRequirement
 	return result
 }
 
