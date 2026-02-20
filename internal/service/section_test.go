@@ -550,6 +550,104 @@ func TestSectionService_DeleteByIDAndOrg_WrongOrg(t *testing.T) {
 	}
 }
 
+// =========================================
+// Nullable field clearing tests
+// =========================================
+
+func TestSectionService_UpdateByIDAndOrg_ClearNullableAgeFields(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createSectionService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := createTestSection(t, db, "Krippe", org.ID, false)
+
+	// Step 1: Set age range
+	name := "Krippe"
+	minAge := 12
+	maxAge := 36
+	_, err := svc.UpdateByIDAndOrg(ctx, section.ID, org.ID, &models.SectionUpdateRequest{
+		Name:         &name,
+		MinAgeMonths: &minAge,
+		MaxAgeMonths: &maxAge,
+	})
+	if err != nil {
+		t.Fatalf("setup: failed to set age range: %v", err)
+	}
+
+	// Verify ages are set
+	found, _ := svc.GetByIDAndOrg(ctx, section.ID, org.ID)
+	if found.MinAgeMonths == nil || *found.MinAgeMonths != 12 {
+		t.Fatalf("setup: MinAgeMonths should be 12, got %v", found.MinAgeMonths)
+	}
+	if found.MaxAgeMonths == nil || *found.MaxAgeMonths != 36 {
+		t.Fatalf("setup: MaxAgeMonths should be 36, got %v", found.MaxAgeMonths)
+	}
+
+	// Step 2: Clear ages by sending nil (simulates frontend sending null)
+	updated, err := svc.UpdateByIDAndOrg(ctx, section.ID, org.ID, &models.SectionUpdateRequest{
+		MinAgeMonths: nil,
+		MaxAgeMonths: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.MinAgeMonths != nil {
+		t.Errorf("MinAgeMonths should be nil after clearing, got %d", *updated.MinAgeMonths)
+	}
+	if updated.MaxAgeMonths != nil {
+		t.Errorf("MaxAgeMonths should be nil after clearing, got %d", *updated.MaxAgeMonths)
+	}
+
+	// Step 3: Verify persistence by re-fetching from database
+	refetched, err := svc.GetByIDAndOrg(ctx, section.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.MinAgeMonths != nil {
+		t.Errorf("MinAgeMonths should be nil after re-fetch, got %d", *refetched.MinAgeMonths)
+	}
+	if refetched.MaxAgeMonths != nil {
+		t.Errorf("MaxAgeMonths should be nil after re-fetch, got %d", *refetched.MaxAgeMonths)
+	}
+}
+
+func TestSectionService_UpdateByIDAndOrg_ClearOnlyMinAge(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createSectionService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := createTestSection(t, db, "Krippe", org.ID, false)
+
+	// Set age range
+	name := "Krippe"
+	minAge := 0
+	maxAge := 36
+	_, err := svc.UpdateByIDAndOrg(ctx, section.ID, org.ID, &models.SectionUpdateRequest{
+		Name:         &name,
+		MinAgeMonths: &minAge,
+		MaxAgeMonths: &maxAge,
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Clear only min, keep max
+	updated, err := svc.UpdateByIDAndOrg(ctx, section.ID, org.ID, &models.SectionUpdateRequest{
+		MinAgeMonths: nil,
+		MaxAgeMonths: &maxAge,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.MinAgeMonths != nil {
+		t.Errorf("MinAgeMonths should be nil, got %d", *updated.MinAgeMonths)
+	}
+	if updated.MaxAgeMonths == nil || *updated.MaxAgeMonths != 36 {
+		t.Errorf("MaxAgeMonths should be 36, got %v", updated.MaxAgeMonths)
+	}
+}
 
 // =========================================
 // validateAgeRange Unit Tests

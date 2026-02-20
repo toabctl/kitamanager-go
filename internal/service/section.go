@@ -121,12 +121,10 @@ func (s *SectionService) UpdateByIDAndOrg(ctx context.Context, id, orgID uint, r
 		section.Name = name
 	}
 
-	if req.MinAgeMonths != nil {
-		section.MinAgeMonths = req.MinAgeMonths
-	}
-	if req.MaxAgeMonths != nil {
-		section.MaxAgeMonths = req.MaxAgeMonths
-	}
+	// Always update age fields — the frontend always sends them.
+	// null means "clear the value", which is distinct from "not provided".
+	section.MinAgeMonths = req.MinAgeMonths
+	section.MaxAgeMonths = req.MaxAgeMonths
 
 	// Validate the resulting age range
 	if err := validateAgeRange(section.MinAgeMonths, section.MaxAgeMonths); err != nil {

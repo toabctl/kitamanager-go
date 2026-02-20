@@ -2508,3 +2508,108 @@ func TestEmployeeService_DeleteContract_NotFoundByID(t *testing.T) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
+
+// =========================================
+// Nullable field clearing tests (employee contracts)
+// =========================================
+
+func TestEmployeeService_UpdateContract_ClearNullableTo(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "Test Pay Plan", org.ID)
+	section := getDefaultSection(t, db, org.ID)
+
+	// Create contract with To set (use future date to trigger in-place update)
+	from := time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2050, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		From:          from,
+		To:            &to,
+		SectionID:     section.ID,
+		StaffCategory: "qualified",
+		Grade:         "S8a",
+		Step:          1,
+		WeeklyHours:   39,
+		PayPlanID:     payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if contract.To == nil {
+		t.Fatal("setup: To should be set")
+	}
+
+	// Clear To by sending nil (simulates frontend sending null to make open-ended)
+	updated, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		To: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.To != nil {
+		t.Errorf("To should be nil after clearing, got %v", updated.To)
+	}
+
+	// Verify persistence
+	refetched, err := svc.GetContractByID(ctx, contract.ID, employee.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.To != nil {
+		t.Errorf("To should be nil after re-fetch, got %v", refetched.To)
+	}
+}
+
+func TestEmployeeService_UpdateContract_ClearNullableProperties(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "Test Pay Plan", org.ID)
+	section := getDefaultSection(t, db, org.ID)
+
+	// Create contract with Properties set (use future date to trigger in-place update)
+	from := time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		From:          from,
+		SectionID:     section.ID,
+		StaffCategory: "qualified",
+		Grade:         "S8a",
+		Step:          1,
+		WeeklyHours:   39,
+		PayPlanID:     payPlan.ID,
+		Properties:    models.ContractProperties{"role": "deputy"},
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if contract.Properties == nil {
+		t.Fatal("setup: Properties should be set")
+	}
+
+	// Clear Properties by sending nil
+	updated, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		Properties: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.Properties != nil {
+		t.Errorf("Properties should be nil after clearing, got %v", updated.Properties)
+	}
+
+	// Verify persistence
+	refetched, err := svc.GetContractByID(ctx, contract.ID, employee.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.Properties != nil {
+		t.Errorf("Properties should be nil after re-fetch, got %v", refetched.Properties)
+	}
+}

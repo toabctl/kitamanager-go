@@ -977,6 +977,112 @@ func TestGovernmentFundingService_DeleteProperty_WrongPeriod(t *testing.T) {
 	}
 }
 
+// =========================================
+// Nullable field clearing tests
+// =========================================
+
+func TestGovernmentFundingService_UpdateProperty_ClearNullableAgeFields(t *testing.T) {
+	db := setupTestDB(t)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
+	ctx := context.Background()
+
+	funding := createTestGovernmentFunding(t, db, "Test Funding")
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
+
+	// Create property with age range set
+	minAge := 0
+	maxAge := 3
+	property := &models.GovernmentFundingProperty{
+		PeriodID:    period.ID,
+		Key:         "care_type",
+		Value:       "ganztag",
+		Label:       "Ganztag",
+		Payment:     100000,
+		Requirement: 0.1,
+		MinAge:      &minAge,
+		MaxAge:      &maxAge,
+	}
+	db.Create(property)
+
+	// Verify ages are set
+	found, _ := svc.GetPropertyByID(ctx, property.ID)
+	if found.MinAge == nil || *found.MinAge != 0 {
+		t.Fatalf("setup: MinAge should be 0, got %v", found.MinAge)
+	}
+	if found.MaxAge == nil || *found.MaxAge != 3 {
+		t.Fatalf("setup: MaxAge should be 3, got %v", found.MaxAge)
+	}
+
+	// Clear ages by sending nil (simulates frontend sending null)
+	req := &models.GovernmentFundingPropertyUpdateRequest{
+		MinAge: nil,
+		MaxAge: nil,
+	}
+	updated, err := svc.UpdateProperty(ctx, property.ID, period.ID, funding.ID, req)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.MinAge != nil {
+		t.Errorf("MinAge should be nil after clearing, got %d", *updated.MinAge)
+	}
+	if updated.MaxAge != nil {
+		t.Errorf("MaxAge should be nil after clearing, got %d", *updated.MaxAge)
+	}
+
+	// Verify persistence by re-fetching
+	refetched, err := svc.GetPropertyByID(ctx, property.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.MinAge != nil {
+		t.Errorf("MinAge should be nil after re-fetch, got %d", *refetched.MinAge)
+	}
+	if refetched.MaxAge != nil {
+		t.Errorf("MaxAge should be nil after re-fetch, got %d", *refetched.MaxAge)
+	}
+}
+
+func TestGovernmentFundingService_UpdatePeriod_ClearNullableTo(t *testing.T) {
+	db := setupTestDB(t)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	svc := NewGovernmentFundingService(fundingStore, store.NewTransactor(db))
+	ctx := context.Background()
+
+	funding := createTestGovernmentFunding(t, db, "Test Funding")
+
+	// Create period with To set
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &to, 39.0)
+
+	// Verify To is set
+	found, _ := svc.GetPeriod(ctx, period.ID, funding.ID)
+	if found.To == nil {
+		t.Fatal("setup: To should be set")
+	}
+
+	// Clear To by sending nil (simulates frontend sending null to make open-ended)
+	req := &models.GovernmentFundingPeriodUpdateRequest{
+		To: nil,
+	}
+	updated, err := svc.UpdatePeriod(ctx, period.ID, funding.ID, req)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.To != nil {
+		t.Errorf("To should be nil after clearing, got %v", updated.To)
+	}
+
+	// Verify persistence by re-fetching
+	refetched, err := svc.GetPeriod(ctx, period.ID, funding.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.To != nil {
+		t.Errorf("To should be nil after re-fetch, got %v", refetched.To)
+	}
+}
+
 // Period overlap validation tests
 
 func TestPeriodsOverlap(t *testing.T) {

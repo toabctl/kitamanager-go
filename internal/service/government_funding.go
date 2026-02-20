@@ -239,12 +239,10 @@ func (s *GovernmentFundingService) UpdatePeriod(ctx context.Context, periodID, f
 
 	// Apply updates to determine new date range
 	newFrom := period.From
-	newTo := period.To
+	// Always assign To so the frontend can clear it by sending null.
+	newTo := req.To
 	if req.From != nil {
 		newFrom = *req.From
-	}
-	if req.To != nil {
-		newTo = req.To
 	}
 
 	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
@@ -391,12 +389,9 @@ func (s *GovernmentFundingService) UpdateProperty(ctx context.Context, propertyI
 	if req.Requirement != nil {
 		property.Requirement = *req.Requirement
 	}
-	if req.MinAge != nil {
-		property.MinAge = req.MinAge
-	}
-	if req.MaxAge != nil {
-		property.MaxAge = req.MaxAge
-	}
+	// Always assign nullable fields so the frontend can clear them by sending null.
+	property.MinAge = req.MinAge
+	property.MaxAge = req.MaxAge
 	if req.Comment != nil {
 		property.Comment = strings.TrimSpace(*req.Comment)
 	}

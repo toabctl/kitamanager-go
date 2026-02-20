@@ -185,19 +185,14 @@ func (s *ChildService) updateContractInPlace(ctx context.Context, contract *mode
 	if req.From != nil {
 		contract.From = *req.From
 	}
-	if req.To != nil {
-		contract.To = req.To
-	}
+	// Always assign nullable fields so the frontend can clear them by sending null.
+	contract.To = req.To
 	if req.SectionID != nil {
 		contract.SectionID = *req.SectionID
 		contract.Section = nil
 	}
-	if req.Properties != nil {
-		contract.Properties = req.Properties
-	}
-	if req.VoucherNumber != nil {
-		contract.VoucherNumber = req.VoucherNumber
-	}
+	contract.Properties = req.Properties
+	contract.VoucherNumber = req.VoucherNumber
 
 	if err := validation.ValidatePeriod(contract.From, contract.To); err != nil {
 		return nil, apperror.BadRequest(err.Error())

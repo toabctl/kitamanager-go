@@ -841,6 +841,141 @@ func TestChildService_GetCurrentRecord_WrongOrg(t *testing.T) {
 }
 
 // =========================================
+// Nullable field clearing tests (child contracts)
+// =========================================
+
+func TestChildService_UpdateContract_ClearNullableTo(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create contract with To set (use future date to trigger in-place update)
+	from := time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2050, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID: 1,
+		From:      from,
+		To:        &to,
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if contract.To == nil {
+		t.Fatal("setup: To should be set")
+	}
+
+	// Clear To by sending nil (simulates frontend sending null to make open-ended)
+	updated, err := svc.UpdateContract(ctx, contract.ID, child.ID, org.ID, &models.ChildContractUpdateRequest{
+		To: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.To != nil {
+		t.Errorf("To should be nil after clearing, got %v", updated.To)
+	}
+
+	// Verify persistence
+	refetched, err := svc.GetContractByID(ctx, contract.ID, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.To != nil {
+		t.Errorf("To should be nil after re-fetch, got %v", refetched.To)
+	}
+}
+
+func TestChildService_UpdateContract_ClearNullableVoucherNumber(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create contract with VoucherNumber set (use future date to trigger in-place update)
+	from := time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC)
+	voucher := "GB-12345678901-02"
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:     1,
+		From:          from,
+		VoucherNumber: &voucher,
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if contract.VoucherNumber == nil || *contract.VoucherNumber != voucher {
+		t.Fatal("setup: VoucherNumber should be set")
+	}
+
+	// Clear VoucherNumber by sending nil
+	updated, err := svc.UpdateContract(ctx, contract.ID, child.ID, org.ID, &models.ChildContractUpdateRequest{
+		VoucherNumber: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.VoucherNumber != nil {
+		t.Errorf("VoucherNumber should be nil after clearing, got %v", *updated.VoucherNumber)
+	}
+
+	// Verify persistence
+	refetched, err := svc.GetContractByID(ctx, contract.ID, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.VoucherNumber != nil {
+		t.Errorf("VoucherNumber should be nil after re-fetch, got %v", *refetched.VoucherNumber)
+	}
+}
+
+func TestChildService_UpdateContract_ClearNullableProperties(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	child := createTestChild(t, db, "John", "Doe", org.ID)
+
+	// Create contract with Properties set (use future date to trigger in-place update)
+	from := time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, child.ID, org.ID, &models.ChildContractCreateRequest{
+		SectionID:  1,
+		From:       from,
+		Properties: models.ContractProperties{"care_type": "ganztag"},
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if contract.Properties == nil {
+		t.Fatal("setup: Properties should be set")
+	}
+
+	// Clear Properties by sending nil
+	updated, err := svc.UpdateContract(ctx, contract.ID, child.ID, org.ID, &models.ChildContractUpdateRequest{
+		Properties: nil,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if updated.Properties != nil {
+		t.Errorf("Properties should be nil after clearing, got %v", updated.Properties)
+	}
+
+	// Verify persistence
+	refetched, err := svc.GetContractByID(ctx, contract.ID, child.ID, org.ID)
+	if err != nil {
+		t.Fatalf("re-fetch failed: %v", err)
+	}
+	if refetched.Properties != nil {
+		t.Errorf("Properties should be nil after re-fetch, got %v", refetched.Properties)
+	}
+}
+
+// =========================================
 // Funding Calculation Tests
 // =========================================
 

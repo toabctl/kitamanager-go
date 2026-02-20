@@ -264,15 +264,12 @@ func (s *EmployeeService) updateContractInPlace(ctx context.Context, contract *m
 		contract.SectionID = *req.SectionID
 		contract.Section = nil
 	}
-	if req.Properties != nil {
-		contract.Properties = req.Properties
-	}
+	// Always assign nullable fields so the frontend can clear them by sending null.
+	contract.Properties = req.Properties
 	if req.From != nil {
 		contract.From = *req.From
 	}
-	if req.To != nil {
-		contract.To = req.To
-	}
+	contract.To = req.To
 
 	if err := validation.ValidatePeriod(contract.From, contract.To); err != nil {
 		return nil, apperror.BadRequest(err.Error())
