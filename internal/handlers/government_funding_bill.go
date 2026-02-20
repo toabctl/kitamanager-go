@@ -143,6 +143,34 @@ func (h *GovernmentFundingBillHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// Compare godoc
+// @Summary Compare funding bill with calculated funding
+// @Description Compare an uploaded ISBJ bill against calculated funding rates per child and property
+// @Tags government-funding-bills
+// @Produce json
+// @Security BearerAuth
+// @Param orgId path int true "Organization ID"
+// @Param billId path int true "Bill Period ID"
+// @Success 200 {object} models.FundingComparisonResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /api/v1/organizations/{orgId}/government-funding-bills/{billId}/compare [get]
+func (h *GovernmentFundingBillHandler) Compare(c *gin.Context) {
+	orgID, id, ok := parseOrgAndResourceID(c, "billId")
+	if !ok {
+		return
+	}
+
+	result, err := h.service.Compare(c.Request.Context(), id, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // Delete godoc
 // @Summary Delete a government funding bill period
 // @Description Delete a government funding bill period and all associated children and payments

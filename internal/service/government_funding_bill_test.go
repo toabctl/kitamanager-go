@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/eenemeene/kitamanager-go/internal/apperror"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
@@ -16,7 +18,7 @@ func TestGovernmentFundingBillService_ListEmpty(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	ctx := context.Background()
 
@@ -36,7 +38,7 @@ func TestGovernmentFundingBillService_ListWithPeriods(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc1@example.com", "password")
 	ctx := context.Background()
@@ -89,7 +91,7 @@ func TestGovernmentFundingBillService_ListOrganizationIsolation(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
 	user := createTestUser(t, db, "User", "billsvc2@example.com", "password")
@@ -124,7 +126,7 @@ func TestGovernmentFundingBillService_GetByID(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc3@example.com", "password")
 	ctx := context.Background()
@@ -230,7 +232,7 @@ func TestGovernmentFundingBillService_GetByIDWithMatching(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc4@example.com", "password")
 	section := getDefaultSection(t, db, org.ID)
@@ -336,7 +338,7 @@ func TestGovernmentFundingBillService_GetByIDWrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
 	user := createTestUser(t, db, "User", "billsvc5@example.com", "password")
@@ -369,7 +371,7 @@ func TestGovernmentFundingBillService_GetByIDNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	ctx := context.Background()
 
 	_, err := svc.GetByID(ctx, 99999, 1)
@@ -385,7 +387,7 @@ func TestGovernmentFundingBillService_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc6@example.com", "password")
 	ctx := context.Background()
@@ -422,7 +424,7 @@ func TestGovernmentFundingBillService_DeleteWrongOrg(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
 	user := createTestUser(t, db, "User", "billsvc7@example.com", "password")
@@ -461,7 +463,7 @@ func TestGovernmentFundingBillService_DeleteNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	ctx := context.Background()
 
 	_, err := svc.Delete(ctx, 99999, 1)
@@ -477,7 +479,7 @@ func TestGovernmentFundingBillService_GetByIDSurchargesAggregation(t *testing.T)
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc8@example.com", "password")
 	ctx := context.Background()
@@ -559,7 +561,7 @@ func TestGovernmentFundingBillService_GetByIDNoSurcharges(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc9@example.com", "password")
 	ctx := context.Background()
@@ -609,7 +611,7 @@ func TestGovernmentFundingBillService_GetByIDNoChildren(t *testing.T) {
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org := createTestOrganization(t, db, "Test Org")
 	user := createTestUser(t, db, "User", "billsvc10@example.com", "password")
 	ctx := context.Background()
@@ -754,7 +756,7 @@ func TestGovernmentFundingBillService_GetByIDMatchingCrossTenancy(t *testing.T) 
 	db := setupTestDB(t)
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	svc := NewGovernmentFundingBillService(childStore, billPeriodStore)
+	svc := NewGovernmentFundingBillService(childStore, billPeriodStore, store.NewOrganizationStore(db), store.NewGovernmentFundingStore(db))
 	org1 := createTestOrganization(t, db, "Org 1")
 	org2 := createTestOrganization(t, db, "Org 2")
 	user := createTestUser(t, db, "User", "billsvc11@example.com", "password")
@@ -808,5 +810,787 @@ func TestGovernmentFundingBillService_GetByIDMatchingCrossTenancy(t *testing.T) 
 	// Child in org2 should NOT match for org1's bill
 	if result.MatchedCount != 0 {
 		t.Errorf("expected 0 matches (cross-org should not match), got %d", result.MatchedCount)
+	}
+}
+
+// ============================================================
+// Compare tests
+// ============================================================
+
+// setupBillCompareService creates a service with all stores for Compare tests.
+func setupBillCompareService(t *testing.T, db *gorm.DB) *GovernmentFundingBillService {
+	t.Helper()
+	return NewGovernmentFundingBillService(
+		store.NewChildStore(db),
+		store.NewGovernmentFundingBillPeriodStore(db),
+		store.NewOrganizationStore(db),
+		store.NewGovernmentFundingStore(db),
+	)
+}
+
+// setupFundingRates creates government funding with a period and properties for comparison tests.
+// Returns care_type ganztag: 150000 (age 0-2), 120000 (age 3+), ndh: 8000, qm/mss: 5000
+func setupFundingRates(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	period := createTestFundingPeriod(t, db, funding.ID,
+		time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0)
+
+	// care_type ganztag: U3 (age 0-2) = 150000
+	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 150000, 0, 2)
+	// care_type ganztag: Ü3 (age 3+) = 120000
+	createTestFundingProperty(t, db, period.ID, "care_type", "ganztag", 120000, 3, -1)
+	// care_type halbtag: all ages = 80000
+	createTestFundingProperty(t, db, period.ID, "care_type", "halbtag", 80000, 0, -1)
+	// ndh = 8000
+	createTestFundingProperty(t, db, period.ID, "ndh", "ndh", 8000, 0, -1)
+	// qm/mss = 5000
+	createTestFundingProperty(t, db, period.ID, "qm/mss", "qm/mss", 5000, 0, -1)
+	// sph = 12000
+	createTestFundingProperty(t, db, period.ID, "sph", "sph", 12000, 0, -1)
+}
+
+// createBillPeriodForCompare creates a bill period with children for compare tests.
+func createBillPeriodForCompare(t *testing.T, db *gorm.DB, orgID, userID uint, children []models.GovernmentFundingBillChild) *models.GovernmentFundingBillPeriod {
+	t.Helper()
+	to := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
+	period := &models.GovernmentFundingBillPeriod{
+		OrganizationID: orgID,
+		Period:         models.Period{From: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), To: &to},
+		FileName:       "compare-test.xlsx",
+		FileSha256:     "comparehash",
+		FacilityName:   "Kita Compare",
+		FacilityTotal:  500000,
+		CreatedBy:      userID,
+		Children:       children,
+	}
+	if err := db.Create(period).Error; err != nil {
+		t.Fatalf("setup: create bill period error = %v", err)
+	}
+	return period
+}
+
+// createChildWithVoucherAndContract creates a child with an active contract having the given voucher and properties.
+func createChildWithVoucherAndContract(t *testing.T, db *gorm.DB, firstName, lastName string, orgID uint, voucher string, birthdate time.Time, props models.ContractProperties) *models.Child {
+	t.Helper()
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: orgID,
+			FirstName:      firstName,
+			LastName:       lastName,
+			Birthdate:      birthdate,
+		},
+	}
+	if err := db.Create(child).Error; err != nil {
+		t.Fatalf("setup: create child error = %v", err)
+	}
+
+	section := getDefaultSection(t, db, orgID)
+	contract := &models.ChildContract{
+		ChildID:       child.ID,
+		VoucherNumber: &voucher,
+		BaseContract: models.BaseContract{
+			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID:  section.ID,
+			Properties: props,
+		},
+	}
+	if err := db.Create(contract).Error; err != nil {
+		t.Fatalf("setup: create contract error = %v", err)
+	}
+	return child
+}
+
+func TestGovernmentFundingBillService_Compare(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare1@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Create two children with matching vouchers and properties that produce exact match
+	// Child 1: age 4 (born 2021-05-01, bill date 2025-11-01 → age 4), care_type=ganztag → 120000
+	child1 := createChildWithVoucherAndContract(t, db, "Max", "Mustermann", org.ID,
+		"GB-11111111111-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+	// Child 2: age 3, care_type=ganztag → 120000, ndh → 8000
+	child2 := createChildWithVoucherAndContract(t, db, "Anna", "Schmidt", org.ID,
+		"GB-22222222222-01", time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag", "ndh": "ndh"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-11111111111-01",
+			ChildName:     "Mustermann, Max",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+			},
+		},
+		{
+			VoucherNumber: "GB-22222222222-01",
+			ChildName:     "Schmidt, Anna",
+			BirthDate:     "03.22",
+			District:      2,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+				{Key: "ndh", Value: "ndh", Amount: 8000},
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.BillID != period.ID {
+		t.Errorf("expected bill_id %d, got %d", period.ID, result.BillID)
+	}
+	if result.ChildrenCount != 2 {
+		t.Errorf("expected children_count 2, got %d", result.ChildrenCount)
+	}
+	if result.MatchCount != 2 {
+		t.Errorf("expected match_count 2, got %d", result.MatchCount)
+	}
+	if result.DifferenceCount != 0 {
+		t.Errorf("expected difference_count 0, got %d", result.DifferenceCount)
+	}
+	if result.BillTotal != 248000 { // 120000 + 128000
+		t.Errorf("expected bill_total 248000, got %d", result.BillTotal)
+	}
+	if result.CalcTotal != 248000 {
+		t.Errorf("expected calculated_total 248000, got %d", result.CalcTotal)
+	}
+	if result.Difference != 0 {
+		t.Errorf("expected difference 0, got %d", result.Difference)
+	}
+
+	// Check individual children
+	for _, child := range result.Children {
+		if child.Status != "match" {
+			t.Errorf("child %s: expected status 'match', got %q", child.VoucherNumber, child.Status)
+		}
+		if child.ChildID == nil {
+			t.Errorf("child %s: expected child_id to be set", child.VoucherNumber)
+		}
+	}
+
+	_ = child1
+	_ = child2
+}
+
+func TestGovernmentFundingBillService_Compare_WithDifferences(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare2@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child: age 4, care_type=ganztag → calc 120000, but bill says 130000
+	createChildWithVoucherAndContract(t, db, "Max", "Diff", org.ID,
+		"GB-33333333333-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-33333333333-01",
+			ChildName:     "Diff, Max",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 130000}, // bill differs from calc (120000)
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.DifferenceCount != 1 {
+		t.Errorf("expected difference_count 1, got %d", result.DifferenceCount)
+	}
+	if result.MatchCount != 0 {
+		t.Errorf("expected match_count 0, got %d", result.MatchCount)
+	}
+
+	child := result.Children[0]
+	if child.Status != "difference" {
+		t.Errorf("expected status 'difference', got %q", child.Status)
+	}
+	if child.Difference == nil || *child.Difference != 10000 { // 130000 - 120000
+		t.Errorf("expected difference 10000, got %v", child.Difference)
+	}
+
+	// Verify property-level detail
+	for _, prop := range child.Properties {
+		if prop.Key == "care_type" && prop.Value == "ganztag" {
+			if prop.BillAmount == nil || *prop.BillAmount != 130000 {
+				t.Errorf("expected bill_amount 130000, got %v", prop.BillAmount)
+			}
+			if prop.CalcAmount == nil || *prop.CalcAmount != 120000 {
+				t.Errorf("expected calc_amount 120000, got %v", prop.CalcAmount)
+			}
+			if prop.Difference != 10000 {
+				t.Errorf("expected property difference 10000, got %d", prop.Difference)
+			}
+		}
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_BillOnlyChild(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare3@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Bill child with no matching voucher in system
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-99999999999-01",
+			ChildName:     "Unknown, Child",
+			BirthDate:     "01.20",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.BillOnlyCount != 1 {
+		t.Errorf("expected bill_only_count 1, got %d", result.BillOnlyCount)
+	}
+	if result.MatchCount != 0 {
+		t.Errorf("expected match_count 0, got %d", result.MatchCount)
+	}
+
+	child := result.Children[0]
+	if child.Status != "bill_only" {
+		t.Errorf("expected status 'bill_only', got %q", child.Status)
+	}
+	if child.ChildID != nil {
+		t.Error("expected child_id to be nil for bill_only")
+	}
+	if child.CalcTotal != nil {
+		t.Error("expected calc_total to be nil for bill_only")
+	}
+
+	// bill_only children excluded from totals
+	if result.BillTotal != 0 {
+		t.Errorf("expected bill_total 0 (bill_only excluded), got %d", result.BillTotal)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_CalcOnlyChild(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare4@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child with active contract not in bill
+	createChildWithVoucherAndContract(t, db, "Missing", "FromBill", org.ID,
+		"GB-44444444444-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Empty bill
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, nil)
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.CalcOnlyCount != 1 {
+		t.Errorf("expected calc_only_count 1, got %d", result.CalcOnlyCount)
+	}
+
+	child := result.Children[0]
+	if child.Status != "calc_only" {
+		t.Errorf("expected status 'calc_only', got %q", child.Status)
+	}
+	if child.ChildID == nil {
+		t.Error("expected child_id to be set for calc_only")
+	}
+	if child.CalcTotal == nil || *child.CalcTotal != 120000 { // age 4, ganztag
+		t.Errorf("expected calc_total 120000, got %v", child.CalcTotal)
+	}
+	if child.BillTotal != 0 {
+		t.Errorf("expected bill_total 0 for calc_only, got %d", child.BillTotal)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_MixedStatuses(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare5@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Matched child (exact match)
+	createChildWithVoucherAndContract(t, db, "Match", "Child", org.ID,
+		"GB-AAAAAAAAAA0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Matched child (with difference)
+	createChildWithVoucherAndContract(t, db, "Diff", "Child", org.ID,
+		"GB-BBBBBBBBBB0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Calc-only child (not in bill)
+	createChildWithVoucherAndContract(t, db, "CalcOnly", "Child", org.ID,
+		"GB-CCCCCCCCCC0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-AAAAAAAAAA0-01",
+			ChildName:     "Child, Match",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 120000}},
+		},
+		{
+			VoucherNumber: "GB-BBBBBBBBBB0-01",
+			ChildName:     "Child, Diff",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 125000}},
+		},
+		{
+			VoucherNumber: "GB-DDDDDDDDDD0-01", // bill-only
+			ChildName:     "BillOnly, Child",
+			BirthDate:     "01.20",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 110000}},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.MatchCount != 1 {
+		t.Errorf("expected match_count 1, got %d", result.MatchCount)
+	}
+	if result.DifferenceCount != 1 {
+		t.Errorf("expected difference_count 1, got %d", result.DifferenceCount)
+	}
+	if result.BillOnlyCount != 1 {
+		t.Errorf("expected bill_only_count 1, got %d", result.BillOnlyCount)
+	}
+	if result.CalcOnlyCount != 1 {
+		t.Errorf("expected calc_only_count 1, got %d", result.CalcOnlyCount)
+	}
+	if result.ChildrenCount != 4 {
+		t.Errorf("expected children_count 4, got %d", result.ChildrenCount)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_NoFundingConfig(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	ctx := context.Background()
+
+	// Create org with a state that has no funding rates defined
+	org := &models.Organization{Name: "No Funding Org", Active: true, State: "hamburg"}
+	if err := db.Create(org).Error; err != nil {
+		t.Fatalf("setup error: %v", err)
+	}
+	// Create default section for the org
+	if err := db.Create(&models.Section{OrganizationID: org.ID, Name: "Default", IsDefault: true}).Error; err != nil {
+		t.Fatalf("setup error: %v", err)
+	}
+	user := createTestUser(t, db, "User", "compare6@example.com", "password")
+
+	// Create child with contract
+	createChildWithVoucherAndContract(t, db, "Max", "NoFunding", org.ID,
+		"GB-55555555555-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-55555555555-01",
+			ChildName:     "NoFunding, Max",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 120000}},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	// No funding config → calc amounts should be 0
+	child := result.Children[0]
+	if child.CalcTotal == nil || *child.CalcTotal != 0 {
+		t.Errorf("expected calc_total 0 (no funding config), got %v", child.CalcTotal)
+	}
+	if child.Difference == nil || *child.Difference != 120000 {
+		t.Errorf("expected difference 120000, got %v", child.Difference)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_NoFundingPeriod(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare7@example.com", "password")
+	ctx := context.Background()
+
+	// Create funding but with a period that doesn't cover the bill date
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding Old")
+	periodTo := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	fundingPeriod := createTestFundingPeriod(t, db, funding.ID,
+		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &periodTo, 39.0)
+	createTestFundingProperty(t, db, fundingPeriod.ID, "care_type", "ganztag", 120000, 0, -1)
+
+	createChildWithVoucherAndContract(t, db, "Max", "NoPeriod", org.ID,
+		"GB-66666666666-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Bill date is 2025-11-01, but funding period ends 2024-12-31
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-66666666666-01",
+			ChildName:     "NoPeriod, Max",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 120000}},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	child := result.Children[0]
+	if child.CalcTotal == nil || *child.CalcTotal != 0 {
+		t.Errorf("expected calc_total 0 (no covering period), got %v", child.CalcTotal)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_AgeDependentRates(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare8@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child 1: age 2 (born 2023-06-01, bill date 2025-11-01 → age 2), U3 rate → 150000
+	createChildWithVoucherAndContract(t, db, "Young", "Child", org.ID,
+		"GB-77777777777-01", time.Date(2023, 6, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Child 2: age 4 (born 2021-05-01), Ü3 rate → 120000
+	createChildWithVoucherAndContract(t, db, "Old", "Child", org.ID,
+		"GB-88888888888-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-77777777777-01",
+			ChildName:     "Child, Young",
+			BirthDate:     "06.23",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 150000}},
+		},
+		{
+			VoucherNumber: "GB-88888888888-01",
+			ChildName:     "Child, Old",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 120000}},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.MatchCount != 2 {
+		t.Errorf("expected match_count 2, got %d", result.MatchCount)
+	}
+
+	for _, child := range result.Children {
+		switch child.VoucherNumber {
+		case "GB-77777777777-01":
+			if child.Age == nil || *child.Age != 2 {
+				t.Errorf("young child: expected age 2, got %v", child.Age)
+			}
+			if child.CalcTotal == nil || *child.CalcTotal != 150000 {
+				t.Errorf("young child: expected calc_total 150000 (U3), got %v", child.CalcTotal)
+			}
+		case "GB-88888888888-01":
+			if child.Age == nil || *child.Age != 4 {
+				t.Errorf("old child: expected age 4, got %v", child.Age)
+			}
+			if child.CalcTotal == nil || *child.CalcTotal != 120000 {
+				t.Errorf("old child: expected calc_total 120000 (Ü3), got %v", child.CalcTotal)
+			}
+		}
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_PropertyLevelDetail(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare9@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child with multiple properties: care_type=ganztag, ndh, qm/mss, sph
+	createChildWithVoucherAndContract(t, db, "Multi", "Props", org.ID,
+		"GB-AABBCCDDEE0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{
+			"care_type": "ganztag",
+			"ndh":       "ndh",
+			"qm/mss":    "qm/mss",
+			"sph":       "sph",
+		})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-AABBCCDDEE0-01",
+			ChildName:     "Props, Multi",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+				{Key: "ndh", Value: "ndh", Amount: 8000},
+				{Key: "qm/mss", Value: "qm/mss", Amount: 5000},
+				{Key: "sph", Value: "sph", Amount: 12000},
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	child := result.Children[0]
+	if len(child.Properties) != 4 {
+		t.Fatalf("expected 4 properties, got %d", len(child.Properties))
+	}
+
+	propMap := make(map[string]models.FundingComparisonAmount)
+	for _, p := range child.Properties {
+		propMap[p.Key+":"+p.Value] = p
+	}
+
+	expected := map[string]int{
+		"care_type:ganztag": 120000,
+		"ndh:ndh":           8000,
+		"qm/mss:qm/mss":     5000,
+		"sph:sph":           12000,
+	}
+	for kv, expectedAmt := range expected {
+		prop, ok := propMap[kv]
+		if !ok {
+			t.Errorf("missing property %s", kv)
+			continue
+		}
+		if prop.BillAmount == nil || *prop.BillAmount != expectedAmt {
+			t.Errorf("property %s: expected bill_amount %d, got %v", kv, expectedAmt, prop.BillAmount)
+		}
+		if prop.CalcAmount == nil || *prop.CalcAmount != expectedAmt {
+			t.Errorf("property %s: expected calc_amount %d, got %v", kv, expectedAmt, prop.CalcAmount)
+		}
+		if prop.Difference != 0 {
+			t.Errorf("property %s: expected difference 0, got %d", kv, prop.Difference)
+		}
+	}
+
+	// Total: 120000+8000+5000+12000 = 145000
+	if child.CalcTotal == nil || *child.CalcTotal != 145000 {
+		t.Errorf("expected calc_total 145000, got %v", child.CalcTotal)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_BillOnlyProperties(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare10@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child with only care_type in contract, but bill has parent/deduction items too
+	createChildWithVoucherAndContract(t, db, "Extra", "Bill", org.ID,
+		"GB-EEFFGGHHII0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-EEFFGGHHII0-01",
+			ChildName:     "Bill, Extra",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+				{Key: "parent_fee", Value: "parent_fee", Amount: -5000}, // no funding counterpart
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	child := result.Children[0]
+	propMap := make(map[string]models.FundingComparisonAmount)
+	for _, p := range child.Properties {
+		propMap[p.Key+":"+p.Value] = p
+	}
+
+	// parent_fee should have bill_amount but no calc_amount
+	parentFee, ok := propMap["parent_fee:parent_fee"]
+	if !ok {
+		t.Fatal("expected parent_fee property in comparison")
+	}
+	if parentFee.BillAmount == nil || *parentFee.BillAmount != -5000 {
+		t.Errorf("expected parent_fee bill_amount -5000, got %v", parentFee.BillAmount)
+	}
+	if parentFee.CalcAmount != nil {
+		t.Errorf("expected parent_fee calc_amount nil, got %v", parentFee.CalcAmount)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	user := createTestUser(t, db, "User", "compare11@example.com", "password")
+	ctx := context.Background()
+
+	period := createBillPeriodForCompare(t, db, org1.ID, user.ID, nil)
+
+	_, err := svc.Compare(ctx, period.ID, org2.ID)
+	if err == nil {
+		t.Fatal("expected error for wrong org, got nil")
+	}
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got: %v", err)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	ctx := context.Background()
+
+	_, err := svc.Compare(ctx, 99999, 1)
+	if err == nil {
+		t.Fatal("expected error for non-existent ID, got nil")
+	}
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got: %v", err)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_EmptyBill(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare12@example.com", "password")
+	ctx := context.Background()
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, nil)
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	if result.ChildrenCount != 0 {
+		t.Errorf("expected children_count 0, got %d", result.ChildrenCount)
+	}
+	if result.MatchCount != 0 {
+		t.Errorf("expected match_count 0, got %d", result.MatchCount)
+	}
+	if result.BillOnlyCount != 0 {
+		t.Errorf("expected bill_only_count 0, got %d", result.BillOnlyCount)
+	}
+	if result.CalcOnlyCount != 0 {
+		t.Errorf("expected calc_only_count 0, got %d", result.CalcOnlyCount)
+	}
+	if result.BillTotal != 0 {
+		t.Errorf("expected bill_total 0, got %d", result.BillTotal)
+	}
+	if result.CalcTotal != 0 {
+		t.Errorf("expected calc_total 0, got %d", result.CalcTotal)
+	}
+}
+
+func TestGovernmentFundingBillService_Compare_CrossTenancy(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	user := createTestUser(t, db, "User", "compare13@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Create child with voucher in org2
+	voucher := "GB-XXXXXXXXXX0-01"
+	createChildWithVoucherAndContract(t, db, "Cross", "Tenant", org2.ID,
+		voucher, time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Create bill in org1 with same voucher
+	period := createBillPeriodForCompare(t, db, org1.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: voucher,
+			ChildName:     "Tenant, Cross",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments:      []models.GovernmentFundingBillPayment{{Key: "care_type", Value: "ganztag", Amount: 120000}},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org1.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	// Voucher in org2 should NOT match for org1's bill
+	if result.BillOnlyCount != 1 {
+		t.Errorf("expected bill_only_count 1 (cross-org voucher should not match), got %d", result.BillOnlyCount)
+	}
+	if result.MatchCount != 0 {
+		t.Errorf("expected match_count 0, got %d", result.MatchCount)
 	}
 }

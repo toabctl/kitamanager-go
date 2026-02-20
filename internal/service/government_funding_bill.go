@@ -12,19 +12,29 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/isbj"
 	"github.com/eenemeene/kitamanager-go/internal/models"
 	"github.com/eenemeene/kitamanager-go/internal/store"
+	"github.com/eenemeene/kitamanager-go/internal/validation"
 )
 
 // GovernmentFundingBillService handles government funding bill file processing.
 type GovernmentFundingBillService struct {
 	childStore      store.ChildStorer
 	billPeriodStore store.GovernmentFundingBillPeriodStorer
+	orgStore        store.OrganizationStorer
+	fundingStore    store.GovernmentFundingStorer
 }
 
 // NewGovernmentFundingBillService creates a new GovernmentFundingBillService.
-func NewGovernmentFundingBillService(childStore store.ChildStorer, billPeriodStore store.GovernmentFundingBillPeriodStorer) *GovernmentFundingBillService {
+func NewGovernmentFundingBillService(
+	childStore store.ChildStorer,
+	billPeriodStore store.GovernmentFundingBillPeriodStorer,
+	orgStore store.OrganizationStorer,
+	fundingStore store.GovernmentFundingStorer,
+) *GovernmentFundingBillService {
 	return &GovernmentFundingBillService{
 		childStore:      childStore,
 		billPeriodStore: billPeriodStore,
+		orgStore:        orgStore,
+		fundingStore:    fundingStore,
 	}
 }
 
@@ -233,6 +243,305 @@ func ComputeFileHash(r io.Reader) (string, error) {
 		return "", fmt.Errorf("computing file hash: %w", err)
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// Compare compares an uploaded ISBJ bill against calculated funding rates per child and property.
+func (s *GovernmentFundingBillService) Compare(ctx context.Context, billID, orgID uint) (*models.FundingComparisonResponse, error) {
+	// 1. Fetch bill period
+	period, err := s.billPeriodStore.FindByID(ctx, billID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, apperror.NotFound("bill period")
+		}
+		return nil, apperror.InternalWrap(err, "failed to fetch bill period")
+	}
+	if period.OrganizationID != orgID {
+		return nil, apperror.NotFound("bill period")
+	}
+
+	// 2. Get org state
+	org, err := s.orgStore.FindByID(ctx, orgID)
+	if err != nil {
+		return nil, apperror.InternalWrap(err, "failed to fetch organization")
+	}
+
+	// 3. Get funding config and find period covering bill date
+	var fundingPeriod *models.GovernmentFundingPeriod
+	var labelMap map[string]string
+	funding, fundingErr := s.fundingStore.FindByStateWithDetails(ctx, org.State, 0, nil)
+	if fundingErr == nil {
+		fundingPeriod = findPeriodForDate(funding.Periods, period.From)
+		labelMap = buildLabelMap(funding)
+	}
+	if labelMap == nil {
+		labelMap = make(map[string]string)
+	}
+
+	// 4. Match vouchers — same logic as GetByID
+	voucherNumbers := make([]string, 0, len(period.Children))
+	for _, child := range period.Children {
+		voucherNumbers = append(voucherNumbers, child.VoucherNumber)
+	}
+
+	contractMap := make(map[string]models.ChildContract)
+	if len(voucherNumbers) > 0 {
+		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers)
+		if err != nil {
+			return nil, apperror.InternalWrap(err, "failed to fetch contracts")
+		}
+		for _, c := range contracts {
+			if c.VoucherNumber != nil {
+				contractMap[*c.VoucherNumber] = c
+			}
+		}
+	}
+
+	// 5. Get children with active contracts for calc-only detection
+	activeChildren, err := s.childStore.FindByOrganizationWithActiveOn(ctx, orgID, period.From)
+	if err != nil {
+		return nil, apperror.InternalWrap(err, "failed to fetch active children")
+	}
+
+	// Build set of vouchers present in the bill
+	billVoucherSet := make(map[string]bool, len(period.Children))
+	for _, child := range period.Children {
+		billVoucherSet[child.VoucherNumber] = true
+	}
+
+	// 6. Build comparison per bill child
+	response := &models.FundingComparisonResponse{
+		BillID:       period.ID,
+		BillFrom:     period.From.Format(models.DateFormat),
+		BillTo:       formatToDate(period.To),
+		FacilityName: period.FacilityName,
+		Children:     make([]models.FundingComparisonChild, 0, len(period.Children)),
+	}
+
+	// Track matched child IDs for calc-only detection
+	matchedChildIDs := make(map[uint]bool)
+
+	for _, billChild := range period.Children {
+		billTotal := 0
+		billAmounts := make(map[string]int) // "key:value" → amount
+		for _, p := range billChild.Payments {
+			billTotal += p.Amount
+			billAmounts[p.Key+":"+p.Value] += p.Amount
+		}
+
+		compChild := models.FundingComparisonChild{
+			VoucherNumber: billChild.VoucherNumber,
+			ChildName:     billChild.ChildName,
+			BirthDate:     billChild.BirthDate,
+			BillTotal:     billTotal,
+		}
+
+		contract, matched := contractMap[billChild.VoucherNumber]
+		if !matched {
+			// bill_only
+			compChild.Status = "bill_only"
+			compChild.Properties = buildBillOnlyProperties(billChild.Payments, labelMap)
+			response.BillOnlyCount++
+		} else {
+			// Matched: find child in active children for birthdate and age calculation
+			compChild.ChildID = &contract.ChildID
+			matchedChildIDs[contract.ChildID] = true
+
+			var childAge *int
+			for _, ac := range activeChildren {
+				if ac.ID == contract.ChildID {
+					age := validation.CalculateAgeOnDate(ac.Birthdate, period.From)
+					childAge = &age
+					break
+				}
+			}
+			compChild.Age = childAge
+
+			// Calculate funding amounts
+			calcAmounts := make(map[string]int) // "key:value" → amount
+			if childAge != nil {
+				for _, fp := range matchFundingProperties(*childAge, contract.Properties, fundingPeriod) {
+					calcAmounts[fp.Key+":"+fp.Value] += fp.Payment
+				}
+			}
+
+			// Build property-level comparison
+			compChild.Properties = buildComparisonProperties(billAmounts, calcAmounts, labelMap)
+
+			// Compute totals
+			calcTotal := 0
+			for _, amt := range calcAmounts {
+				calcTotal += amt
+			}
+			compChild.CalcTotal = &calcTotal
+
+			diff := billTotal - calcTotal
+			compChild.Difference = &diff
+
+			if diff == 0 {
+				compChild.Status = "match"
+				response.MatchCount++
+			} else {
+				compChild.Status = "difference"
+				response.DifferenceCount++
+			}
+
+			// Aggregate totals (only matched children)
+			response.BillTotal += billTotal
+			response.CalcTotal += calcTotal
+		}
+
+		response.Children = append(response.Children, compChild)
+	}
+
+	// 7. Detect calc-only children
+	for _, ac := range activeChildren {
+		if matchedChildIDs[ac.ID] {
+			continue
+		}
+		// Check if this child has a voucher that's already in the bill
+		if len(ac.Contracts) == 0 {
+			continue
+		}
+		contract := ac.Contracts[0]
+		if contract.VoucherNumber != nil && billVoucherSet[*contract.VoucherNumber] {
+			continue
+		}
+
+		childAge := validation.CalculateAgeOnDate(ac.Birthdate, period.From)
+
+		calcAmounts := make(map[string]int)
+		for _, fp := range matchFundingProperties(childAge, contract.Properties, fundingPeriod) {
+			calcAmounts[fp.Key+":"+fp.Value] += fp.Payment
+		}
+
+		calcTotal := 0
+		for _, amt := range calcAmounts {
+			calcTotal += amt
+		}
+
+		voucherDisplay := ""
+		if contract.VoucherNumber != nil {
+			voucherDisplay = *contract.VoucherNumber
+		}
+
+		compChild := models.FundingComparisonChild{
+			VoucherNumber: voucherDisplay,
+			ChildName:     ac.LastName + ", " + ac.FirstName,
+			ChildID:       &ac.ID,
+			Age:           &childAge,
+			CalcTotal:     &calcTotal,
+			Status:        "calc_only",
+			Properties:    buildCalcOnlyProperties(calcAmounts, labelMap),
+		}
+
+		response.Children = append(response.Children, compChild)
+		response.CalcOnlyCount++
+	}
+
+	response.ChildrenCount = len(response.Children)
+	response.Difference = response.BillTotal - response.CalcTotal
+
+	return response, nil
+}
+
+// buildLabelMap builds a map of "key:value" → label from all funding periods.
+func buildLabelMap(funding *models.GovernmentFunding) map[string]string {
+	labelMap := make(map[string]string)
+	for _, period := range funding.Periods {
+		for _, prop := range period.Properties {
+			if prop.Label != "" {
+				key := prop.Key + ":" + prop.Value
+				if _, exists := labelMap[key]; !exists {
+					labelMap[key] = prop.Label
+				}
+			}
+		}
+	}
+	return labelMap
+}
+
+// buildComparisonProperties builds the property-level comparison from bill and calculated amounts.
+func buildComparisonProperties(billAmounts, calcAmounts map[string]int, labelMap map[string]string) []models.FundingComparisonAmount {
+	allKeys := make(map[string]bool)
+	for k := range billAmounts {
+		allKeys[k] = true
+	}
+	for k := range calcAmounts {
+		allKeys[k] = true
+	}
+
+	props := make([]models.FundingComparisonAmount, 0, len(allKeys))
+	for kv := range allKeys {
+		parts := splitKeyValue(kv)
+		prop := models.FundingComparisonAmount{
+			Key:   parts[0],
+			Value: parts[1],
+			Label: labelMap[kv],
+		}
+
+		if amt, ok := billAmounts[kv]; ok {
+			prop.BillAmount = &amt
+		}
+		if amt, ok := calcAmounts[kv]; ok {
+			prop.CalcAmount = &amt
+		}
+
+		billVal := 0
+		calcVal := 0
+		if prop.BillAmount != nil {
+			billVal = *prop.BillAmount
+		}
+		if prop.CalcAmount != nil {
+			calcVal = *prop.CalcAmount
+		}
+		prop.Difference = billVal - calcVal
+
+		props = append(props, prop)
+	}
+	return props
+}
+
+// buildBillOnlyProperties builds properties for a bill-only child (no calculated counterpart).
+func buildBillOnlyProperties(payments []models.GovernmentFundingBillPayment, labelMap map[string]string) []models.FundingComparisonAmount {
+	props := make([]models.FundingComparisonAmount, 0, len(payments))
+	for _, p := range payments {
+		amt := p.Amount
+		props = append(props, models.FundingComparisonAmount{
+			Key:        p.Key,
+			Value:      p.Value,
+			Label:      labelMap[p.Key+":"+p.Value],
+			BillAmount: &amt,
+			Difference: amt,
+		})
+	}
+	return props
+}
+
+// buildCalcOnlyProperties builds properties for a calc-only child (not in bill).
+func buildCalcOnlyProperties(calcAmounts map[string]int, labelMap map[string]string) []models.FundingComparisonAmount {
+	props := make([]models.FundingComparisonAmount, 0, len(calcAmounts))
+	for kv, amt := range calcAmounts {
+		parts := splitKeyValue(kv)
+		a := amt
+		props = append(props, models.FundingComparisonAmount{
+			Key:        parts[0],
+			Value:      parts[1],
+			Label:      labelMap[kv],
+			CalcAmount: &a,
+			Difference: -a,
+		})
+	}
+	return props
+}
+
+// splitKeyValue splits a "key:value" string into its parts.
+func splitKeyValue(kv string) [2]string {
+	for i, c := range kv {
+		if c == ':' {
+			return [2]string{kv[:i], kv[i+1:]}
+		}
+	}
+	return [2]string{kv, ""}
 }
 
 func (s *GovernmentFundingBillService) buildResponse(ctx context.Context, orgID, periodID uint, converted *isbj.ConvertedSettlement) (*models.GovernmentFundingBillResponse, error) {

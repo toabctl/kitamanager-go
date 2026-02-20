@@ -102,6 +102,47 @@ type GovernmentFundingBillPeriodListResponse struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
+// FundingComparisonAmount represents one property's amounts in the comparison.
+type FundingComparisonAmount struct {
+	Key        string `json:"key" example:"care_type"`
+	Value      string `json:"value" example:"ganztag"`
+	Label      string `json:"label" example:"Ganztag"`
+	BillAmount *int   `json:"bill_amount" example:"166847"`       // nil if not in bill
+	CalcAmount *int   `json:"calculated_amount" example:"166847"` // nil if not calculable
+	Difference int    `json:"difference" example:"0"`             // bill - calc (0 if either nil)
+}
+
+// FundingComparisonChild represents the comparison for one child.
+type FundingComparisonChild struct {
+	VoucherNumber string                    `json:"voucher_number" example:"GB-12345678901-02"`
+	ChildName     string                    `json:"child_name" example:"Mustermann, Max"`
+	BirthDate     string                    `json:"birth_date,omitempty" example:"01.20"`
+	ChildID       *uint                     `json:"child_id,omitempty" example:"42"`
+	Age           *int                      `json:"age,omitempty" example:"3"`
+	BillTotal     int                       `json:"bill_total" example:"166847"`
+	CalcTotal     *int                      `json:"calculated_total,omitempty" example:"166847"`
+	Difference    *int                      `json:"difference,omitempty" example:"0"`
+	Status        string                    `json:"status" example:"match"` // match|difference|bill_only|calc_only
+	Properties    []FundingComparisonAmount `json:"properties"`
+}
+
+// FundingComparisonResponse is the top-level comparison result.
+type FundingComparisonResponse struct {
+	BillID          uint                     `json:"bill_id" example:"1"`
+	BillFrom        string                   `json:"bill_from" example:"2025-11-01"`
+	BillTo          string                   `json:"bill_to" example:"2025-11-30"`
+	FacilityName    string                   `json:"facility_name" example:"Kita Sonnenschein"`
+	BillTotal       int                      `json:"bill_total" example:"500000"`
+	CalcTotal       int                      `json:"calculated_total" example:"498000"`
+	Difference      int                      `json:"difference" example:"2000"`
+	ChildrenCount   int                      `json:"children_count" example:"25"`
+	MatchCount      int                      `json:"match_count" example:"20"`
+	DifferenceCount int                      `json:"difference_count" example:"3"`
+	BillOnlyCount   int                      `json:"bill_only_count" example:"1"`
+	CalcOnlyCount   int                      `json:"calc_only_count" example:"1"`
+	Children        []FundingComparisonChild `json:"children"`
+}
+
 // GovernmentFundingBillResponse is the full response for the ISBJ upload endpoint (backwards compatible).
 type GovernmentFundingBillResponse struct {
 	ID                uint                                 `json:"id" example:"1"`

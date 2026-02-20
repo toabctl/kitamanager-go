@@ -23,7 +23,9 @@ import (
 func createGovBillService(db *gorm.DB) *service.GovernmentFundingBillService {
 	childStore := store.NewChildStore(db)
 	billPeriodStore := store.NewGovernmentFundingBillPeriodStore(db)
-	return service.NewGovernmentFundingBillService(childStore, billPeriodStore)
+	orgStore := store.NewOrganizationStore(db)
+	fundingStore := store.NewGovernmentFundingStore(db)
+	return service.NewGovernmentFundingBillService(childStore, billPeriodStore, orgStore, fundingStore)
 }
 
 func createGovBillHandler(db *gorm.DB) *GovernmentFundingBillHandler {
@@ -42,6 +44,7 @@ func setupBillRouterWithUser(db *gorm.DB, userID uint) (*gin.Engine, *Government
 	{
 		org.GET("", handler.List)
 		org.GET("/:billId", handler.Get)
+		org.GET("/:billId/compare", handler.Compare)
 		org.POST("", handler.UploadISBJ)
 		org.DELETE("/:billId", handler.Delete)
 	}
@@ -454,5 +457,41 @@ func TestGovernmentFundingBillHandler_DeleteCascade(t *testing.T) {
 		Count(&paymentCount)
 	if paymentCount != 0 {
 		t.Errorf("expected 0 payments after cascade delete, got %d", paymentCount)
+	}
+}
+
+func TestGovernmentFundingBillHandler_Compare(t *testing.T) {
+	db := setupTestDB(t)
+	r, _ := setupBillRouter(db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "billcompare1@example.com", "password")
+
+	period := createBillPeriodInDB(t, db, org.ID, user.ID, "Kita Compare", 11)
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/government-funding-bills/%d/compare", org.ID, period.ID), nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var result models.FundingComparisonResponse
+	parseResponse(t, w, &result)
+
+	if result.BillID != period.ID {
+		t.Errorf("expected bill_id %d, got %d", period.ID, result.BillID)
+	}
+	if result.FacilityName != "Kita Compare" {
+		t.Errorf("expected facility name 'Kita Compare', got %q", result.FacilityName)
+	}
+}
+
+func TestGovernmentFundingBillHandler_Compare_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	r, _ := setupBillRouter(db)
+	org := createTestOrganization(t, db, "Test Org")
+
+	w := performRequest(r, "GET", fmt.Sprintf("/organizations/%d/government-funding-bills/99999/compare", org.ID), nil)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected status 404, got %d: %s", w.Code, w.Body.String())
 	}
 }

@@ -291,6 +291,9 @@ func Setup(r *gin.Engine, d Deps) {
 					fundingBills.GET("/:billId",
 						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionRead),
 						governmentFundingBillHandler.Get)
+					fundingBills.GET("/:billId/compare",
+						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionRead),
+						governmentFundingBillHandler.Compare)
 					fundingBills.POST("",
 						authzMiddleware.RequirePermission(rbac.ResourceGovernmentFundingBills, rbac.ActionCreate),
 						governmentFundingBillHandler.UploadISBJ)

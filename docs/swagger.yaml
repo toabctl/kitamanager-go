@@ -814,6 +814,108 @@ definitions:
         example: qualified
         type: string
     type: object
+  github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonAmount:
+    properties:
+      bill_amount:
+        description: nil if not in bill
+        example: 166847
+        type: integer
+      calculated_amount:
+        description: nil if not calculable
+        example: 166847
+        type: integer
+      difference:
+        description: bill - calc (0 if either nil)
+        example: 0
+        type: integer
+      key:
+        example: care_type
+        type: string
+      label:
+        example: Ganztag
+        type: string
+      value:
+        example: ganztag
+        type: string
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonChild:
+    properties:
+      age:
+        example: 3
+        type: integer
+      bill_total:
+        example: 166847
+        type: integer
+      birth_date:
+        example: "01.20"
+        type: string
+      calculated_total:
+        example: 166847
+        type: integer
+      child_id:
+        example: 42
+        type: integer
+      child_name:
+        example: Mustermann, Max
+        type: string
+      difference:
+        example: 0
+        type: integer
+      properties:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonAmount'
+        type: array
+      status:
+        description: match|difference|bill_only|calc_only
+        example: match
+        type: string
+      voucher_number:
+        example: GB-12345678901-02
+        type: string
+    type: object
+  github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonResponse:
+    properties:
+      bill_from:
+        example: "2025-11-01"
+        type: string
+      bill_id:
+        example: 1
+        type: integer
+      bill_only_count:
+        example: 1
+        type: integer
+      bill_to:
+        example: "2025-11-30"
+        type: string
+      bill_total:
+        example: 500000
+        type: integer
+      calc_only_count:
+        example: 1
+        type: integer
+      calculated_total:
+        example: 498000
+        type: integer
+      children:
+        items:
+          $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonChild'
+        type: array
+      children_count:
+        example: 25
+        type: integer
+      difference:
+        example: 2000
+        type: integer
+      difference_count:
+        example: 3
+        type: integer
+      facility_name:
+        example: Kita Sonnenschein
+        type: string
+      match_count:
+        example: 20
+        type: integer
+    type: object
   github_com_eenemeene_kitamanager-go_internal_models.GovernmentFundingBillAmount:
     properties:
       amount:
@@ -5524,6 +5626,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Get government funding bill period detail
+      tags:
+      - government-funding-bills
+  /api/v1/organizations/{orgId}/government-funding-bills/{billId}/compare:
+    get:
+      description: Compare an uploaded ISBJ bill against calculated funding rates
+        per child and property
+      parameters:
+      - description: Organization ID
+        in: path
+        name: orgId
+        required: true
+        type: integer
+      - description: Bill Period ID
+        in: path
+        name: billId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Compare funding bill with calculated funding
       tags:
       - government-funding-bills
   /api/v1/organizations/{orgId}/pay-plans:

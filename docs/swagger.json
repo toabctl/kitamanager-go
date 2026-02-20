@@ -4924,6 +4924,65 @@
                 }
             }
         },
+        "/api/v1/organizations/{orgId}/government-funding-bills/{billId}/compare": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Compare an uploaded ISBJ bill against calculated funding rates per child and property",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "government-funding-bills"
+                ],
+                "summary": "Compare funding bill with calculated funding",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Bill Period ID",
+                        "name": "billId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{orgId}/pay-plans": {
             "get": {
                 "security": [
@@ -8797,6 +8856,145 @@
                 "staff_category": {
                     "type": "string",
                     "example": "qualified"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonAmount": {
+            "type": "object",
+            "properties": {
+                "bill_amount": {
+                    "description": "nil if not in bill",
+                    "type": "integer",
+                    "example": 166847
+                },
+                "calculated_amount": {
+                    "description": "nil if not calculable",
+                    "type": "integer",
+                    "example": 166847
+                },
+                "difference": {
+                    "description": "bill - calc (0 if either nil)",
+                    "type": "integer",
+                    "example": 0
+                },
+                "key": {
+                    "type": "string",
+                    "example": "care_type"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Ganztag"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "ganztag"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonChild": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "bill_total": {
+                    "type": "integer",
+                    "example": 166847
+                },
+                "birth_date": {
+                    "type": "string",
+                    "example": "01.20"
+                },
+                "calculated_total": {
+                    "type": "integer",
+                    "example": 166847
+                },
+                "child_id": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "child_name": {
+                    "type": "string",
+                    "example": "Mustermann, Max"
+                },
+                "difference": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "properties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonAmount"
+                    }
+                },
+                "status": {
+                    "description": "match|difference|bill_only|calc_only",
+                    "type": "string",
+                    "example": "match"
+                },
+                "voucher_number": {
+                    "type": "string",
+                    "example": "GB-12345678901-02"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonResponse": {
+            "type": "object",
+            "properties": {
+                "bill_from": {
+                    "type": "string",
+                    "example": "2025-11-01"
+                },
+                "bill_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "bill_only_count": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "bill_to": {
+                    "type": "string",
+                    "example": "2025-11-30"
+                },
+                "bill_total": {
+                    "type": "integer",
+                    "example": 500000
+                },
+                "calc_only_count": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "calculated_total": {
+                    "type": "integer",
+                    "example": 498000
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.FundingComparisonChild"
+                    }
+                },
+                "children_count": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "difference": {
+                    "type": "integer",
+                    "example": 2000
+                },
+                "difference_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "facility_name": {
+                    "type": "string",
+                    "example": "Kita Sonnenschein"
+                },
+                "match_count": {
+                    "type": "integer",
+                    "example": 20
                 }
             }
         },
