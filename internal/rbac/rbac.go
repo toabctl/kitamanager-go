@@ -14,6 +14,7 @@ const (
 	RoleAdmin      = "admin"
 	RoleManager    = "manager"
 	RoleMember     = "member"
+	RoleStaff      = "staff"
 )
 
 // Resources
@@ -261,6 +262,16 @@ func (e *Enforcer) SeedDefaultPolicies() error {
 		{RoleMember, "*", ResourceBudgetItems, ActionRead},
 		{RoleMember, "*", ResourceBudgetItemEntries, ActionRead},
 		{RoleMember, "*", ResourceStatistics, ActionRead},
+
+		// Staff - read-only access to children/contracts/sections, full CRUD on attendance
+		{RoleStaff, "*", ResourceOrganizations, ActionRead},
+		{RoleStaff, "*", ResourceChildren, ActionRead},
+		{RoleStaff, "*", ResourceChildContracts, ActionRead},
+		{RoleStaff, "*", ResourceChildAttendance, ActionCreate},
+		{RoleStaff, "*", ResourceChildAttendance, ActionRead},
+		{RoleStaff, "*", ResourceChildAttendance, ActionUpdate},
+		{RoleStaff, "*", ResourceChildAttendance, ActionDelete},
+		{RoleStaff, "*", ResourceSections, ActionRead},
 	}
 
 	_, err := e.AddPolicies(policies)

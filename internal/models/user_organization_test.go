@@ -14,6 +14,7 @@ func TestRole_IsValid(t *testing.T) {
 		{"valid admin", RoleAdmin, true},
 		{"valid manager", RoleManager, true},
 		{"valid member", RoleMember, true},
+		{"valid staff", RoleStaff, true},
 		{"empty string", Role(""), false},
 		{"superadmin is not valid", Role("superadmin"), false},
 		{"case sensitive - Admin", Role("Admin"), false},
@@ -43,6 +44,7 @@ func TestRole_Precedence(t *testing.T) {
 		{"admin has precedence 3", RoleAdmin, 3},
 		{"manager has precedence 2", RoleManager, 2},
 		{"member has precedence 1", RoleMember, 1},
+		{"staff has precedence 0", RoleStaff, 0},
 		{"invalid role has precedence 0", Role("invalid"), 0},
 		{"empty string has precedence 0", Role(""), 0},
 		{"superadmin has precedence 0", Role("superadmin"), 0},
@@ -59,12 +61,15 @@ func TestRole_Precedence(t *testing.T) {
 }
 
 func TestRole_Precedence_Ordering(t *testing.T) {
-	// Verify that admin > manager > member
+	// Verify that admin > manager > member > staff
 	if RoleAdmin.Precedence() <= RoleManager.Precedence() {
 		t.Error("admin should have higher precedence than manager")
 	}
 	if RoleManager.Precedence() <= RoleMember.Precedence() {
 		t.Error("manager should have higher precedence than member")
+	}
+	if RoleMember.Precedence() <= RoleStaff.Precedence() {
+		t.Error("member should have higher precedence than staff")
 	}
 }
 

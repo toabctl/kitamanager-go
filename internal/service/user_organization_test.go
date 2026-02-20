@@ -38,7 +38,7 @@ func TestUserOrganizationService_AddUserToOrganization(t *testing.T) {
 }
 
 func TestUserOrganizationService_AddUserToOrganization_AllRoles(t *testing.T) {
-	roles := []models.Role{models.RoleAdmin, models.RoleManager, models.RoleMember}
+	roles := []models.Role{models.RoleAdmin, models.RoleManager, models.RoleMember, models.RoleStaff}
 
 	for _, role := range roles {
 		t.Run(string(role), func(t *testing.T) {

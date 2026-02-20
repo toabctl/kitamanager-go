@@ -11,12 +11,13 @@ const (
 	RoleAdmin   Role = "admin"
 	RoleManager Role = "manager"
 	RoleMember  Role = "member"
+	RoleStaff   Role = "staff"
 )
 
 // IsValid checks if the role is a valid role value
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleManager, RoleMember:
+	case RoleAdmin, RoleManager, RoleMember, RoleStaff:
 		return true
 	default:
 		return false
@@ -32,6 +33,8 @@ func (r Role) Precedence() int {
 		return 2
 	case RoleMember:
 		return 1
+	case RoleStaff:
+		return 0
 	default:
 		return 0
 	}

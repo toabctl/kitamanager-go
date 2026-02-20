@@ -91,6 +91,9 @@ func TestEnforcer_SeedDefaultPolicies(t *testing.T) {
 	if !hasRole[RoleManager] {
 		t.Error("missing manager policies")
 	}
+	if !hasRole[RoleStaff] {
+		t.Error("missing staff policies")
+	}
 }
 
 func TestEnforcer_AssignSuperAdmin(t *testing.T) {
@@ -257,6 +260,94 @@ func TestEnforcer_CheckPermission_Manager(t *testing.T) {
 		{"manager cannot create users", 3, 1, ResourceUsers, ActionCreate, false},
 		{"manager cannot delete users", 3, 1, ResourceUsers, ActionDelete, false},
 		{"manager cannot access other org", 3, 2, ResourceEmployees, ActionRead, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			allowed, err := enforcer.CheckPermission(tt.userID, tt.orgID, tt.resource, tt.action)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if allowed != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, allowed)
+			}
+		})
+	}
+}
+
+func TestEnforcer_CheckPermission_Staff(t *testing.T) {
+	enforcer := setupTestEnforcer(t)
+
+	// Assign staff to org 1
+	_ = enforcer.AssignRole(6, RoleStaff, 1)
+
+	tests := []struct {
+		name     string
+		userID   uint
+		orgID    uint
+		resource string
+		action   string
+		expected bool
+	}{
+		// Allowed permissions
+		{"staff can read org", 6, 1, ResourceOrganizations, ActionRead, true},
+		{"staff can read children", 6, 1, ResourceChildren, ActionRead, true},
+		{"staff can read child contracts", 6, 1, ResourceChildContracts, ActionRead, true},
+		{"staff can create attendance", 6, 1, ResourceChildAttendance, ActionCreate, true},
+		{"staff can read attendance", 6, 1, ResourceChildAttendance, ActionRead, true},
+		{"staff can update attendance", 6, 1, ResourceChildAttendance, ActionUpdate, true},
+		{"staff can delete attendance", 6, 1, ResourceChildAttendance, ActionDelete, true},
+		{"staff can read sections", 6, 1, ResourceSections, ActionRead, true},
+
+		// Denied permissions - children modifications
+		{"staff cannot create children", 6, 1, ResourceChildren, ActionCreate, false},
+		{"staff cannot update children", 6, 1, ResourceChildren, ActionUpdate, false},
+		{"staff cannot delete children", 6, 1, ResourceChildren, ActionDelete, false},
+
+		// Denied permissions - child contracts modifications
+		{"staff cannot create child contracts", 6, 1, ResourceChildContracts, ActionCreate, false},
+		{"staff cannot update child contracts", 6, 1, ResourceChildContracts, ActionUpdate, false},
+		{"staff cannot delete child contracts", 6, 1, ResourceChildContracts, ActionDelete, false},
+
+		// Denied permissions - employees
+		{"staff cannot read employees", 6, 1, ResourceEmployees, ActionRead, false},
+		{"staff cannot create employees", 6, 1, ResourceEmployees, ActionCreate, false},
+
+		// Denied permissions - employee contracts
+		{"staff cannot read employee contracts", 6, 1, ResourceEmployeeContracts, ActionRead, false},
+
+		// Denied permissions - users
+		{"staff cannot read users", 6, 1, ResourceUsers, ActionRead, false},
+		{"staff cannot create users", 6, 1, ResourceUsers, ActionCreate, false},
+
+		// Denied permissions - pay plans
+		{"staff cannot read pay plans", 6, 1, ResourcePayPlans, ActionRead, false},
+
+		// Denied permissions - fundings
+		{"staff cannot read fundings", 6, 1, ResourceFundings, ActionRead, false},
+
+		// Denied permissions - budget
+		{"staff cannot read budget items", 6, 1, ResourceBudgetItems, ActionRead, false},
+		{"staff cannot read budget item entries", 6, 1, ResourceBudgetItemEntries, ActionRead, false},
+
+		// Denied permissions - government funding
+		{"staff cannot read government funding bills", 6, 1, ResourceGovernmentFundingBills, ActionRead, false},
+
+		// Denied permissions - statistics
+		{"staff cannot read statistics", 6, 1, ResourceStatistics, ActionRead, false},
+
+		// Denied permissions - organizations modifications
+		{"staff cannot update org", 6, 1, ResourceOrganizations, ActionUpdate, false},
+		{"staff cannot create org", 6, 1, ResourceOrganizations, ActionCreate, false},
+		{"staff cannot delete org", 6, 1, ResourceOrganizations, ActionDelete, false},
+
+		// Denied permissions - sections modifications
+		{"staff cannot create sections", 6, 1, ResourceSections, ActionCreate, false},
+		{"staff cannot update sections", 6, 1, ResourceSections, ActionUpdate, false},
+		{"staff cannot delete sections", 6, 1, ResourceSections, ActionDelete, false},
+
+		// Cannot access other org
+		{"staff cannot access other org", 6, 2, ResourceChildren, ActionRead, false},
 	}
 
 	for _, tt := range tests {

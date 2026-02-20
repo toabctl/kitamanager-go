@@ -1959,11 +1959,13 @@ definitions:
     - admin
     - manager
     - member
+    - staff
     type: string
     x-enum-varnames:
     - RoleAdmin
     - RoleManager
     - RoleMember
+    - RoleStaff
   github_com_eenemeene_kitamanager-go_internal_models.SectionCreateRequest:
     properties:
       max_age_months:

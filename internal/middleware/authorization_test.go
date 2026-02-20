@@ -1214,6 +1214,288 @@ func TestAuthorizationMiddleware_OrganizationList_NoRoleCannotList(t *testing.T)
 	}
 }
 
+// Tests for staff role
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCanReadChildren(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/organizations/:orgId/children",
+		middleware.RequirePermission(rbac.ResourceChildren, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("GET", "/organizations/1/children", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCanCreateAttendance(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.POST("/organizations/:orgId/children/:id/attendance",
+		middleware.RequirePermission(rbac.ResourceChildAttendance, rbac.ActionCreate),
+		func(c *gin.Context) {
+			c.JSON(http.StatusCreated, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("POST", "/organizations/1/children/1/attendance", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status %d, got %d: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCanUpdateAttendance(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.PUT("/organizations/:orgId/children/:id/attendance/:attendanceId",
+		middleware.RequirePermission(rbac.ResourceChildAttendance, rbac.ActionUpdate),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("PUT", "/organizations/1/children/1/attendance/1", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCanDeleteAttendance(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.DELETE("/organizations/:orgId/children/:id/attendance/:attendanceId",
+		middleware.RequirePermission(rbac.ResourceChildAttendance, rbac.ActionDelete),
+		func(c *gin.Context) {
+			c.Status(http.StatusNoContent)
+		})
+
+	req, _ := http.NewRequest("DELETE", "/organizations/1/children/1/attendance/1", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status %d, got %d: %s", http.StatusNoContent, w.Code, w.Body.String())
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCannotAccessEmployees(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/organizations/:orgId/employees",
+		middleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("GET", "/organizations/1/employees", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCannotModifyChildren(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.POST("/organizations/:orgId/children",
+		middleware.RequirePermission(rbac.ResourceChildren, rbac.ActionCreate),
+		func(c *gin.Context) {
+			c.JSON(http.StatusCreated, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("POST", "/organizations/1/children", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+	}
+}
+
+func TestAuthorizationMiddleware_RequireGlobalPermission_StaffCannotAccessUsers(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/users",
+		middleware.RequireGlobalPermission(rbac.ResourceUsers, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("GET", "/users", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCannotAccessPayPlans(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/organizations/:orgId/payplans",
+		middleware.RequirePermission(rbac.ResourcePayPlans, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("GET", "/organizations/1/payplans", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+	}
+}
+
+func TestAuthorizationMiddleware_RequirePermission_StaffCannotAccessBudget(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/organizations/:orgId/budget-items",
+		middleware.RequirePermission(rbac.ResourceBudgetItems, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "success"})
+		})
+
+	req, _ := http.NewRequest("GET", "/organizations/1/budget-items", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected status %d, got %d", http.StatusForbidden, w.Code)
+	}
+}
+
+func TestAuthorizationMiddleware_OrganizationList_StaffCanList(t *testing.T) {
+	db := setupTestDB(t)
+	enforcer := setupTestEnforcer(t)
+	assignRole(t, db, 1, models.RoleStaff, 1)
+	permissionService := setupTestPermissionService(t, db, enforcer)
+
+	middleware := NewAuthorizationMiddleware(permissionService)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(ctxkeys.UserID, uint(1))
+		c.Next()
+	})
+	r.GET("/organizations",
+		middleware.RequireGlobalPermission(rbac.ResourceOrganizations, rbac.ActionRead),
+		func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+		})
+
+	req, _ := http.NewRequest("GET", "/organizations", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d for staff listing organizations, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+}
+
 func TestAuthorizationMiddleware_OrganizationList_UnauthenticatedCannotList(t *testing.T) {
 	db := setupTestDB(t)
 	enforcer := setupTestEnforcer(t)

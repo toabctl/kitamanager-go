@@ -59,6 +59,7 @@ The RBAC system has two components:
 | `admin` | Full access within assigned organization(s). Cannot create/delete organizations. |
 | `manager` | Operational access. Can manage employees, children, and contracts. Read-only access to users and groups. |
 | `member` | Read-only access to employees, children, and contracts within their organization. |
+| `staff` | Read-only access to children, child contracts, and sections. Full CRUD on child attendance. Intended for daycare teachers and assistants. |
 
 ## Resources
 
@@ -129,6 +130,16 @@ Full CRUD access to all resources in all organizations.
 | child_contracts | ❌ | ✅ | ❌ | ❌ |
 | sections | ❌ | ✅ | ❌ | ❌ |
 | payplans | ❌ | ✅ | ❌ | ❌ |
+
+### Staff (within assigned organization)
+
+| Resource | Create | Read | Update | Delete |
+|----------|--------|------|--------|--------|
+| organizations | - | ✅ | - | - |
+| children | - | ✅ | - | - |
+| child_contracts | - | ✅ | - | - |
+| child_attendance | ✅ | ✅ | ✅ | ✅ |
+| sections | - | ✅ | - | - |
 
 ## API Endpoints
 

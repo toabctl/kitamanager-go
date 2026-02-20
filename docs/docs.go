@@ -10401,12 +10401,14 @@ const docTemplate = `{
             "enum": [
                 "admin",
                 "manager",
-                "member"
+                "member",
+                "staff"
             ],
             "x-enum-varnames": [
                 "RoleAdmin",
                 "RoleManager",
-                "RoleMember"
+                "RoleMember",
+                "RoleStaff"
             ]
         },
         "github_com_eenemeene_kitamanager-go_internal_models.SectionCreateRequest": {
