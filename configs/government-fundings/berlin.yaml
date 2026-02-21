@@ -847,7 +847,7 @@
     - key: integration
       value: integration b
       label: Integration B
-      payment: 2842.13
+      payment: 2824.13
       requirement: 0.5
     - key: ndh
       value: ndh
@@ -881,7 +881,7 @@
     - key: care_type
       value: halbtag
       label: Halbtag (bis 5h)
-      payment: 1014.09
+      payment: 1041.09
       requirement: 0.14
   - age:
     - 2
@@ -1291,7 +1291,7 @@
       value: ganztag erweitert
       label: Ganztag Erweitert (>9h)
       payment: 1152.58
-      requirement: 0.22
+      requirement: 0.21
     - key: care_type
       value: ganztag
       label: Ganztag (bis 9h)
@@ -1329,5 +1329,5 @@
     - key: care_type
       value: halbtag
       label: Halbtag (bis 5h)
-      payment: 560.51
+      payment: 570.51
       requirement: 0.07
