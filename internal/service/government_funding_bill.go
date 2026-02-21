@@ -71,12 +71,14 @@ func (s *GovernmentFundingBillService) ProcessISBJ(ctx context.Context, orgID ui
 			BirthDate:     child.BirthDate,
 			District:      child.District,
 		}
-		for _, amt := range child.Amounts {
-			billChild.Payments = append(billChild.Payments, models.GovernmentFundingBillPayment{
-				Key:    amt.Key,
-				Value:  amt.Value,
-				Amount: amt.Amount,
-			})
+		for _, row := range child.Rows {
+			for _, amt := range row.Amounts {
+				billChild.Payments = append(billChild.Payments, models.GovernmentFundingBillPayment{
+					Key:    amt.Key,
+					Value:  amt.Value,
+					Amount: amt.Amount,
+				})
+			}
 		}
 		period.Children = append(period.Children, billChild)
 	}
@@ -86,7 +88,7 @@ func (s *GovernmentFundingBillService) ProcessISBJ(ctx context.Context, orgID ui
 	}
 
 	// Match vouchers and build response
-	return s.buildResponse(ctx, orgID, period.ID, converted)
+	return s.buildResponse(ctx, orgID, period.ID, period.From, converted)
 }
 
 // List returns a paginated list of bill periods for an organization.
@@ -135,7 +137,7 @@ func (s *GovernmentFundingBillService) GetByID(ctx context.Context, id, orgID ui
 
 	contractMap := make(map[string]models.ChildContract)
 	if len(voucherNumbers) > 0 {
-		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers)
+		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers, period.From)
 		if err != nil {
 			return nil, err
 		}
@@ -285,7 +287,7 @@ func (s *GovernmentFundingBillService) Compare(ctx context.Context, billID, orgI
 
 	contractMap := make(map[string]models.ChildContract)
 	if len(voucherNumbers) > 0 {
-		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers)
+		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers, period.From)
 		if err != nil {
 			return nil, apperror.InternalWrap(err, "failed to fetch contracts")
 		}
@@ -546,7 +548,7 @@ func splitKeyValue(kv string) [2]string {
 	return [2]string{kv, ""}
 }
 
-func (s *GovernmentFundingBillService) buildResponse(ctx context.Context, orgID, periodID uint, converted *isbj.ConvertedSettlement) (*models.GovernmentFundingBillResponse, error) {
+func (s *GovernmentFundingBillService) buildResponse(ctx context.Context, orgID, periodID uint, billDate time.Time, converted *isbj.ConvertedSettlement) (*models.GovernmentFundingBillResponse, error) {
 	// Collect voucher numbers for matching
 	voucherNumbers := make([]string, 0, len(converted.Children))
 	for _, child := range converted.Children {
@@ -556,7 +558,7 @@ func (s *GovernmentFundingBillService) buildResponse(ctx context.Context, orgID,
 	// Look up contracts by voucher number
 	contractMap := make(map[string]models.ChildContract)
 	if len(voucherNumbers) > 0 {
-		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers)
+		contracts, err := s.childStore.FindContractsByVoucherNumbers(ctx, orgID, voucherNumbers, billDate)
 		if err != nil {
 			return nil, err
 		}
@@ -571,13 +573,17 @@ func (s *GovernmentFundingBillService) buildResponse(ctx context.Context, orgID,
 	matchedCount := 0
 	children := make([]models.GovernmentFundingBillChildResponse, 0, len(converted.Children))
 	for _, child := range converted.Children {
+		var allAmounts []isbj.SettlementAmount
+		for _, row := range child.Rows {
+			allAmounts = append(allAmounts, row.Amounts...)
+		}
 		resp := models.GovernmentFundingBillChildResponse{
 			VoucherNumber: child.VoucherNumber,
 			ChildName:     child.ChildName,
 			BirthDate:     child.BirthDate,
 			District:      child.District,
 			TotalAmount:   child.TotalAmount,
-			Amounts:       convertBillAmounts(child.Amounts),
+			Amounts:       convertBillAmounts(allAmounts),
 		}
 
 		if contract, ok := contractMap[child.VoucherNumber]; ok {

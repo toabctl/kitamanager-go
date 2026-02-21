@@ -16,14 +16,20 @@ type SettlementAmount struct {
 	Amount int    `json:"amount"`
 }
 
-// ConvertedChild represents a single child's settlement data.
+// ConvertedChildRow represents one Excel row (one billing line item).
+type ConvertedChildRow struct {
+	TotalRowAmount int                `json:"total_row_amount"`
+	Amounts        []SettlementAmount `json:"amounts"`
+}
+
+// ConvertedChild represents a child grouped by voucher number.
 type ConvertedChild struct {
-	VoucherNumber string             `json:"voucher_number"`
-	ChildName     string             `json:"child_name"`
-	BirthDate     string             `json:"birth_date"`
-	District      int64              `json:"district"`
-	TotalAmount   int                `json:"total_amount"`
-	Amounts       []SettlementAmount `json:"amounts"`
+	VoucherNumber string              `json:"voucher_number"`
+	ChildName     string              `json:"child_name"`
+	BirthDate     string              `json:"birth_date"`
+	District      int64               `json:"district"`
+	TotalAmount   int                 `json:"total_amount"`
+	Rows          []ConvertedChildRow `json:"rows"`
 }
 
 // ConvertedSettlement represents the full converted settlement.
@@ -81,7 +87,6 @@ func Convert(output *SenatsabrechnungOutput) (*ConvertedSettlement, error) {
 		FacilityTotal:     output.Einrichtung.Summe,
 		ContractBooking:   output.Abrechnung.VertragsBuchung,
 		CorrectionBooking: output.Abrechnung.KorrekturBuchung,
-		ChildrenCount:     len(output.Vertrag.Kinder),
 		Surcharges: []SettlementAmount{
 			{Key: "ndh", Value: "ndh", Amount: output.Einrichtung.ZuschlagNDH},
 			{Key: "qm/mss", Value: "qm/mss", Amount: output.Einrichtung.ZuschlagQM + output.Einrichtung.ZuschlagMSS},
@@ -89,20 +94,45 @@ func Convert(output *SenatsabrechnungOutput) (*ConvertedSettlement, error) {
 		},
 	}
 
+	// Group children by voucher number.
+	indexByVoucher := make(map[string]int) // voucher → index in result.Children
 	for _, kind := range output.Vertrag.Kinder {
-		child, err := convertChild(&kind)
+		row, meta, err := convertChild(&kind)
 		if err != nil {
 			return nil, err
 		}
-		result.Children = append(result.Children, *child)
+
+		if idx, ok := indexByVoucher[meta.VoucherNumber]; ok {
+			result.Children[idx].Rows = append(result.Children[idx].Rows, *row)
+			result.Children[idx].TotalAmount += row.TotalRowAmount
+		} else {
+			indexByVoucher[meta.VoucherNumber] = len(result.Children)
+			result.Children = append(result.Children, ConvertedChild{
+				VoucherNumber: meta.VoucherNumber,
+				ChildName:     meta.ChildName,
+				BirthDate:     meta.BirthDate,
+				District:      meta.District,
+				TotalAmount:   row.TotalRowAmount,
+				Rows:          []ConvertedChildRow{*row},
+			})
+		}
 	}
+	result.ChildrenCount = len(result.Children)
 	return result, nil
 }
 
-func convertChild(kind *Kind) (*ConvertedChild, error) {
+// convertChildMeta holds the per-row metadata used for grouping.
+type convertChildMeta struct {
+	VoucherNumber string
+	ChildName     string
+	BirthDate     string
+	District      int64
+}
+
+func convertChild(kind *Kind) (*ConvertedChildRow, *convertChildMeta, error) {
 	careType, ok := careScopeMap[kind.Betreuungsumfang]
 	if !ok {
-		return nil, fmt.Errorf("child %s: unknown Betreuungsumfang %q", kind.Name, kind.Betreuungsumfang)
+		return nil, nil, fmt.Errorf("child %s: unknown Betreuungsumfang %q", kind.Name, kind.Betreuungsumfang)
 	}
 
 	qmActive := isFlagActive("QM", kind.QM)
@@ -127,7 +157,7 @@ func convertChild(kind *Kind) (*ConvertedChild, error) {
 		integrationValue = "integration"
 	}
 
-	amounts := []SettlementAmount{
+	allAmounts := []SettlementAmount{
 		{Key: "care_type", Value: careType, Amount: kind.Basisentgeld},
 		{Key: "ndh", Value: flagValue(ndhActive, "ndh", kind.ZuschlagNDH), Amount: kind.ZuschlagNDH},
 		{Key: "qm/mss", Value: flagValue(qmActive || mssActive, "qm/mss", combinedQMMSS), Amount: combinedQMMSS},
@@ -136,12 +166,22 @@ func convertChild(kind *Kind) (*ConvertedChild, error) {
 		{Key: "parent", Value: "meals", Amount: kind.ElternEssen},
 	}
 
-	return &ConvertedChild{
-		VoucherNumber: kind.Gutscheinnummer,
-		ChildName:     kind.Name,
-		BirthDate:     kind.Geburtsdatum,
-		District:      kind.Bezirk,
-		TotalAmount:   kind.Summe,
-		Amounts:       amounts,
-	}, nil
+	// Filter out entries with no value and zero amount (e.g. inactive integration/ndh/qm).
+	amounts := make([]SettlementAmount, 0, len(allAmounts))
+	for _, a := range allAmounts {
+		if a.Value == "" && a.Amount == 0 {
+			continue
+		}
+		amounts = append(amounts, a)
+	}
+
+	return &ConvertedChildRow{
+			TotalRowAmount: kind.Summe,
+			Amounts:        amounts,
+		}, &convertChildMeta{
+			VoucherNumber: kind.Gutscheinnummer,
+			ChildName:     kind.Name,
+			BirthDate:     kind.Geburtsdatum,
+			District:      kind.Bezirk,
+		}, nil
 }

@@ -10,13 +10,13 @@ import (
 )
 
 type ChildStore struct {
-	db            *gorm.DB
+	db          *gorm.DB
 	periodStore *PeriodStore[models.ChildContract]
 }
 
 func NewChildStore(db *gorm.DB) *ChildStore {
 	return &ChildStore{
-		db:            db,
+		db:          db,
 		periodStore: NewPeriodStore[models.ChildContract](db, "child_id"),
 	}
 }
@@ -260,12 +260,14 @@ func (s *ChildStore) FindByOrganizationInDateRange(ctx context.Context, orgID ui
 }
 
 // FindContractsByVoucherNumbers returns child contracts matching the given voucher numbers within an organization.
-func (s *ChildStore) FindContractsByVoucherNumbers(ctx context.Context, orgID uint, voucherNumbers []string) ([]models.ChildContract, error) {
+// Only contracts active on the given date are returned to avoid matching stale/historical contracts.
+func (s *ChildStore) FindContractsByVoucherNumbers(ctx context.Context, orgID uint, voucherNumbers []string, activeOn time.Time) ([]models.ChildContract, error) {
 	var contracts []models.ChildContract
 	if err := DBFromContext(ctx, s.db).
 		Joins("JOIN children ON children.id = child_contracts.child_id").
 		Where("children.organization_id = ?", orgID).
 		Where("child_contracts.voucher_number IN ?", voucherNumbers).
+		Scopes(PeriodActiveOn("child_contracts.from_date", "child_contracts.to_date", activeOn)).
 		Find(&contracts).Error; err != nil {
 		return nil, err
 	}
