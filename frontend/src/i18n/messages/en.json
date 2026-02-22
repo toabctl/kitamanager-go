@@ -648,6 +648,17 @@
     "previousWeek": "Previous week",
     "nextWeek": "Next week"
   },
+  "fundingLabels": {
+    "care_type.ganztag erweitert": "Extended Full-Time (>9h)",
+    "care_type.ganztag": "Full-Time (up to 9h)",
+    "care_type.teilzeit": "Part-Time (up to 7h)",
+    "care_type.halbtag": "Half-Day (up to 5h)",
+    "integration.integration a": "Integration A",
+    "integration.integration b": "Integration B",
+    "ndh.ndh": "NdH",
+    "qm/mss.qm/mss": "QM/MSS",
+    "parent_value_meal.parent_value_meal": "Parent Value Meal"
+  },
   "governmentFundingBills": {
     "title": "Government Funding Bills",
     "upload": "Upload",

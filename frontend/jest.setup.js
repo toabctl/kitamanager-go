@@ -3,7 +3,11 @@ import 'jest-axe/extend-expect';
 
 // Mock next-intl
 jest.mock('next-intl', () => ({
-  useTranslations: () => (key) => key,
+  useTranslations: () => {
+    const t = (key) => key;
+    t.has = () => false;
+    return t;
+  },
   useLocale: () => 'en',
 }));
 

@@ -75,12 +75,19 @@ export default function GovernmentFundingBillDetailPage() {
   const id = Number(params.id);
   const t = useTranslations('governmentFundingBills');
   const tCommon = useTranslations('common');
+  const tLabels = useTranslations('fundingLabels');
   const [expandedChild, setExpandedChild] = useState<string | null>(null);
 
   const { data: result, isLoading } = useQuery({
     queryKey: queryKeys.governmentFundingBillPeriods.detail(orgId, id),
     queryFn: () => apiClient.getGovernmentFundingBillPeriod(orgId, id),
   });
+
+  const translateLabel = (key: string, value: string, fallbackLabel?: string) => {
+    const translationKey = `${key}.${value}`;
+    const translated = tLabels.has(translationKey) ? tLabels(translationKey) : null;
+    return translated || fallbackLabel || value;
+  };
 
   const {
     data: comparison,
@@ -260,13 +267,7 @@ export default function GovernmentFundingBillDetailPage() {
                   className="flex justify-between rounded-md border p-3"
                 >
                   <span className="text-muted-foreground text-sm">
-                    {(
-                      {
-                        ndh: 'NdH',
-                        'qm/mss': 'QM/MSS',
-                        integration: 'Integration',
-                      } as Record<string, string>
-                    )[s.key] ?? s.key}
+                    {translateLabel(s.key, s.value || s.key)}
                   </span>
                   <span className="font-medium">{formatCurrency(s.amount)}</span>
                 </div>
@@ -440,8 +441,11 @@ export default function GovernmentFundingBillDetailPage() {
                                             className="text-muted-foreground flex justify-between py-0.5 text-sm"
                                           >
                                             <span>
-                                              {labelMap.get(`${amt.key}:${amt.value}`) ||
-                                                `${amt.key}: ${amt.value}`}
+                                              {translateLabel(
+                                                amt.key,
+                                                amt.value,
+                                                labelMap.get(`${amt.key}:${amt.value}`)
+                                              )}
                                             </span>
                                             <span>{formatCurrency(amt.amount)}</span>
                                           </div>
@@ -473,7 +477,7 @@ export default function GovernmentFundingBillDetailPage() {
                                     {comp.properties.map((prop) => (
                                       <TableRow key={`${prop.key}-${prop.value}`}>
                                         <TableCell className="text-sm">
-                                          {prop.label || `${prop.key}: ${prop.value}`}
+                                          {translateLabel(prop.key, prop.value, prop.label)}
                                         </TableCell>
                                         <TableCell className="text-right text-sm">
                                           {prop.bill_amount != null
