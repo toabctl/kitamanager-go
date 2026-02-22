@@ -77,7 +77,7 @@ export function PropertyFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="label">{t('governmentFundings.label')}</Label>
-            <Input id="label" placeholder="Ganztag" {...register('label')} />
+            <Input id="label" placeholder="Full-Time" {...register('label')} />
             {errors.label && (
               <p className="text-destructive text-sm">{t('validation.labelRequired')}</p>
             )}

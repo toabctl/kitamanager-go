@@ -648,6 +648,17 @@
     "previousWeek": "Vorherige Woche",
     "nextWeek": "Nächste Woche"
   },
+  "fundingLabels": {
+    "care_type.ganztag erweitert": "Ganztag Erweitert (>9h)",
+    "care_type.ganztag": "Ganztag (bis 9h)",
+    "care_type.teilzeit": "Teilzeit (bis 7h)",
+    "care_type.halbtag": "Halbtag (bis 5h)",
+    "integration.integration a": "Integration A",
+    "integration.integration b": "Integration B",
+    "ndh.ndh": "NdH",
+    "qm/mss.qm/mss": "QM/MSS",
+    "parent_value_meal.parent_value_meal": "Elternwertessen"
+  },
   "governmentFundingBills": {
     "title": "Senatsabrechnungen",
     "upload": "Hochladen",

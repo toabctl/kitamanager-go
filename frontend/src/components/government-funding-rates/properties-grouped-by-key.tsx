@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,14 @@ export function PropertiesGroupedByKey({
   onDeleteProperty,
   t,
 }: PropertiesGroupedByKeyProps) {
+  const tLabels = useTranslations('fundingLabels');
+
+  const translateLabel = (key: string, value: string, fallbackLabel?: string) => {
+    const translationKey = `${key}.${value}`;
+    const translated = tLabels.has(translationKey) ? tLabels(translationKey) : null;
+    return translated || fallbackLabel || value;
+  };
+
   // Group by key, then by value within each key
   const groups = useMemo(() => {
     const keyMap = new Map<string, Map<string, GovernmentFundingProperty[]>>();
@@ -64,7 +73,7 @@ export function PropertiesGroupedByKey({
             {valueGroups.map(([value, properties]) => (
               <div key={value}>
                 <p className="text-muted-foreground mb-1 text-sm">
-                  {properties[0]?.label || value}
+                  {translateLabel(key, value, properties[0]?.label)}
                 </p>
                 <Table>
                   <TableHeader>
