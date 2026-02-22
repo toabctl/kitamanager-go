@@ -29,6 +29,11 @@
       label: QM/MSS
       payment: 59.51
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -132,6 +137,11 @@
       label: QM/MSS
       payment: 60.39
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -236,6 +246,11 @@
       label: QM/MSS
       payment: 57.54
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -340,6 +355,11 @@
       label: QM/MSS
       payment: 57.11
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -444,6 +464,11 @@
       label: QM/MSS
       payment: 55.79
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -548,6 +573,11 @@
       label: QM/MSS
       payment: 55.31
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -652,6 +682,11 @@
       label: QM/MSS
       payment: 52.36
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -759,6 +794,11 @@
       label: QM/MSS
       payment: 52.36
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -859,6 +899,11 @@
       label: QM/MSS
       payment: 52.14
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -959,6 +1004,11 @@
       label: QM/MSS
       payment: 51.0
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -1059,6 +1109,11 @@
       label: QM/MSS
       payment: 50.44
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -1159,6 +1214,11 @@
       label: QM/MSS
       payment: 50.44
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
@@ -1259,6 +1319,11 @@
       label: QM/MSS
       payment: 44.47
       requirement: 0.01
+    - key: parent_value_meal
+      value: parent_value_meal
+      label: Elternwertessen
+      payment: 23.0
+      requirement: 0
   - age:
     - 0
     - 1
