@@ -29,7 +29,7 @@ export function PropertiesGroupedByKey({
   const tLabels = useTranslations('fundingLabels');
 
   const translateLabel = (key: string, value: string, fallbackLabel?: string) => {
-    const translationKey = `${key}.${value}`;
+    const translationKey = `${key}--${value}`;
     const translated = tLabels.has(translationKey) ? tLabels(translationKey) : null;
     return translated || fallbackLabel || value;
   };
