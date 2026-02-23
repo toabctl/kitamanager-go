@@ -94,8 +94,12 @@ test.describe('Visual Regression - Dashboard', () => {
     // Wait for the financial overview chart card to render
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
 
+    // Mask the chart area: SVG rendering has sub-pixel anti-aliasing jitter
+    // between runs, and the "Today" marker shifts position over time.
+    const chartAreas = page.locator('[role="application"]');
     await expect(page).toHaveScreenshot('statistics-financials.png', {
-      maxDiffPixelRatio: 0.02, // Slightly higher tolerance for chart rendering
+      maxDiffPixelRatio: 0.01,
+      mask: [chartAreas],
     });
   });
 });
@@ -144,9 +148,13 @@ test.describe('Visual Regression - Dialogs', () => {
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: /new child/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible({ timeout: 5000 });
 
-    await expect(page).toHaveScreenshot('create-child-dialog.png', {
+    // Screenshot only the dialog element: the children page behind the
+    // dialog overlay shows today's date in the week navigator, which
+    // changes daily and causes pixel diffs.
+    await expect(dialog).toHaveScreenshot('create-child-dialog.png', {
       maxDiffPixelRatio: 0.01,
     });
   });
