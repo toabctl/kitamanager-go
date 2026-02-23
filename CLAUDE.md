@@ -190,6 +190,37 @@ When importing monetary data from external sources (YAML, CSV, APIs), always con
 payment := int(math.Round(yamlProperty.Payment * 100))
 ```
 
+## Date/Time Handling
+
+**Always use proper date/time objects.** Never use strings or regex to parse, compare, or manipulate dates and times.
+
+### Go
+
+Use `time.Time` and the `time` package for all date/time operations:
+
+```go
+// CORRECT - use time.Time
+from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+if contract.From.Before(child.Birthdate) { ... }
+
+// WRONG - string comparison or regex
+if contractFrom < "2024-01-01" { ... }
+re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+```
+
+### TypeScript
+
+Use `Date` objects or a date library (e.g., `date-fns`):
+
+```typescript
+// CORRECT - Date objects
+const from = new Date('2024-01-01');
+if (from < birthdate) { ... }
+
+// WRONG - string manipulation
+if (dateStr.split('-')[0] === '2024') { ... }
+```
+
 ## E2E Testing
 
 ### Language/Locale
