@@ -271,20 +271,10 @@ func (s *EmployeeService) updateContractInPlace(ctx context.Context, contract *m
 	}
 	contract.To = req.To
 
-	if err := validation.ValidatePeriod(contract.From, contract.To); err != nil {
-		return nil, apperror.BadRequest(err.Error())
-	}
-
-	contractID := contract.ID
-	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
-		if err := s.store.Contracts().ValidateNoOverlap(txCtx, employeeID, contract.From, contract.To, &contractID); err != nil {
-			if errors.Is(err, store.ErrPeriodOverlap) {
-				return apperror.Conflict(err.Error())
-			}
-			return apperror.InternalWrap(err, "failed to validate contract")
-		}
-		return s.store.UpdateContract(txCtx, contract)
-	}); err != nil {
+	if err := inPlaceContractUpdate(ctx, s.transactor, s.store.Contracts(), employeeID,
+		contract.From, contract.To, contract.ID,
+		func(txCtx context.Context) error { return s.store.UpdateContract(txCtx, contract) },
+	); err != nil {
 		return nil, err
 	}
 
@@ -295,7 +285,6 @@ func (s *EmployeeService) updateContractInPlace(ctx context.Context, contract *m
 // amendContract closes the old employee contract and creates a new one with changes applied.
 func (s *EmployeeService) amendContract(ctx context.Context, contract *models.EmployeeContract, employeeID uint, req *models.EmployeeContractUpdateRequest) (*models.EmployeeContractResponse, error) {
 	today := models.TruncateToDate(time.Now())
-	yesterday := today.AddDate(0, 0, -1)
 
 	// Clone contract with current values, new contract starts today
 	newContract := &models.EmployeeContract{
@@ -341,29 +330,14 @@ func (s *EmployeeService) amendContract(ctx context.Context, contract *models.Em
 		newContract.Step = *req.Step
 	}
 
-	if err := validation.ValidatePeriod(newContract.From, newContract.To); err != nil {
-		return nil, apperror.BadRequest(err.Error())
-	}
-
-	// Transaction: close old contract + validate overlap + create new
-	if err := s.transactor.InTransaction(ctx, func(txCtx context.Context) error {
-		// Close old contract (end = yesterday)
-		contract.To = &yesterday
-		if err := s.store.UpdateContract(txCtx, contract); err != nil {
-			return apperror.InternalWrap(err, "failed to close old contract")
-		}
-
-		// Validate new contract doesn't overlap with any other contracts
-		if err := s.store.Contracts().ValidateNoOverlap(txCtx, employeeID, newContract.From, newContract.To, nil); err != nil {
-			if errors.Is(err, store.ErrPeriodOverlap) {
-				return apperror.Conflict(err.Error())
-			}
-			return apperror.InternalWrap(err, "failed to validate contract")
-		}
-
-		// Create new contract
-		return s.store.CreateContract(txCtx, newContract)
-	}); err != nil {
+	if err := amendContractTx(ctx, s.transactor, s.store.Contracts(), employeeID,
+		newContract.From, newContract.To,
+		func(txCtx context.Context, yesterday time.Time) error {
+			contract.To = &yesterday
+			return s.store.UpdateContract(txCtx, contract)
+		},
+		func(txCtx context.Context) error { return s.store.CreateContract(txCtx, newContract) },
+	); err != nil {
 		return nil, err
 	}
 
