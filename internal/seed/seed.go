@@ -526,6 +526,10 @@ func seedChildren(db *gorm.DB, childService *service.ChildService, orgID uint, s
 				return 0, 0, err
 			}
 			joinDate := randomJoinDate(c.joinFrom, c.joinTo)
+			// Ensure contract doesn't start before birthdate
+			if joinDate.Before(child.Birthdate) {
+				joinDate = child.Birthdate
+			}
 			if _, err := childService.CreateContract(ctx, child.ID, orgID, &models.ChildContractCreateRequest{
 				SectionID:  c.sectionID,
 				From:       joinDate,
