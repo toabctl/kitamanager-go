@@ -4181,3 +4181,63 @@ func TestChildService_Import_InvalidPeriod(t *testing.T) {
 		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
+
+func TestChildService_FindAllByOrganization(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := getDefaultSection(t, db, org.ID)
+
+	// Create several children with contracts.
+	for i := 0; i < 3; i++ {
+		createTestChildWithContract(t, db, fmt.Sprintf("Child%d", i), "Doe", org.ID, section.ID)
+	}
+
+	results, err := svc.FindAllByOrganization(ctx, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 3 {
+		t.Errorf("expected 3 children, got %d", len(results))
+	}
+}
+
+func TestChildService_FindAllByOrganization_IsolatesOrgs(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	section1 := getDefaultSection(t, db, org1.ID)
+	section2 := getDefaultSection(t, db, org2.ID)
+
+	createTestChildWithContract(t, db, "Child", "Org1", org1.ID, section1.ID)
+	createTestChildWithContract(t, db, "Child", "Org2", org2.ID, section2.ID)
+
+	results, err := svc.FindAllByOrganization(ctx, org1.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 child for org1, got %d", len(results))
+	}
+}
+
+func TestChildService_FindAllByOrganization_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createChildService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Empty Org")
+
+	results, err := svc.FindAllByOrganization(ctx, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 children, got %d", len(results))
+	}
+}

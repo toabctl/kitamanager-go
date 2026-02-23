@@ -3028,6 +3028,70 @@ func TestEmployeeService_Import_NegativeWeeklyHours(t *testing.T) {
 	}
 }
 
+func TestEmployeeService_FindAllByOrganization(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	payPlan := createTestPayPlan(t, db, "TV-L", org.ID)
+
+	// Create 3 employees with contracts.
+	for i := 0; i < 3; i++ {
+		emp := createTestEmployee(t, db, fmt.Sprintf("Emp%d", i), "Smith", org.ID)
+		createTestEmployeeContract(t, db, emp.ID, payPlan.ID,
+			time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, "S8a", 1, 39)
+	}
+
+	results, err := svc.FindAllByOrganization(ctx, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 3 {
+		t.Errorf("expected 3 employees, got %d", len(results))
+	}
+}
+
+func TestEmployeeService_FindAllByOrganization_IsolatesOrgs(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	payPlan1 := createTestPayPlan(t, db, "TV-L", org1.ID)
+	payPlan2 := createTestPayPlan(t, db, "TV-L", org2.ID)
+
+	emp1 := createTestEmployee(t, db, "Emp", "Org1", org1.ID)
+	createTestEmployeeContract(t, db, emp1.ID, payPlan1.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, "S8a", 1, 39)
+	emp2 := createTestEmployee(t, db, "Emp", "Org2", org2.ID)
+	createTestEmployeeContract(t, db, emp2.ID, payPlan2.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, "S8a", 1, 39)
+
+	results, err := svc.FindAllByOrganization(ctx, org1.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("expected 1 employee for org1, got %d", len(results))
+	}
+}
+
+func TestEmployeeService_FindAllByOrganization_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Empty Org")
+
+	results, err := svc.FindAllByOrganization(ctx, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 employees, got %d", len(results))
+	}
+}
+
 func TestEmployeeService_Import_InvalidPeriod(t *testing.T) {
 	db := setupTestDB(t)
 	svc := createEmployeeService(db)
