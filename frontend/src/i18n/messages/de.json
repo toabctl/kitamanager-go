@@ -100,6 +100,10 @@
     "governmentFundingBills": "Abrechnungen",
     "budgetItems": "Budgetposten",
     "admin": "Verwaltung",
+    "groupDailyOperations": "Täglicher Betrieb",
+    "groupPeople": "Personen",
+    "groupFinance": "Finanzen",
+    "groupSettings": "Einstellungen",
     "breadcrumb": "Brotkrümelnavigation"
   },
   "dashboard": {

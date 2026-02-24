@@ -94,16 +94,29 @@ describe('AppSidebar', () => {
 
     renderWithQueryClient(<AppSidebar />);
 
+    // Group headers
+    expect(screen.getByText('nav.groupDailyOperations')).toBeInTheDocument();
+    expect(screen.getByText('nav.groupPeople')).toBeInTheDocument();
+    expect(screen.getByText('nav.groupFinance')).toBeInTheDocument();
+    expect(screen.getByText('nav.groupSettings')).toBeInTheDocument();
+
+    // Daily Operations group
     expect(screen.getByText('nav.dashboard')).toBeInTheDocument();
-    expect(screen.getByText('nav.employees')).toBeInTheDocument();
-    expect(screen.getByText('nav.children')).toBeInTheDocument();
+    expect(screen.getByText('nav.attendance')).toBeInTheDocument();
     expect(screen.getByText('nav.sections')).toBeInTheDocument();
+
+    // People group
+    expect(screen.getByText('nav.children')).toBeInTheDocument();
+    expect(screen.getByText('nav.employees')).toBeInTheDocument();
+
+    // Finance group
+    expect(screen.getByText('nav.governmentFundingBills')).toBeInTheDocument();
+    expect(screen.getByText('nav.budgetItems')).toBeInTheDocument();
     expect(screen.getByText('nav.statistics')).toBeInTheDocument();
-    expect(screen.getByText('nav.admin')).toBeInTheDocument();
-    // Pay Plans is nested under Employees (collapsed by default)
-    expect(screen.queryByText('nav.payPlans')).not.toBeInTheDocument();
-    // Users is nested under Admin (collapsed by default)
-    expect(screen.queryByText('nav.users')).not.toBeInTheDocument();
+
+    // Settings group
+    expect(screen.getByText('nav.payPlans')).toBeInTheDocument();
+    expect(screen.getByText('nav.users')).toBeInTheDocument();
   });
 
   it('renders collapse/toggle sidebar button', () => {

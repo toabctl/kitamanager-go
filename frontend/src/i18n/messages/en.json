@@ -100,6 +100,10 @@
     "governmentFundingBills": "Funding Bills",
     "budgetItems": "Budget Items",
     "admin": "Admin",
+    "groupDailyOperations": "Daily Operations",
+    "groupPeople": "People",
+    "groupFinance": "Finance",
+    "groupSettings": "Settings",
     "breadcrumb": "Breadcrumb"
   },
   "dashboard": {
