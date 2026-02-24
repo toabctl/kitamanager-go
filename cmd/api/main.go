@@ -84,6 +84,7 @@ type appServices struct {
 	stepPromotion         *service.StepPromotionService
 	statistics            *service.StatisticsService
 	governmentFundingBill *service.GovernmentFundingBillService
+	email                 *service.EmailService
 }
 
 // appMiddleware holds all middleware instances.
@@ -224,6 +225,7 @@ func initServices(s *appStores, cfg *config.Config, transactor store.Transactor)
 		stepPromotion:         service.NewStepPromotionService(s.payPlan, s.employee),
 		statistics:            service.NewStatisticsService(s.child, s.employee, s.organization, s.governmentFunding, s.payPlan, s.budgetItem),
 		governmentFundingBill: service.NewGovernmentFundingBillService(s.child, s.governmentFundingBillPeriod, s.organization, s.governmentFunding),
+		email:                 service.NewEmailService(cfg),
 	}
 }
 

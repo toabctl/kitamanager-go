@@ -218,6 +218,9 @@ func TestConfig_Validate(t *testing.T) {
 			LogFormat:        "json",
 			Environment:      "production",
 			CORSAllowOrigins: []string{"https://example.com"},
+			SMTPHost:         "smtp.example.com",
+			SMTPPort:         587,
+			SMTPFrom:         "noreply@example.com",
 		}
 
 		err := cfg.Validate()
@@ -412,6 +415,9 @@ func TestConfig_Validate(t *testing.T) {
 			Environment:          "production",
 			CORSAllowOrigins:     []string{"*"},
 			CORSAllowCredentials: true,
+			SMTPHost:             "smtp.example.com",
+			SMTPPort:             587,
+			SMTPFrom:             "noreply@example.com",
 		}
 
 		err := cfg.Validate()
@@ -435,6 +441,9 @@ func TestConfig_Validate(t *testing.T) {
 			Environment:          "production",
 			CORSAllowOrigins:     []string{"*"},
 			CORSAllowCredentials: false,
+			SMTPHost:             "smtp.example.com",
+			SMTPPort:             587,
+			SMTPFrom:             "noreply@example.com",
 		}
 
 		err := cfg.Validate()
@@ -458,6 +467,9 @@ func TestConfig_Validate(t *testing.T) {
 			Environment:          "production",
 			CORSAllowOrigins:     []string{"https://example.com"},
 			CORSAllowCredentials: false,
+			SMTPHost:             "smtp.example.com",
+			SMTPPort:             587,
+			SMTPFrom:             "noreply@example.com",
 		}
 
 		err := cfg.Validate()
@@ -486,6 +498,128 @@ func TestConfig_Validate(t *testing.T) {
 		err := cfg.Validate()
 		if err != nil {
 			t.Errorf("Validate() error = %v, want nil for disabled SSL in development", err)
+		}
+	})
+
+	t.Run("fails validation in production without SMTP_HOST", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:           "localhost",
+			DBPort:           "5432",
+			DBUser:           "user",
+			DBPassword:       "pass",
+			DBName:           "db",
+			DBSSLMode:        "require",
+			ServerPort:       "8080",
+			JWTSecret:        "a-very-long-and-secure-secret-key-for-production",
+			LogLevel:         "info",
+			LogFormat:        "json",
+			Environment:      "production",
+			CORSAllowOrigins: []string{"https://example.com"},
+			SMTPHost:         "",
+			SMTPPort:         587,
+			SMTPFrom:         "noreply@example.com",
+		}
+
+		err := cfg.Validate()
+		if err == nil {
+			t.Error("Validate() error = nil, want error for missing SMTP_HOST in production")
+		}
+	})
+
+	t.Run("fails validation in production without SMTP_FROM", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:           "localhost",
+			DBPort:           "5432",
+			DBUser:           "user",
+			DBPassword:       "pass",
+			DBName:           "db",
+			DBSSLMode:        "require",
+			ServerPort:       "8080",
+			JWTSecret:        "a-very-long-and-secure-secret-key-for-production",
+			LogLevel:         "info",
+			LogFormat:        "json",
+			Environment:      "production",
+			CORSAllowOrigins: []string{"https://example.com"},
+			SMTPHost:         "smtp.example.com",
+			SMTPPort:         587,
+			SMTPFrom:         "",
+		}
+
+		err := cfg.Validate()
+		if err == nil {
+			t.Error("Validate() error = nil, want error for missing SMTP_FROM in production")
+		}
+	})
+
+	t.Run("passes validation in development without SMTP config", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:           "localhost",
+			DBPort:           "5432",
+			DBUser:           "user",
+			DBPassword:       "pass",
+			DBName:           "db",
+			DBSSLMode:        "disable",
+			ServerPort:       "8080",
+			JWTSecret:        "secret",
+			LogLevel:         "info",
+			LogFormat:        "json",
+			Environment:      "development",
+			CORSAllowOrigins: []string{"http://localhost:3000"},
+		}
+
+		err := cfg.Validate()
+		if err != nil {
+			t.Errorf("Validate() error = %v, want nil for development without SMTP", err)
+		}
+	})
+
+	t.Run("fails validation with invalid SMTP port", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:           "localhost",
+			DBPort:           "5432",
+			DBUser:           "user",
+			DBPassword:       "pass",
+			DBName:           "db",
+			DBSSLMode:        "disable",
+			ServerPort:       "8080",
+			JWTSecret:        "secret",
+			LogLevel:         "info",
+			LogFormat:        "json",
+			Environment:      "development",
+			CORSAllowOrigins: []string{"http://localhost:3000"},
+			SMTPHost:         "smtp.example.com",
+			SMTPPort:         0,
+			SMTPFrom:         "noreply@example.com",
+		}
+
+		err := cfg.Validate()
+		if err == nil {
+			t.Error("Validate() error = nil, want error for invalid SMTP port")
+		}
+	})
+
+	t.Run("fails validation with invalid SMTP_FROM when host is set", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:           "localhost",
+			DBPort:           "5432",
+			DBUser:           "user",
+			DBPassword:       "pass",
+			DBName:           "db",
+			DBSSLMode:        "disable",
+			ServerPort:       "8080",
+			JWTSecret:        "secret",
+			LogLevel:         "info",
+			LogFormat:        "json",
+			Environment:      "development",
+			CORSAllowOrigins: []string{"http://localhost:3000"},
+			SMTPHost:         "smtp.example.com",
+			SMTPPort:         587,
+			SMTPFrom:         "not-an-email",
+		}
+
+		err := cfg.Validate()
+		if err == nil {
+			t.Error("Validate() error = nil, want error for invalid SMTP_FROM")
 		}
 	})
 }

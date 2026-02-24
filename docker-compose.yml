@@ -25,6 +25,12 @@ services:
       - LOG_FORMAT=json
       # Environment (development, staging, production)
       - ENVIRONMENT=development
+      # SMTP configuration (optional in development — emails are logged instead of sent)
+      # - SMTP_HOST=smtp.example.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=
+      # - SMTP_PASSWORD=
+      # - SMTP_FROM=noreply@example.com
     depends_on:
       db:
         condition: service_healthy

@@ -22,6 +22,10 @@ var (
 	ErrMissingDBConfig   = errors.New("database configuration incomplete: DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME are required")
 	ErrWeakAdminPassword = errors.New("SEED_ADMIN_PASSWORD must be at least 8 characters when SEED_ADMIN_EMAIL is set")
 	ErrInvalidAdminEmail = errors.New("SEED_ADMIN_EMAIL must be a valid email address")
+	ErrMissingSMTPHost   = errors.New("SMTP_HOST is required in production")
+	ErrMissingSMTPFrom   = errors.New("SMTP_FROM is required in production")
+	ErrInvalidSMTPPort   = errors.New("SMTP_PORT must be a valid port number (1-65535)")
+	ErrInvalidSMTPFrom   = errors.New("SMTP_FROM must be a valid email address")
 )
 
 type Config struct {
@@ -80,6 +84,13 @@ type Config struct {
 
 	// Security
 	SecureCookies bool // SECURE_COOKIES env var, default = true in production/staging
+
+	// SMTP
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string // "From" address, e.g. "noreply@example.com"
 }
 
 // IsProduction returns true if running in production mode
@@ -151,6 +162,24 @@ func (c *Config) Validate() error {
 	}
 	if c.DBSSLMode == "disable" && c.IsProduction() {
 		errs = append(errs, fmt.Errorf("DB_SSLMODE must not be 'disable' in production — use 'require' or 'verify-full'"))
+	}
+
+	// SMTP validation
+	if c.IsProduction() {
+		if c.SMTPHost == "" {
+			errs = append(errs, ErrMissingSMTPHost)
+		}
+		if c.SMTPFrom == "" {
+			errs = append(errs, ErrMissingSMTPFrom)
+		}
+	}
+	if c.SMTPHost != "" {
+		if c.SMTPPort < 1 || c.SMTPPort > 65535 {
+			errs = append(errs, ErrInvalidSMTPPort)
+		}
+		if !strings.Contains(c.SMTPFrom, "@") {
+			errs = append(errs, ErrInvalidSMTPFrom)
+		}
 	}
 
 	// Admin seeding validation
@@ -251,6 +280,13 @@ func Load() (*Config, error) {
 
 		// Trusted Proxies
 		TrustedProxies: trustedProxies,
+
+		// SMTP
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnvInt("SMTP_PORT", 587),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
 	}
 
 	// SecureCookies: explicit env var wins, otherwise default to non-development
