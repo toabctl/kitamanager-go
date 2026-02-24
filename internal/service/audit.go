@@ -249,6 +249,22 @@ func (s *AuditService) LogResourceUpdate(actorID uint, resourceType string, reso
 	})
 }
 
+// LogPasswordReset logs when an admin resets another user's password.
+func (s *AuditService) LogPasswordReset(actorID, targetUserID uint, targetEmail, ipAddress string) {
+	s.log(&models.AuditLog{
+		UserID:       &actorID,
+		Action:       models.AuditActionPasswordReset,
+		ResourceType: "user",
+		ResourceID:   &targetUserID,
+		IPAddress:    ipAddress,
+		Details: mustMarshalJSON(map[string]any{
+			"target_user_id":    targetUserID,
+			"target_user_email": targetEmail,
+		}),
+		Success: true,
+	})
+}
+
 // LogDataExport logs a bulk data export event
 func (s *AuditService) LogDataExport(actorID uint, resourceType string, orgID uint, recordCount int, ipAddress string) {
 	s.log(&models.AuditLog{

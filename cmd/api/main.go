@@ -228,6 +228,10 @@ func initServices(s *appStores, cfg *config.Config, transactor store.Transactor)
 }
 
 func initMiddleware(s *appStores, cfg *config.Config, permissionService *rbac.PermissionService) *appMiddleware {
+	if cfg.IsProduction() {
+		slog.Warn("Rate limiter is using in-memory storage — not suitable for multi-instance deployments. Consider a Redis-backed solution for distributed rate limiting.")
+	}
+
 	return &appMiddleware{
 		auth:             middleware.NewAuthMiddleware(cfg.JWTSecret, s.token),
 		authz:            middleware.NewAuthorizationMiddleware(permissionService),

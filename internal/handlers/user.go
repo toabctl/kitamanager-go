@@ -503,14 +503,23 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		}
 	}
 
-	// Audit log
+	// Audit log with dedicated password reset tracking
 	actorID := getUserID(c)
 	targetUser, _ := h.service.GetByID(c.Request.Context(), targetUserID, actorID)
 	email := ""
 	if targetUser != nil {
 		email = targetUser.Email
 	}
-	h.auditService.LogResourceUpdate(actorID, "user_password_reset", targetUserID, email, c.ClientIP())
+	h.auditService.LogPasswordReset(actorID, targetUserID, email, c.ClientIP())
+
+	if actorID != targetUserID {
+		slog.Warn("Admin reset another user's password",
+			"actor_id", actorID,
+			"target_user_id", targetUserID,
+			"target_email", email,
+			"ip", c.ClientIP(),
+		)
+	}
 
 	c.Status(http.StatusNoContent)
 }

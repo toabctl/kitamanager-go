@@ -8,20 +8,21 @@ import (
 type AuditAction string
 
 const (
-	AuditActionLogin               AuditAction = "login"
-	AuditActionLoginFailed         AuditAction = "login_failed"
-	AuditActionLogout              AuditAction = "logout"
-	AuditActionSuperAdminGrant     AuditAction = "superadmin_grant"
-	AuditActionSuperAdminRevoke    AuditAction = "superadmin_revoke"
-	AuditActionUserCreate          AuditAction = "user_create"
-	AuditActionUserDelete          AuditAction = "user_delete"
+	AuditActionLogin             AuditAction = "login"
+	AuditActionLoginFailed       AuditAction = "login_failed"
+	AuditActionLogout            AuditAction = "logout"
+	AuditActionSuperAdminGrant   AuditAction = "superadmin_grant"
+	AuditActionSuperAdminRevoke  AuditAction = "superadmin_revoke"
+	AuditActionUserCreate        AuditAction = "user_create"
+	AuditActionUserDelete        AuditAction = "user_delete"
 	AuditActionUserAddToOrg      AuditAction = "user_add_to_org"
 	AuditActionUserRemoveFromOrg AuditAction = "user_remove_from_org"
-	AuditActionRoleChange          AuditAction = "role_change"
-	AuditActionEmployeeDelete      AuditAction = "employee_delete"
-	AuditActionChildDelete         AuditAction = "child_delete"
-	AuditActionOrgCreate           AuditAction = "org_create"
-	AuditActionOrgDelete           AuditAction = "org_delete"
+	AuditActionRoleChange        AuditAction = "role_change"
+	AuditActionEmployeeDelete    AuditAction = "employee_delete"
+	AuditActionChildDelete       AuditAction = "child_delete"
+	AuditActionOrgCreate         AuditAction = "org_create"
+	AuditActionOrgDelete         AuditAction = "org_delete"
+	AuditActionPasswordReset     AuditAction = "password_reset"
 )
 
 // AuditLog represents an audit log entry for security-relevant operations

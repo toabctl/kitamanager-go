@@ -427,7 +427,7 @@ func TestConfig_Validate(t *testing.T) {
 			DBUser:               "user",
 			DBPassword:           "pass",
 			DBName:               "db",
-			DBSSLMode:            "disable",
+			DBSSLMode:            "require",
 			ServerPort:           "8080",
 			JWTSecret:            "a-very-long-and-secure-secret-key-for-production",
 			LogLevel:             "info",
@@ -440,6 +440,52 @@ func TestConfig_Validate(t *testing.T) {
 		err := cfg.Validate()
 		if err != nil {
 			t.Errorf("Validate() error = %v, want nil for wildcard CORS without credentials", err)
+		}
+	})
+
+	t.Run("fails validation with disabled SSL in production", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:               "localhost",
+			DBPort:               "5432",
+			DBUser:               "user",
+			DBPassword:           "pass",
+			DBName:               "db",
+			DBSSLMode:            "disable",
+			ServerPort:           "8080",
+			JWTSecret:            "a-very-long-and-secure-secret-key-for-production",
+			LogLevel:             "info",
+			LogFormat:            "json",
+			Environment:          "production",
+			CORSAllowOrigins:     []string{"https://example.com"},
+			CORSAllowCredentials: false,
+		}
+
+		err := cfg.Validate()
+		if err == nil {
+			t.Error("Validate() error = nil, want error for disabled DB SSL in production")
+		}
+	})
+
+	t.Run("allows disabled SSL in development", func(t *testing.T) {
+		cfg := &Config{
+			DBHost:               "localhost",
+			DBPort:               "5432",
+			DBUser:               "user",
+			DBPassword:           "pass",
+			DBName:               "db",
+			DBSSLMode:            "disable",
+			ServerPort:           "8080",
+			JWTSecret:            "secret",
+			LogLevel:             "info",
+			LogFormat:            "json",
+			Environment:          "development",
+			CORSAllowOrigins:     []string{"http://localhost:3000"},
+			CORSAllowCredentials: false,
+		}
+
+		err := cfg.Validate()
+		if err != nil {
+			t.Errorf("Validate() error = %v, want nil for disabled SSL in development", err)
 		}
 	})
 }

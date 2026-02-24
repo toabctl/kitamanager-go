@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
@@ -151,7 +150,7 @@ func (c *Config) Validate() error {
 		errs = append(errs, fmt.Errorf("DB_SSLMODE must be one of: disable, require, verify-ca, verify-full"))
 	}
 	if c.DBSSLMode == "disable" && c.IsProduction() {
-		slog.Warn("Database SSL is disabled in production — consider using 'require' or 'verify-full'")
+		errs = append(errs, fmt.Errorf("DB_SSLMODE must not be 'disable' in production — use 'require' or 'verify-full'"))
 	}
 
 	// Admin seeding validation
