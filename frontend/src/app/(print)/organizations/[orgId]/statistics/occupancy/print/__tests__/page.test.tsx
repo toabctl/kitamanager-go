@@ -14,6 +14,7 @@ jest.mock('@/lib/api/client', () => ({
 jest.mock('next/navigation', () => ({
   useParams: () => ({ orgId: '1' }),
   useRouter: () => ({ push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock('next-intl', () => ({

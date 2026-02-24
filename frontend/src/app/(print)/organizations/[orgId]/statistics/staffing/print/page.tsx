@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
@@ -32,7 +32,15 @@ export default function StaffingPrintPage() {
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { organizations, fetchOrganizations } = useUiStore();
-  const [year] = useState(new Date().getFullYear());
+  const searchParams = useSearchParams();
+  const [year] = useState(() => {
+    const p = searchParams.get('year');
+    if (p) {
+      const n = parseInt(p, 10);
+      if (!isNaN(n) && n >= 2000 && n <= 2100) return n;
+    }
+    return new Date().getFullYear();
+  });
 
   const from = `${year}-01-01`;
   const to = `${year}-12-01`;
@@ -100,7 +108,12 @@ export default function StaffingPrintPage() {
   }, [sections?.data, sectionStaffingQueries]);
 
   return (
-    <div className="mx-auto max-w-[1100px] p-8">
+    <div
+      className="mx-auto max-w-[1100px] p-8"
+      data-print-ready={
+        !isLoadingStaffing && !isLoadingGrid && !isLoadingEmployeeGrid ? 'true' : undefined
+      }
+    >
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('nav.statisticsStaffing')}</h1>

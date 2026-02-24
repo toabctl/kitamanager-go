@@ -1,7 +1,8 @@
 .PHONY: build lint test clean ci dev dev-fresh \
 	api-build api-run api-lint api-test-all api-test-unit api-test-integration api-test-contract api-test-fuzz api-test-coverage \
 	web-install web-dev web-build web-lint web-format web-format-check web-type-check web-test web-test-coverage web-test-e2e web-test-e2e-fresh web-test-e2e-demo \
-	docs schema-docs swagger-docs docker-up docker-down docker-rebuild docker-reset install-hooks uninstall-hooks pre-commit
+	docs schema-docs swagger-docs docker-up docker-down docker-rebuild docker-reset install-hooks uninstall-hooks pre-commit \
+	report-pdf-build report-pdf
 
 # =============================================================================
 # Version info
@@ -243,3 +244,15 @@ uninstall-hooks:
 # Run pre-commit on all files
 pre-commit:
 	pre-commit run --all-files
+
+# =============================================================================
+# Report PDF tool
+# =============================================================================
+
+# Build the report-pdf CLI tool
+report-pdf-build:
+	cd tools/report-pdf && go build -o ../../bin/report-pdf .
+
+# Generate PDF reports (requires running dev environment)
+report-pdf:
+	./bin/report-pdf --email admin@example.com --password supersecret --org-id 1

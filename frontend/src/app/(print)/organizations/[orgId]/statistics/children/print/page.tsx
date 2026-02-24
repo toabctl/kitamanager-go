@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
@@ -36,6 +37,19 @@ export default function ChildrenPrintPage() {
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { organizations, fetchOrganizations } = useUiStore();
+  const searchParams = useSearchParams();
+  const [year] = useState(() => {
+    const p = searchParams.get('year');
+    if (p) {
+      const n = parseInt(p, 10);
+      if (!isNaN(n) && n >= 2000 && n <= 2100) return n;
+    }
+    return new Date().getFullYear();
+  });
+
+  const from = `${year}-01-01`;
+  const to = `${year}-12-01`;
+  const date = `${year}-06-01`;
 
   useQuery({
     queryKey: ['organizations-load'],
@@ -49,24 +63,29 @@ export default function ChildrenPrintPage() {
 
   const { data: ageDistribution, isLoading: isLoadingAge } = useQuery({
     queryKey: queryKeys.statistics.ageDistribution(orgId),
-    queryFn: () => apiClient.getAgeDistribution(orgId),
+    queryFn: () => apiClient.getAgeDistribution(orgId, date),
     enabled: !!orgId,
   });
 
   const { data: staffingHours, isLoading: isLoadingContracts } = useQuery({
-    queryKey: queryKeys.statistics.staffingHours(orgId),
-    queryFn: () => apiClient.getStaffingHours(orgId),
+    queryKey: queryKeys.statistics.staffingHours(orgId, undefined, from, to),
+    queryFn: () => apiClient.getStaffingHours(orgId, { from, to }),
     enabled: !!orgId,
   });
 
   const { data: contractProperties, isLoading: isLoadingContractProperties } = useQuery({
     queryKey: queryKeys.statistics.contractProperties(orgId),
-    queryFn: () => apiClient.getContractPropertiesDistribution(orgId),
+    queryFn: () => apiClient.getContractPropertiesDistribution(orgId, date),
     enabled: !!orgId,
   });
 
   return (
-    <div className="mx-auto max-w-[1100px] p-8">
+    <div
+      className="mx-auto max-w-[1100px] p-8"
+      data-print-ready={
+        !isLoadingAge && !isLoadingContracts && !isLoadingContractProperties ? 'true' : undefined
+      }
+    >
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('nav.statisticsChildren')}</h1>
