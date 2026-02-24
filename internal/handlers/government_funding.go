@@ -76,6 +76,7 @@ func (h *GovernmentFundingHandler) Get(c *gin.Context) {
 	}
 
 	// Default to 1 (latest period only) for performance
+	const maxPeriodsLimit = 1000
 	periodsLimit := 1
 	if limitStr := c.Query("periods_limit"); limitStr != "" {
 		if _, err := fmt.Sscanf(limitStr, "%d", &periodsLimit); err != nil {
@@ -84,6 +85,10 @@ func (h *GovernmentFundingHandler) Get(c *gin.Context) {
 		}
 		if periodsLimit < 0 {
 			respondError(c, apperror.BadRequest("periods_limit must be non-negative"))
+			return
+		}
+		if periodsLimit > maxPeriodsLimit {
+			respondError(c, apperror.BadRequest(fmt.Sprintf("periods_limit must not exceed %d", maxPeriodsLimit)))
 			return
 		}
 	}

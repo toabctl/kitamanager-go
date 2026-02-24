@@ -597,6 +597,74 @@ func TestAuthMiddleware_RequireAuth_NegativeUserID(t *testing.T) {
 	}
 }
 
+func TestAuthMiddleware_RequireAuth_OverflowUserID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	jwtSecret := "test-secret"
+	middleware := NewAuthMiddleware(jwtSecret)
+
+	// Create a token with user_id exceeding MaxUint32
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": float64(5000000000), // > math.MaxUint32 (4294967295)
+		"email":   "test@example.com",
+		"type":    "access",
+		"exp":     time.Now().Add(time.Hour).Unix(),
+	})
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		t.Fatalf("failed to sign token: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/test", middleware.RequireAuth(), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d for overflow user_id, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
+func TestAuthMiddleware_RequireAuth_FractionalUserID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	jwtSecret := "test-secret"
+	middleware := NewAuthMiddleware(jwtSecret)
+
+	// Create a token with fractional user_id
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": 42.5,
+		"email":   "test@example.com",
+		"type":    "access",
+		"exp":     time.Now().Add(time.Hour).Unix(),
+	})
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		t.Fatalf("failed to sign token: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/test", middleware.RequireAuth(), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d for fractional user_id, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
 func TestAuthMiddleware_RequireAuth_MissingUserIDClaim(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

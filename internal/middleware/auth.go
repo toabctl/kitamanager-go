@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log/slog"
+	"math"
 	"net/http"
 	"strings"
 
@@ -119,9 +120,9 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// JWT numbers are parsed as float64, convert to uint
+		// JWT numbers are parsed as float64, convert to uint with bounds checking
 		userIDFloat, ok := claims["user_id"].(float64)
-		if !ok || userIDFloat <= 0 {
+		if !ok || userIDFloat <= 0 || userIDFloat > math.MaxUint32 || userIDFloat != math.Trunc(userIDFloat) {
 			slog.Warn("Auth failed: invalid user id in token", "ip", c.ClientIP(), "path", c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Code:    apperror.CodeUnauthorized,

@@ -144,11 +144,16 @@ func (rl *RateLimiter) RateLimit() gin.HandlerFunc {
 	}
 }
 
-// LoginRateLimiter creates a rate limiter specifically for login endpoints
-// If limit is 0, returns nil (disabled)
+// defaultLoginRateLimit is the minimum enforced rate limit for login endpoints,
+// even when the configured value is 0 (disabled). This prevents brute-force
+// attacks when rate limiting is accidentally left unconfigured.
+const defaultLoginRateLimit = 10
+
+// LoginRateLimiter creates a rate limiter specifically for login endpoints.
+// A minimum rate limit is always enforced to prevent brute-force attacks.
 func LoginRateLimiter(limit int) *RateLimiter {
 	if limit <= 0 {
-		return nil
+		limit = defaultLoginRateLimit
 	}
 	return NewRateLimiter(limit, time.Minute)
 }

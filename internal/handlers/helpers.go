@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -313,7 +314,9 @@ func validateDateRange(from, to time.Time, maxMonths int) error {
 	return nil
 }
 
-// respondError sends consistent structured error response
+// respondError sends consistent structured error response.
+// For 5xx errors, the raw error message is logged server-side and a generic
+// message is returned to the client to avoid leaking internal details.
 func respondError(c *gin.Context, err error) {
 	httpCode := apperror.HTTPStatus(err)
 
@@ -324,8 +327,14 @@ func respondError(c *gin.Context, err error) {
 		errorCode = appErr.GetErrorCode()
 	}
 
+	message := err.Error()
+	if httpCode >= 500 {
+		slog.Error("Internal error", "error", err, "path", c.Request.URL.Path, "method", c.Request.Method)
+		message = "internal server error"
+	}
+
 	c.JSON(httpCode, models.ErrorResponse{
 		Code:    errorCode,
-		Message: err.Error(),
+		Message: message,
 	})
 }
