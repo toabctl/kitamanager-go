@@ -84,12 +84,21 @@ func validateOptionalSectionOrg(ctx context.Context, sectionStore store.SectionS
 
 // periodsOverlap checks if two date ranges overlap.
 // A period with nil To extends indefinitely into the future.
+// Dates are truncated to midnight UTC to ensure consistent date-only comparison.
 func periodsOverlap(from1 time.Time, to1 *time.Time, from2 time.Time, to2 *time.Time) bool {
-	if to1 != nil && to1.Before(from2) {
-		return false
+	f1 := models.TruncateToDate(from1)
+	f2 := models.TruncateToDate(from2)
+	if to1 != nil {
+		t1 := models.TruncateToDate(*to1)
+		if t1.Before(f2) {
+			return false
+		}
 	}
-	if to2 != nil && to2.Before(from1) {
-		return false
+	if to2 != nil {
+		t2 := models.TruncateToDate(*to2)
+		if t2.Before(f1) {
+			return false
+		}
 	}
 	return true
 }

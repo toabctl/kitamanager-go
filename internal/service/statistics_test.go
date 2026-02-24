@@ -2841,3 +2841,301 @@ func TestStatisticsService_GetEmployeeStaffingHours_SectionFilter(t *testing.T) 
 		t.Errorf("expected Schmidt, got %s", result.Employees[0].LastName)
 	}
 }
+
+// --- Edge case tests ---
+
+func TestStatisticsService_GetFinancials_PayPlanPeriodTransition(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Pay plan with TWO periods:
+	// Period 1: Jan-Jun 2024, 39h, entry S8a/3 = 300000 cents, no employer contrib
+	// Period 2: Jul-Dec 2024, 39h, entry S8a/3 = 350000 cents, no employer contrib
+	payplan := createTestPayPlan(t, db, "TVöD-SuE", org.ID)
+	pp1To := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	pp1 := createTestPayPlanPeriodWithContrib(t, db, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &pp1To, 39.0, 0)
+	createTestPayPlanEntry(t, db, pp1.ID, "S8a", 3, 300000, nil)
+
+	pp2To := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	pp2 := createTestPayPlanPeriodWithContrib(t, db, payplan.ID, time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), &pp2To, 39.0, 0)
+	createTestPayPlanEntry(t, db, pp2.ID, "S8a", 3, 350000, nil)
+
+	// Employee: S8a step 3, full-time 39h, contract covers entire 2024
+	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 39.0, "qualified", section.ID)
+	db.Model(&models.EmployeeContract{}).Where("employee_id = ?", emp.ID).Updates(map[string]interface{}{"grade": "S8a", "step": 3})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 12 {
+		t.Fatalf("expected 12 data points, got %d", len(result.DataPoints))
+	}
+
+	// Jan-Jun: salary = 300000 (full-time)
+	for i := 0; i < 6; i++ {
+		dp := result.DataPoints[i]
+		if dp.GrossSalary != 300000 {
+			t.Errorf("month %d (%s): GrossSalary = %d, want 300000", i+1, dp.Date, dp.GrossSalary)
+		}
+	}
+	// Jul-Dec: salary = 350000 (full-time)
+	for i := 6; i < 12; i++ {
+		dp := result.DataPoints[i]
+		if dp.GrossSalary != 350000 {
+			t.Errorf("month %d (%s): GrossSalary = %d, want 350000", i+1, dp.Date, dp.GrossSalary)
+		}
+	}
+}
+
+func TestStatisticsService_GetFinancials_ChildAgeBoundaryChangesRate(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding with age-based rates:
+	// U3 (ages 0-2): care_type=ganztag -> 200000 cents
+	// Ü3 (ages 3-6): care_type=ganztag -> 100000 cents
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag U3", 200000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag Ü3", 100000, 0.15, 3, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Child born 2021-06-15: turns 3 on 2024-06-15
+	// On 2024-06-01 the child is still 2 (birthday hasn't happened yet in June)
+	// On 2024-07-01 the child is 3
+	child := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Age", LastName: "Boundary", Birthdate: time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 12 {
+		t.Fatalf("expected 12 data points, got %d", len(result.DataPoints))
+	}
+
+	// Jan-Jun (months 0-5): child is age 2, matches U3 -> 200000 cents
+	for i := 0; i < 6; i++ {
+		dp := result.DataPoints[i]
+		if dp.FundingIncome != 200000 {
+			t.Errorf("month %d (%s): FundingIncome = %d, want 200000 (U3 rate)", i+1, dp.Date, dp.FundingIncome)
+		}
+	}
+	// Jul-Dec (months 6-11): child is age 3, matches Ü3 -> 100000 cents
+	for i := 6; i < 12; i++ {
+		dp := result.DataPoints[i]
+		if dp.FundingIncome != 100000 {
+			t.Errorf("month %d (%s): FundingIncome = %d, want 100000 (Ü3 rate)", i+1, dp.Date, dp.FundingIncome)
+		}
+	}
+}
+
+func TestStatisticsService_GetFinancials_EmployeeZeroWeeklyHours(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Pay plan: 39h full-time, 350000 cents/month, no employer contrib
+	payplan := createTestPayPlan(t, db, "TVöD-SuE", org.ID)
+	ppPeriod := createTestPayPlanPeriodWithContrib(t, db, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0, 0)
+	createTestPayPlanEntry(t, db, ppPeriod.ID, "S8a", 3, 350000, nil)
+
+	// Employee with 0 weekly hours (e.g., on leave but contract still active)
+	emp := createTestEmployee(t, db, "Emp", "Zero", org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 0.0, "qualified", section.ID)
+	db.Model(&models.EmployeeContract{}).Where("employee_id = ?", emp.ID).Updates(map[string]interface{}{"grade": "S8a", "step": 3})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 3 {
+		t.Fatalf("expected 3 data points, got %d", len(result.DataPoints))
+	}
+
+	for i, dp := range result.DataPoints {
+		// Salary formula: 350000 * 0.0 / 39.0 = 0
+		if dp.GrossSalary != 0 {
+			t.Errorf("dp %d: GrossSalary = %d, want 0", i, dp.GrossSalary)
+		}
+		if dp.EmployerCosts != 0 {
+			t.Errorf("dp %d: EmployerCosts = %d, want 0", i, dp.EmployerCosts)
+		}
+		// Employee should still be counted
+		if dp.StaffCount != 1 {
+			t.Errorf("dp %d: StaffCount = %d, want 1", i, dp.StaffCount)
+		}
+	}
+}
+
+func TestStatisticsService_GetOccupancy_ChildAgeGroupTransition(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding with two age groups:
+	// U3 (ages 0-2): care_type=ganztag
+	// Ü3 (ages 3-6): care_type=ganztag
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag U3", 200000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag Ü3", 100000, 0.15, 3, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Child born 2021-06-15: age 2 on 2024-06-01, age 3 on 2024-07-01
+	child := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Transition", LastName: "Child", Birthdate: time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 12 {
+		t.Fatalf("expected 12 data points, got %d", len(result.DataPoints))
+	}
+
+	// Age group labels: "0/1/2" for ages 0-2, "3+" for ages 3-6
+	u3Label := formatAgeGroupLabel(0, 2)
+	u6Label := formatAgeGroupLabel(3, 6)
+
+	// Jan-Jun (months 0-5): child is 2 -> counted in U3 age group
+	for i := 0; i < 6; i++ {
+		dp := result.DataPoints[i]
+		if dp.Total != 1 {
+			t.Errorf("month %d (%s): Total = %d, want 1", i+1, dp.Date, dp.Total)
+		}
+		u3Count := dp.ByAgeAndCareType[u3Label]["ganztag"]
+		if u3Count != 1 {
+			t.Errorf("month %d (%s): U3 ganztag count = %d, want 1", i+1, dp.Date, u3Count)
+		}
+		u6Count := dp.ByAgeAndCareType[u6Label]["ganztag"]
+		if u6Count != 0 {
+			t.Errorf("month %d (%s): Ü3 ganztag count = %d, want 0", i+1, dp.Date, u6Count)
+		}
+	}
+
+	// Jul-Dec (months 6-11): child is 3 -> counted in Ü3 age group
+	for i := 6; i < 12; i++ {
+		dp := result.DataPoints[i]
+		if dp.Total != 1 {
+			t.Errorf("month %d (%s): Total = %d, want 1", i+1, dp.Date, dp.Total)
+		}
+		u3Count := dp.ByAgeAndCareType[u3Label]["ganztag"]
+		if u3Count != 0 {
+			t.Errorf("month %d (%s): U3 ganztag count = %d, want 0", i+1, dp.Date, u3Count)
+		}
+		u6Count := dp.ByAgeAndCareType[u6Label]["ganztag"]
+		if u6Count != 1 {
+			t.Errorf("month %d (%s): Ü3 ganztag count = %d, want 1", i+1, dp.Date, u6Count)
+		}
+	}
+}
+
+func TestStatisticsService_GetOccupancy_MultiplePeriodsWithDifferentRequirements(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Two funding periods with different care type configurations:
+	// Period 1 (Jan-Jun): ganztag + halbtag available for ages 0-6
+	// Period 2 (Jul-Dec): ganztag + halbtag available for ages 0-6 (same structure, different values)
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	p1To := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	p1 := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &p1To, 39.0)
+	createTestFundingPropertyFull(t, db, p1.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 6)
+	createTestFundingPropertyFull(t, db, p1.ID, "care_type", "halbtag", "Halbtag", 6000, 0.15, 0, 6)
+
+	p2To := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	p2 := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), &p2To, 39.0)
+	createTestFundingPropertyFull(t, db, p2.ID, "care_type", "ganztag", "Ganztag", 12000, 0.30, 0, 6)
+	createTestFundingPropertyFull(t, db, p2.ID, "care_type", "halbtag", "Halbtag", 7000, 0.18, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// Child with ganztag contract covering all of 2024
+	child := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "Stable", LastName: "Child", Birthdate: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(child)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 12 {
+		t.Fatalf("expected 12 data points, got %d", len(result.DataPoints))
+	}
+
+	// The child should be counted in every month regardless of which funding period is active.
+	// Occupancy counts are about headcount, not funding amounts.
+	for i, dp := range result.DataPoints {
+		if dp.Total != 1 {
+			t.Errorf("month %d (%s): Total = %d, want 1", i+1, dp.Date, dp.Total)
+		}
+	}
+
+	// Verify the age group structure is derived (from the most recent period per extractOccupancyStructure)
+	if len(result.AgeGroups) == 0 {
+		t.Error("expected at least one age group")
+	}
+	if len(result.CareTypes) == 0 {
+		t.Error("expected at least one care type")
+	}
+
+	// The ganztag count should be 1 for every month in the appropriate age group
+	ageLabel := formatAgeGroupLabel(0, 6)
+	for i, dp := range result.DataPoints {
+		ganztag := dp.ByAgeAndCareType[ageLabel]["ganztag"]
+		if ganztag != 1 {
+			t.Errorf("month %d (%s): ganztag count in %s = %d, want 1", i+1, dp.Date, ageLabel, ganztag)
+		}
+	}
+}

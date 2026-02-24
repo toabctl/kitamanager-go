@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -1407,10 +1408,10 @@ func TestGovernmentFundingBillService_Compare_PropertyLevelDetail(t *testing.T) 
 	createChildWithVoucherAndContract(t, db, "Multi", "Props", org.ID,
 		"GB-AABBCCDDEE0-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
 		models.ContractProperties{
-			"care_type": "ganztag",
-			"ndh":       "ndh",
-			"qm/mss":    "qm/mss",
-			"integration":       "integration",
+			"care_type":   "ganztag",
+			"ndh":         "ndh",
+			"qm/mss":      "qm/mss",
+			"integration": "integration",
 		})
 
 	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
@@ -1444,10 +1445,10 @@ func TestGovernmentFundingBillService_Compare_PropertyLevelDetail(t *testing.T) 
 	}
 
 	expected := map[string]int{
-		"care_type:ganztag": 120000,
-		"ndh:ndh":           8000,
-		"qm/mss:qm/mss":     5000,
-		"integration:integration":           12000,
+		"care_type:ganztag":       120000,
+		"ndh:ndh":                 8000,
+		"qm/mss:qm/mss":           5000,
+		"integration:integration": 12000,
 	}
 	for kv, expectedAmt := range expected {
 		prop, ok := propMap[kv]
@@ -2705,5 +2706,266 @@ func TestProcessISBJ_InvalidExcel(t *testing.T) {
 	_, err := svc.ProcessISBJ(ctx, org.ID, reader, "bad.xlsx", "badhash", user.ID)
 	if err == nil {
 		t.Fatal("expected error for invalid Excel data, got nil")
+	}
+}
+
+// TestGovernmentFundingBillService_Compare_ChildWithNoVoucher verifies that a child with an
+// active contract but no voucher number appears as a calc_only entry (has calculated funding
+// but is not in the bill).
+func TestGovernmentFundingBillService_Compare_ChildWithNoVoucher(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare_novoucher@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Create a child with an active contract but NO voucher number.
+	// The contract has care_type=ganztag, so funding calculation should yield 120000 (age 4).
+	child := &models.Child{
+		Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      "NoVoucher",
+			LastName:       "Child",
+			Birthdate:      time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	if err := db.Create(child).Error; err != nil {
+		t.Fatalf("setup: create child error = %v", err)
+	}
+	section := getDefaultSection(t, db, org.ID)
+	contract := &models.ChildContract{
+		ChildID: child.ID,
+		BaseContract: models.BaseContract{
+			Period:     models.Period{From: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+			SectionID:  section.ID,
+			Properties: models.ContractProperties{"care_type": "ganztag"},
+		},
+		// VoucherNumber intentionally nil
+	}
+	if err := db.Create(contract).Error; err != nil {
+		t.Fatalf("setup: create contract error = %v", err)
+	}
+
+	// Empty bill — no children in bill at all
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, nil)
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	// The child should appear as calc_only
+	if result.CalcOnlyCount != 1 {
+		t.Errorf("expected calc_only_count 1, got %d", result.CalcOnlyCount)
+	}
+	if result.ChildrenCount != 1 {
+		t.Errorf("expected children_count 1, got %d", result.ChildrenCount)
+	}
+
+	compChild := result.Children[0]
+	if compChild.Status != "calc_only" {
+		t.Errorf("expected status 'calc_only', got %q", compChild.Status)
+	}
+	if compChild.ChildID == nil || *compChild.ChildID != child.ID {
+		t.Errorf("expected child_id %d, got %v", child.ID, compChild.ChildID)
+	}
+	if compChild.VoucherNumber != "" {
+		t.Errorf("expected empty voucher_number for child without voucher, got %q", compChild.VoucherNumber)
+	}
+	// age 4 (born 2021-05-01, bill date 2025-11-01), care_type=ganztag → 120000
+	if compChild.CalcTotal == nil || *compChild.CalcTotal != 120000 {
+		t.Errorf("expected calc_total 120000, got %v", compChild.CalcTotal)
+	}
+	if compChild.BillTotal != 0 {
+		t.Errorf("expected bill_total 0, got %d", compChild.BillTotal)
+	}
+
+	// Response-level totals
+	if result.BillTotal != 0 {
+		t.Errorf("expected response bill_total 0, got %d", result.BillTotal)
+	}
+	if result.CalcTotal != 120000 {
+		t.Errorf("expected response calc_total 120000, got %d", result.CalcTotal)
+	}
+	if result.Difference != -120000 {
+		t.Errorf("expected response difference -120000, got %d", result.Difference)
+	}
+}
+
+// TestGovernmentFundingBillService_Compare_NegativeBillAmount verifies that when a bill entry
+// has a negative amount (a correction), the totals are computed correctly. The negative amount
+// should reduce the child's bill total and the overall response totals.
+func TestGovernmentFundingBillService_Compare_NegativeBillAmount(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare_negative@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Child: age 4, care_type=ganztag → calc 120000
+	createChildWithVoucherAndContract(t, db, "Neg", "Amount", org.ID,
+		"GB-NEGATIVEAM-01", time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+		models.ContractProperties{"care_type": "ganztag"})
+
+	// Bill has a negative total amount (e.g., a correction refund).
+	// care_type=ganztag: -50000 (correction/refund)
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, []models.GovernmentFundingBillChild{
+		{
+			VoucherNumber: "GB-NEGATIVEAM-01",
+			ChildName:     "Amount, Neg",
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: -50000},
+			},
+		},
+	})
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	// Child should be matched with a difference
+	if result.MatchCount != 0 {
+		t.Errorf("expected match_count 0, got %d", result.MatchCount)
+	}
+	if result.DifferenceCount != 1 {
+		t.Errorf("expected difference_count 1, got %d", result.DifferenceCount)
+	}
+
+	child := result.Children[0]
+	if child.Status != "difference" {
+		t.Errorf("expected status 'difference', got %q", child.Status)
+	}
+	if child.BillTotal != -50000 {
+		t.Errorf("expected bill_total -50000, got %d", child.BillTotal)
+	}
+	if child.CalcTotal == nil || *child.CalcTotal != 120000 {
+		t.Errorf("expected calc_total 120000, got %v", child.CalcTotal)
+	}
+	// difference = bill - calc = -50000 - 120000 = -170000
+	if child.Difference == nil || *child.Difference != -170000 {
+		t.Errorf("expected difference -170000, got %v", child.Difference)
+	}
+
+	// Response-level totals
+	if result.BillTotal != -50000 {
+		t.Errorf("expected response bill_total -50000, got %d", result.BillTotal)
+	}
+	if result.CalcTotal != 120000 {
+		t.Errorf("expected response calc_total 120000, got %d", result.CalcTotal)
+	}
+	if result.Difference != -170000 {
+		t.Errorf("expected response difference -170000, got %d", result.Difference)
+	}
+
+	// Property-level detail
+	if len(child.Properties) == 0 {
+		t.Fatal("expected properties to be populated")
+	}
+	for _, prop := range child.Properties {
+		if prop.Key == "care_type" && prop.Value == "ganztag" {
+			if prop.BillAmount == nil || *prop.BillAmount != -50000 {
+				t.Errorf("expected care_type bill_amount -50000, got %v", prop.BillAmount)
+			}
+			if prop.CalcAmount == nil || *prop.CalcAmount != 120000 {
+				t.Errorf("expected care_type calc_amount 120000, got %v", prop.CalcAmount)
+			}
+			if prop.Difference != -170000 {
+				t.Errorf("expected care_type difference -170000, got %d", prop.Difference)
+			}
+		}
+	}
+}
+
+// TestGovernmentFundingBillService_Compare_LargeChildCount verifies that Compare handles 50
+// children correctly with no truncation or off-by-one errors.
+func TestGovernmentFundingBillService_Compare_LargeChildCount(t *testing.T) {
+	db := setupTestDB(t)
+	svc := setupBillCompareService(t, db)
+	org := createTestOrganization(t, db, "Test Org")
+	user := createTestUser(t, db, "User", "compare_large@example.com", "password")
+	ctx := context.Background()
+
+	setupFundingRates(t, db)
+
+	// Create 50 children, each with a unique voucher and care_type=ganztag.
+	// All are age 4 (born 2021-05-01, bill date 2025-11-01) → calc 120000 each.
+	const childCount = 50
+	billChildren := make([]models.GovernmentFundingBillChild, childCount)
+
+	for i := 0; i < childCount; i++ {
+		voucher := fmt.Sprintf("GB-LARGE%05d-01", i)
+		firstName := fmt.Sprintf("Child%d", i)
+		lastName := fmt.Sprintf("Large%d", i)
+
+		createChildWithVoucherAndContract(t, db, firstName, lastName, org.ID,
+			voucher, time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC),
+			models.ContractProperties{"care_type": "ganztag"})
+
+		billChildren[i] = models.GovernmentFundingBillChild{
+			VoucherNumber: voucher,
+			ChildName:     fmt.Sprintf("%s, %s", lastName, firstName),
+			BirthDate:     "05.21",
+			District:      1,
+			Payments: []models.GovernmentFundingBillPayment{
+				{Key: "care_type", Value: "ganztag", Amount: 120000},
+			},
+		}
+	}
+
+	period := createBillPeriodForCompare(t, db, org.ID, user.ID, billChildren)
+
+	result, err := svc.Compare(ctx, period.ID, org.ID)
+	if err != nil {
+		t.Fatalf("Compare() error = %v", err)
+	}
+
+	// All 50 should be matched exactly
+	if result.ChildrenCount != childCount {
+		t.Errorf("expected children_count %d, got %d", childCount, result.ChildrenCount)
+	}
+	if result.MatchCount != childCount {
+		t.Errorf("expected match_count %d, got %d", childCount, result.MatchCount)
+	}
+	if result.DifferenceCount != 0 {
+		t.Errorf("expected difference_count 0, got %d", result.DifferenceCount)
+	}
+	if result.BillOnlyCount != 0 {
+		t.Errorf("expected bill_only_count 0, got %d", result.BillOnlyCount)
+	}
+	if result.CalcOnlyCount != 0 {
+		t.Errorf("expected calc_only_count 0, got %d", result.CalcOnlyCount)
+	}
+
+	// Verify totals: 50 * 120000 = 6000000
+	expectedTotal := childCount * 120000
+	if result.BillTotal != expectedTotal {
+		t.Errorf("expected bill_total %d, got %d", expectedTotal, result.BillTotal)
+	}
+	if result.CalcTotal != expectedTotal {
+		t.Errorf("expected calc_total %d, got %d", expectedTotal, result.CalcTotal)
+	}
+	if result.Difference != 0 {
+		t.Errorf("expected difference 0, got %d", result.Difference)
+	}
+
+	// Verify each child is matched
+	matchCount := 0
+	for _, child := range result.Children {
+		if child.Status == "match" {
+			matchCount++
+		}
+		if child.ChildID == nil {
+			t.Errorf("child %s: expected child_id to be set", child.VoucherNumber)
+		}
+	}
+	if matchCount != childCount {
+		t.Errorf("expected %d matched children, got %d", childCount, matchCount)
 	}
 }

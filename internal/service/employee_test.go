@@ -3135,3 +3135,403 @@ func TestEmployeeService_Import_InvalidPeriod(t *testing.T) {
 		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
+
+func TestEmployeeService_GetContractByID_Success(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	created, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, To: &to, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	found, err := svc.GetContractByID(ctx, created.ID, employee.ID, org.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if found.ID != created.ID {
+		t.Errorf("ID = %d, want %d", found.ID, created.ID)
+	}
+	if found.Grade != "S8a" {
+		t.Errorf("Grade = %v, want S8a", found.Grade)
+	}
+	if found.WeeklyHours != 40 {
+		t.Errorf("WeeklyHours = %v, want 40", found.WeeklyHours)
+	}
+}
+
+// SECURITY TEST: Verify that accessing a contract belonging to a different employee returns not found
+func TestEmployeeService_GetContractByID_WrongEmployee(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee1 := createTestEmployee(t, db, "John", "Doe", org.ID)
+	employee2 := createTestEmployee(t, db, "Jane", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee1.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, To: &to, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Try to access employee1's contract using employee2's ID
+	_, err = svc.GetContractByID(ctx, contract.ID, employee2.ID, org.ID)
+	if err == nil {
+		t.Fatal("SECURITY: expected error when accessing contract with wrong employee ID, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("SECURITY: expected ErrNotFound, got %v", err)
+	}
+}
+
+// SECURITY TEST: Verify that accessing a contract for an employee in a different org returns not found
+func TestEmployeeService_GetContractByID_WrongOrg(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org1 := createTestOrganization(t, db, "Org 1")
+	org2 := createTestOrganization(t, db, "Org 2")
+	employee := createTestEmployee(t, db, "John", "Doe", org1.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org1.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org1.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, To: &to, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	// Try to access contract using org2's context
+	_, err = svc.GetContractByID(ctx, contract.ID, employee.ID, org2.ID)
+	if err == nil {
+		t.Fatal("SECURITY: expected error when accessing contract from wrong org, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("SECURITY: expected ErrNotFound (not ErrForbidden to prevent info leak), got %v", err)
+	}
+}
+
+func TestEmployeeService_ListContracts_Pagination(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create 5 non-overlapping contracts
+	for i := 0; i < 5; i++ {
+		from := time.Date(2020+i, 1, 1, 0, 0, 0, 0, time.UTC)
+		to := time.Date(2020+i, 12, 31, 0, 0, 0, 0, time.UTC)
+		createTestEmployeeContract(t, db, employee.ID, payPlan.ID, from, &to, "S8a", 3, 40.0)
+	}
+
+	// Request page with limit=2
+	contracts, total, err := svc.ListContracts(ctx, employee.ID, org.ID, 2, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if total != 5 {
+		t.Errorf("expected total 5, got %d", total)
+	}
+	if len(contracts) != 2 {
+		t.Errorf("expected 2 results on first page, got %d", len(contracts))
+	}
+}
+
+func TestEmployeeService_CreateContract_WeeklyHoursNegative(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	req := &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: -1, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	}
+
+	_, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
+	if err == nil {
+		t.Fatal("expected error for negative weekly hours, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestEmployeeService_CreateContract_GradeTrimmed(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	req := &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "  S8a  ", Step: 3, PayPlanID: payPlan.ID,
+	}
+
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, req)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if contract.Grade != "S8a" {
+		t.Errorf("Grade = %q, want %q (trimmed)", contract.Grade, "S8a")
+	}
+}
+
+func TestEmployeeService_UpdateContract_InPlace_ChangeWeeklyHours(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a future-dated contract (in-place mode)
+	from := time.Now().AddDate(1, 0, 0)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	newHours := 30.0
+	updated, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		WeeklyHours: &newHours,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if updated.WeeklyHours != 30 {
+		t.Errorf("WeeklyHours = %v, want 30", updated.WeeklyHours)
+	}
+	// Verify the same contract ID was updated (in-place, not amend)
+	if updated.ID != contract.ID {
+		t.Errorf("expected in-place update (same ID %d), got new ID %d", contract.ID, updated.ID)
+	}
+}
+
+func TestEmployeeService_UpdateContract_InPlace_ChangeGradeStep(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a future-dated contract (in-place mode)
+	from := time.Now().AddDate(1, 0, 0)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	newGrade := "S8b"
+	newStep := 5
+	updated, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		Grade: &newGrade,
+		Step:  &newStep,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if updated.Grade != "S8b" {
+		t.Errorf("Grade = %v, want S8b", updated.Grade)
+	}
+	if updated.Step != 5 {
+		t.Errorf("Step = %v, want 5", updated.Step)
+	}
+	if updated.ID != contract.ID {
+		t.Errorf("expected in-place update (same ID %d), got new ID %d", contract.ID, updated.ID)
+	}
+}
+
+func TestEmployeeService_UpdateContract_InPlace_InvalidWeeklyHours(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a future-dated contract (in-place mode)
+	from := time.Now().AddDate(1, 0, 0)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	negativeHours := -5.0
+	_, err = svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		WeeklyHours: &negativeHours,
+	})
+	if err == nil {
+		t.Fatal("expected error for negative weekly hours, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestEmployeeService_UpdateContract_InPlace_InvalidStaffCategory(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a future-dated contract (in-place mode)
+	from := time.Now().AddDate(1, 0, 0)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	invalidCategory := "invalid"
+	_, err = svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		StaffCategory: &invalidCategory,
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid staff category, got nil")
+	}
+
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+// In-place update with nil To clears the end date (makes contract ongoing).
+// This is by design: nullable fields are always assigned so the frontend can clear them by sending null.
+func TestEmployeeService_UpdateContract_InPlace_NilToClearsEndDate(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a future-dated contract with an explicit end date
+	from := time.Now().AddDate(1, 0, 0)
+	from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	to := from.AddDate(0, 6, 0)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, To: &to, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+	if contract.To == nil {
+		t.Fatal("expected contract to have an end date")
+	}
+
+	// Update WeeklyHours with nil To — should clear the end date
+	newHours := 35.0
+	updated, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		WeeklyHours: &newHours,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// To should be nil (cleared) because nil To = "make open-ended"
+	if updated.To != nil {
+		t.Errorf("To should be nil (cleared), got %v", *updated.To)
+	}
+}
+
+func TestEmployeeService_UpdateContract_AmendGradeTrimmed(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createEmployeeService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	employee := createTestEmployee(t, db, "John", "Doe", org.ID)
+	payPlan := createTestPayPlan(t, db, "TVoD-SuE", org.ID)
+
+	// Create a past-dated ongoing contract (amend mode)
+	from := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	contract, err := svc.CreateContract(ctx, employee.ID, org.ID, &models.EmployeeContractCreateRequest{
+		SectionID: 1, From: from, StaffCategory: "qualified",
+		WeeklyHours: 40, Grade: "S8a", Step: 3, PayPlanID: payPlan.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create contract: %v", err)
+	}
+
+	gradeWithSpaces := "  S8a  "
+	amended, err := svc.UpdateContract(ctx, contract.ID, employee.ID, org.ID, &models.EmployeeContractUpdateRequest{
+		Grade: &gradeWithSpaces,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Amend creates a new contract
+	if amended.ID == contract.ID {
+		t.Errorf("expected amend to create new contract, but got same ID %d", amended.ID)
+	}
+	if amended.Grade != "S8a" {
+		t.Errorf("Grade = %q, want %q (trimmed)", amended.Grade, "S8a")
+	}
+}
