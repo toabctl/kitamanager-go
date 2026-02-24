@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Table,
@@ -37,7 +38,6 @@ import { employeeContractSchema, type EmployeeContractFormData } from '@/lib/sch
 
 export default function EmployeeContractsPage() {
   const params = useParams();
-  const router = useRouter();
   const orgId = Number(params.orgId);
   const employeeId = Number(params.employeeId);
   const t = useTranslations();
@@ -225,23 +225,22 @@ export default function EmployeeContractsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push(`/organizations/${orgId}/employees`)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('employees.contractHistory')}</h1>
-          {employee && (
-            <p className="text-muted-foreground">
-              {employee.first_name} {employee.last_name}
-            </p>
-          )}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="min-w-0 flex-1">
+          <Breadcrumb
+            items={[
+              { label: t('nav.employees'), href: `/organizations/${orgId}/employees` },
+              {
+                label: employee ? `${employee.first_name} ${employee.last_name}` : '...',
+              },
+              { label: t('employees.contractHistory') },
+            ]}
+          />
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {t('employees.contractHistory')}
+          </h1>
         </div>
-        <div className="ml-auto">
+        <div className="shrink-0">
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             {t('contracts.newContract')}

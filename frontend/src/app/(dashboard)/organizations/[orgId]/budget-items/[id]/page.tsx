@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -57,7 +58,6 @@ import { budgetItemEntrySchema, type BudgetItemEntryFormData } from '@/lib/schem
 
 export default function BudgetItemDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const orgId = Number(params.orgId);
   const budgetItemId = Number(params.id);
   const t = useTranslations();
@@ -174,20 +174,25 @@ export default function BudgetItemDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">{budgetItem.name}</h1>
-        <Badge variant={budgetItem.category === 'income' ? 'default' : 'secondary'}>
-          {t(`budgetItems.category${budgetItem.category === 'income' ? 'Income' : 'Expense'}`)}
-        </Badge>
-        {budgetItem.per_child && (
-          <span className="text-muted-foreground flex items-center gap-1 text-sm">
-            <Check className="h-4 w-4" />
-            {t('budgetItems.perChild')}
-          </span>
-        )}
+      <div className="space-y-1">
+        <Breadcrumb
+          items={[
+            { label: t('nav.budgetItems'), href: `/organizations/${orgId}/budget-items` },
+            { label: budgetItem.name },
+          ]}
+        />
+        <div className="flex flex-wrap items-center gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">{budgetItem.name}</h1>
+          <Badge variant={budgetItem.category === 'income' ? 'default' : 'secondary'}>
+            {t(`budgetItems.category${budgetItem.category === 'income' ? 'Income' : 'Expense'}`)}
+          </Badge>
+          {budgetItem.per_child && (
+            <span className="text-muted-foreground flex items-center gap-1 text-sm">
+              <Check className="h-4 w-4" />
+              {t('budgetItems.perChild')}
+            </span>
+          )}
+        </div>
       </div>
 
       <Card>

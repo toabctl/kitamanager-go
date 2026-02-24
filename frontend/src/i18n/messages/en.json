@@ -99,7 +99,8 @@
     "attendance": "Attendance",
     "governmentFundingBills": "Funding Bills",
     "budgetItems": "Budget Items",
-    "admin": "Admin"
+    "admin": "Admin",
+    "breadcrumb": "Breadcrumb"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -646,7 +647,13 @@
     "failedToDelete": "Failed to delete attendance",
     "thisWeek": "This week",
     "previousWeek": "Previous week",
-    "nextWeek": "Next week"
+    "nextWeek": "Next week",
+    "undo": "Undo",
+    "undone": "Action undone",
+    "undoFailed": "Failed to undo",
+    "statusChanged": "Marked as {status}",
+    "checkedIn": "Checked in",
+    "checkedOut": "Checked out"
   },
   "fundingLabels": {
     "care_type--ganztag erweitert": "Extended Full-Time (>9h)",

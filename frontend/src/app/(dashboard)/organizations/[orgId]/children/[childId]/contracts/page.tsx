@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Table,
@@ -56,7 +57,6 @@ import { useUiStore } from '@/stores/ui-store';
 
 export default function ChildContractsPage() {
   const params = useParams();
-  const router = useRouter();
   const orgId = Number(params.orgId);
   const childId = Number(params.childId);
   const t = useTranslations();
@@ -230,23 +230,22 @@ export default function ChildContractsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push(`/organizations/${orgId}/children`)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('children.contractHistory')}</h1>
-          {child && (
-            <p className="text-muted-foreground">
-              {child.first_name} {child.last_name}
-            </p>
-          )}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="min-w-0 flex-1">
+          <Breadcrumb
+            items={[
+              { label: t('nav.children'), href: `/organizations/${orgId}/children` },
+              {
+                label: child ? `${child.first_name} ${child.last_name}` : '...',
+              },
+              { label: t('children.contractHistory') },
+            ]}
+          />
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {t('children.contractHistory')}
+          </h1>
         </div>
-        <div className="ml-auto">
+        <div className="shrink-0">
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             {t('contracts.newContract')}

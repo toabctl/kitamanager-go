@@ -22,6 +22,7 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import type { ChildAttendanceResponse, ChildAttendanceStatus, Section } from '@/lib/api/types';
 import { LOOKUP_FETCH_LIMIT } from '@/lib/api/types';
 import { useToast } from '@/lib/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { useState } from 'react';
 
 export default function AttendancePage() {
@@ -111,8 +112,29 @@ export default function AttendancePage() {
         check_in_time: checkInTime,
       });
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       invalidateDate(variables.forDate);
+      toast({
+        title: t('checkedIn'),
+        action: (
+          <ToastAction
+            altText={t('undo')}
+            onClick={() => {
+              apiClient
+                .deleteChildAttendance(orgId, variables.childId, data.id)
+                .then(() => {
+                  invalidateDate(variables.forDate);
+                  toast({ title: t('undone') });
+                })
+                .catch(() => {
+                  toast({ title: t('undoFailed'), variant: 'destructive' });
+                });
+            }}
+          >
+            {t('undo')}
+          </ToastAction>
+        ),
+      });
     },
     onError: () => {
       toast({ title: t('failedToSave'), variant: 'destructive' });
@@ -137,6 +159,29 @@ export default function AttendancePage() {
     },
     onSuccess: (_data, variables) => {
       invalidateDate(variables.forDate);
+      toast({
+        title: t('checkedOut'),
+        action: (
+          <ToastAction
+            altText={t('undo')}
+            onClick={() => {
+              apiClient
+                .updateChildAttendance(orgId, variables.childId, variables.attendanceId, {
+                  check_out_time: '',
+                })
+                .then(() => {
+                  invalidateDate(variables.forDate);
+                  toast({ title: t('undone') });
+                })
+                .catch(() => {
+                  toast({ title: t('undoFailed'), variant: 'destructive' });
+                });
+            }}
+          >
+            {t('undo')}
+          </ToastAction>
+        ),
+      });
     },
     onError: () => {
       toast({ title: t('failedToSave'), variant: 'destructive' });
@@ -207,20 +252,50 @@ export default function AttendancePage() {
       forDate,
       status,
       attendanceId,
+      previousStatus,
     }: {
       childId: number;
       forDate: string;
       status: ChildAttendanceStatus;
       attendanceId?: number;
+      previousStatus?: ChildAttendanceStatus;
     }) => {
       if (attendanceId) {
         return apiClient.updateChildAttendance(orgId, childId, attendanceId, { status });
       }
       return apiClient.createChildAttendance(orgId, childId, { date: forDate, status });
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       invalidateDate(variables.forDate);
-      toast({ title: t('updateSuccess') });
+      const statusLabel = t(variables.status);
+      toast({
+        title: t('statusChanged', { status: statusLabel }),
+        action: (
+          <ToastAction
+            altText={t('undo')}
+            onClick={() => {
+              const undoPromise = variables.attendanceId
+                ? // Was an update — revert to previous status
+                  apiClient.updateChildAttendance(orgId, variables.childId, data.id, {
+                    status: variables.previousStatus!,
+                  })
+                : // Was a create — delete the record
+                  apiClient.deleteChildAttendance(orgId, variables.childId, data.id);
+
+              undoPromise
+                .then(() => {
+                  invalidateDate(variables.forDate);
+                  toast({ title: t('undone') });
+                })
+                .catch(() => {
+                  toast({ title: t('undoFailed'), variant: 'destructive' });
+                });
+            }}
+          >
+            {t('undo')}
+          </ToastAction>
+        ),
+      });
     },
     onError: () => {
       toast({ title: t('failedToSave'), variant: 'destructive' });
@@ -229,9 +304,16 @@ export default function AttendancePage() {
 
   const handleSetStatus = useCallback(
     (childId: number, forDate: string, status: ChildAttendanceStatus, attendanceId?: number) => {
-      setStatusMutation.mutate({ childId, forDate, status, attendanceId });
+      // Capture previous status for undo
+      let previousStatus: ChildAttendanceStatus | undefined;
+      if (attendanceId) {
+        const dayRecords = weekAttendanceByDate.get(forDate);
+        const existing = dayRecords?.find((r) => r.id === attendanceId);
+        previousStatus = existing?.status as ChildAttendanceStatus | undefined;
+      }
+      setStatusMutation.mutate({ childId, forDate, status, attendanceId, previousStatus });
     },
-    [setStatusMutation]
+    [setStatusMutation, weekAttendanceByDate]
   );
 
   // Save note mutation

@@ -95,7 +95,7 @@ describe('GovernmentFundingDetailPage', () => {
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
     expect(screen.getByText('states.berlin')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('GovernmentFundingDetailPage', () => {
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
     // The period comment
@@ -120,7 +120,7 @@ describe('GovernmentFundingDetailPage', () => {
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
     expect(screen.getByText('governmentFundings.addPeriod')).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('GovernmentFundingDetailPage', () => {
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
     // Property key and value
@@ -146,24 +146,23 @@ describe('GovernmentFundingDetailPage', () => {
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
     expect(screen.getByText('governmentFundings.noPeriodsDefined')).toBeInTheDocument();
   });
 
-  it('renders back button', async () => {
+  it('renders breadcrumb navigation', async () => {
     (apiClient.getGovernmentFunding as jest.Mock).mockResolvedValue(mockFundingWithPeriods);
 
     renderWithProviders(<GovernmentFundingDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Berliner Kita Funding')).toBeInTheDocument();
+      expect(screen.getAllByText('Berliner Kita Funding').length).toBeGreaterThanOrEqual(1);
     });
 
-    // Back button is a ghost variant icon button
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(1);
+    // Breadcrumb nav is present
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
   });
 
   it('shows error when funding fails to load', async () => {

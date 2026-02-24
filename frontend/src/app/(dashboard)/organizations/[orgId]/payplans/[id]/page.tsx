@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Pencil, Trash2, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -64,7 +65,6 @@ import {
 
 export default function PayPlanDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const orgId = Number(params.orgId);
   const payPlanId = Number(params.id);
   const t = useTranslations();
@@ -245,15 +245,19 @@ export default function PayPlanDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{payPlan.name}</h1>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="min-w-0 flex-1">
+          <Breadcrumb
+            items={[
+              { label: t('nav.payPlans'), href: `/organizations/${orgId}/payplans` },
+              { label: payPlan.name },
+            ]}
+          />
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">{payPlan.name}</h1>
         </div>
         <Button
           variant="outline"
+          className="shrink-0"
           onClick={() => window.open(apiClient.getPayPlanExportUrl(orgId, payPlanId))}
         >
           <Download className="mr-2 h-4 w-4" />

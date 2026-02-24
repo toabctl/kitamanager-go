@@ -108,7 +108,7 @@ export function UserMembershipDialog({ user, orgId, onClose }: UserMembershipDia
   return (
     <>
       <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {user

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -38,7 +39,6 @@ import { PropertyFormDialog } from '@/components/government-funding-rates/proper
 
 export default function GovernmentFundingDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const fundingId = Number(params.id);
   const t = useTranslations();
 
@@ -159,14 +159,15 @@ export default function GovernmentFundingDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{funding.name}</h1>
-          <p className="text-muted-foreground">{t(`states.${funding.state}`)}</p>
-        </div>
+      <div className="space-y-1">
+        <Breadcrumb
+          items={[
+            { label: t('nav.governmentFundings'), href: '/government-funding-rates' },
+            { label: funding.name },
+          ]}
+        />
+        <h1 className="text-3xl font-bold tracking-tight">{funding.name}</h1>
+        <p className="text-muted-foreground">{t(`states.${funding.state}`)}</p>
       </div>
 
       <Card>

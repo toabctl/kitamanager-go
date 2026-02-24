@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -15,7 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -117,23 +116,22 @@ export default function GovernmentFundingBillDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/organizations/${orgId}/government-funding-bills`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{result.facility_name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {new Date(result.from).toLocaleDateString('de-DE', {
-              month: 'long',
-              year: 'numeric',
-            })}
-            {' \u2014 '}
-            {result.file_name}
-          </p>
-        </div>
+      <div className="space-y-1">
+        <Breadcrumb
+          items={[
+            { label: t('title'), href: `/organizations/${orgId}/government-funding-bills` },
+            { label: result.facility_name },
+          ]}
+        />
+        <h1 className="text-2xl font-bold">{result.facility_name}</h1>
+        <p className="text-muted-foreground text-sm">
+          {new Date(result.from).toLocaleDateString('de-DE', {
+            month: 'long',
+            year: 'numeric',
+          })}
+          {' \u2014 '}
+          {result.file_name}
+        </p>
       </div>
 
       {/* Summary Cards */}
