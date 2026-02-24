@@ -333,14 +333,14 @@ export default function GovernmentFundingBillDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {result.children.map((child) => {
+              {result.children.map((child, idx) => {
                 const comp = comparisonByVoucher.get(child.voucher_number);
                 const isExpanded = expandedChild === child.voucher_number;
                 const hasMultipleRows = child.rows && child.rows.length > 1;
                 const isExpandable = hasMultipleRows || (comp?.properties?.length ?? 0) > 0;
 
                 return (
-                  <Fragment key={child.voucher_number}>
+                  <Fragment key={`${child.voucher_number}-${idx}`}>
                     <TableRow
                       className={isExpandable ? 'cursor-pointer' : ''}
                       onClick={() => {
@@ -436,7 +436,7 @@ export default function GovernmentFundingBillDetailPage() {
                     </TableRow>
                     {/* Expandable detail: rows + comparison properties */}
                     {isExpanded && (
-                      <TableRow key={`${child.voucher_number}-detail`}>
+                      <TableRow key={`${child.voucher_number}-${idx}-detail`}>
                         <TableCell colSpan={comparison ? 7 : 5} className="bg-muted/50 p-0">
                           <div className="p-3 md:pl-10">
                             {/* Row-grouped amounts */}
@@ -569,8 +569,8 @@ export default function GovernmentFundingBillDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {calcOnlyChildren.map((child) => (
-                      <TableRow key={child.voucher_number || child.child_name}>
+                    {calcOnlyChildren.map((child, idx) => (
+                      <TableRow key={`${child.voucher_number || child.child_name}-${idx}`}>
                         <TableCell>
                           {child.child_id ? (
                             <Link
