@@ -38,8 +38,8 @@ test.describe('Statistics Print Pages', () => {
     await expect(page.locator('[class*="sidebar"]')).not.toBeVisible();
 
     // Verify financial summary cards
-    await expect(page.getByText(/total income/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/total expenses/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/total income/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/total expenses/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('occupancy print page renders without sidebar', async ({ page }) => {

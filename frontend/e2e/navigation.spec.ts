@@ -1,8 +1,21 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { login } from './utils/test-helpers';
 
 // Ensure English locale for all tests
 test.use({ locale: 'en-US' });
+
+/** Open the mobile sidebar if the viewport is narrow (hamburger menu visible). */
+async function ensureSidebarVisible(page: Page) {
+  await page.waitForLoadState('networkidle');
+  const hamburger = page.getByRole('button', { name: /menu/i });
+  const isHamburgerVisible = await hamburger.isVisible().catch(() => false);
+  if (isHamburgerVisible) {
+    // Wait for React hydration so the click handler is attached
+    await page.waitForTimeout(300);
+    await hamburger.click();
+    await page.locator('div.fixed.inset-0.z-50').waitFor({ state: 'visible', timeout: 5000 });
+  }
+}
 
 test.describe('Navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,21 +27,20 @@ test.describe('Navigation', () => {
   });
 
   test('should navigate to organizations page', async ({ page }) => {
-    // Wait for initial redirect after login to complete
     await page.waitForLoadState('networkidle');
+    await ensureSidebarVisible(page);
 
     const link = page.getByRole('link', { name: /organization/i }).first();
     await expect(link).toBeVisible({ timeout: 10000 });
     await link.click();
 
     await expect(page).toHaveURL(/\/organizations\/?$/, { timeout: 10000 });
-    // Use first() since there may be multiple headings with "organization"
     await expect(page.getByRole('heading', { name: /organization/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should navigate to government fundings page', async ({ page }) => {
-    // Wait for initial redirect after login to complete
     await page.waitForLoadState('networkidle');
+    await ensureSidebarVisible(page);
 
     const link = page.getByRole('link', { name: /government funding/i }).first();
     await expect(link).toBeVisible({ timeout: 10000 });
@@ -38,14 +50,16 @@ test.describe('Navigation', () => {
   });
 
   test('should show sidebar navigation items', async ({ page }) => {
-    // Check for main navigation links
+    await ensureSidebarVisible(page);
     await expect(page.getByRole('link', { name: /organization/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /government funding/i }).first()).toBeVisible();
   });
 
   test('should show organization selector', async ({ page }) => {
-    // Organization selector should be visible
-    const orgSelector = page.getByTestId('org-selector');
+    await ensureSidebarVisible(page);
+    // On mobile there are two org-selectors (desktop hidden + mobile overlay).
+    // Use locator that resolves only visible elements.
+    const orgSelector = page.locator('[data-testid="org-selector"]:visible').first();
     await expect(orgSelector).toBeVisible({ timeout: 10000 });
   });
 });
@@ -68,36 +82,40 @@ test.describe('Mobile Navigation', () => {
   });
 
   test('should open and close mobile sidebar', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+
     // Open sidebar via hamburger
     const hamburger = page.getByRole('button', { name: /menu/i });
     await expect(hamburger).toBeVisible({ timeout: 10000 });
     await hamburger.click();
 
-    // Sidebar overlay should appear
-    const sidebarOverlay = page.locator('div.fixed.inset-0.z-50');
-    await expect(sidebarOverlay).toBeVisible({ timeout: 5000 });
+    // Sidebar navigation should appear (use role-based selector)
+    const sidebarNav = page.locator('div.fixed.inset-0.z-50 nav');
+    await expect(sidebarNav).toBeVisible({ timeout: 5000 });
 
-    // Close by clicking backdrop (force: true to avoid sidebar panel interception)
+    // Close by clicking backdrop
     const backdrop = page.locator('div.fixed.inset-0.bg-black\\/50');
     await backdrop.click({ force: true });
 
-    // Sidebar overlay should disappear
-    await expect(sidebarOverlay).not.toBeVisible({ timeout: 5000 });
+    // Sidebar navigation should disappear
+    await expect(sidebarNav).not.toBeVisible({ timeout: 5000 });
   });
 
   test('should navigate via mobile sidebar', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+
     // Open sidebar
     const hamburger = page.getByRole('button', { name: /menu/i });
     await expect(hamburger).toBeVisible({ timeout: 10000 });
     await hamburger.click();
 
-    // Wait for sidebar overlay
+    // Wait for sidebar navigation to appear
     const sidebarOverlay = page.locator('div.fixed.inset-0.z-50');
     await expect(sidebarOverlay).toBeVisible({ timeout: 5000 });
 
     // Click on Organizations link in the mobile sidebar
     const orgLink = sidebarOverlay.getByRole('link', { name: /organization/i }).first();
-    await expect(orgLink).toBeVisible();
+    await expect(orgLink).toBeVisible({ timeout: 5000 });
     await orgLink.click();
 
     // Should navigate and close sidebar

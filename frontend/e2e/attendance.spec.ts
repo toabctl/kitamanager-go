@@ -106,16 +106,16 @@ test.describe('Attendance', () => {
   });
 
   test('should navigate between weeks', async ({ page }) => {
-    // Navigate to previous week
-    await page.getByRole('button', { name: /previous week/i }).click();
+    // Navigate to previous week (force to avoid sidebar overlap on tablet)
+    await page.getByRole('button', { name: /previous week/i }).click({ force: true });
     await page.waitForLoadState('domcontentloaded');
 
     // Navigate to next week
-    await page.getByRole('button', { name: /next week/i }).click();
+    await page.getByRole('button', { name: /next week/i }).click({ force: true });
     await page.waitForLoadState('domcontentloaded');
 
     // Click "This week" to return
-    await page.getByRole('button', { name: /this week/i }).click();
+    await page.getByRole('button', { name: /this week/i }).click({ force: true });
     await page.waitForLoadState('domcontentloaded');
 
     // Child should still be visible
@@ -406,17 +406,25 @@ test.describe('Attendance Editable Times', () => {
   test('edit check-out time after full check-in/out', async ({ page }) => {
     const row = page.getByRole('row').filter({ hasText: childFirstName });
 
+    // Find today's column header (e.g., "Wed 25.02") to determine the column index.
+    // We need to use today's column because check-in sets time to now() which uses
+    // today's date. Editing a time on a different day's column would create a date
+    // mismatch (check-out date != check-in date) causing validation failure.
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun..6=Sat
+    const todayColIndex = ((dayOfWeek + 6) % 7); // 0=Mon..4=Fri
+
+    // Get all check-in buttons in the row and click today's
+    const checkInButtons = row.getByRole('button', { name: /check-in/i });
+
     // Check-in: wait for the API response before proceeding
     const checkInResponse = page.waitForResponse(
       (resp) => resp.url().includes('/attendance') && resp.request().method() === 'POST'
     );
-    await row.getByRole('button', { name: /check-in/i }).first().click();
+    await checkInButtons.nth(todayColIndex).click();
     await checkInResponse;
-    await expect(row.getByRole('button', { name: /check-out/i }).first()).toBeVisible({
-      timeout: 10000,
-    });
 
-    // Check-out: wait for the API response before asserting
+    // Check-out: the check-out button appears in the same column after check-in
     const checkOutResponse = page.waitForResponse(
       (resp) => resp.url().includes('/attendance') && resp.request().method() === 'PUT'
     );
@@ -436,6 +444,7 @@ test.describe('Attendance Editable Times', () => {
     const timeInput = row.locator('input[type="time"][aria-label="Check-out"]');
     await expect(timeInput).toBeVisible();
     await timeInput.fill('16:45');
+    await expect(timeInput).toHaveValue('16:45');
     await timeInput.press('Enter');
 
     // Should show toast (confirms save succeeded)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -91,11 +91,13 @@ export function ChildCreateDialog({
     }
   }, [birthdate, orgState, setValue]);
 
+  // Track whether default properties have been applied for this dialog session
+  const appliedDefaultsRef = useRef(false);
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      const initialProps =
-        Object.keys(defaultProperties).length > 0 ? defaultProperties : undefined;
+      appliedDefaultsRef.current = false;
       reset({
         first_name: '',
         last_name: '',
@@ -104,10 +106,18 @@ export function ChildCreateDialog({
         contract_from: '',
         contract_to: '',
         section_id: 0,
-        properties: initialProps,
+        properties: undefined,
       });
     }
-  }, [open, reset, defaultProperties]);
+  }, [open, reset]);
+
+  // Apply default properties once when they become available (without resetting the form)
+  useEffect(() => {
+    if (open && !appliedDefaultsRef.current && Object.keys(defaultProperties).length > 0) {
+      appliedDefaultsRef.current = true;
+      setValue('properties', defaultProperties);
+    }
+  }, [open, defaultProperties, setValue]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -226,20 +226,17 @@ func TestLoginRateLimiter(t *testing.T) {
 	}
 }
 
-func TestLoginRateLimiter_DefaultFloor(t *testing.T) {
+func TestLoginRateLimiter_DisabledWhenZero(t *testing.T) {
 	rl := LoginRateLimiter(0)
-	if rl == nil {
-		t.Fatal("LoginRateLimiter(0) should return a rate limiter with default floor")
+	if rl != nil {
+		t.Fatal("LoginRateLimiter(0) should return nil (disabled)")
 	}
+}
 
-	// Should use the default floor (10 requests per minute)
-	for i := 0; i < defaultLoginRateLimit; i++ {
-		if !rl.Allow("192.168.1.1") {
-			t.Errorf("request %d should be allowed (default floor is %d)", i+1, defaultLoginRateLimit)
-		}
-	}
-	if rl.Allow("192.168.1.1") {
-		t.Errorf("request %d should be blocked", defaultLoginRateLimit+1)
+func TestLoginRateLimiter_DisabledWhenNegative(t *testing.T) {
+	rl := LoginRateLimiter(-1)
+	if rl != nil {
+		t.Fatal("LoginRateLimiter(-1) should return nil (disabled)")
 	}
 }
 

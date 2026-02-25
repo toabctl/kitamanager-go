@@ -86,15 +86,19 @@ function EditableTime({ value, className, onSave, ariaLabel }: EditableTimeProps
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
+  const savedRef = useRef(false);
 
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
+      savedRef.current = false;
     }
   }, [editing]);
 
   const handleSave = () => {
+    if (savedRef.current) return;
+    savedRef.current = true;
     setEditing(false);
     if (draft && draft !== value) {
       onSave(draft);
@@ -114,6 +118,7 @@ function EditableTime({ value, className, onSave, ariaLabel }: EditableTimeProps
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSave();
           if (e.key === 'Escape') {
+            savedRef.current = true;
             setDraft(value);
             setEditing(false);
           }

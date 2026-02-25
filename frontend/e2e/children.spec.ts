@@ -50,9 +50,9 @@ test.describe('Children', () => {
     await page.getByLabel(/first name/i).fill(firstName);
     await page.getByLabel(/last name/i).fill(lastName);
 
-    // Select gender via Shadcn Select (first combobox in dialog is gender)
-    const comboboxes = page.getByRole('dialog').getByRole('combobox');
-    await comboboxes.first().click();
+    // Select gender — the combobox is inside a container with "Gender" text
+    const dialog = page.getByRole('dialog');
+    await dialog.locator(':has(> :text("Gender")) >> role=combobox').first().click();
     await page.getByRole('option', { name: /female/i }).click();
 
     // Fill birthdate
@@ -61,8 +61,8 @@ test.describe('Children', () => {
     // Fill contract start date
     await page.getByLabel(/start date/i).fill('2024-01-01');
 
-    // Select section (second combobox in dialog)
-    await comboboxes.nth(1).click();
+    // Select section via the named combobox
+    await dialog.getByRole('combobox', { name: /section/i }).click();
     await page.getByRole('option').first().click();
 
     // Capture the API response

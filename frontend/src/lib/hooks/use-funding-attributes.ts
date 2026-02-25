@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -42,57 +43,59 @@ export function useFundingAttributes(orgId: number, fromDate?: string, toDate?: 
     enabled: !!funding?.id,
   });
 
-  // Extract unique attributes with their keys
-  // Use value as the unique identifier (same value won't appear twice)
-  const attributeMap = new Map<string, FundingAttribute>();
-  // Collect properties that should be auto-applied to every contract
-  const defaultProperties: Record<string, string> = {};
+  return useMemo(() => {
+    // Extract unique attributes with their keys
+    // Use value as the unique identifier (same value won't appear twice)
+    const attributeMap = new Map<string, FundingAttribute>();
+    // Collect properties that should be auto-applied to every contract
+    const defaultProperties: Record<string, string> = {};
 
-  if (fundingDetails?.periods) {
-    const contractFrom = fromDate || '';
-    const contractTo = toDate || '9999-12-31'; // Far future if no end date
+    if (fundingDetails?.periods) {
+      const contractFrom = fromDate || '';
+      const contractTo = toDate || '9999-12-31'; // Far future if no end date
 
-    for (const period of fundingDetails.periods) {
-      const periodFrom = period.from;
-      const periodTo = period.to || '9999-12-31';
+      for (const period of fundingDetails.periods) {
+        const periodFrom = period.from;
+        const periodTo = period.to || '9999-12-31';
 
-      // Check if periods overlap
-      const overlaps = periodFrom <= contractTo && periodTo >= contractFrom;
+        // Check if periods overlap
+        const overlaps = periodFrom <= contractTo && periodTo >= contractFrom;
 
-      if (overlaps && period.properties) {
-        for (const prop of period.properties) {
-          const key = prop.key?.toLowerCase();
-          const value = prop.value?.toLowerCase();
-          if (key && value && !attributeMap.has(value)) {
-            attributeMap.set(value, { key, value, label: prop.label || value });
-          }
-          if (key && value && prop.apply_to_all_contracts && !(key in defaultProperties)) {
-            defaultProperties[key] = value;
+        if (overlaps && period.properties) {
+          for (const prop of period.properties) {
+            const key = prop.key?.toLowerCase();
+            const value = prop.value?.toLowerCase();
+            if (key && value && !attributeMap.has(value)) {
+              attributeMap.set(value, { key, value, label: prop.label || value });
+            }
+            if (key && value && prop.apply_to_all_contracts && !(key in defaultProperties)) {
+              defaultProperties[key] = value;
+            }
           }
         }
       }
     }
-  }
 
-  // Build list of attributes sorted by value
-  const fundingAttributes = Array.from(attributeMap.values()).sort((a, b) =>
-    a.value.localeCompare(b.value)
-  );
+    // Build list of attributes sorted by value
+    const fundingAttributes = Array.from(attributeMap.values()).sort((a, b) =>
+      a.value.localeCompare(b.value)
+    );
 
-  // Group attributes by key for UI organization
-  const attributesByKey: Record<string, FundingAttribute[]> = {};
-  for (const attr of fundingAttributes) {
-    if (!attributesByKey[attr.key]) {
-      attributesByKey[attr.key] = [];
+    // Group attributes by key for UI organization
+    const attributesByKey: Record<string, FundingAttribute[]> = {};
+    for (const attr of fundingAttributes) {
+      if (!attributesByKey[attr.key]) {
+        attributesByKey[attr.key] = [];
+      }
+      attributesByKey[attr.key].push(attr);
     }
-    attributesByKey[attr.key].push(attr);
-  }
 
-  return {
-    fundingAttributes,
-    attributesByKey,
-    defaultProperties,
-    isLoading: !fundingDetails && !!state,
-    hasNoFunding: !!state && !funding,
-  };
+    return {
+      fundingAttributes,
+      attributesByKey,
+      defaultProperties,
+      isLoading: !fundingDetails && !!state,
+      hasNoFunding: !!state && !funding,
+    };
+  }, [fundingDetails, fromDate, toDate, state, funding]);
 }
