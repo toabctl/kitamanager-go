@@ -302,9 +302,12 @@ func (h *GovernmentFundingHandler) UpdatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-funding-rates/{fundingId}/periods/{periodId} [delete]
 func (h *GovernmentFundingHandler) DeletePeriod(c *gin.Context) {
-	handleGlobalNestedDelete(c, "fundingId", "periodId",
+	handleGlobalNestedDeleteWithFetch(c, "fundingId", "periodId",
 		auditConfig{h.auditService, "gov_funding_period", "funding"},
-		h.service.DeletePeriod,
+		h.service.GetPeriod, h.service.DeletePeriod,
+		func(r *models.GovernmentFundingPeriodResponse) string {
+			return fmt.Sprintf("funding=%d from=%s", r.GovernmentFundingID, r.From.Format(models.DateFormat))
+		},
 	)
 }
 
@@ -399,9 +402,12 @@ func (h *GovernmentFundingHandler) UpdateProperty(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/government-funding-rates/{fundingId}/periods/{periodId}/properties/{propertyId} [delete]
 func (h *GovernmentFundingHandler) DeleteProperty(c *gin.Context) {
-	handleGlobalDeepNestedDelete(c, "fundingId", "periodId", "propertyId",
+	handleGlobalDeepNestedDeleteWithFetch(c, "fundingId", "periodId", "propertyId",
 		auditConfig{h.auditService, "gov_funding_property", "period"},
-		h.service.DeleteProperty,
+		h.service.GetProperty, h.service.DeleteProperty,
+		func(r *models.GovernmentFundingPropertyResponse) string {
+			return fmt.Sprintf("period=%d key=%s value=%s", r.PeriodID, r.Key, r.Value)
+		},
 	)
 }
 

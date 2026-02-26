@@ -135,15 +135,24 @@ func handleUpdateContract[Req any, Resp any](
 	c.JSON(http.StatusOK, resp)
 }
 
-// handleDeleteContract handles deleting a contract with audit logging.
-func handleDeleteContract(
+// handleDeleteContract handles deleting a contract with pre-fetch for audit logging.
+func handleDeleteContract[Resp any](
 	c *gin.Context,
 	parentParam string,
 	audit auditConfig,
+	getFn func(context.Context, uint, uint, uint) (*Resp, error),
 	deleteFn func(context.Context, uint, uint, uint) error,
+	getAuditInfo func(*Resp) (uint, uint), // returns (contractID, parentID)
 ) {
 	orgID, resourceID, contractID, ok := parseOrgResourceAndContractID(c, parentParam)
 	if !ok {
+		return
+	}
+
+	// Pre-fetch for audit log
+	item, err := getFn(c.Request.Context(), contractID, resourceID, orgID)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -152,7 +161,8 @@ func handleDeleteContract(
 		return
 	}
 
-	auditDelete(c, audit.auditService, audit.resourceType, contractID, fmt.Sprintf("%s=%d", audit.parentLabel, resourceID))
+	_, parentID := getAuditInfo(item)
+	auditDelete(c, audit.auditService, audit.resourceType, contractID, fmt.Sprintf("%s=%d", audit.parentLabel, parentID))
 
 	c.Status(http.StatusNoContent)
 }

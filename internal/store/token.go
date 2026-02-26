@@ -10,15 +10,6 @@ import (
 	"github.com/eenemeene/kitamanager-go/internal/models"
 )
 
-// TokenStorer defines the interface for token revocation storage operations.
-type TokenStorer interface {
-	RevokeToken(ctx context.Context, tokenHash string, userID uint, expiresAt time.Time) error
-	RevokeAllForUser(ctx context.Context, userID uint) error
-	IsRevoked(ctx context.Context, tokenHash string) (bool, error)
-	IsUserRevoked(ctx context.Context, userID uint) (bool, error)
-	CleanupExpired(ctx context.Context) error
-}
-
 // TokenStore implements TokenStorer using GORM.
 type TokenStore struct {
 	db *gorm.DB
@@ -118,5 +109,3 @@ func (s *TokenStore) CleanupExpired(ctx context.Context) error {
 		Delete(&models.RevokedToken{}).Error
 }
 
-// Compile-time interface compliance check
-var _ TokenStorer = (*TokenStore)(nil)

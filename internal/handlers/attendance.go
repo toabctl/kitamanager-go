@@ -56,7 +56,7 @@ func (h *ChildAttendanceHandler) Create(c *gin.Context) {
 		return
 	}
 
-	auditCreate(c, h.auditService, "attendance", attendance.ID, fmt.Sprintf("child=%d date=%s", attendance.ChildID, attendance.Date))
+	auditCreate(c, h.auditService, "child_attendance", attendance.ID, fmt.Sprintf("child=%d date=%s", attendance.ChildID, attendance.Date))
 
 	c.JSON(http.StatusCreated, attendance)
 }
@@ -83,9 +83,9 @@ func (h *ChildAttendanceHandler) Get(c *gin.Context) {
 		return
 	}
 
-	attendance, svcErr := h.service.GetByID(c.Request.Context(), attendanceID, orgID, childID)
-	if svcErr != nil {
-		respondError(c, svcErr)
+	attendance, err := h.service.GetByID(c.Request.Context(), attendanceID, orgID, childID)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
@@ -122,13 +122,13 @@ func (h *ChildAttendanceHandler) Update(c *gin.Context) {
 		return
 	}
 
-	attendance, svcErr := h.service.Update(c.Request.Context(), attendanceID, orgID, childID, req)
-	if svcErr != nil {
-		respondError(c, svcErr)
+	attendance, err := h.service.Update(c.Request.Context(), attendanceID, orgID, childID, req)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	auditUpdate(c, h.auditService, "attendance", attendance.ID, fmt.Sprintf("child=%d date=%s", attendance.ChildID, attendance.Date))
+	auditUpdate(c, h.auditService, "child_attendance", attendance.ID, fmt.Sprintf("child=%d date=%s", attendance.ChildID, attendance.Date))
 
 	c.JSON(http.StatusOK, attendance)
 }
@@ -156,14 +156,14 @@ func (h *ChildAttendanceHandler) Delete(c *gin.Context) {
 	}
 
 	// Get attendance info before deletion for audit log
-	attendance, svcErr := h.service.GetByID(c.Request.Context(), attendanceID, orgID, childID)
-	if svcErr != nil {
-		respondError(c, svcErr)
+	attendance, err := h.service.GetByID(c.Request.Context(), attendanceID, orgID, childID)
+	if err != nil {
+		respondError(c, err)
 		return
 	}
 
-	if svcErr := h.service.Delete(c.Request.Context(), attendanceID, orgID, childID); svcErr != nil {
-		respondError(c, svcErr)
+	if err := h.service.Delete(c.Request.Context(), attendanceID, orgID, childID); err != nil {
+		respondError(c, err)
 		return
 	}
 

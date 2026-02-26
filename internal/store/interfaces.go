@@ -210,6 +210,15 @@ type BudgetItemStorer interface {
 	Entries() PeriodStorer[models.BudgetItemEntry]
 }
 
+// TokenStorer defines the interface for token revocation storage operations.
+type TokenStorer interface {
+	RevokeToken(ctx context.Context, tokenHash string, userID uint, expiresAt time.Time) error
+	RevokeAllForUser(ctx context.Context, userID uint) error
+	IsRevoked(ctx context.Context, tokenHash string) (bool, error)
+	IsUserRevoked(ctx context.Context, userID uint) (bool, error)
+	CleanupExpired(ctx context.Context) error
+}
+
 // AuditStorer defines the interface for audit log storage operations
 type AuditStorer interface {
 	Create(ctx context.Context, log *models.AuditLog) error
@@ -245,5 +254,6 @@ var (
 	_ PayPlanStorer                     = (*PayPlanStore)(nil)
 	_ AuditStorer                       = (*AuditStore)(nil)
 	_ BudgetItemStorer                  = (*BudgetItemStore)(nil)
+	_ TokenStorer                       = (*TokenStore)(nil)
 	_ Transactor                        = (*GormTransactor)(nil)
 )

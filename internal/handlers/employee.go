@@ -376,7 +376,8 @@ func (h *EmployeeHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/employees/{employeeId}/contracts/{contractId} [delete]
 func (h *EmployeeHandler) DeleteContract(c *gin.Context) {
-	handleDeleteContract(c, "employeeId", h.contractAudit(), h.service.DeleteContract)
+	handleDeleteContract(c, "employeeId", h.contractAudit(), h.service.GetContractByID, h.service.DeleteContract,
+		func(r *models.EmployeeContractResponse) (uint, uint) { return r.ID, r.EmployeeID })
 }
 
 // ExportYAML godoc

@@ -306,9 +306,12 @@ func (h *PayPlanHandler) UpdatePeriod(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/pay-plans/{payPlanId}/periods/{periodId} [delete]
 func (h *PayPlanHandler) DeletePeriod(c *gin.Context) {
-	handleOrgNestedDelete(c, "payPlanId", "periodId",
+	handleOrgNestedDeleteWithFetch(c, "payPlanId", "periodId",
 		auditConfig{h.auditService, "pay_plan_period", "payplan"},
-		h.service.DeletePeriod,
+		h.service.GetPeriod, h.service.DeletePeriod,
+		func(r *models.PayPlanPeriodResponse) string {
+			return fmt.Sprintf("payplan=%d from=%s", r.PayPlanID, r.From.Format(models.DateFormat))
+		},
 	)
 }
 
@@ -408,9 +411,12 @@ func (h *PayPlanHandler) UpdateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/pay-plans/{payPlanId}/periods/{periodId}/entries/{entryId} [delete]
 func (h *PayPlanHandler) DeleteEntry(c *gin.Context) {
-	handleOrgDeepNestedDelete(c, "payPlanId", "periodId", "entryId",
+	handleOrgDeepNestedDeleteWithFetch(c, "payPlanId", "periodId", "entryId",
 		auditConfig{h.auditService, "pay_plan_entry", "period"},
-		h.service.DeleteEntry,
+		h.service.GetEntry, h.service.DeleteEntry,
+		func(r *models.PayPlanEntryResponse) string {
+			return fmt.Sprintf("period=%d grade=%s step=%d", r.PeriodID, r.Grade, r.Step)
+		},
 	)
 }
 

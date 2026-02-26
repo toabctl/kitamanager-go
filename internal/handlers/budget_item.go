@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -321,8 +322,11 @@ func (h *BudgetItemHandler) UpdateEntry(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/budget-items/{budgetItemId}/entries/{entryId} [delete]
 func (h *BudgetItemHandler) DeleteEntry(c *gin.Context) {
-	handleOrgNestedDelete(c, "budgetItemId", "entryId",
+	handleOrgNestedDeleteWithFetch(c, "budgetItemId", "entryId",
 		auditConfig{h.auditService, "budget_item_entry", "budget_item"},
-		h.service.DeleteEntry,
+		h.service.GetEntryByID, h.service.DeleteEntry,
+		func(r *models.BudgetItemEntryResponse) string {
+			return fmt.Sprintf("budget_item=%d from=%s", r.BudgetItemID, r.From.Format(models.DateFormat))
+		},
 	)
 }

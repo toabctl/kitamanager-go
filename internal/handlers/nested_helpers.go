@@ -129,7 +129,7 @@ func handleOrgNestedUpdate[Req any, Resp any](
 	c.JSON(http.StatusOK, resp)
 }
 
-// handleOrgNestedDelete handles deleting a nested resource with audit logging.
+// handleOrgNestedDelete handles deleting a nested resource with pre-fetch for audit logging.
 func handleOrgNestedDelete(
 	c *gin.Context,
 	parentParam string,
@@ -154,6 +154,44 @@ func handleOrgNestedDelete(
 	}
 
 	auditDelete(c, audit.auditService, audit.resourceType, nestedID, fmt.Sprintf("%s=%d", audit.parentLabel, parentID))
+
+	c.Status(http.StatusNoContent)
+}
+
+// handleOrgNestedDeleteWithFetch handles deleting a nested resource with pre-fetch for richer audit logging.
+func handleOrgNestedDeleteWithFetch[Resp any](
+	c *gin.Context,
+	parentParam string,
+	nestedParam string,
+	audit auditConfig,
+	getFn func(context.Context, uint, uint, uint) (*Resp, error),
+	deleteFn func(context.Context, uint, uint, uint) error,
+	getAuditName func(*Resp) string,
+) {
+	orgID, parentID, ok := parseOrgAndResourceID(c, parentParam)
+	if !ok {
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Pre-fetch for audit log
+	item, err := getFn(c.Request.Context(), nestedID, parentID, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	if err := deleteFn(c.Request.Context(), nestedID, parentID, orgID); err != nil {
+		respondError(c, err)
+		return
+	}
+
+	auditDelete(c, audit.auditService, audit.resourceType, nestedID, getAuditName(item))
 
 	c.Status(http.StatusNoContent)
 }
@@ -309,6 +347,51 @@ func handleOrgDeepNestedDelete(
 	c.Status(http.StatusNoContent)
 }
 
+// handleOrgDeepNestedDeleteWithFetch handles deleting a deep nested resource with pre-fetch for richer audit logging.
+func handleOrgDeepNestedDeleteWithFetch[Resp any](
+	c *gin.Context,
+	parentParam string,
+	midParam string,
+	nestedParam string,
+	audit auditConfig,
+	getFn func(context.Context, uint, uint, uint, uint) (*Resp, error),
+	deleteFn func(context.Context, uint, uint, uint, uint) error,
+	getAuditName func(*Resp) string,
+) {
+	orgID, parentID, ok := parseOrgAndResourceID(c, parentParam)
+	if !ok {
+		return
+	}
+
+	midID, err := parseID(c, midParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Pre-fetch for audit log
+	item, err := getFn(c.Request.Context(), nestedID, midID, parentID, orgID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	if err := deleteFn(c.Request.Context(), nestedID, midID, parentID, orgID); err != nil {
+		respondError(c, err)
+		return
+	}
+
+	auditDelete(c, audit.auditService, audit.resourceType, nestedID, getAuditName(item))
+
+	c.Status(http.StatusNoContent)
+}
+
 // --- Global nested helpers (routes: /resource/:id/nested) ---
 
 // handleGlobalNestedCreate handles creating a nested resource under a global parent.
@@ -432,6 +515,45 @@ func handleGlobalNestedDelete(
 	}
 
 	auditDelete(c, audit.auditService, audit.resourceType, nestedID, fmt.Sprintf("%s=%d", audit.parentLabel, parentID))
+
+	c.Status(http.StatusNoContent)
+}
+
+// handleGlobalNestedDeleteWithFetch handles deleting a nested resource under a global parent with pre-fetch for richer audit logging.
+func handleGlobalNestedDeleteWithFetch[Resp any](
+	c *gin.Context,
+	parentParam string,
+	nestedParam string,
+	audit auditConfig,
+	getFn func(context.Context, uint, uint) (*Resp, error),
+	deleteFn func(context.Context, uint, uint) error,
+	getAuditName func(*Resp) string,
+) {
+	parentID, err := parseID(c, parentParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Pre-fetch for audit log
+	item, err := getFn(c.Request.Context(), nestedID, parentID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	if err := deleteFn(c.Request.Context(), nestedID, parentID); err != nil {
+		respondError(c, err)
+		return
+	}
+
+	auditDelete(c, audit.auditService, audit.resourceType, nestedID, getAuditName(item))
 
 	c.Status(http.StatusNoContent)
 }
@@ -587,6 +709,52 @@ func handleGlobalDeepNestedDelete(
 	}
 
 	auditDelete(c, audit.auditService, audit.resourceType, nestedID, fmt.Sprintf("%s=%d", audit.parentLabel, midID))
+
+	c.Status(http.StatusNoContent)
+}
+
+// handleGlobalDeepNestedDeleteWithFetch handles deleting a deep nested resource under a global parent with pre-fetch for richer audit logging.
+func handleGlobalDeepNestedDeleteWithFetch[Resp any](
+	c *gin.Context,
+	parentParam string,
+	midParam string,
+	nestedParam string,
+	audit auditConfig,
+	getFn func(context.Context, uint, uint, uint) (*Resp, error),
+	deleteFn func(context.Context, uint, uint, uint) error,
+	getAuditName func(*Resp) string,
+) {
+	parentID, err := parseID(c, parentParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	midID, err := parseID(c, midParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	nestedID, err := parseID(c, nestedParam)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	// Pre-fetch for audit log
+	item, err := getFn(c.Request.Context(), nestedID, midID, parentID)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+
+	if err := deleteFn(c.Request.Context(), nestedID, midID, parentID); err != nil {
+		respondError(c, err)
+		return
+	}
+
+	auditDelete(c, audit.auditService, audit.resourceType, nestedID, getAuditName(item))
 
 	c.Status(http.StatusNoContent)
 }

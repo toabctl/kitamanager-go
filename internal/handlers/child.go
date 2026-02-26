@@ -381,7 +381,8 @@ func (h *ChildHandler) UpdateContract(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /api/v1/organizations/{orgId}/children/{childId}/contracts/{contractId} [delete]
 func (h *ChildHandler) DeleteContract(c *gin.Context) {
-	handleDeleteContract(c, "childId", h.contractAudit(), h.service.DeleteContract)
+	handleDeleteContract(c, "childId", h.contractAudit(), h.service.GetContractByID, h.service.DeleteContract,
+		func(r *models.ChildContractResponse) (uint, uint) { return r.ID, r.ChildID })
 }
 
 // ExportYAML godoc

@@ -287,14 +287,24 @@ func auditDelete(c *gin.Context, svc *service.AuditService, resourceType string,
 	svc.LogResourceDelete(getUserID(c), resourceType, id, name, c.ClientIP())
 }
 
-// readUploadFile reads the "file" form field with size validation.
+// allowedUploadContentTypes is the set of MIME types accepted for file uploads.
+var allowedUploadContentTypes = map[string]bool{
+	"application/x-yaml":       true,
+	"text/yaml":                true,
+	"text/x-yaml":              true,
+	"text/plain":               true, // YAML files are often detected as text/plain
+	"application/octet-stream": true, // fallback for unrecognized types
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true, // .xlsx
+}
+
+// readUploadFile reads the "file" form field with size and content type validation.
 // Returns (fileBytes, ok). If ok is false, an error response has been sent.
 func readUploadFile(c *gin.Context) ([]byte, bool) {
 	data, _, ok := readUploadFileWithHeader(c)
 	return data, ok
 }
 
-// readUploadFileWithHeader reads the "file" form field with size validation and returns the file header.
+// readUploadFileWithHeader reads the "file" form field with size and content type validation and returns the file header.
 // Returns (fileBytes, fileHeader, ok). If ok is false, an error response has been sent.
 func readUploadFileWithHeader(c *gin.Context) ([]byte, *multipart.FileHeader, bool) {
 	fileHeader, err := c.FormFile("file")
@@ -305,6 +315,13 @@ func readUploadFileWithHeader(c *gin.Context) ([]byte, *multipart.FileHeader, bo
 
 	if fileHeader.Size > MaxUploadSize {
 		respondError(c, apperror.BadRequest(fmt.Sprintf("file size exceeds maximum of %d MB", MaxUploadSize>>20)))
+		return nil, nil, false
+	}
+
+	// Validate content type before reading file body
+	contentType := fileHeader.Header.Get("Content-Type")
+	if contentType != "" && !allowedUploadContentTypes[contentType] {
+		respondError(c, apperror.BadRequest("unsupported file type"))
 		return nil, nil, false
 	}
 
