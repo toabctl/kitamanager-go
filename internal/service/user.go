@@ -161,10 +161,22 @@ func (s *UserService) Update(ctx context.Context, id uint, req *models.UserUpdat
 }
 
 // ResetPassword sets a new password for a user (admin-initiated).
-func (s *UserService) ResetPassword(ctx context.Context, userID uint, newPassword string) error {
+// Non-superadmin requesters cannot reset a superadmin's password.
+func (s *UserService) ResetPassword(ctx context.Context, userID uint, newPassword string, requesterID uint) error {
 	user, err := s.store.FindByID(ctx, userID)
 	if err != nil {
 		return classifyStoreError(err, "user")
+	}
+
+	// Prevent non-superadmin from resetting a superadmin's password
+	if user.IsSuperAdmin && requesterID != userID {
+		requesterIsSuperAdmin, err := s.userOrgStore.IsSuperAdmin(ctx, requesterID)
+		if err != nil {
+			return apperror.InternalWrap(err, "failed to check superadmin status")
+		}
+		if !requesterIsSuperAdmin {
+			return apperror.Forbidden("only superadmins can reset a superadmin's password")
+		}
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)

@@ -363,9 +363,10 @@ func TestUserService_ResetPassword(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Test User", "reset@example.com", "oldpassword")
 
-	err := svc.ResetPassword(ctx, user.ID, "newpassword123")
+	err := svc.ResetPassword(ctx, user.ID, "newpassword123", admin.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -385,7 +386,9 @@ func TestUserService_ResetPassword_UserNotFound(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
-	err := svc.ResetPassword(ctx, 99999, "newpassword123")
+	admin := createTestSuperAdmin(t, db)
+
+	err := svc.ResetPassword(ctx, 99999, "newpassword123", admin.ID)
 	if err == nil {
 		t.Fatal("expected error for non-existent user, got nil")
 	}
@@ -399,9 +402,10 @@ func TestUserService_ResetPassword_OldPasswordInvalidated(t *testing.T) {
 	svc := createUserService(db)
 	ctx := context.Background()
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Test User", "reset2@example.com", "oldpassword")
 
-	if err := svc.ResetPassword(ctx, user.ID, "newpassword123"); err != nil {
+	if err := svc.ResetPassword(ctx, user.ID, "newpassword123", admin.ID); err != nil {
 		t.Fatalf("ResetPassword: %v", err)
 	}
 
@@ -412,5 +416,104 @@ func TestUserService_ResetPassword_OldPasswordInvalidated(t *testing.T) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(updated.Password), []byte("oldpassword")); err == nil {
 		t.Error("old password should no longer match after reset")
+	}
+}
+
+func TestUserService_ResetPassword_AdminCannotResetSuperAdminPassword(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	adminUser := createTestUser(t, db, "Admin User", "admin@example.com", "password")
+	createTestUserOrganization(t, db, adminUser.ID, org.ID, models.RoleAdmin)
+
+	superAdmin := createTestSuperAdmin(t, db)
+
+	err := svc.ResetPassword(ctx, superAdmin.ID, "hacked123", adminUser.ID)
+	if err == nil {
+		t.Fatal("expected error when admin tries to reset superadmin password, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+
+	// Verify the superadmin's password was NOT changed (still the original value)
+	var dbUser models.User
+	db.First(&dbUser, superAdmin.ID)
+	if dbUser.Password != superAdmin.Password {
+		t.Error("superadmin password should not have been changed")
+	}
+}
+
+func TestUserService_ResetPassword_SuperAdminCanResetSuperAdminPassword(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	superAdmin1 := createTestSuperAdmin(t, db)
+	superAdmin2 := createTestUser(t, db, "Super Admin 2", "super2@example.com", "password")
+	db.Model(superAdmin2).Update("is_superadmin", true)
+
+	err := svc.ResetPassword(ctx, superAdmin2.ID, "newpassword123", superAdmin1.ID)
+	if err != nil {
+		t.Fatalf("expected superadmin to reset other superadmin password, got %v", err)
+	}
+}
+
+func TestUserService_ResetPassword_SelfReset(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	superAdmin := createTestSuperAdmin(t, db)
+
+	// A superadmin should be able to reset their own password
+	err := svc.ResetPassword(ctx, superAdmin.ID, "newpassword123", superAdmin.ID)
+	if err != nil {
+		t.Fatalf("expected self-reset to succeed, got %v", err)
+	}
+}
+
+func TestUserService_ResetPassword_ManagerCannotResetSuperAdminPassword(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	manager := createTestUser(t, db, "Manager", "manager@example.com", "password")
+	createTestUserOrganization(t, db, manager.ID, org.ID, models.RoleManager)
+
+	superAdmin := createTestSuperAdmin(t, db)
+
+	err := svc.ResetPassword(ctx, superAdmin.ID, "hacked", manager.ID)
+	if err == nil {
+		t.Fatal("expected error when manager tries to reset superadmin password")
+	}
+	if !errors.Is(err, apperror.ErrForbidden) {
+		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestUserService_ResetPassword_AdminCanResetNormalUserPassword(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	adminUser := createTestUser(t, db, "Admin", "admin@example.com", "password")
+	createTestUserOrganization(t, db, adminUser.ID, org.ID, models.RoleAdmin)
+
+	normalUser := createTestUser(t, db, "Normal User", "normal@example.com", "password")
+
+	// Admin should still be able to reset a normal user's password
+	err := svc.ResetPassword(ctx, normalUser.ID, "newpassword", adminUser.ID)
+	if err != nil {
+		t.Fatalf("expected admin to reset normal user password, got %v", err)
 	}
 }

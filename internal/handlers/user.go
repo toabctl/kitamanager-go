@@ -491,7 +491,9 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ResetPassword(c.Request.Context(), targetUserID, req.NewPassword); err != nil {
+	actorID := getUserID(c)
+
+	if err := h.service.ResetPassword(c.Request.Context(), targetUserID, req.NewPassword, actorID); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -504,7 +506,6 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	}
 
 	// Audit log with dedicated password reset tracking
-	actorID := getUserID(c)
 	targetUser, _ := h.service.GetByID(c.Request.Context(), targetUserID, actorID)
 	email := ""
 	if targetUser != nil {
