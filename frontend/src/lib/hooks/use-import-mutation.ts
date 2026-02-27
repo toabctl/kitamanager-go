@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useToast } from './use-toast';
-import { getErrorMessage } from '@/lib/api/client';
+import { showErrorToast } from '@/lib/utils/show-error-toast';
 
 interface UseImportMutationConfig {
   /** API function to call with the file */
@@ -42,11 +42,7 @@ export function useImportMutation({
       });
     },
     onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t(errorMessageKey)),
-        variant: 'destructive',
-      });
+      showErrorToast(t('common.error'), error, t(errorMessageKey));
     },
   });
 

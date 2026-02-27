@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/lib/hooks/use-toast';
-import { getErrorMessage } from '@/lib/api/client';
+import { showErrorToast } from '@/lib/utils/show-error-toast';
 import { getActiveContract } from '@/lib/utils/contracts';
 
 interface ContractMutationConfig<TCreateData, TUpdateData, TContract> {
@@ -71,11 +71,11 @@ export function useContractMutation<TCreateData, TUpdateData, TContract>(
       config.onSuccess?.();
     },
     onError: (error: unknown) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: 'contract' })),
-        variant: 'destructive',
-      });
+      showErrorToast(
+        t('common.error'),
+        error,
+        t('common.failedToCreate', { resource: 'contract' })
+      );
     },
   });
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/lib/hooks/use-toast';
-import { getErrorMessage } from '@/lib/api/client';
+import { showErrorToast } from '@/lib/utils/show-error-toast';
 
 interface ResourceMutationConfig<TData, TResponse = unknown> {
   /** The mutation function to call. */
@@ -39,11 +39,7 @@ export function useResourceMutation<TData, TResponse = unknown>(
       config.onSuccess?.();
     },
     onError: (error: unknown) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, config.errorMessage),
-        variant: 'destructive',
-      });
+      showErrorToast(t('common.error'), error, config.errorMessage);
     },
   });
 }

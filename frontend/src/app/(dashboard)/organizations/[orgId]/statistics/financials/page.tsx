@@ -9,11 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 import { StatisticsPageHeader } from '@/components/statistics/statistics-page-header';
+import { FinancialSummaryCards } from '@/components/statistics/financial-summary-cards';
 import { BudgetTable } from '@/components/charts/budget-table';
 import { YearStepper } from '@/components/ui/year-stepper';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
-import { formatCurrency, getCurrentMonthStart } from '@/lib/utils/formatting';
+import { getCurrentMonthStart } from '@/lib/utils/formatting';
 
 const FinancialsChart = dynamic(
   () => import('@/components/charts/financials-bar-chart').then((mod) => mod.FinancialsChart),
@@ -69,50 +70,11 @@ export default function FinancialsPage() {
 
       {/* Financial Summary Cards */}
       {currentFinancials && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.totalIncome')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(currentFinancials.total_income)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.totalExpenses')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(currentFinancials.total_expenses)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.balance')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  currentFinancials.balance >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {formatCurrency(currentFinancials.balance)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <FinancialSummaryCards
+          totalIncome={currentFinancials.total_income}
+          totalExpenses={currentFinancials.total_expenses}
+          balance={currentFinancials.balance}
+        />
       )}
 
       {/* Financial Overview Chart */}

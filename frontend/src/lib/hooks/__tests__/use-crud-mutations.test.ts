@@ -9,14 +9,10 @@ jest.mock('../use-toast', () => ({
   useToast: () => ({ toast: mockToast }),
 }));
 
-// Mock getErrorMessage
-jest.mock('@/lib/api/client', () => ({
-  getErrorMessage: (error: unknown, fallback: string) => {
-    if (error && typeof error === 'object' && 'message' in error) {
-      return (error as { message: string }).message;
-    }
-    return fallback;
-  },
+// Mock showErrorToast
+const mockShowErrorToast = jest.fn();
+jest.mock('@/lib/utils/show-error-toast', () => ({
+  showErrorToast: (...args: unknown[]) => mockShowErrorToast(...args),
 }));
 
 interface TestItem {
@@ -40,6 +36,7 @@ describe('useCrudMutations', () => {
     queryClient = createTestQueryClient();
     wrapper = createHookWrapper(queryClient);
     mockToast.mockClear();
+    mockShowErrorToast.mockClear();
     jest.spyOn(queryClient, 'invalidateQueries');
   });
 
@@ -101,11 +98,11 @@ describe('useCrudMutations', () => {
         expect(result.current.createMutation.isError).toBe(true);
       });
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: 'common.error',
-        description: 'Create failed',
-        variant: 'destructive',
-      });
+      expect(mockShowErrorToast).toHaveBeenCalledWith(
+        'common.error',
+        expect.any(Error),
+        'common.failedToCreate'
+      );
     });
 
     it('throws error if createFn not provided', async () => {
@@ -182,11 +179,11 @@ describe('useCrudMutations', () => {
         expect(result.current.updateMutation.isError).toBe(true);
       });
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: 'common.error',
-        description: 'Update failed',
-        variant: 'destructive',
-      });
+      expect(mockShowErrorToast).toHaveBeenCalledWith(
+        'common.error',
+        expect.any(Error),
+        'common.failedToSave'
+      );
     });
   });
 
@@ -241,11 +238,11 @@ describe('useCrudMutations', () => {
         expect(result.current.deleteMutation.isError).toBe(true);
       });
 
-      expect(mockToast).toHaveBeenCalledWith({
-        title: 'common.error',
-        description: 'Delete failed',
-        variant: 'destructive',
-      });
+      expect(mockShowErrorToast).toHaveBeenCalledWith(
+        'common.error',
+        expect.any(Error),
+        'common.failedToDelete'
+      );
     });
   });
 

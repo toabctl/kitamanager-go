@@ -8,9 +8,10 @@ import { useQuery } from '@tanstack/react-query';
 import { CircleDollarSign, Users, Baby, Table, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FinancialSummaryCards } from '@/components/statistics/financial-summary-cards';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
-import { formatCurrency, getCurrentMonthStart } from '@/lib/utils/formatting';
+import { getCurrentMonthStart } from '@/lib/utils/formatting';
 
 export default function StatisticsPage() {
   const params = useParams();
@@ -85,50 +86,11 @@ export default function StatisticsPage() {
           ))}
         </div>
       ) : currentFinancials ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.totalIncome')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(currentFinancials.total_income)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.totalExpenses')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(currentFinancials.total_expenses)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {t('statistics.balance')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  currentFinancials.balance >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {formatCurrency(currentFinancials.balance)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <FinancialSummaryCards
+          totalIncome={currentFinancials.total_income}
+          totalExpenses={currentFinancials.total_expenses}
+          balance={currentFinancials.balance}
+        />
       ) : null}
 
       {/* Sub-page Link Cards */}

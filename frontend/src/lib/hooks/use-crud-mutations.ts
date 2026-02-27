@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useToast } from './use-toast';
-import { getErrorMessage } from '@/lib/api/client';
+import { showErrorToast } from '@/lib/utils/show-error-toast';
 
 export interface UseCrudMutationsConfig<TItem, TCreate, TUpdate> {
   /** Resource name for i18n keys (e.g., 'groups', 'organizations') */
@@ -86,11 +86,11 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
       onCreateSuccess?.(item);
     },
     onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToCreate', { resource: resourceName })),
-        variant: 'destructive',
-      });
+      showErrorToast(
+        t('common.error'),
+        error,
+        t('common.failedToCreate', { resource: resourceName })
+      );
     },
   });
 
@@ -108,11 +108,11 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
       onUpdateSuccess?.(item);
     },
     onError: (error: Error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToSave', { resource: resourceName })),
-        variant: 'destructive',
-      });
+      showErrorToast(
+        t('common.error'),
+        error,
+        t('common.failedToSave', { resource: resourceName })
+      );
     },
   });
 
@@ -162,11 +162,11 @@ export function useCrudMutations<TItem, TCreate, TUpdate>({
           queryClient.setQueryData(key, data);
         }
       }
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('common.failedToDelete', { resource: resourceName })),
-        variant: 'destructive',
-      });
+      showErrorToast(
+        t('common.error'),
+        error,
+        t('common.failedToDelete', { resource: resourceName })
+      );
     },
     onSettled: () => {
       // Always refetch after delete to ensure server state consistency
