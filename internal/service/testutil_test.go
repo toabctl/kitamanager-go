@@ -130,6 +130,13 @@ func createUserService(db *gorm.DB) *UserService {
 	return NewUserService(userStore, userOrgStore)
 }
 
+func createUserServiceWithTokenStore(db *gorm.DB) (*UserService, store.TokenStorer) {
+	userStore := store.NewUserStore(db)
+	userOrgStore := store.NewUserOrganizationStore(db)
+	tokenStore := store.NewTokenStore(db)
+	return NewUserService(userStore, userOrgStore, tokenStore), tokenStore
+}
+
 func createUserOrganizationService(db *gorm.DB) *UserOrganizationService {
 	userOrgStore := store.NewUserOrganizationStore(db)
 	userStore := store.NewUserStore(db)

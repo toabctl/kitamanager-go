@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -16,11 +17,16 @@ import (
 type UserService struct {
 	store        store.UserStorer
 	userOrgStore store.UserOrganizationStorer
+	tokenStore   store.TokenStorer
 }
 
 // NewUserService creates a new user service
-func NewUserService(store store.UserStorer, userOrgStore store.UserOrganizationStorer) *UserService {
-	return &UserService{store: store, userOrgStore: userOrgStore}
+func NewUserService(store store.UserStorer, userOrgStore store.UserOrganizationStorer, tokenStore ...store.TokenStorer) *UserService {
+	svc := &UserService{store: store, userOrgStore: userOrgStore}
+	if len(tokenStore) > 0 {
+		svc.tokenStore = tokenStore[0]
+	}
+	return svc
 }
 
 // List returns a paginated list of users visible to the requester.
@@ -148,12 +154,20 @@ func (s *UserService) Update(ctx context.Context, id uint, req *models.UserUpdat
 		}
 		user.Email = req.Email
 	}
+	deactivating := req.Active != nil && !*req.Active && user.Active
 	if req.Active != nil {
 		user.Active = *req.Active
 	}
 
 	if err := s.store.Update(ctx, user); err != nil {
 		return nil, apperror.InternalWrap(err, "failed to update user")
+	}
+
+	// Revoke all tokens when a user is deactivated
+	if deactivating && s.tokenStore != nil {
+		if err := s.tokenStore.RevokeAllForUser(ctx, id); err != nil {
+			slog.Error("failed to revoke tokens after user deactivation", "user_id", id, "error", err)
+		}
 	}
 
 	resp := user.ToResponse()

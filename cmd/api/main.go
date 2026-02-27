@@ -212,7 +212,7 @@ func initServices(s *appStores, cfg *config.Config, transactor store.Transactor)
 	return &appServices{
 		audit:                 auditService,
 		auth:                  service.NewAuthService(s.user, s.token, cfg.JWTSecret, auditService),
-		user:                  service.NewUserService(s.user, s.userOrganization),
+		user:                  service.NewUserService(s.user, s.userOrganization, s.token),
 		userOrganization:      service.NewUserOrganizationService(s.userOrganization, s.user, transactor),
 		organization:          service.NewOrganizationService(s.organization, s.user),
 		section:               service.NewSectionService(s.section, transactor),

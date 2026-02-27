@@ -602,3 +602,106 @@ func TestUserService_ResetPassword_AdminCanResetNormalUserPassword(t *testing.T)
 		t.Fatalf("expected admin to reset normal user password, got %v", err)
 	}
 }
+
+func TestUserService_Update_DeactivationRevokesTokens(t *testing.T) {
+	db := setupTestDB(t)
+	svc, tokenStore := createUserServiceWithTokenStore(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+	user := createTestUser(t, db, "Active User", "active@example.com", "password")
+
+	// Deactivate the user
+	active := false
+	_, err := svc.Update(ctx, user.ID, &models.UserUpdateRequest{Active: &active}, admin.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify tokens were revoked for the user
+	revoked, err := tokenStore.IsUserRevoked(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("failed to check revocation: %v", err)
+	}
+	if !revoked {
+		t.Error("expected user tokens to be revoked after deactivation")
+	}
+}
+
+func TestUserService_Update_ActivationDoesNotRevokeTokens(t *testing.T) {
+	db := setupTestDB(t)
+	svc, tokenStore := createUserServiceWithTokenStore(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+	// Create an inactive user
+	user := createTestUser(t, db, "Inactive User", "inactive@example.com", "password")
+	db.Model(user).Update("active", false)
+
+	// Re-activate the user
+	active := true
+	_, err := svc.Update(ctx, user.ID, &models.UserUpdateRequest{Active: &active}, admin.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify tokens were NOT revoked (activation should not revoke)
+	revoked, err := tokenStore.IsUserRevoked(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("failed to check revocation: %v", err)
+	}
+	if revoked {
+		t.Error("expected user tokens NOT to be revoked after activation")
+	}
+}
+
+func TestUserService_Update_NoActiveChangeDoesNotRevokeTokens(t *testing.T) {
+	db := setupTestDB(t)
+	svc, tokenStore := createUserServiceWithTokenStore(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+	user := createTestUser(t, db, "Test User", "test@example.com", "password")
+
+	// Update name only (no active change)
+	_, err := svc.Update(ctx, user.ID, &models.UserUpdateRequest{Name: "New Name"}, admin.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify tokens were NOT revoked
+	revoked, err := tokenStore.IsUserRevoked(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("failed to check revocation: %v", err)
+	}
+	if revoked {
+		t.Error("expected user tokens NOT to be revoked after name change")
+	}
+}
+
+func TestUserService_Update_AlreadyInactiveDoesNotRevokeAgain(t *testing.T) {
+	db := setupTestDB(t)
+	svc, tokenStore := createUserServiceWithTokenStore(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+	// Create an already inactive user
+	user := createTestUser(t, db, "Inactive User", "inactive2@example.com", "password")
+	db.Model(user).Update("active", false)
+
+	// Set active=false again (already inactive)
+	active := false
+	_, err := svc.Update(ctx, user.ID, &models.UserUpdateRequest{Active: &active}, admin.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Should NOT revoke since user was already inactive (not a transition)
+	revoked, err := tokenStore.IsUserRevoked(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("failed to check revocation: %v", err)
+	}
+	if revoked {
+		t.Error("expected tokens NOT to be revoked when user was already inactive")
+	}
+}
