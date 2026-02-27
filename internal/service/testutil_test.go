@@ -105,6 +105,17 @@ func createTestSuperAdmin(t *testing.T, db *gorm.DB) *models.User {
 	return user
 }
 
+// createTestSuperAdmin2 creates a second superadmin user for tests needing multiple superadmins.
+func createTestSuperAdmin2(t *testing.T, db *gorm.DB) *models.User {
+	t.Helper()
+	user := testutil.CreateTestUser(t, db, "Super Admin 2", "superadmin2@example.com", "password")
+	if err := db.Model(user).Update("is_superadmin", true).Error; err != nil {
+		t.Fatalf("failed to set superadmin: %v", err)
+	}
+	user.IsSuperAdmin = true
+	return user
+}
+
 // Service creation helpers
 
 func createOrganizationService(db *gorm.DB) *OrganizationService {

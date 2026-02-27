@@ -331,6 +331,91 @@ func TestUserService_Delete(t *testing.T) {
 	}
 }
 
+func TestUserService_Delete_CannotDeleteSelf(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+
+	err := svc.Delete(ctx, admin.ID, admin.ID)
+	if err == nil {
+		t.Fatal("expected error when deleting self, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+
+	// Verify the user was NOT deleted
+	_, err = svc.GetByID(ctx, admin.ID, admin.ID)
+	if err != nil {
+		t.Error("user should still exist after failed self-deletion")
+	}
+}
+
+func TestUserService_Delete_CanDeleteSuperAdminWhenMultipleExist(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	superAdmin1 := createTestSuperAdmin(t, db)
+	superAdmin2 := createTestSuperAdmin2(t, db)
+
+	// Should be able to delete one superadmin when another exists
+	err := svc.Delete(ctx, superAdmin1.ID, superAdmin2.ID)
+	if err != nil {
+		t.Fatalf("expected to delete superadmin when another exists, got %v", err)
+	}
+}
+
+func TestUserService_Delete_CannotDeleteLastSuperAdmin(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	// Create two superadmins, delete one, then try to delete the last
+	superAdmin1 := createTestSuperAdmin(t, db)
+	superAdmin2 := createTestSuperAdmin2(t, db)
+
+	err := svc.Delete(ctx, superAdmin1.ID, superAdmin2.ID)
+	if err != nil {
+		t.Fatalf("setup: expected to delete first superadmin, got %v", err)
+	}
+
+	// superAdmin2 is now the last superadmin — try to delete via self (should fail for self-delete)
+	err = svc.Delete(ctx, superAdmin2.ID, superAdmin2.ID)
+	if err == nil {
+		t.Fatal("expected error when deleting last superadmin, got nil")
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestUserService_Delete_CanDeleteNonSuperAdmin(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserService(db)
+	ctx := context.Background()
+
+	admin := createTestSuperAdmin(t, db)
+	user := createTestUser(t, db, "To Delete", "delete2@example.com", "password")
+
+	err := svc.Delete(ctx, user.ID, admin.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	_, err = svc.GetByID(ctx, user.ID, admin.ID)
+	if err == nil {
+		t.Error("expected user to be deleted")
+	}
+}
+
 func TestUserService_ListByOrganization(t *testing.T) {
 	db := setupTestDB(t)
 	svc := createUserService(db)

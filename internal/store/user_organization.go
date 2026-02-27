@@ -127,6 +127,13 @@ func (s *UserOrganizationStore) SetSuperAdmin(ctx context.Context, userID uint, 
 	return nil
 }
 
+// CountSuperAdmins returns the total number of superadmin users
+func (s *UserOrganizationStore) CountSuperAdmins(ctx context.Context) (int64, error) {
+	var count int64
+	err := DBFromContext(ctx, s.db).Model(&models.User{}).Where("is_superadmin = ?", true).Count(&count).Error
+	return count, err
+}
+
 // IsSuperAdmin checks if a user is a superadmin
 func (s *UserOrganizationStore) IsSuperAdmin(ctx context.Context, userID uint) (bool, error) {
 	var user models.User

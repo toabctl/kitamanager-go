@@ -191,10 +191,30 @@ func (s *UserService) ResetPassword(ctx context.Context, userID uint, newPasswor
 	return nil
 }
 
-// Delete deletes a user
+// Delete deletes a user.
+// Users cannot delete themselves. The last superadmin cannot be deleted.
 func (s *UserService) Delete(ctx context.Context, id uint, requesterID uint) error {
+	if id == requesterID {
+		return apperror.BadRequest("cannot delete your own account")
+	}
+
 	if err := s.verifyRequesterCanAccessUser(ctx, requesterID, id); err != nil {
 		return apperror.NotFound("user")
+	}
+
+	// Prevent deleting the last superadmin
+	user, err := s.store.FindByID(ctx, id)
+	if err != nil {
+		return classifyStoreError(err, "user")
+	}
+	if user.IsSuperAdmin {
+		count, err := s.userOrgStore.CountSuperAdmins(ctx)
+		if err != nil {
+			return apperror.InternalWrap(err, "failed to count superadmins")
+		}
+		if count <= 1 {
+			return apperror.BadRequest("cannot delete the last superadmin")
+		}
 	}
 
 	if err := s.store.Delete(ctx, id); err != nil {

@@ -153,12 +153,24 @@ func (s *UserOrganizationService) GetUserMemberships(ctx context.Context, userID
 	return &models.UserMembershipsResponse{Memberships: result}, nil
 }
 
-// SetSuperAdmin sets or unsets superadmin status for a user
+// SetSuperAdmin sets or unsets superadmin status for a user.
+// The last superadmin cannot be demoted.
 func (s *UserOrganizationService) SetSuperAdmin(ctx context.Context, userID uint, isSuperAdmin bool) error {
 	// Verify user exists
-	_, err := s.userStore.FindByID(ctx, userID)
+	user, err := s.userStore.FindByID(ctx, userID)
 	if err != nil {
 		return classifyStoreError(err, "user")
+	}
+
+	// Prevent demoting the last superadmin
+	if !isSuperAdmin && user.IsSuperAdmin {
+		count, err := s.userOrgStore.CountSuperAdmins(ctx)
+		if err != nil {
+			return apperror.InternalWrap(err, "failed to count superadmins")
+		}
+		if count <= 1 {
+			return apperror.BadRequest("cannot demote the last superadmin")
+		}
 	}
 
 	if err := s.userOrgStore.SetSuperAdmin(ctx, userID, isSuperAdmin); err != nil {

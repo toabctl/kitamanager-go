@@ -389,6 +389,9 @@ func TestUserOrganizationService_SetSuperAdmin_Toggle(t *testing.T) {
 	ctx := context.Background()
 
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
+	// Create a second superadmin so we can demote the first
+	other := createTestUser(t, db, "Other Super", "other@example.com", "password")
+	_ = svc.SetSuperAdmin(ctx, other.ID, true)
 
 	// Set true
 	_ = svc.SetSuperAdmin(ctx, user.ID, true)
@@ -398,7 +401,7 @@ func TestUserOrganizationService_SetSuperAdmin_Toggle(t *testing.T) {
 		t.Error("expected IsSuperAdmin = true after set true")
 	}
 
-	// Set false
+	// Set false (allowed because 'other' is still superadmin)
 	_ = svc.SetSuperAdmin(ctx, user.ID, false)
 	db.First(&dbUser, user.ID)
 	if dbUser.IsSuperAdmin {
@@ -422,6 +425,87 @@ func TestUserOrganizationService_SetSuperAdmin_UserNotFound(t *testing.T) {
 	}
 	if !errors.Is(err, apperror.ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestUserOrganizationService_SetSuperAdmin_CannotDemoteLastSuperAdmin(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserOrganizationService(db)
+	ctx := context.Background()
+
+	user := createTestUser(t, db, "Only Super", "only@example.com", "password")
+	_ = svc.SetSuperAdmin(ctx, user.ID, true)
+
+	// Try to demote the only superadmin
+	err := svc.SetSuperAdmin(ctx, user.ID, false)
+	if err == nil {
+		t.Fatal("expected error when demoting last superadmin, got nil")
+	}
+
+	var appErr *apperror.AppError
+	if !errors.As(err, &appErr) {
+		t.Fatalf("expected AppError, got %T", err)
+	}
+	if !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+
+	// Verify the user is still superadmin
+	var dbUser models.User
+	db.First(&dbUser, user.ID)
+	if !dbUser.IsSuperAdmin {
+		t.Error("user should still be superadmin after failed demotion")
+	}
+}
+
+func TestUserOrganizationService_SetSuperAdmin_CanDemoteWhenMultipleSuperAdmins(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserOrganizationService(db)
+	ctx := context.Background()
+
+	user1 := createTestUser(t, db, "Super 1", "super1@example.com", "password")
+	user2 := createTestUser(t, db, "Super 2", "super2@example.com", "password")
+	_ = svc.SetSuperAdmin(ctx, user1.ID, true)
+	_ = svc.SetSuperAdmin(ctx, user2.ID, true)
+
+	// Should be able to demote one when another exists
+	err := svc.SetSuperAdmin(ctx, user1.ID, false)
+	if err != nil {
+		t.Fatalf("expected no error when demoting with another superadmin, got %v", err)
+	}
+
+	var dbUser models.User
+	db.First(&dbUser, user1.ID)
+	if dbUser.IsSuperAdmin {
+		t.Error("user should no longer be superadmin after demotion")
+	}
+}
+
+func TestUserOrganizationService_SetSuperAdmin_PromoteIsAlwaysAllowed(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserOrganizationService(db)
+	ctx := context.Background()
+
+	user := createTestUser(t, db, "New Super", "newsuper@example.com", "password")
+
+	// Promoting should always work, even with no existing superadmins
+	err := svc.SetSuperAdmin(ctx, user.ID, true)
+	if err != nil {
+		t.Fatalf("expected no error when promoting, got %v", err)
+	}
+}
+
+func TestUserOrganizationService_SetSuperAdmin_DemoteNonSuperAdminIsNoOp(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createUserOrganizationService(db)
+	ctx := context.Background()
+
+	user := createTestUser(t, db, "Regular", "regular@example.com", "password")
+
+	// Demoting a non-superadmin should succeed (no-op)
+	err := svc.SetSuperAdmin(ctx, user.ID, false)
+	if err != nil {
+		t.Fatalf("expected no error when demoting non-superadmin, got %v", err)
 	}
 }
 

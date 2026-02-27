@@ -238,9 +238,10 @@ func TestUserHandler_Delete(t *testing.T) {
 	userOrgService := createUserOrganizationService(db)
 	handler := NewUserHandler(userService, userOrgService, nil, nil)
 
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "To Delete", "delete@example.com", "password")
 
-	r := setupTestRouter()
+	r := setupTestRouterWithUser(admin.ID)
 	r.DELETE("/users/:userId", handler.Delete)
 
 	w := performRequest(r, "DELETE", fmt.Sprintf("/users/%d", user.ID), nil)
@@ -249,11 +250,11 @@ func TestUserHandler_Delete(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
 	}
 
-	// Verify user was deleted
+	// Verify target user was deleted (admin should remain)
 	var users []models.User
 	db.Find(&users)
-	if len(users) != 0 {
-		t.Error("expected user to be deleted")
+	if len(users) != 1 {
+		t.Errorf("expected 1 user (admin) remaining, got %d", len(users))
 	}
 }
 
@@ -1129,11 +1130,12 @@ func TestUserHandler_SetSuperAdmin_False(t *testing.T) {
 	userOrgService := createUserOrganizationService(db)
 	handler := NewUserHandler(userService, userOrgService, nil, nil)
 
+	// Create two superadmins so we can demote one
+	admin := createTestSuperAdmin(t, db)
 	user := createTestUser(t, db, "Test User", "test@example.com", "password")
-	// Set as superadmin first
 	db.Model(&models.User{}).Where("id = ?", user.ID).Update("is_superadmin", true)
 
-	r := setupTestRouter()
+	r := setupTestRouterWithUser(admin.ID)
 	r.PUT("/users/:userId/superadmin", handler.SetSuperAdmin)
 
 	body := models.UserSetSuperAdminRequest{
