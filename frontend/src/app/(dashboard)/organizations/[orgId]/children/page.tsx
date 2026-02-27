@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Download, Upload } from 'lucide-react';
 import { MonthStepper } from '@/components/ui/month-stepper';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import {
   type Child,
@@ -35,8 +35,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { formatDateForInput, formatDateForApi, toLocalDateString } from '@/lib/utils/formatting';
 import { useContractMutation } from '@/lib/hooks/use-contract-mutation';
+import { useImportMutation } from '@/lib/hooks/use-import-mutation';
+import { useResourceListFilters } from '@/lib/hooks/use-resource-list-filters';
 import { Pagination } from '@/components/ui/pagination';
-import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
 import { QueryError } from '@/components/crud/query-error';
 import { PersonFormDialog } from '@/components/crud/person-form-dialog';
@@ -57,34 +58,24 @@ export default function ChildrenPage() {
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const importMutation = useMutation({
-    mutationFn: (file: File) => apiClient.importChildren(orgId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.children.all(orgId) });
-      toast({
-        title: t('common.success'),
-        description: t('common.createSuccess', { resource: t('children.title') }),
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('children.importError')),
-        variant: 'destructive',
-      });
-    },
+  const {
+    fileInputRef,
+    triggerFileInput,
+    handleFileChange,
+    isPending: isImporting,
+  } = useImportMutation({
+    importFn: (file) => apiClient.importChildren(orgId, file),
+    invalidateQueryKey: queryKeys.children.all(orgId),
+    resourceNameKey: 'children.title',
+    errorMessageKey: 'children.importError',
   });
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [contractChild, setContractChild] = useState<Child | null>(null);
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState('');
-  const search = useDebouncedValue(searchInput, 300);
+  const { page, setPage, searchInput, setSearchInput, search, activeOn, setActiveOn } =
+    useResourceListFilters();
   const [sectionFilter, setSectionFilter] = useState<number | undefined>(undefined);
-  const [activeOn, setActiveOn] = useState(() => new Date());
 
   const {
     data: paginatedData,
@@ -295,26 +286,16 @@ export default function ChildrenPage() {
             <Download className="mr-2 h-4 w-4" />
             {t('children.exportYaml')}
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
-          >
+          <Button variant="outline" onClick={triggerFileInput} disabled={isImporting}>
             <Upload className="mr-2 h-4 w-4" />
-            {importMutation.isPending ? t('children.importing') : t('children.importYaml')}
+            {isImporting ? t('children.importing') : t('children.importYaml')}
           </Button>
           <input
             ref={fileInputRef}
             type="file"
             accept=".yaml,.yml"
             className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                importMutation.mutate(file);
-                e.target.value = '';
-              }
-            }}
+            onChange={handleFileChange}
           />
           <Button onClick={dialogs.handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
@@ -324,21 +305,8 @@ export default function ChildrenPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 md:gap-4">
-        <MonthStepper
-          value={activeOn}
-          onChange={(date) => {
-            setActiveOn(date);
-            setPage(1);
-          }}
-        />
-        <SearchInput
-          id="search-children"
-          value={searchInput}
-          onChange={(value) => {
-            setSearchInput(value);
-            setPage(1);
-          }}
-        />
+        <MonthStepper value={activeOn} onChange={setActiveOn} />
+        <SearchInput id="search-children" value={searchInput} onChange={setSearchInput} />
         <Select
           value={sectionFilter ? String(sectionFilter) : 'all'}
           onValueChange={(value) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -17,11 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCrudMutations } from '@/lib/hooks/use-crud-mutations';
 import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useContractMutation } from '@/lib/hooks/use-contract-mutation';
-import { apiClient, getErrorMessage } from '@/lib/api/client';
+import { useImportMutation } from '@/lib/hooks/use-import-mutation';
+import { useResourceListFilters } from '@/lib/hooks/use-resource-list-filters';
+import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/queryKeys';
 import {
   type Employee,
@@ -36,7 +37,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { formatDateForInput, formatDateForApi, toLocalDateString } from '@/lib/utils/formatting';
 import { getActiveContract } from '@/lib/utils/contracts';
 import { Pagination } from '@/components/ui/pagination';
-import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { DeleteConfirmDialog } from '@/components/crud/delete-confirm-dialog';
 import { QueryError } from '@/components/crud/query-error';
 import { PersonFormDialog } from '@/components/crud/person-form-dialog';
@@ -56,35 +56,25 @@ export default function EmployeesPage() {
   const orgId = Number(params.orgId);
   const t = useTranslations();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const importMutation = useMutation({
-    mutationFn: (file: File) => apiClient.importEmployees(orgId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employees.all(orgId) });
-      toast({
-        title: t('common.success'),
-        description: t('common.createSuccess', { resource: t('employees.title') }),
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: t('common.error'),
-        description: getErrorMessage(error, t('employees.importError')),
-        variant: 'destructive',
-      });
-    },
+  const {
+    fileInputRef,
+    triggerFileInput,
+    handleFileChange,
+    isPending: isImporting,
+  } = useImportMutation({
+    importFn: (file) => apiClient.importEmployees(orgId, file),
+    invalidateQueryKey: queryKeys.employees.all(orgId),
+    resourceNameKey: 'employees.title',
+    errorMessageKey: 'employees.importError',
   });
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [contractEmployee, setContractEmployee] = useState<Employee | null>(null);
   const [endCurrentContract, setEndCurrentContract] = useState(true);
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState('');
-  const search = useDebouncedValue(searchInput, 300);
+  const { page, setPage, searchInput, setSearchInput, search, activeOn, setActiveOn } =
+    useResourceListFilters();
   const [staffCategoryFilter, setStaffCategoryFilter] = useState<string>('');
-  const [activeOn, setActiveOn] = useState(() => new Date());
 
   const {
     data: paginatedData,
@@ -360,26 +350,16 @@ export default function EmployeesPage() {
             <Download className="mr-2 h-4 w-4" />
             {t('employees.exportYaml')}
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
-          >
+          <Button variant="outline" onClick={triggerFileInput} disabled={isImporting}>
             <Upload className="mr-2 h-4 w-4" />
-            {importMutation.isPending ? t('employees.importing') : t('employees.importYaml')}
+            {isImporting ? t('employees.importing') : t('employees.importYaml')}
           </Button>
           <input
             ref={fileInputRef}
             type="file"
             accept=".yaml,.yml"
             className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                importMutation.mutate(file);
-                e.target.value = '';
-              }
-            }}
+            onChange={handleFileChange}
           />
           <Button onClick={dialogs.handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
@@ -389,21 +369,8 @@ export default function EmployeesPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 md:gap-4">
-        <MonthStepper
-          value={activeOn}
-          onChange={(date) => {
-            setActiveOn(date);
-            setPage(1);
-          }}
-        />
-        <SearchInput
-          id="search-employees"
-          value={searchInput}
-          onChange={(value) => {
-            setSearchInput(value);
-            setPage(1);
-          }}
-        />
+        <MonthStepper value={activeOn} onChange={setActiveOn} />
+        <SearchInput id="search-employees" value={searchInput} onChange={setSearchInput} />
         <Select
           value={staffCategoryFilter}
           onValueChange={(value) => {

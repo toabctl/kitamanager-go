@@ -1,0 +1,70 @@
+'use client';
+
+import { useRef } from 'react';
+import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
+import { useToast } from './use-toast';
+import { getErrorMessage } from '@/lib/api/client';
+
+interface UseImportMutationConfig {
+  /** API function to call with the file */
+  importFn: (file: File) => Promise<unknown>;
+  /** Query key to invalidate on success */
+  invalidateQueryKey: QueryKey;
+  /** i18n key for the resource name (e.g., 'children.title') */
+  resourceNameKey: string;
+  /** i18n key for the import error fallback (e.g., 'children.importError') */
+  errorMessageKey: string;
+}
+
+/**
+ * Shared hook for YAML file import mutations.
+ * Provides mutation state, a file input ref, and consistent toast notifications.
+ */
+export function useImportMutation({
+  importFn,
+  invalidateQueryKey,
+  resourceNameKey,
+  errorMessageKey,
+}: UseImportMutationConfig) {
+  const t = useTranslations();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const mutation = useMutation({
+    mutationFn: importFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: invalidateQueryKey });
+      toast({
+        title: t('common.success'),
+        description: t('common.createSuccess', { resource: t(resourceNameKey) }),
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common.error'),
+        description: getErrorMessage(error, t(errorMessageKey)),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const triggerFileInput = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      mutation.mutate(file);
+      e.target.value = '';
+    }
+  };
+
+  return {
+    mutation,
+    fileInputRef,
+    triggerFileInput,
+    handleFileChange,
+    isPending: mutation.isPending,
+  };
+}
