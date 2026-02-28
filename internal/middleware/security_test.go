@@ -216,6 +216,17 @@ func TestRequestTimeout_DifferentDurations(t *testing.T) {
 	}
 }
 
+func TestMaxRequestBodySize_LargerThanUploadSize(t *testing.T) {
+	// MaxRequestBodySize must be >= the largest per-endpoint upload limit
+	// so the global middleware doesn't reject uploads before handlers validate.
+	// handlers.MaxUploadSize is 5MB; the global limit must be at least that.
+	const handlerMaxUploadSize = 5 << 20 // mirrors handlers.MaxUploadSize
+	if MaxRequestBodySize < handlerMaxUploadSize {
+		t.Errorf("MaxRequestBodySize (%d) must be >= handler MaxUploadSize (%d)",
+			MaxRequestBodySize, handlerMaxUploadSize)
+	}
+}
+
 func TestLimitedReader_Close(t *testing.T) {
 	// Test with a closeable reader
 	body := io.NopCloser(strings.NewReader("hello"))

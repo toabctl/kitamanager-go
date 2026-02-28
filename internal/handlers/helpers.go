@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"mime/multipart"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -318,9 +319,10 @@ func readUploadFileWithHeader(c *gin.Context) ([]byte, *multipart.FileHeader, bo
 		return nil, nil, false
 	}
 
-	// Validate content type before reading file body
+	// Validate content type before reading file body.
+	// Reject missing/empty content type — clients must declare the MIME type.
 	contentType := fileHeader.Header.Get("Content-Type")
-	if contentType != "" && !allowedUploadContentTypes[contentType] {
+	if !allowedUploadContentTypes[contentType] {
 		respondError(c, apperror.BadRequest("unsupported file type"))
 		return nil, nil, false
 	}
@@ -401,4 +403,23 @@ func respondError(c *gin.Context, err error) {
 		Code:    errorCode,
 		Message: message,
 	})
+}
+
+// MaxFilenameLength is the maximum allowed length for uploaded filenames.
+const MaxFilenameLength = 255
+
+// sanitizeFilename strips directory components and limits length to prevent
+// path traversal and XSS via stored filenames.
+func sanitizeFilename(name string) string {
+	// Normalize Windows backslash separators to forward slash
+	// so filepath.Base works correctly on Linux.
+	name = strings.ReplaceAll(name, `\`, "/")
+	name = filepath.Base(name)
+	if name == "." || name == "" {
+		return "upload"
+	}
+	if len(name) > MaxFilenameLength {
+		name = name[:MaxFilenameLength]
+	}
+	return name
 }

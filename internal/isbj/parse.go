@@ -156,7 +156,11 @@ func cellAsCents(f *excelize.File, sheet, cell string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("sheet %q cell %s: %w", sheet, cell, err)
 	}
-	return int(math.Round(f64 * 100)), nil
+	cents := math.Round(f64 * 100)
+	if cents > math.MaxInt32 || cents < math.MinInt32 {
+		return 0, fmt.Errorf("sheet %q cell %s: currency value out of range (%.2f EUR)", sheet, cell, f64)
+	}
+	return int(cents), nil
 }
 
 func cellAsCentsRequired(f *excelize.File, sheetName string, cell string) (int, error) {
@@ -170,7 +174,11 @@ func cellAsCentsRequired(f *excelize.File, sheetName string, cell string) (int, 
 	if err != nil {
 		return 0, fmt.Errorf("sheet %q cell %s: %w", sheetName, cell, err)
 	}
-	return int(math.Round(f64 * 100)), nil
+	cents := math.Round(f64 * 100)
+	if cents > math.MaxInt32 || cents < math.MinInt32 {
+		return 0, fmt.Errorf("sheet %q cell %s: currency value out of range (%.2f EUR)", sheetName, cell, f64)
+	}
+	return int(cents), nil
 }
 
 func OpenSenatsabrechnung(dateiname string) (*excelize.File, error) {

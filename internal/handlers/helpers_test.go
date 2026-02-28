@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -354,5 +355,51 @@ func TestParseOptionalDatePair_RangeExceeded(t *testing.T) {
 	}
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestSanitizeFilename(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"simple filename", "report.xlsx", "report.xlsx"},
+		{"path traversal unix", "../../../etc/passwd", "passwd"},
+		{"path traversal windows", `..\..\secret.txt`, "secret.txt"},
+		{"absolute unix path", "/var/data/file.xlsx", "file.xlsx"},
+		{"absolute windows path", `C:\Users\file.xlsx`, "file.xlsx"},
+		{"nested path", "foo/bar/baz/report.xlsx", "report.xlsx"},
+		{"empty string", "", "upload"},
+		{"dot only", ".", "upload"},
+		{"long filename", strings.Repeat("a", 300) + ".xlsx", strings.Repeat("a", 300)[:MaxFilenameLength]},
+		// filepath.Base splits on / in "</script>", which mangles the XSS payload
+		{"xss attempt", "<script>alert(1)</script>.xlsx", "script>.xlsx"},
+		{"spaces", "my report 2024.xlsx", "my report 2024.xlsx"},
+		{"unicode", "Abrechnung_März_2024.xlsx", "Abrechnung_März_2024.xlsx"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sanitizeFilename(tt.input)
+			if result != tt.expected {
+				t.Errorf("sanitizeFilename(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSanitizeFilename_NeverContainsPathSeparator(t *testing.T) {
+	inputs := []string{
+		"../../etc/passwd",
+		"/root/.ssh/id_rsa",
+		`C:\Windows\System32\config`,
+		"foo/bar/../baz",
+	}
+	for _, input := range inputs {
+		result := sanitizeFilename(input)
+		if strings.ContainsAny(result, `/\`) {
+			t.Errorf("sanitizeFilename(%q) = %q, should not contain path separators", input, result)
+		}
 	}
 }

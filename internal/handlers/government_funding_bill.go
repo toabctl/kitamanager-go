@@ -55,13 +55,14 @@ func (h *GovernmentFundingBillHandler) UploadISBJ(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	result, err := h.service.ProcessISBJ(c.Request.Context(), orgID, bytes.NewReader(fileBytes), fileHeader.Filename, fileHash, userID)
+	filename := sanitizeFilename(fileHeader.Filename)
+	result, err := h.service.ProcessISBJ(c.Request.Context(), orgID, bytes.NewReader(fileBytes), filename, fileHash, userID)
 	if err != nil {
 		respondError(c, apperror.BadRequest(err.Error()))
 		return
 	}
 
-	auditCreate(c, h.auditService, "government_funding_bill", result.ID, fileHeader.Filename)
+	auditCreate(c, h.auditService, "government_funding_bill", result.ID, filename)
 
 	c.JSON(http.StatusCreated, result)
 }

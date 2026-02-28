@@ -552,6 +552,73 @@ func TestCellAsCentsRequiredInvalidValue(t *testing.T) {
 	}
 }
 
+func TestCellAsCentsOverflow(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	sheet := "Sheet1"
+
+	tests := []struct {
+		name  string
+		cell  string
+		value string
+	}{
+		{"large positive", "A1", "99999999999999"},
+		{"large negative", "A2", "-99999999999999"},
+		{"max float-like", "A3", "99999999999999999.99"},
+	}
+
+	for i, tt := range tests {
+		_ = f.SetCellValue(sheet, tt.cell, tt.value)
+		_ = i
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := cellAsCents(f, sheet, tt.cell)
+			if err == nil {
+				t.Errorf("cellAsCents(%q) expected overflow error", tt.value)
+			}
+			if err != nil && !strings.Contains(err.Error(), "out of range") {
+				t.Errorf("cellAsCents(%q) error = %q, expected 'out of range'", tt.value, err.Error())
+			}
+		})
+	}
+}
+
+func TestCellAsCentsRequiredOverflow(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	sheet := "Sheet1"
+	_ = f.SetCellValue(sheet, "A1", "99999999999999")
+
+	_, err := cellAsCentsRequired(f, sheet, "A1")
+	if err == nil {
+		t.Fatal("cellAsCentsRequired() expected overflow error")
+	}
+	if !strings.Contains(err.Error(), "out of range") {
+		t.Errorf("error = %q, expected 'out of range'", err.Error())
+	}
+}
+
+func TestCellAsCentsValidRange(t *testing.T) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	sheet := "Sheet1"
+	// MaxInt32 / 100 ≈ 21,474,836.47 EUR — within range
+	_ = f.SetCellValue(sheet, "A1", "21000000.00")
+
+	cents, err := cellAsCents(f, sheet, "A1")
+	if err != nil {
+		t.Fatalf("cellAsCents() unexpected error: %v", err)
+	}
+	if cents != 2100000000 {
+		t.Errorf("cellAsCents() = %d, expected 2100000000", cents)
+	}
+}
+
 func TestCellAsCentsInvalidValue(t *testing.T) {
 	f := excelize.NewFile()
 	defer func() { _ = f.Close() }()

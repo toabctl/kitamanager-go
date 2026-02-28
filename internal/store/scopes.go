@@ -32,6 +32,15 @@ func PeriodActiveOn(fromCol, toCol string, date time.Time) func(*gorm.DB) *gorm.
 	}
 }
 
+// escapeLIKE escapes the LIKE special characters % and _ so they are
+// matched literally. The backslash is the default escape character in PostgreSQL.
+func escapeLIKE(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, "%", `\%`)
+	s = strings.ReplaceAll(s, "_", `\_`)
+	return s
+}
+
 // NameSearch returns a GORM scope filtering records by a single column (e.g., name, email).
 // The search term is matched case-insensitively using LOWER()+LIKE.
 // The tablePrefix should be the table name (e.g., "sections", "users").
@@ -39,7 +48,7 @@ func NameSearch(tablePrefix, column, search string) func(*gorm.DB) *gorm.DB {
 	mustBeIdentifier(tablePrefix)
 	mustBeIdentifier(column)
 	return func(db *gorm.DB) *gorm.DB {
-		pattern := "%" + strings.ToLower(search) + "%"
+		pattern := "%" + escapeLIKE(strings.ToLower(search)) + "%"
 		return db.Where("LOWER("+tablePrefix+"."+column+") LIKE ?", pattern)
 	}
 }
@@ -50,7 +59,7 @@ func NameSearch(tablePrefix, column, search string) func(*gorm.DB) *gorm.DB {
 func PersonNameSearch(tablePrefix, search string) func(*gorm.DB) *gorm.DB {
 	mustBeIdentifier(tablePrefix)
 	return func(db *gorm.DB) *gorm.DB {
-		pattern := "%" + strings.ToLower(search) + "%"
+		pattern := "%" + escapeLIKE(strings.ToLower(search)) + "%"
 		return db.Where(
 			"LOWER("+tablePrefix+".first_name) LIKE ? OR LOWER("+tablePrefix+".last_name) LIKE ?",
 			pattern, pattern,

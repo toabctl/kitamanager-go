@@ -71,6 +71,32 @@ func TestPersonNameSearch_ValidatesIdentifiers(t *testing.T) {
 	PersonNameSearch("children OR 1=1", "test")
 }
 
+func TestEscapeLIKE(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"no special chars", "hello", "hello"},
+		{"percent", "100%", `100\%`},
+		{"underscore", "first_name", `first\_name`},
+		{"backslash", `back\slash`, `back\\slash`},
+		{"all special", `%_\`, `\%\_\\`},
+		{"mixed", "50% off_sale", `50\% off\_sale`},
+		{"empty", "", ""},
+		{"only wildcards", "%%__", `\%\%\_\_`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := escapeLIKE(tt.input)
+			if result != tt.expected {
+				t.Errorf("escapeLIKE(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestPeriodActiveOn_GovernmentFundingPeriods(t *testing.T) {
 	db := setupTestDB(t)
 

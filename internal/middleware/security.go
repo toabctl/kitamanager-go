@@ -7,8 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// MaxRequestBodySize is the maximum allowed request body size (1MB)
-const MaxRequestBodySize = 1 << 20 // 1MB
+// MaxRequestBodySize is the maximum allowed request body size (10MB).
+// This must be at least as large as the largest per-endpoint upload limit
+// (e.g., handlers.MaxUploadSize = 5MB) to avoid the global middleware
+// rejecting uploads before the handler's own validation runs.
+const MaxRequestBodySize = 10 << 20 // 10MB
 
 // SecurityHeaders adds common security headers to responses
 func SecurityHeaders() gin.HandlerFunc {
