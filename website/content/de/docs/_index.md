@@ -9,10 +9,12 @@ Willkommen zur KitaManager Go Dokumentation. Diese Anleitung hilft Ihnen beim Ei
 
 KitaManager Go ist eine Enterprise-REST-API und Webanwendung zur Optimierung der Verwaltung von Kindertagesstätten (Kitas). Es bietet eine umfassende Plattform zur Verwaltung von:
 
-- **Personal** - Mitarbeiterdatenbank mit Vertragsverwaltung
-- **Kinder** - Anmeldungsverfolgung und Vertragsverwaltung
-- **Förderung** - Konfiguration und Berechnung von Landesförderungen
-- **Zugriffskontrolle** - Rollenbasierte Berechtigungen über Organisationen hinweg
+- **Personal** — Mitarbeiterdatenbank mit Vertragsverwaltung und Vergütungsplänen
+- **Kinder** — Anmeldungsverfolgung, Vertragsverwaltung und Anwesenheit
+- **Förderung** — Konfiguration, Berechnung und ISBJ-Abrechnungsvergleich
+- **Budget** — Einnahmen- und Ausgabenverfolgung mit Budgetposten
+- **Statistiken** — Personal-, Finanz-, Belegungs- und Demografieberichte
+- **Zugriffskontrolle** — Rollenbasierte Berechtigungen mit fünf Rollen über Organisationen hinweg
 
 ## Schnellnavigation
 
@@ -20,4 +22,6 @@ KitaManager Go ist eine Enterprise-REST-API und Webanwendung zur Optimierung der
   {{< card link="getting-started" title="Erste Schritte" icon="play" >}}
   {{< card link="architecture" title="Architektur" icon="cube" >}}
   {{< card link="api" title="API-Referenz" icon="code" >}}
+  {{< card link="user-guide" title="Benutzerhandbuch" icon="book-open" >}}
+  {{< card link="administration" title="Administration" icon="cog" >}}
 {{< /cards >}}

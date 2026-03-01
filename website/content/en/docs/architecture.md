@@ -10,7 +10,7 @@ KitaManager Go follows a clean architecture pattern with clear separation of con
 ```mermaid
 graph TB
     subgraph Frontend
-        UI[Next.js 14 UI]
+        UI[Next.js 16 UI]
     end
 
     subgraph Backend
@@ -39,15 +39,21 @@ graph TB
 kitamanager-go/
 ├── cmd/api/                 # Application entry point
 ├── internal/
-│   ├── handlers/           # HTTP request handlers
+│   ├── api/                # HTTP request handlers
 │   ├── models/             # Domain models
 │   ├── store/              # Data access layer
 │   ├── service/            # Business logic layer
 │   ├── middleware/         # Auth, CORS, logging
 │   ├── rbac/               # Role-based access control
+│   ├── routes/             # API route definitions
 │   ├── database/           # Database connectivity
 │   ├── config/             # Configuration management
-│   └── seed/               # Test data seeding
+│   ├── seed/               # Test data seeding
+│   ├── isbj/               # ISBJ bill parsing
+│   ├── export/             # Excel/YAML export
+│   ├── importer/           # YAML data import
+│   ├── audit/              # Audit logging
+│   └── validation/         # Input validation
 ├── frontend/               # Next.js React application
 ├── docs/                   # Documentation
 └── configs/                # Configuration files
@@ -70,7 +76,7 @@ kitamanager-go/
 
 | Technology | Purpose |
 |------------|---------|
-| Next.js 14 | React framework |
+| Next.js 16 | React framework |
 | TypeScript | Type-safe JavaScript |
 | Tailwind CSS | Styling |
 | Radix UI | Component library |
@@ -100,6 +106,7 @@ The application uses a hybrid RBAC system:
 | Admin | Organization | Full org access |
 | Manager | Organization | Operational access |
 | Member | Organization | Read-only access |
+| Staff | Organization | Attendance management |
 
 ### Organization-Scoped Resources
 

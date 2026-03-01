@@ -10,7 +10,7 @@ KitaManager Go folgt einem Clean-Architecture-Muster mit klarer Trennung der Ver
 ```mermaid
 graph TB
     subgraph Frontend
-        UI[Next.js 14 UI]
+        UI[Next.js 16 UI]
     end
 
     subgraph Backend
@@ -39,15 +39,21 @@ graph TB
 kitamanager-go/
 ├── cmd/api/                 # Anwendungs-Einstiegspunkt
 ├── internal/
-│   ├── handlers/           # HTTP-Request-Handler
+│   ├── api/                # HTTP-Request-Handler
 │   ├── models/             # Domänenmodelle
 │   ├── store/              # Datenzugriffsschicht
 │   ├── service/            # Geschäftslogikschicht
 │   ├── middleware/         # Auth, CORS, Logging
 │   ├── rbac/               # Rollenbasierte Zugriffskontrolle
+│   ├── routes/             # API-Routendefinitionen
 │   ├── database/           # Datenbankverbindung
 │   ├── config/             # Konfigurationsverwaltung
-│   └── seed/               # Testdaten-Initialisierung
+│   ├── seed/               # Testdaten-Initialisierung
+│   ├── isbj/               # ISBJ-Abrechnungsanalyse
+│   ├── export/             # Excel/YAML-Export
+│   ├── importer/           # YAML-Datenimport
+│   ├── audit/              # Audit-Protokollierung
+│   └── validation/         # Eingabevalidierung
 ├── frontend/               # Next.js React-Anwendung
 ├── docs/                   # Dokumentation
 └── configs/                # Konfigurationsdateien
@@ -70,7 +76,7 @@ kitamanager-go/
 
 | Technologie | Zweck |
 |-------------|-------|
-| Next.js 14 | React-Framework |
+| Next.js 16 | React-Framework |
 | TypeScript | Typsicheres JavaScript |
 | Tailwind CSS | Styling |
 | Radix UI | Komponentenbibliothek |
@@ -100,6 +106,7 @@ Die Anwendung verwendet ein hybrides RBAC-System:
 | Admin | Organisation | Vollständiger Org-Zugriff |
 | Manager | Organisation | Operativer Zugriff |
 | Mitglied | Organisation | Nur-Lese-Zugriff |
+| Personal | Organisation | Anwesenheitsverwaltung |
 
 ### Organisationsbezogene Ressourcen
 
