@@ -1,5 +1,5 @@
 ---
-title: KitaManager Go
+title: KitaManager
 layout: hextra-home
 ---
 

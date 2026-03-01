@@ -3,7 +3,7 @@ title: Erste Schritte
 weight: 1
 ---
 
-Diese Anleitung hilft Ihnen, KitaManager Go schnell zum Laufen zu bringen.
+Diese Anleitung hilft Ihnen, KitaManager schnell zum Laufen zu bringen.
 
 ## Voraussetzungen
 

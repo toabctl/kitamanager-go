@@ -3,7 +3,7 @@ title: Screenshots
 weight: 3
 ---
 
-A walkthrough of the KitaManager Go user interface, showing the key screens you will use day to day.
+A walkthrough of the KitaManager user interface, showing the key screens you will use day to day.
 
 ---
 

@@ -3,7 +3,7 @@ title: Getting Started
 weight: 1
 ---
 
-This guide will help you get KitaManager Go up and running quickly.
+This guide will help you get KitaManager up and running quickly.
 
 ## Prerequisites
 

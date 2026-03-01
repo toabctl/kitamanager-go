@@ -3,7 +3,7 @@ title: API-Referenz
 weight: 3
 ---
 
-KitaManager Go bietet eine REST-API mit interaktiver OpenAPI/Swagger-Dokumentation unter `/swagger/index.html` beim Ausführen der Anwendung. Alle Endpunkte außer Login und Token-Aktualisierung erfordern eine JWT-Authentifizierung. Mutierende Anfragen (POST, PUT, DELETE) erfordern ein CSRF-Token über den `X-CSRF-Token`-Header.
+KitaManager bietet eine REST-API mit interaktiver OpenAPI/Swagger-Dokumentation unter `/swagger/index.html` beim Ausführen der Anwendung. Alle Endpunkte außer Login und Token-Aktualisierung erfordern eine JWT-Authentifizierung. Mutierende Anfragen (POST, PUT, DELETE) erfordern ein CSRF-Token über den `X-CSRF-Token`-Header.
 
 ## Authentifizierung
 

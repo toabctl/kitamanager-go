@@ -3,11 +3,11 @@ title: Documentation
 weight: 1
 ---
 
-Welcome to the KitaManager Go documentation. This guide will help you get started with deploying and using KitaManager Go for your childcare facility management needs.
+Welcome to the KitaManager documentation. This guide will help you get started with deploying and using KitaManager for your childcare facility management needs.
 
-## What is KitaManager Go?
+## What is KitaManager?
 
-KitaManager Go is an enterprise-grade REST API and web application designed to streamline the management of kindergarten (Kita) organizations. It provides a comprehensive platform for managing:
+KitaManager is an enterprise-grade REST API and web application designed to streamline the management of kindergarten (Kita) organizations. It provides a comprehensive platform for managing:
 
 - **Staff** — Employee database with contract management and pay plans
 - **Children** — Enrollment tracking, contract management, and attendance

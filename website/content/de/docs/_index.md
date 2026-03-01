@@ -3,11 +3,11 @@ title: Dokumentation
 weight: 1
 ---
 
-Willkommen zur KitaManager Go Dokumentation. Diese Anleitung hilft Ihnen beim Einrichten und Verwenden von KitaManager Go für die Verwaltung Ihrer Kindertagesstätte.
+Willkommen zur KitaManager Dokumentation. Diese Anleitung hilft Ihnen beim Einrichten und Verwenden von KitaManager für die Verwaltung Ihrer Kindertagesstätte.
 
-## Was ist KitaManager Go?
+## Was ist KitaManager?
 
-KitaManager Go ist eine Enterprise-REST-API und Webanwendung zur Optimierung der Verwaltung von Kindertagesstätten (Kitas). Es bietet eine umfassende Plattform zur Verwaltung von:
+KitaManager ist eine Enterprise-REST-API und Webanwendung zur Optimierung der Verwaltung von Kindertagesstätten (Kitas). Es bietet eine umfassende Plattform zur Verwaltung von:
 
 - **Personal** — Mitarbeiterdatenbank mit Vertragsverwaltung und Vergütungsplänen
 - **Kinder** — Anmeldungsverfolgung, Vertragsverwaltung und Anwesenheit

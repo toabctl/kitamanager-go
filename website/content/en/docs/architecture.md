@@ -3,7 +3,7 @@ title: Architecture
 weight: 2
 ---
 
-KitaManager Go follows a clean architecture pattern with clear separation of concerns.
+KitaManager follows a clean architecture pattern with clear separation of concerns.
 
 ## System Overview
 

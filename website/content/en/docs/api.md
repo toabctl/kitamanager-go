@@ -3,7 +3,7 @@ title: API Reference
 weight: 3
 ---
 
-KitaManager Go provides a REST API with interactive OpenAPI/Swagger documentation available at `/swagger/index.html` when running the application. All endpoints except login and token refresh require JWT authentication. Mutating requests (POST, PUT, DELETE) require a CSRF token via the `X-CSRF-Token` header.
+KitaManager provides a REST API with interactive OpenAPI/Swagger documentation available at `/swagger/index.html` when running the application. All endpoints except login and token refresh require JWT authentication. Mutating requests (POST, PUT, DELETE) require a CSRF token via the `X-CSRF-Token` header.
 
 ## Authentication
 

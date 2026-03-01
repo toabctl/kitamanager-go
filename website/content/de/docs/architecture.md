@@ -3,7 +3,7 @@ title: Architektur
 weight: 2
 ---
 
-KitaManager Go folgt einem Clean-Architecture-Muster mit klarer Trennung der Verantwortlichkeiten.
+KitaManager folgt einem Clean-Architecture-Muster mit klarer Trennung der Verantwortlichkeiten.
 
 ## Systemübersicht
 

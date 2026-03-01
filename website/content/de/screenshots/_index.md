@@ -3,7 +3,7 @@ title: Bildschirmfotos
 weight: 3
 ---
 
-Ein Rundgang durch die KitaManager Go Benutzeroberfläche mit den wichtigsten Bildschirmen für den täglichen Einsatz.
+Ein Rundgang durch die KitaManager Benutzeroberfläche mit den wichtigsten Bildschirmen für den täglichen Einsatz.
 
 ---
 
