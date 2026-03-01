@@ -21,13 +21,13 @@ const OUTPUT_DIR = path.resolve(__dirname, '../static/images/screenshots');
 const ADMIN_EMAIL = 'admin@example.com';
 const ADMIN_PASSWORD = 'supersecret';
 
-async function login(page: Page): Promise<string> {
+async function login(page: Page): Promise<void> {
   // Navigate to login page to initialize browser context
   await page.goto(`${BASE_URL}/login`);
   await page.waitForLoadState('networkidle');
 
-  // Login via API to get token
-  const authData = await page.evaluate(
+  // Login via API — sets HttpOnly access_token and JS-readable csrf_token cookies
+  await page.evaluate(
     async ({ email, password }) => {
       const response = await fetch('/api/v1/login', {
         method: 'POST',
@@ -37,87 +37,53 @@ async function login(page: Page): Promise<string> {
       if (!response.ok) {
         throw new Error(`Login failed: ${response.status}`);
       }
-      return response.json();
     },
     { email: ADMIN_EMAIL, password: ADMIN_PASSWORD }
   );
-
-  if (!authData?.token) {
-    throw new Error('Failed to obtain auth token');
-  }
-
-  // Set cookie
-  await page.context().addCookies([
-    {
-      name: 'token',
-      value: authData.token,
-      domain: new URL(BASE_URL).hostname,
-      path: '/',
-      httpOnly: false,
-      secure: false,
-      sameSite: 'Strict',
-    },
-  ]);
-
-  // Set localStorage for client-side auth state
-  await page.evaluate((token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('auth-storage', JSON.stringify({ state: { token }, version: 0 }));
-  }, authData.token);
-
-  return authData.token;
 }
 
-async function getFirstOrgId(page: Page, token: string): Promise<number> {
-  return page.evaluate(async ({ token }) => {
-    const response = await fetch('/api/v1/organizations?limit=1', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+async function getFirstOrgId(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/v1/organizations?limit=1');
     const data = await response.json();
     if (!data.data || data.data.length === 0) {
       throw new Error('No organizations found — is the database seeded?');
     }
     return data.data[0].id;
-  }, { token });
+  });
 }
 
-async function getFirstEmployeeId(page: Page, token: string, orgId: number): Promise<number> {
-  return page.evaluate(async ({ token, orgId }) => {
-    const response = await fetch(`/api/v1/organizations/${orgId}/employees?limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+async function getFirstEmployeeId(page: Page, orgId: number): Promise<number> {
+  return page.evaluate(async (orgId) => {
+    const response = await fetch(`/api/v1/organizations/${orgId}/employees?limit=1`);
     const data = await response.json();
     if (!data.data || data.data.length === 0) {
       throw new Error('No employees found — is the database seeded?');
     }
     return data.data[0].id;
-  }, { token, orgId });
+  }, orgId);
 }
 
-async function getFirstChildId(page: Page, token: string, orgId: number): Promise<number> {
-  return page.evaluate(async ({ token, orgId }) => {
-    const response = await fetch(`/api/v1/organizations/${orgId}/children?limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+async function getFirstChildId(page: Page, orgId: number): Promise<number> {
+  return page.evaluate(async (orgId) => {
+    const response = await fetch(`/api/v1/organizations/${orgId}/children?limit=1`);
     const data = await response.json();
     if (!data.data || data.data.length === 0) {
       throw new Error('No children found — is the database seeded?');
     }
     return data.data[0].id;
-  }, { token, orgId });
+  }, orgId);
 }
 
-async function getFirstBudgetItemId(page: Page, token: string, orgId: number): Promise<number> {
-  return page.evaluate(async ({ token, orgId }) => {
-    const response = await fetch(`/api/v1/organizations/${orgId}/budget-items?limit=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+async function getFirstBudgetItemId(page: Page, orgId: number): Promise<number> {
+  return page.evaluate(async (orgId) => {
+    const response = await fetch(`/api/v1/organizations/${orgId}/budget-items?limit=1`);
     const data = await response.json();
     if (!data.data || data.data.length === 0) {
       throw new Error('No budget items found — is the database seeded?');
     }
     return data.data[0].id;
-  }, { token, orgId });
+  }, orgId);
 }
 
 async function capture(page: Page, name: string): Promise<void> {
@@ -144,7 +110,7 @@ async function main(): Promise<void> {
     await capture(page, 'login');
 
     // 2. Authenticate
-    const token = await login(page);
+    await login(page);
 
     // 3. Dashboard
     await page.goto(`${BASE_URL}/`);
@@ -159,7 +125,7 @@ async function main(): Promise<void> {
     await capture(page, 'organizations');
 
     // Get first org for scoped pages
-    const orgId = await getFirstOrgId(page, token);
+    const orgId = await getFirstOrgId(page);
 
     // 5. Employees
     await page.goto(`${BASE_URL}/organizations/${orgId}/employees`);
@@ -186,14 +152,14 @@ async function main(): Promise<void> {
     await capture(page, 'sections');
 
     // 9. Employee Contracts
-    const employeeId = await getFirstEmployeeId(page, token, orgId);
+    const employeeId = await getFirstEmployeeId(page, orgId);
     await page.goto(`${BASE_URL}/organizations/${orgId}/employees/${employeeId}/contracts`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
     await capture(page, 'employee-contracts');
 
     // 10. Child Contracts
-    const childId = await getFirstChildId(page, token, orgId);
+    const childId = await getFirstChildId(page, orgId);
     await page.goto(`${BASE_URL}/organizations/${orgId}/children/${childId}/contracts`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
@@ -212,7 +178,7 @@ async function main(): Promise<void> {
     await capture(page, 'budget-items');
 
     // 13. Budget Item Detail
-    const budgetItemId = await getFirstBudgetItemId(page, token, orgId);
+    const budgetItemId = await getFirstBudgetItemId(page, orgId);
     await page.goto(`${BASE_URL}/organizations/${orgId}/budget-items/${budgetItemId}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
@@ -252,12 +218,11 @@ async function main(): Promise<void> {
     await page.goto(`${BASE_URL}/organizations/${orgId}/employees/${employeeId}/contracts`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
-    const employeeCreateBtn = page.locator('button', { hasText: /create/i });
+    const employeeCreateBtn = page.locator('button', { hasText: /new contract/i });
     if (await employeeCreateBtn.isVisible()) {
       await employeeCreateBtn.click();
       await page.waitForTimeout(1000);
       await capture(page, 'employee-contract-create');
-      // Close the dialog
       await page.keyboard.press('Escape');
       await page.waitForTimeout(500);
     }
@@ -266,12 +231,11 @@ async function main(): Promise<void> {
     await page.goto(`${BASE_URL}/organizations/${orgId}/children/${childId}/contracts`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
-    const childCreateBtn = page.locator('button', { hasText: /create/i });
+    const childCreateBtn = page.locator('button', { hasText: /new contract/i });
     if (await childCreateBtn.isVisible()) {
       await childCreateBtn.click();
       await page.waitForTimeout(1000);
       await capture(page, 'child-contract-create');
-      // Close the dialog
       await page.keyboard.press('Escape');
       await page.waitForTimeout(500);
     }
