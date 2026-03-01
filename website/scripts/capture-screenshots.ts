@@ -218,13 +218,65 @@ async function main(): Promise<void> {
     await page.waitForTimeout(1000);
     await capture(page, 'budget-item-detail');
 
-    // 14. Statistics
+    // 14. Statistics Overview
     await page.goto(`${BASE_URL}/organizations/${orgId}/statistics`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
     await capture(page, 'statistics');
 
-    // 15. Government Funding Bills
+    // 15. Statistics: Staffing Hours
+    await page.goto(`${BASE_URL}/organizations/${orgId}/statistics/staffing`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    await capture(page, 'statistics-staffing');
+
+    // 16. Statistics: Financial Overview
+    await page.goto(`${BASE_URL}/organizations/${orgId}/statistics/financials`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    await capture(page, 'statistics-financials');
+
+    // 17. Statistics: Children (Age Distribution & Contract Properties)
+    await page.goto(`${BASE_URL}/organizations/${orgId}/statistics/children`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    await capture(page, 'statistics-children');
+
+    // 18. Statistics: Occupancy
+    await page.goto(`${BASE_URL}/organizations/${orgId}/statistics/occupancy`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    await capture(page, 'statistics-occupancy');
+
+    // 19. Employee Contract Creation Dialog
+    await page.goto(`${BASE_URL}/organizations/${orgId}/employees/${employeeId}/contracts`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    const employeeCreateBtn = page.locator('button', { hasText: /create/i });
+    if (await employeeCreateBtn.isVisible()) {
+      await employeeCreateBtn.click();
+      await page.waitForTimeout(1000);
+      await capture(page, 'employee-contract-create');
+      // Close the dialog
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    }
+
+    // 20. Child Contract Creation Dialog
+    await page.goto(`${BASE_URL}/organizations/${orgId}/children/${childId}/contracts`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    const childCreateBtn = page.locator('button', { hasText: /create/i });
+    if (await childCreateBtn.isVisible()) {
+      await childCreateBtn.click();
+      await page.waitForTimeout(1000);
+      await capture(page, 'child-contract-create');
+      // Close the dialog
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    }
+
+    // 21. Government Funding Bills
     await page.goto(`${BASE_URL}/organizations/${orgId}/government-funding-bills`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);

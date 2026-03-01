@@ -109,6 +109,8 @@ Each employee can have one or more employment contracts that define their workin
 
 The current contract is displayed on the employee's detail page.
 
+{{< screenshot src="/images/screenshots/employee-contract-create.png" alt="Employee contract creation dialog" caption="The dialog for creating a new employment contract." >}}
+
 {{< screenshot src="/images/screenshots/employee-contracts.png" alt="Employee contracts" caption="Employment contracts for a staff member." >}}
 
 ### Step Promotions
@@ -166,6 +168,8 @@ Care contracts define how a child is enrolled and determine the government fundi
 5. Click **Save**.
 
 The contract properties determine the government funding amount that KitaManager calculates for each child.
+
+{{< screenshot src="/images/screenshots/child-contract-create.png" alt="Child contract creation dialog" caption="The dialog for creating a new care contract with contract properties." >}}
 
 {{< screenshot src="/images/screenshots/child-contracts.png" alt="Child contracts" caption="Care contracts for an enrolled child." >}}
 
@@ -234,7 +238,15 @@ KitaManager provides several reports to help you understand your organization's 
 4. Use the **section** filter to narrow results to a specific group.
 5. To print a report, click the **Print** button.
 
-{{< screenshot src="/images/screenshots/statistics.png" alt="Statistics" caption="The statistics page with various reports about your organization." >}}
+{{< screenshot src="/images/screenshots/statistics.png" alt="Statistics overview" caption="The statistics overview page." >}}
+
+{{< screenshot src="/images/screenshots/statistics-staffing.png" alt="Staffing hours chart" caption="Staffing hours report showing required vs. available hours over time." >}}
+
+{{< screenshot src="/images/screenshots/statistics-financials.png" alt="Financial overview charts" caption="Financial overview with income, expenses, and funding breakdown." >}}
+
+{{< screenshot src="/images/screenshots/statistics-children.png" alt="Children statistics" caption="Children statistics with age distribution and contract properties." >}}
+
+{{< screenshot src="/images/screenshots/statistics-occupancy.png" alt="Occupancy table" caption="Occupancy report showing enrolled children compared to capacity." >}}
 
 ## Government Funding Bills
 

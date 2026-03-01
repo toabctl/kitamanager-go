@@ -109,6 +109,8 @@ Jeder Mitarbeiter kann einen oder mehrere Arbeitsverträge haben, die seine Arbe
 
 Der aktuelle Vertrag wird auf der Detailseite des Mitarbeiters angezeigt.
 
+{{< screenshot src="/images/screenshots/employee-contract-create.png" alt="Dialog zur Vertragserstellung" caption="Der Dialog zur Erstellung eines neuen Arbeitsvertrags." >}}
+
 {{< screenshot src="/images/screenshots/employee-contracts.png" alt="Arbeitsverträge" caption="Arbeitsverträge eines Mitarbeiters." >}}
 
 ### Stufenaufstiege
@@ -166,6 +168,8 @@ Betreuungsverträge legen fest, wie ein Kind aufgenommen wird, und bestimmen die
 5. Klicken Sie auf **Speichern**.
 
 Die Vertragseigenschaften bestimmen den Förderbetrag der Landesförderung, den KitaManager für jedes Kind berechnet.
+
+{{< screenshot src="/images/screenshots/child-contract-create.png" alt="Dialog zur Vertragserstellung" caption="Der Dialog zur Erstellung eines neuen Betreuungsvertrags mit Vertragseigenschaften." >}}
 
 {{< screenshot src="/images/screenshots/child-contracts.png" alt="Betreuungsverträge" caption="Betreuungsverträge eines aufgenommenen Kindes." >}}
 
@@ -234,7 +238,15 @@ KitaManager bietet verschiedene Berichte, um die Daten Ihrer Organisation besser
 4. Verwenden Sie den **Bereichs**-Filter, um die Ergebnisse auf eine bestimmte Gruppe einzugrenzen.
 5. Um einen Bericht zu drucken, klicken Sie auf die Schaltfläche **Drucken**.
 
-{{< screenshot src="/images/screenshots/statistics.png" alt="Statistiken" caption="Die Statistikseite mit verschiedenen Berichten über Ihre Organisation." >}}
+{{< screenshot src="/images/screenshots/statistics.png" alt="Statistik-Übersicht" caption="Die Statistik-Übersichtsseite." >}}
+
+{{< screenshot src="/images/screenshots/statistics-staffing.png" alt="Personalstunden-Diagramm" caption="Personalstunden-Bericht mit Soll- und Ist-Stunden im Zeitverlauf." >}}
+
+{{< screenshot src="/images/screenshots/statistics-financials.png" alt="Finanzübersicht-Diagramme" caption="Finanzübersicht mit Einnahmen, Ausgaben und Förderungsaufschlüsselung." >}}
+
+{{< screenshot src="/images/screenshots/statistics-children.png" alt="Kinder-Statistiken" caption="Kinder-Statistiken mit Altersverteilung und Vertragseigenschaften." >}}
+
+{{< screenshot src="/images/screenshots/statistics-occupancy.png" alt="Auslastungstabelle" caption="Auslastungsbericht mit aufgenommenen Kindern im Vergleich zur Kapazität." >}}
 
 ## Abrechnungen der Landesförderung
 
