@@ -237,14 +237,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build API Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.api
           push: false
           load: true
           tags: kitamanager-api:${{ github.sha }}
           build-args: |
+            GIT_VERSION=${{ github.sha }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha

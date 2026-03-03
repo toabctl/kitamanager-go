@@ -1,5 +1,9 @@
 # KitaManager Go - Development Guidelines
 
+## Dependency Versions
+
+**Always use the latest versions** of all dependencies and tools. This includes Hugo, the Hextra theme, Go, Node.js, and all other libraries. Never pin to older versions or downgrade to work around compatibility issues — instead, upgrade the dependency chain to make everything work with the latest releases.
+
 ## API Handler Documentation
 
 All API handlers MUST be documented using swaggo annotations. This enables automatic OpenAPI/Swagger specification generation.
@@ -124,6 +128,15 @@ authzMiddleware.RequirePermission(rbac.ResourceEmployees, rbac.ActionRead)
 // Require superadmin
 authzMiddleware.RequireSuperAdmin()
 ```
+
+## Container Images
+
+`Dockerfile.api` and `Dockerfile.frontend` are the **single source of truth** for all OCI/Docker images. Both use [Chainguard](https://www.chainguard.dev/) base images for minimal, secure containers.
+
+- `Dockerfile.api` — Multi-stage build: `cgr.dev/chainguard/go` (builder) + `cgr.dev/chainguard/static` (runtime)
+- `Dockerfile.frontend` — Multi-stage build: `cgr.dev/chainguard/node` (builder + runtime)
+
+GoReleaser does **not** build or publish container images — it only handles binary releases and archives. All container builds (CI, docker-compose, production) must use these two Dockerfiles.
 
 ## Database Schema Changes
 
