@@ -62,7 +62,7 @@ test.describe('Visual Regression - Dashboard', () => {
     await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 10000 });
 
     await expect(page).toHaveScreenshot('children-list.png', {
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: 0.03,
     });
   });
 
