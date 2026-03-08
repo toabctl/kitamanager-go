@@ -93,6 +93,22 @@ func TestUnauthorized(t *testing.T) {
 	}
 }
 
+func TestTooManyRequests(t *testing.T) {
+	err := TooManyRequests("slow down")
+	if err.Error() != "slow down" {
+		t.Errorf("expected 'slow down', got %q", err.Error())
+	}
+	if err.Code != http.StatusTooManyRequests {
+		t.Errorf("expected status %d, got %d", http.StatusTooManyRequests, err.Code)
+	}
+	if err.GetErrorCode() != CodeTooManyRequests {
+		t.Errorf("expected code %q, got %q", CodeTooManyRequests, err.GetErrorCode())
+	}
+	if !errors.Is(err, ErrTooManyRequests) {
+		t.Error("expected err to wrap ErrTooManyRequests")
+	}
+}
+
 func TestInternal(t *testing.T) {
 	err := Internal("something broke")
 	if err.Code != http.StatusInternalServerError {
@@ -131,6 +147,7 @@ func TestGetErrorCode_DefaultsByHTTPStatus(t *testing.T) {
 		{http.StatusConflict, CodeConflict},
 		{http.StatusUnauthorized, CodeUnauthorized},
 		{http.StatusForbidden, CodeForbidden},
+		{http.StatusTooManyRequests, CodeTooManyRequests},
 		{http.StatusInternalServerError, CodeInternal},
 		{http.StatusServiceUnavailable, CodeInternal}, // unknown maps to internal
 	}
@@ -154,11 +171,13 @@ func TestHTTPStatus(t *testing.T) {
 		{"AppError conflict", Conflict("x"), http.StatusConflict},
 		{"AppError forbidden", Forbidden("x"), http.StatusForbidden},
 		{"AppError unauthorized", Unauthorized("x"), http.StatusUnauthorized},
+		{"AppError too many requests", TooManyRequests("x"), http.StatusTooManyRequests},
 		{"sentinel ErrNotFound", ErrNotFound, http.StatusNotFound},
 		{"sentinel ErrBadRequest", ErrBadRequest, http.StatusBadRequest},
 		{"sentinel ErrConflict", ErrConflict, http.StatusConflict},
 		{"sentinel ErrForbidden", ErrForbidden, http.StatusForbidden},
 		{"sentinel ErrUnauthorized", ErrUnauthorized, http.StatusUnauthorized},
+		{"sentinel ErrTooManyRequests", ErrTooManyRequests, http.StatusTooManyRequests},
 		{"wrapped sentinel", fmt.Errorf("wrap: %w", ErrNotFound), http.StatusNotFound},
 		{"unknown error", errors.New("unknown"), http.StatusInternalServerError},
 	}
