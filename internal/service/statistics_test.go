@@ -3139,3 +3139,654 @@ func TestStatisticsService_GetOccupancy_MultiplePeriodsWithDifferentRequirements
 		}
 	}
 }
+
+// =============================================================================
+// Complex multi-entity edge case tests
+// =============================================================================
+
+// Test 1: Multiple children with different ages matching different funding requirement rates.
+// Verifies per-child age dispatch yields correct aggregate required hours.
+func TestStatisticsService_GetStaffingHours_MultipleChildrenDifferentAgeRates(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding: U3 (ages 0-2) requirement=0.25, Ü3 (ages 3-6) requirement=0.15
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag U3", 200000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag Ü3", 100000, 0.15, 3, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+	props := models.ContractProperties{"care_type": "ganztag"}
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// 3 children born 2023-01-01 → age 1 on 2024-06-01 (U3)
+	for i := 0; i < 3; i++ {
+		c := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "U3", LastName: "Child", Birthdate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)}}
+		db.Create(c)
+		createTestChildContract(t, db, c.ID, contractFrom, nil, section.ID, props)
+	}
+	// 2 children born 2020-01-01 → age 4 on 2024-06-01 (Ü3)
+	for i := 0; i < 2; i++ {
+		c := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "UE3", LastName: "Child", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}}
+		db.Create(c)
+		createTestChildContract(t, db, c.ID, contractFrom, nil, section.ID, props)
+	}
+
+	// 1 employee to have non-zero available hours
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, contractFrom, nil, 39.0, "qualified", section.ID)
+
+	from := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 1 {
+		t.Fatalf("expected 1 data point, got %d", len(result.DataPoints))
+	}
+	dp := result.DataPoints[0]
+
+	// RequiredHours = 3*(0.25*39.0) + 2*(0.15*39.0) = 29.25 + 11.70 = 40.95
+	wantRequired := 3*0.25*39.0 + 2*0.15*39.0
+	if !almostEqual(dp.RequiredHours, wantRequired, 0.01) {
+		t.Errorf("RequiredHours = %v, want %v", dp.RequiredHours, wantRequired)
+	}
+	if dp.ChildCount != 5 {
+		t.Errorf("ChildCount = %d, want 5", dp.ChildCount)
+	}
+	if !almostEqual(dp.AvailableHours, 39.0, 0.01) {
+		t.Errorf("AvailableHours = %v, want 39.0", dp.AvailableHours)
+	}
+}
+
+// Test 2: Employee with consecutive contracts at different hours — verifies transition mid-range.
+func TestStatisticsService_GetStaffingHours_EmployeeConsecutiveContracts(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+
+	// 1 child so we can verify the data points have content
+	child := createTestChild(t, db, "Child", "One", org.ID)
+	createTestChildContract(t, db, child.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+
+	// Employee: 30h contract Jan-Mar, 39h contract Apr onwards
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
+	contract1To := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &contract1To, 30.0, "qualified", section.ID)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC), nil, 39.0, "qualified", section.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 6 {
+		t.Fatalf("expected 6 data points, got %d", len(result.DataPoints))
+	}
+
+	for i, dp := range result.DataPoints {
+		if dp.StaffCount != 1 {
+			t.Errorf("month %d: StaffCount = %d, want 1 (same employee)", i+1, dp.StaffCount)
+		}
+		if i < 3 {
+			if !almostEqual(dp.AvailableHours, 30.0, 0.01) {
+				t.Errorf("month %d: AvailableHours = %v, want 30.0", i+1, dp.AvailableHours)
+			}
+		} else {
+			if !almostEqual(dp.AvailableHours, 39.0, 0.01) {
+				t.Errorf("month %d: AvailableHours = %v, want 39.0", i+1, dp.AvailableHours)
+			}
+		}
+	}
+}
+
+// Test 3: Child contract gap — child absent during gap months, counted before and after.
+func TestStatisticsService_GetStaffingHours_ChildContractGap(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	toDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	period := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &toDate, 39.0)
+	createTestFundingPropertyFull(t, db, period.ID, "care_type", "ganztag", "Ganztag", 10000, 0.25, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+	props := models.ContractProperties{"care_type": "ganztag"}
+
+	// Child with gap: contract 1 Jan-Mar, contract 2 Jun onwards
+	child := createTestChild(t, db, "Gap", "Child", org.ID)
+	contract1To := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	createTestChildContract(t, db, child.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &contract1To, section.ID, props)
+	createTestChildContract(t, db, child.ID, time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), nil, section.ID, props)
+
+	// Employee present throughout
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+	emp := createTestEmployee(t, db, "Emp", "One", org.ID)
+	createTestEmployeeContractWithCategory(t, db, emp.ID, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 30.0, "qualified", section.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 8, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 8 {
+		t.Fatalf("expected 8 data points, got %d", len(result.DataPoints))
+	}
+
+	wantRequired := 0.25 * 39.0 // single child
+	for i, dp := range result.DataPoints {
+		month := i + 1 // Jan=1..Aug=8
+		switch {
+		case month <= 3: // Jan-Mar: active
+			if dp.ChildCount != 1 {
+				t.Errorf("month %d: ChildCount = %d, want 1", month, dp.ChildCount)
+			}
+			if !almostEqual(dp.RequiredHours, wantRequired, 0.01) {
+				t.Errorf("month %d: RequiredHours = %v, want %v", month, dp.RequiredHours, wantRequired)
+			}
+		case month <= 5: // Apr-May: gap
+			if dp.ChildCount != 0 {
+				t.Errorf("month %d: ChildCount = %d, want 0 (gap)", month, dp.ChildCount)
+			}
+			if !almostEqual(dp.RequiredHours, 0.0, 0.01) {
+				t.Errorf("month %d: RequiredHours = %v, want 0.0 (gap)", month, dp.RequiredHours)
+			}
+		default: // Jun-Aug: active again
+			if dp.ChildCount != 1 {
+				t.Errorf("month %d: ChildCount = %d, want 1", month, dp.ChildCount)
+			}
+			if !almostEqual(dp.RequiredHours, wantRequired, 0.01) {
+				t.Errorf("month %d: RequiredHours = %v, want %v", month, dp.RequiredHours, wantRequired)
+			}
+		}
+		// Employee always present
+		if dp.StaffCount != 1 {
+			t.Errorf("month %d: StaffCount = %d, want 1", month, dp.StaffCount)
+		}
+		if !almostEqual(dp.AvailableHours, 30.0, 0.01) {
+			t.Errorf("month %d: AvailableHours = %v, want 30.0", month, dp.AvailableHours)
+		}
+	}
+}
+
+// Test 4: Full financials integration — multiple children (different ages/care types),
+// multiple employees (different grades/steps/hours), budget items, all combined.
+func TestStatisticsService_GetFinancials_FullIntegration(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding: U3 ganztag=200000, Ü3 ganztag=100000, halbtag=60000 (all ages)
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	fpTo := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	fp := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &fpTo, 39.0)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "ganztag", "Ganztag U3", 200000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "ganztag", "Ganztag Ü3", 100000, 0.15, 3, 6)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "halbtag", "Halbtag", 60000, 0.10, -1, -1) // all ages
+
+	section := getDefaultSection(t, db, org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// 2 U3 ganztag children (born 2023 → age 1)
+	for i := 0; i < 2; i++ {
+		c := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "U3", LastName: "GZ", Birthdate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)}}
+		db.Create(c)
+		createTestChildContract(t, db, c.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+	}
+	// 1 Ü3 ganztag child (born 2020 → age 4)
+	ue3 := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "UE3", LastName: "GZ", Birthdate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(ue3)
+	createTestChildContract(t, db, ue3.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "ganztag"})
+	// 1 halbtag child (born 2021 → age 3)
+	ht := &models.Child{Person: models.Person{OrganizationID: org.ID, FirstName: "HT", LastName: "Child", Birthdate: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	db.Create(ht)
+	createTestChildContract(t, db, ht.ID, contractFrom, nil, section.ID, models.ContractProperties{"care_type": "halbtag"})
+
+	// Pay plan: S8a/3=350000, S4/2=280000, 22% employer contribution
+	payplan := createTestPayPlan(t, db, "TVöD-SuE", org.ID)
+	ppPeriod := createTestPayPlanPeriodWithContrib(t, db, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 39.0, 2200)
+	createTestPayPlanEntry(t, db, ppPeriod.ID, "S8a", 3, 350000, nil)
+	createTestPayPlanEntry(t, db, ppPeriod.ID, "S4", 2, 280000, nil)
+
+	// Employee 1: qualified, S8a/3, 39h (full-time)
+	emp1 := createTestEmployee(t, db, "Emp", "Qualified", org.ID)
+	createTestEmployeeContractWithCategory(t, db, emp1.ID, payplan.ID, contractFrom, nil, 39.0, "qualified", section.ID)
+	db.Model(&models.EmployeeContract{}).Where("employee_id = ?", emp1.ID).Updates(map[string]interface{}{"grade": "S8a", "step": 3})
+
+	// Employee 2: supplementary, S4/2, 20h (part-time)
+	emp2 := createTestEmployee(t, db, "Emp", "Supplementary", org.ID)
+	createTestEmployeeContractWithCategory(t, db, emp2.ID, payplan.ID, contractFrom, nil, 20.0, "supplementary", section.ID)
+	db.Model(&models.EmployeeContract{}).Where("employee_id = ?", emp2.ID).Updates(map[string]interface{}{"grade": "S4", "step": 2})
+
+	// Budget items
+	rent := createTestBudgetItem(t, db, "Rent", org.ID, "expense", false)
+	createTestBudgetItemEntry(t, db, rent.ID, contractFrom, nil, 50000, "")
+	meals := createTestBudgetItem(t, db, "Meals", org.ID, "expense", true) // per-child
+	createTestBudgetItemEntry(t, db, meals.ID, contractFrom, nil, 3000, "")
+	parentFees := createTestBudgetItem(t, db, "Parent Fees", org.ID, "income", true) // per-child
+	createTestBudgetItemEntry(t, db, parentFees.ID, contractFrom, nil, 15000, "")
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 1 {
+		t.Fatalf("expected 1 data point, got %d", len(result.DataPoints))
+	}
+	dp := result.DataPoints[0]
+
+	// Funding: 2*200000 + 1*100000 + 1*60000 = 560000
+	wantFunding := 2*200000 + 100000 + 60000
+	if dp.FundingIncome != wantFunding {
+		t.Errorf("FundingIncome = %d, want %d", dp.FundingIncome, wantFunding)
+	}
+
+	// Salary emp1: 350000 * 39/39 = 350000
+	// Salary emp2: round(280000 * 20/39) = round(143589.74) = 143590
+	grossEmp1 := 350000
+	grossEmp2 := int(math.Round(280000.0 * 20.0 / 39.0))
+	wantGross := grossEmp1 + grossEmp2
+	if dp.GrossSalary != wantGross {
+		t.Errorf("GrossSalary = %d, want %d", dp.GrossSalary, wantGross)
+	}
+
+	// Employer costs: round(350000*2200/10000) + round(143590*2200/10000)
+	contribEmp1 := int(math.Round(float64(grossEmp1) * 2200.0 / 10000.0))
+	contribEmp2 := int(math.Round(float64(grossEmp2) * 2200.0 / 10000.0))
+	wantContrib := contribEmp1 + contribEmp2
+	if dp.EmployerCosts != wantContrib {
+		t.Errorf("EmployerCosts = %d, want %d", dp.EmployerCosts, wantContrib)
+	}
+
+	// Budget: income = 4 children * 15000 = 60000, expense = 50000 + 4*3000 = 62000
+	childCount := 4
+	wantBudgetIncome := childCount * 15000
+	wantBudgetExpenses := 50000 + childCount*3000
+	if dp.BudgetIncome != wantBudgetIncome {
+		t.Errorf("BudgetIncome = %d, want %d", dp.BudgetIncome, wantBudgetIncome)
+	}
+	if dp.BudgetExpenses != wantBudgetExpenses {
+		t.Errorf("BudgetExpenses = %d, want %d", dp.BudgetExpenses, wantBudgetExpenses)
+	}
+
+	// Totals
+	wantTotalIncome := wantFunding + wantBudgetIncome
+	wantTotalExpenses := wantGross + wantContrib + wantBudgetExpenses
+	wantBalance := wantTotalIncome - wantTotalExpenses
+	if dp.TotalIncome != wantTotalIncome {
+		t.Errorf("TotalIncome = %d, want %d", dp.TotalIncome, wantTotalIncome)
+	}
+	if dp.TotalExpenses != wantTotalExpenses {
+		t.Errorf("TotalExpenses = %d, want %d", dp.TotalExpenses, wantTotalExpenses)
+	}
+	if dp.Balance != wantBalance {
+		t.Errorf("Balance = %d, want %d", dp.Balance, wantBalance)
+	}
+	if dp.ChildCount != childCount {
+		t.Errorf("ChildCount = %d, want %d", dp.ChildCount, childCount)
+	}
+	if dp.StaffCount != 2 {
+		t.Errorf("StaffCount = %d, want 2", dp.StaffCount)
+	}
+}
+
+// Test 5: Financials with funding period transition mid-range — different payment rates before/after.
+func TestStatisticsService_GetFinancials_FundingPeriodTransitionMidRange(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Two funding periods: Jan-Jun (ganztag=100000) and Jul-Dec (ganztag=150000)
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	p1To := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	p1 := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &p1To, 39.0)
+	createTestFundingPropertyFull(t, db, p1.ID, "care_type", "ganztag", "Ganztag H1", 100000, 0.25, 0, 6)
+
+	p2To := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	p2 := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), &p2To, 39.0)
+	createTestFundingPropertyFull(t, db, p2.ID, "care_type", "ganztag", "Ganztag H2", 150000, 0.25, 0, 6)
+
+	section := getDefaultSection(t, db, org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	props := models.ContractProperties{"care_type": "ganztag"}
+
+	// 2 children with ganztag
+	for i := 0; i < 2; i++ {
+		child := createTestChild(t, db, "Child", "X", org.ID)
+		createTestChildContract(t, db, child.ID, contractFrom, nil, section.ID, props)
+	}
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 12 {
+		t.Fatalf("expected 12 data points, got %d", len(result.DataPoints))
+	}
+
+	for i, dp := range result.DataPoints {
+		month := i + 1
+		if month <= 6 {
+			// 2 children * 100000 = 200000
+			if dp.FundingIncome != 200000 {
+				t.Errorf("month %d (%s): FundingIncome = %d, want 200000", month, dp.Date, dp.FundingIncome)
+			}
+		} else {
+			// 2 children * 150000 = 300000
+			if dp.FundingIncome != 300000 {
+				t.Errorf("month %d (%s): FundingIncome = %d, want 300000", month, dp.Date, dp.FundingIncome)
+			}
+		}
+		if dp.ChildCount != 2 {
+			t.Errorf("month %d: ChildCount = %d, want 2", month, dp.ChildCount)
+		}
+	}
+}
+
+// Test 6: Financials — children with multiple matching properties (care_type + supplement)
+// verifying correct per-child and aggregate funding income.
+func TestStatisticsService_GetFinancials_MultipleMatchingProperties(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding: care_type ganztag=100000, integration_a=50000 (no age filter)
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	fpTo := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	fp := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &fpTo, 39.0)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "ganztag", "Ganztag", 100000, 0.25, -1, -1)
+	createTestFundingPropertyFull(t, db, fp.ID, "integration", "integration_a", "Integration A", 50000, 0.10, -1, -1)
+
+	section := getDefaultSection(t, db, org.ID)
+	contractFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// Child A: ganztag + integration_a → 150000
+	childA := createTestChild(t, db, "Child", "A", org.ID)
+	createTestChildContract(t, db, childA.ID, contractFrom, nil, section.ID, models.ContractProperties{
+		"care_type":   "ganztag",
+		"integration": "integration_a",
+	})
+
+	// Child B: ganztag only → 100000
+	childB := createTestChild(t, db, "Child", "B", org.ID)
+	createTestChildContract(t, db, childB.ID, contractFrom, nil, section.ID, models.ContractProperties{
+		"care_type": "ganztag",
+	})
+
+	// Child C: ganztag + integration_a → 150000
+	childC := createTestChild(t, db, "Child", "C", org.ID)
+	createTestChildContract(t, db, childC.ID, contractFrom, nil, section.ID, models.ContractProperties{
+		"care_type":   "ganztag",
+		"integration": "integration_a",
+	})
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetFinancials(ctx, org.ID, &from, &to)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 1 {
+		t.Fatalf("expected 1 data point, got %d", len(result.DataPoints))
+	}
+	dp := result.DataPoints[0]
+
+	// Total: 150000 + 100000 + 150000 = 400000
+	if dp.FundingIncome != 400000 {
+		t.Errorf("FundingIncome = %d, want 400000", dp.FundingIncome)
+	}
+	if dp.ChildCount != 3 {
+		t.Errorf("ChildCount = %d, want 3", dp.ChildCount)
+	}
+
+	// Verify FundingDetails: care_type:ganztag=300000, integration:integration_a=100000
+	detailMap := make(map[string]int)
+	for _, d := range dp.FundingDetails {
+		detailMap[d.Key+":"+d.Value] = d.AmountCents
+	}
+	if detailMap["care_type:ganztag"] != 300000 {
+		t.Errorf("FundingDetail care_type:ganztag = %d, want 300000", detailMap["care_type:ganztag"])
+	}
+	if detailMap["integration:integration_a"] != 100000 {
+		t.Errorf("FundingDetail integration:integration_a = %d, want 100000", detailMap["integration:integration_a"])
+	}
+}
+
+// Test 7: Occupancy full matrix — multiple children across age groups, care types, and supplements.
+func TestStatisticsService_GetOccupancy_FullMatrix(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	db.Model(org).Update("state", "berlin")
+
+	// Funding: U3 (0-2) and Ü3 (3-6) × ganztag + halbtag, plus supplements integration_a, ndh
+	funding := createTestGovernmentFunding(t, db, "Berlin Funding")
+	fpTo := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	fp := createTestFundingPeriod(t, db, funding.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &fpTo, 39.0)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "ganztag", "Ganztag U3", 200000, 0.25, 0, 2)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "ganztag", "Ganztag Ü3", 100000, 0.15, 3, 6)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "halbtag", "Halbtag U3", 120000, 0.15, 0, 2)
+	createTestFundingPropertyFull(t, db, fp.ID, "care_type", "halbtag", "Halbtag Ü3", 80000, 0.10, 3, 6)
+	createTestFundingPropertyFull(t, db, fp.ID, "integration", "integration_a", "Integration A", 50000, 0.10, -1, -1)
+	createTestFundingPropertyFull(t, db, fp.ID, "supplements", "ndh", "NDH", 30000, 0.05, -1, -1)
+
+	section := getDefaultSection(t, db, org.ID)
+	contractFrom := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+
+	type childSpec struct {
+		birthYear int
+		birthMon  time.Month
+		props     models.ContractProperties
+	}
+	children := []childSpec{
+		// Child A: age 1 (U3), ganztag, integration_a
+		{2023, 1, models.ContractProperties{"care_type": "ganztag", "integration": "integration_a"}},
+		// Child B: age 2 (U3), halbtag, ndh
+		{2022, 1, models.ContractProperties{"care_type": "halbtag", "supplements": "ndh"}},
+		// Child C: age 2 (U3), ganztag (no supplements)
+		{2022, 6, models.ContractProperties{"care_type": "ganztag"}},
+		// Child D: age 4 (Ü3), ganztag, ndh
+		{2020, 1, models.ContractProperties{"care_type": "ganztag", "supplements": "ndh"}},
+		// Child E: age 5 (Ü3), halbtag
+		{2019, 1, models.ContractProperties{"care_type": "halbtag"}},
+		// Child F: age 3 (Ü3), ganztag, integration_a + ndh
+		{2021, 1, models.ContractProperties{"care_type": "ganztag", "integration": "integration_a", "supplements": "ndh"}},
+	}
+
+	for i, spec := range children {
+		c := &models.Child{Person: models.Person{
+			OrganizationID: org.ID,
+			FirstName:      string(rune('A' + i)),
+			LastName:       "Child",
+			Birthdate:      time.Date(spec.birthYear, spec.birthMon, 1, 0, 0, 0, 0, time.UTC),
+		}}
+		db.Create(c)
+		createTestChildContract(t, db, c.ID, contractFrom, nil, section.ID, spec.props)
+	}
+
+	from := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetOccupancy(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.DataPoints) != 1 {
+		t.Fatalf("expected 1 data point, got %d", len(result.DataPoints))
+	}
+	dp := result.DataPoints[0]
+
+	if dp.Total != 6 {
+		t.Errorf("Total = %d, want 6", dp.Total)
+	}
+
+	u3Label := formatAgeGroupLabel(0, 2) // "0/1/2"
+	u6Label := formatAgeGroupLabel(3, 6) // "3+"
+
+	// ByAgeAndCareType checks
+	checks := []struct {
+		ageLabel string
+		careType string
+		want     int
+	}{
+		{u3Label, "ganztag", 2}, // A, C
+		{u3Label, "halbtag", 1}, // B
+		{u6Label, "ganztag", 2}, // D, F
+		{u6Label, "halbtag", 1}, // E
+	}
+	for _, check := range checks {
+		got := dp.ByAgeAndCareType[check.ageLabel][check.careType]
+		if got != check.want {
+			t.Errorf("ByAgeAndCareType[%s][%s] = %d, want %d", check.ageLabel, check.careType, got, check.want)
+		}
+	}
+
+	// BySupplement checks
+	// integration_a: A, F → 2
+	if dp.BySupplement["integration_a"] != 2 {
+		t.Errorf("BySupplement[integration_a] = %d, want 2", dp.BySupplement["integration_a"])
+	}
+	// ndh: B, D, F → 3
+	if dp.BySupplement["ndh"] != 3 {
+		t.Errorf("BySupplement[ndh] = %d, want 3", dp.BySupplement["ndh"])
+	}
+
+	// Verify structure metadata
+	if len(result.AgeGroups) != 2 {
+		t.Errorf("expected 2 age groups, got %d", len(result.AgeGroups))
+	}
+	if len(result.CareTypes) != 2 {
+		t.Errorf("expected 2 care types, got %d", len(result.CareTypes))
+	}
+	if len(result.SupplementTypes) != 2 {
+		t.Errorf("expected 2 supplement types, got %d", len(result.SupplementTypes))
+	}
+}
+
+// Test 8: EmployeeStaffingHours — multiple employees with mid-range transitions, verifying
+// sorting, staff category from latest contract, and correct monthly hours.
+func TestStatisticsService_GetEmployeeStaffingHours_MultipleEmployeesTransition(t *testing.T) {
+	db := setupTestDB(t)
+	svc := createStatisticsService(db)
+	ctx := context.Background()
+
+	org := createTestOrganization(t, db, "Test Org")
+	section := getDefaultSection(t, db, org.ID)
+	payplan := createTestPayPlan(t, db, "TV-L", org.ID)
+
+	// Employee "Alpha, A": contract 1 (Jan-Mar, 30h, supplementary), contract 2 (Apr-ongoing, 39h, qualified)
+	empA := createTestEmployee(t, db, "A", "Alpha", org.ID)
+	c1To := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	createTestEmployeeContractWithCategory(t, db, empA.ID, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), &c1To, 30.0, "supplementary", section.ID)
+	createTestEmployeeContractWithCategory(t, db, empA.ID, payplan.ID, time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC), nil, 39.0, "qualified", section.ID)
+
+	// Employee "Beta, B": ongoing contract (Jan-ongoing, 25h, qualified)
+	empB := createTestEmployee(t, db, "B", "Beta", org.ID)
+	createTestEmployeeContractWithCategory(t, db, empB.ID, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 25.0, "qualified", section.ID)
+
+	// Employee "Alpha, C": ongoing contract (Jan-ongoing, 20h, qualified)
+	// Same last name as empA to verify first name sorting
+	empC := createTestEmployee(t, db, "C", "Alpha", org.ID)
+	createTestEmployeeContractWithCategory(t, db, empC.ID, payplan.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), nil, 20.0, "qualified", section.ID)
+
+	from := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	result, err := svc.GetEmployeeStaffingHours(ctx, org.ID, &from, &to, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(result.Dates) != 6 {
+		t.Fatalf("expected 6 dates, got %d", len(result.Dates))
+	}
+	if len(result.Employees) != 3 {
+		t.Fatalf("expected 3 employees, got %d", len(result.Employees))
+	}
+
+	// Verify sorting: Alpha A, Alpha C, Beta B
+	if result.Employees[0].LastName != "Alpha" || result.Employees[0].FirstName != "A" {
+		t.Errorf("first employee = %s %s, want A Alpha", result.Employees[0].FirstName, result.Employees[0].LastName)
+	}
+	if result.Employees[1].LastName != "Alpha" || result.Employees[1].FirstName != "C" {
+		t.Errorf("second employee = %s %s, want C Alpha", result.Employees[1].FirstName, result.Employees[1].LastName)
+	}
+	if result.Employees[2].LastName != "Beta" || result.Employees[2].FirstName != "B" {
+		t.Errorf("third employee = %s %s, want B Beta", result.Employees[2].FirstName, result.Employees[2].LastName)
+	}
+
+	// Alpha A: staff category should be "qualified" (from latest contract starting Apr)
+	if result.Employees[0].StaffCategory != "qualified" {
+		t.Errorf("Alpha A StaffCategory = %s, want qualified", result.Employees[0].StaffCategory)
+	}
+
+	// Alpha A monthly hours: [30, 30, 30, 39, 39, 39]
+	wantAlphaA := []float64{30, 30, 30, 39, 39, 39}
+	for i, want := range wantAlphaA {
+		got := result.Employees[0].MonthlyHours[i]
+		if !almostEqual(got, want, 0.01) {
+			t.Errorf("Alpha A month %d: hours = %v, want %v", i+1, got, want)
+		}
+	}
+
+	// Alpha C: constant 20h
+	for i := 0; i < 6; i++ {
+		got := result.Employees[1].MonthlyHours[i]
+		if !almostEqual(got, 20.0, 0.01) {
+			t.Errorf("Alpha C month %d: hours = %v, want 20.0", i+1, got)
+		}
+	}
+
+	// Beta B: constant 25h
+	for i := 0; i < 6; i++ {
+		got := result.Employees[2].MonthlyHours[i]
+		if !almostEqual(got, 25.0, 0.01) {
+			t.Errorf("Beta B month %d: hours = %v, want 25.0", i+1, got)
+		}
+	}
+}
