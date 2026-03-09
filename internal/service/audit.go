@@ -294,6 +294,35 @@ func (s *AuditService) GetLogs(ctx context.Context, limit, offset int) ([]models
 	return toResponseList(logs, (*models.AuditLog).ToResponse), total, nil
 }
 
+// GetLogsFiltered returns paginated audit logs with optional filters
+func (s *AuditService) GetLogsFiltered(ctx context.Context, action string, userID *uint, from *time.Time, to *time.Time, limit, offset int) ([]models.AuditLogResponse, int64, error) {
+	if s == nil || s.store == nil {
+		return nil, 0, nil
+	}
+
+	logs, total, err := s.store.FindAllFiltered(ctx, action, userID, from, to, limit, offset)
+	if err != nil {
+		return nil, 0, apperror.InternalWrap(err, "failed to fetch audit logs")
+	}
+
+	return toResponseList(logs, (*models.AuditLog).ToResponse), total, nil
+}
+
+// GetLogByID returns a single audit log entry by ID
+func (s *AuditService) GetLogByID(ctx context.Context, id uint) (*models.AuditLogResponse, error) {
+	if s == nil || s.store == nil {
+		return nil, apperror.NotFound("audit log")
+	}
+
+	log, err := s.store.FindByID(ctx, id)
+	if err != nil {
+		return nil, classifyStoreError(err, "audit log")
+	}
+
+	resp := log.ToResponse()
+	return &resp, nil
+}
+
 // GetLogsByUser returns audit logs for a specific user
 func (s *AuditService) GetLogsByUser(ctx context.Context, userID uint, limit, offset int) ([]models.AuditLogResponse, int64, error) {
 	if s == nil || s.store == nil {

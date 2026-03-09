@@ -223,10 +223,12 @@ type TokenStorer interface {
 // AuditStorer defines the interface for audit log storage operations
 type AuditStorer interface {
 	Create(ctx context.Context, log *models.AuditLog) error
+	FindByID(ctx context.Context, id uint) (*models.AuditLog, error)
 	FindByUser(ctx context.Context, userID uint, limit, offset int) ([]models.AuditLog, int64, error)
 	FindByAction(ctx context.Context, action models.AuditAction, limit, offset int) ([]models.AuditLog, int64, error)
 	FindByDateRange(ctx context.Context, from, to time.Time, limit, offset int) ([]models.AuditLog, int64, error)
 	FindAll(ctx context.Context, limit, offset int) ([]models.AuditLog, int64, error)
+	FindAllFiltered(ctx context.Context, action string, userID *uint, from *time.Time, to *time.Time, limit, offset int) ([]models.AuditLog, int64, error)
 	FindFailedLogins(ctx context.Context, email string, since time.Time, limit int) ([]models.AuditLog, error)
 	CountFailedLoginsSince(ctx context.Context, email string, since time.Time) (int64, error)
 	Cleanup(ctx context.Context, olderThan time.Time) (int64, error)

@@ -134,6 +134,63 @@ func (s *AuditStore) CountFailedLoginsSince(ctx context.Context, email string, s
 	return count, err
 }
 
+// FindByID returns a single audit log entry by ID
+func (s *AuditStore) FindByID(ctx context.Context, id uint) (*models.AuditLog, error) {
+	var log models.AuditLog
+	if err := DBFromContext(ctx, s.db).First(&log, id).Error; err != nil {
+		return nil, WrapNotFound(err)
+	}
+	return &log, nil
+}
+
+// FindAllFiltered returns audit logs with optional filters and pagination.
+func (s *AuditStore) FindAllFiltered(ctx context.Context, action string, userID *uint, from *time.Time, to *time.Time, limit, offset int) ([]models.AuditLog, int64, error) {
+	var logs []models.AuditLog
+	var total int64
+
+	query := DBFromContext(ctx, s.db).Model(&models.AuditLog{})
+	if action != "" {
+		query = query.Where("action = ?", action)
+	}
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	}
+	if from != nil {
+		query = query.Where("timestamp >= ?", *from)
+	}
+	if to != nil {
+		query = query.Where("timestamp <= ?", *to)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Rebuild query for data fetch (GORM Count consumes the query)
+	dataQuery := DBFromContext(ctx, s.db).Model(&models.AuditLog{})
+	if action != "" {
+		dataQuery = dataQuery.Where("action = ?", action)
+	}
+	if userID != nil {
+		dataQuery = dataQuery.Where("user_id = ?", *userID)
+	}
+	if from != nil {
+		dataQuery = dataQuery.Where("timestamp >= ?", *from)
+	}
+	if to != nil {
+		dataQuery = dataQuery.Where("timestamp <= ?", *to)
+	}
+
+	if err := dataQuery.Order("timestamp DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&logs).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return logs, total, nil
+}
+
 // Cleanup removes audit logs older than the specified duration
 func (s *AuditStore) Cleanup(ctx context.Context, olderThan time.Time) (int64, error) {
 	result := DBFromContext(ctx, s.db).Where("timestamp < ?", olderThan).Delete(&models.AuditLog{})

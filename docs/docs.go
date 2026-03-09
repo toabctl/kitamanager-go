@@ -23,6 +23,148 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/audit-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of all audit log entries with optional filters (superadmin only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit-logs"
+                ],
+                "summary": "List audit logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by action (e.g. employee_delete, login_failed)",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by user ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter from date (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter to date (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_AuditLogResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/audit-logs/{auditLogId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a single audit log entry by ID (superadmin only)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit-logs"
+                ],
+                "summary": "Get audit log entry by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Audit Log ID",
+                        "name": "auditLogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AuditLogResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/government-funding-rates": {
             "get": {
                 "security": [
@@ -8240,6 +8382,91 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_eenemeene_kitamanager-go_internal_models.AuditAction": {
+            "type": "string",
+            "enum": [
+                "login",
+                "login_failed",
+                "logout",
+                "superadmin_grant",
+                "superadmin_revoke",
+                "user_create",
+                "user_delete",
+                "user_add_to_org",
+                "user_remove_from_org",
+                "role_change",
+                "employee_delete",
+                "child_delete",
+                "org_create",
+                "org_delete",
+                "password_reset"
+            ],
+            "x-enum-varnames": [
+                "AuditActionLogin",
+                "AuditActionLoginFailed",
+                "AuditActionLogout",
+                "AuditActionSuperAdminGrant",
+                "AuditActionSuperAdminRevoke",
+                "AuditActionUserCreate",
+                "AuditActionUserDelete",
+                "AuditActionUserAddToOrg",
+                "AuditActionUserRemoveFromOrg",
+                "AuditActionRoleChange",
+                "AuditActionEmployeeDelete",
+                "AuditActionChildDelete",
+                "AuditActionOrgCreate",
+                "AuditActionOrgDelete",
+                "AuditActionPasswordReset"
+            ]
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.AuditLogResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AuditAction"
+                        }
+                    ],
+                    "example": "employee_delete"
+                },
+                "details": {
+                    "type": "string",
+                    "example": "{\"resource_name\":\"John Doe\"}"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "ip_address": {
+                    "type": "string",
+                    "example": "192.168.1.1"
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "resource_type": {
+                    "type": "string",
+                    "example": "employee"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string",
+                    "example": "admin@example.com"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "github_com_eenemeene_kitamanager-go_internal_models.BillAppearance": {
             "type": "object",
             "properties": {
@@ -10422,6 +10649,36 @@ const docTemplate = `{
                 "state": {
                     "type": "string",
                     "example": "berlin"
+                }
+            }
+        },
+        "github_com_eenemeene_kitamanager-go_internal_models.PaginatedResponse-github_com_eenemeene_kitamanager-go_internal_models_AuditLogResponse": {
+            "type": "object",
+            "properties": {
+                "_links": {
+                    "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.PaginationLinks"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_eenemeene_kitamanager-go_internal_models.AuditLogResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 5
                 }
             }
         },

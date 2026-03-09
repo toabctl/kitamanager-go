@@ -41,6 +41,12 @@ func (m *mockAuditStore) FindFailedLogins(context.Context, string, time.Time, in
 func (m *mockAuditStore) CountFailedLoginsSince(context.Context, string, time.Time) (int64, error) {
 	return 0, nil
 }
+func (m *mockAuditStore) FindByID(context.Context, uint) (*models.AuditLog, error) {
+	return nil, nil
+}
+func (m *mockAuditStore) FindAllFiltered(context.Context, string, *uint, *time.Time, *time.Time, int, int) ([]models.AuditLog, int64, error) {
+	return nil, 0, nil
+}
 func (m *mockAuditStore) Cleanup(context.Context, time.Time) (int64, error) { return 0, nil }
 
 func TestAuditService_NewAndShutdown(t *testing.T) {
@@ -561,6 +567,138 @@ func TestAuditService_CountRecentFailedLogins(t *testing.T) {
 	}
 	if count != 0 {
 		t.Errorf("expected count 0, got %d", count)
+	}
+}
+
+func TestAuditService_GetLogsFiltered(t *testing.T) {
+	db := setupTestDB(t)
+	auditStore := store.NewAuditStore(db)
+	svc := NewAuditService(auditStore)
+	ctx := context.Background()
+
+	svc.LogLogin(1, "user1@example.com", "127.0.0.1", "Agent")
+	svc.LogLogin(2, "user2@example.com", "127.0.0.1", "Agent")
+	svc.LogLoginFailed("bad@example.com", "127.0.0.1", "Agent", "wrong password")
+	svc.LogResourceCreate(1, "employee", 10, "Jane", "127.0.0.1")
+	svc.Shutdown()
+
+	readSvc := &AuditService{store: store.NewAuditStore(db)}
+
+	t.Run("no filters returns all", func(t *testing.T) {
+		logs, total, err := readSvc.GetLogsFiltered(ctx, "", nil, nil, nil, 100, 0)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if total != 4 {
+			t.Errorf("expected total 4, got %d", total)
+		}
+		if len(logs) != 4 {
+			t.Errorf("expected 4 logs, got %d", len(logs))
+		}
+	})
+
+	t.Run("filter by action", func(t *testing.T) {
+		logs, total, err := readSvc.GetLogsFiltered(ctx, string(models.AuditActionLogin), nil, nil, nil, 100, 0)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if total != 2 {
+			t.Errorf("expected total 2, got %d", total)
+		}
+		if len(logs) != 2 {
+			t.Errorf("expected 2 logs, got %d", len(logs))
+		}
+	})
+
+	t.Run("filter by user_id", func(t *testing.T) {
+		userID := uint(1)
+		logs, total, err := readSvc.GetLogsFiltered(ctx, "", &userID, nil, nil, 100, 0)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if total != 2 {
+			t.Errorf("expected total 2, got %d", total)
+		}
+		if len(logs) != 2 {
+			t.Errorf("expected 2 logs, got %d", len(logs))
+		}
+	})
+
+	t.Run("pagination", func(t *testing.T) {
+		logs, total, err := readSvc.GetLogsFiltered(ctx, "", nil, nil, nil, 2, 0)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if total != 4 {
+			t.Errorf("expected total 4, got %d", total)
+		}
+		if len(logs) != 2 {
+			t.Errorf("expected 2 logs (limit), got %d", len(logs))
+		}
+	})
+}
+
+func TestAuditService_GetLogByID(t *testing.T) {
+	db := setupTestDB(t)
+	auditStore := store.NewAuditStore(db)
+	svc := NewAuditService(auditStore)
+	ctx := context.Background()
+
+	svc.LogLogin(1, "user@example.com", "127.0.0.1", "Agent")
+	svc.Shutdown()
+
+	readSvc := &AuditService{store: store.NewAuditStore(db)}
+
+	// Get all logs to find the ID
+	logs, _, _ := readSvc.GetLogs(ctx, 100, 0)
+	if len(logs) == 0 {
+		t.Fatal("expected at least one log")
+	}
+
+	t.Run("found", func(t *testing.T) {
+		log, err := readSvc.GetLogByID(ctx, logs[0].ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if log.ID != logs[0].ID {
+			t.Errorf("expected ID %d, got %d", logs[0].ID, log.ID)
+		}
+		if log.Action != models.AuditActionLogin {
+			t.Errorf("expected action %s, got %s", models.AuditActionLogin, log.Action)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		_, err := readSvc.GetLogByID(ctx, 99999)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func TestAuditService_GetLogsFiltered_NilService(t *testing.T) {
+	var svc *AuditService
+	ctx := context.Background()
+
+	logs, total, err := svc.GetLogsFiltered(ctx, "", nil, nil, nil, 10, 0)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if logs != nil {
+		t.Errorf("expected nil logs, got %v", logs)
+	}
+	if total != 0 {
+		t.Errorf("expected total 0, got %d", total)
+	}
+}
+
+func TestAuditService_GetLogByID_NilService(t *testing.T) {
+	var svc *AuditService
+	ctx := context.Background()
+
+	_, err := svc.GetLogByID(ctx, 1)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 

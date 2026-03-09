@@ -25,6 +25,7 @@ type Deps struct {
 	Statistics            *handlers.StatisticsHandler
 	Export                *handlers.ExportHandler
 	GovernmentFundingBill *handlers.GovernmentFundingBillHandler
+	AuditLog              *handlers.AuditLogHandler
 	AuthMiddleware        *middleware.AuthMiddleware
 	AuthzMiddleware       *middleware.AuthorizationMiddleware
 	CSRFMiddleware        *middleware.CSRFMiddleware
@@ -48,6 +49,7 @@ func Setup(r *gin.Engine, d Deps) {
 	statisticsHandler := d.Statistics
 	exportHandler := d.Export
 	governmentFundingBillHandler := d.GovernmentFundingBill
+	auditLogHandler := d.AuditLog
 	authMiddleware := d.AuthMiddleware
 	authzMiddleware := d.AuthzMiddleware
 	csrfMiddleware := d.CSRFMiddleware
@@ -171,6 +173,15 @@ func Setup(r *gin.Engine, d Deps) {
 				users.PUT("/:userId/superadmin",
 					authzMiddleware.RequireSuperAdmin(),
 					userHandler.SetSuperAdmin)
+			}
+
+			// ============================================================
+			// Audit logs (superadmin only, read-only)
+			// ============================================================
+			auditLogs := protected.Group("/audit-logs")
+			{
+				auditLogs.GET("", authzMiddleware.RequireSuperAdmin(), auditLogHandler.List)
+				auditLogs.GET("/:auditLogId", authzMiddleware.RequireSuperAdmin(), auditLogHandler.Get)
 			}
 
 			// ============================================================

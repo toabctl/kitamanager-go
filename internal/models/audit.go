@@ -42,16 +42,16 @@ type AuditLog struct {
 
 // AuditLogResponse represents the audit log response
 type AuditLogResponse struct {
-	ID           uint        `json:"id"`
+	ID           uint        `json:"id" example:"1"`
 	Timestamp    time.Time   `json:"timestamp"`
-	UserID       *uint       `json:"user_id,omitempty"`
-	UserEmail    string      `json:"user_email,omitempty"`
-	Action       AuditAction `json:"action"`
-	ResourceType string      `json:"resource_type,omitempty"`
-	ResourceID   *uint       `json:"resource_id,omitempty"`
-	IPAddress    string      `json:"ip_address,omitempty"`
-	Details      string      `json:"details,omitempty"`
-	Success      bool        `json:"success"`
+	UserID       *uint       `json:"user_id,omitempty" example:"1"`
+	UserEmail    string      `json:"user_email,omitempty" example:"admin@example.com"`
+	Action       AuditAction `json:"action" example:"employee_delete"`
+	ResourceType string      `json:"resource_type,omitempty" example:"employee"`
+	ResourceID   *uint       `json:"resource_id,omitempty" example:"42"`
+	IPAddress    string      `json:"ip_address,omitempty" example:"192.168.1.1"`
+	Details      string      `json:"details,omitempty" example:"{\"resource_name\":\"John Doe\"}"`
+	Success      bool        `json:"success" example:"true"`
 }
 
 func (a *AuditLog) ToResponse() AuditLogResponse {
