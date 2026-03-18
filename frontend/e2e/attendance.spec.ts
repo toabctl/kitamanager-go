@@ -404,6 +404,11 @@ test.describe('Attendance Editable Times', () => {
   });
 
   test('edit check-out time after full check-in/out', async ({ page }) => {
+    // This test uses today's column in the Mon-Fri grid. Skip on weekends when there
+    // is no "today" column (the attendance table only shows Mon-Fri).
+    const dayOfWeek = new Date().getDay(); // 0=Sun..6=Sat
+    test.skip(dayOfWeek === 0 || dayOfWeek === 6, 'Attendance grid is Mon-Fri only; skipped on weekends');
+
     const row = page.getByRole('row').filter({ hasText: childFirstName });
 
     // Find today's column header (e.g., "Wed 25.02") to determine the column index.
@@ -411,7 +416,6 @@ test.describe('Attendance Editable Times', () => {
     // today's date. Editing a time on a different day's column would create a date
     // mismatch (check-out date != check-in date) causing validation failure.
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun..6=Sat
     const todayColIndex = ((dayOfWeek + 6) % 7); // 0=Mon..4=Fri
 
     // Get all check-in buttons in the row and click today's
